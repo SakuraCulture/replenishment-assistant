@@ -1,4 +1,6 @@
 """Opt-in acceptance of the packaged calculation, history and export widgets."""
+from hashlib import sha256
+from math import isclose
 from pathlib import Path
 import json
 import os
@@ -8,13 +10,17 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QDialog, QMessageBox, QPushButton
+from PySide6.QtWidgets import QApplication, QDialog, QMessageBox
 
 import export_locations
+import normal_exports
 import result_semantics as sem
 from version_info import diagnostic
 
-FAST = '5003822828611'
+
+def row_digest(value):
+    encoded=json.dumps(value,ensure_ascii=False,sort_keys=True,default=str,allow_nan=False,separators=(',',':'))
+    return sha256(encoded.encode()).hexdigest()
 
 
 def start_smoke(app, win, args):
@@ -24,7 +30,8 @@ def start_smoke(app, win, args):
     settings = (root/'settings').resolve()
     if Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve() != settings or Path(app.data_root).resolve() != settings:
         raise ValueError('验收必须使用用例内的独立资料目录')
-    if plan.get('fixture') != 'poisson-display-rc16':
+    isolation=json.loads((root/'synthetic.json').read_text('utf-8'))
+    if plan.get('fixture') != 'poisson-display-rc17' or isolation != {'synthetic':True,'live_platform':False}:
         raise ValueError('缺少隔离验收用例标记')
     timer = QTimer(win)
     start = time.monotonic()
@@ -36,6 +43,7 @@ def start_smoke(app, win, args):
         QTest.mouseClick(button,Qt.MouseButton.LeftButton)
 
     def save_picture(widget, name):
+        QApplication.processEvents()
         widget.repaint()
         assert widget.grab().save(str(root/(name+'.png')))
 
@@ -54,12 +62,38 @@ def start_smoke(app, win, args):
         app.exit(0 if report['passed'] else 1)
 
     def report_rows(rows):
+        fields='D E G H I J K L N V U AB AC AD AG AH AN AM AO AP AU BD BE BF BG AL AQ BJ AS BM AW'.split()
+        unchanged='A B C D E F G H I J K L M N O P Q R S T U V AB AC AD AE AG AH AI AJ AN AM AO AP AU AZ BA BD BH BI BL BN'.split()
         with (root/'live-result.jsonl').open('w',encoding='utf-8') as output:
             for row in rows:
-                data={key:row.get(key) for key in ('E','AU','AS','AQ','AL','BF','BG','AW','K','L')}
+                data={key:row.get(key) for key in fields}
                 data.update(source_row=row['_meta'].get('export_row'),qty=sem.order_quantity(row),
-                            amount=sem.order_amount(row),execution_state=sem.order_status(row))
+                            amount=sem.order_amount(row),execution_state=sem.order_status(row),
+                            excluded=sem.exclusion_reason(row),reason=normal_exports.decision(row),
+                            p=row.get('_effective_probability'),target=sem.pre_round_target(row),
+                            unaffected_sha256=row_digest(([row.get(key) for key in unchanged],sem.routing(row))),
+                            flat_row_sha256=row_digest(row) if row.get('AM')==1 else None)
                 output.write(json.dumps(data,ensure_ascii=False,allow_nan=False,default=str)+'\n')
+
+    def show_live_product(case):
+        sku=case['sku']
+        win.search.setText(sku);win.filter_changed()
+        assert win.proxy.rowCount()==1,sku
+        index=win.proxy.index(0,0);win.table.scrollTo(index)
+        row=win.model.rows[win.proxy.mapToSource(index).row()]
+        assert row['E']==sku
+        for key,value in case['fields'].items():
+            actual=sem.order_quantity(row) if key=='qty' else row[key]
+            assert isclose(actual,value,rel_tol=1e-12,abs_tol=1e-12),(sku,key,actual,value)
+        QTest.mouseClick(win.table.viewport(),Qt.MouseButton.LeftButton,pos=win.table.visualRect(index).center())
+        if sku not in win.details.toPlainText() or not win.detail_panel.isVisible():win.show_detail(index)
+        for label in ('详情','技术依据'):
+            if label=='技术依据':win.show_technical_detail(row)
+            note=win.details.toPlainText()
+            for text in (sku,plan['model_version'],plan['mean_basis'],plan['safety_formula'],*case['reason']):
+                assert text in note,(sku,label,text,note)
+            state['shown'][sku+' / '+label]=note
+            save_picture(win,sku+'-'+label)
 
     def export_button(button, path):
         with patch.object(export_locations,'save_file',return_value=(str(path),'Excel (*.xlsx)')):
@@ -104,26 +138,16 @@ def start_smoke(app, win, args):
             result=win.results[store];rows=result['rows'];known=[sem.order_quantity(r) for r in rows]
             assert len(rows)==22323 and sum(sem.numeric(q) for q in known)==8618
             assert sum(q for q in known if sem.numeric(q))==plan['expected_total']
+            assert result['version']['model_version']==plan['model_version']
+            assert result['catalogs']['山东仓']['revision']==plan['catalog_revision']
+            assert result['effective_settings']['budget'] is None
+            state['shown'].update(catalog_revision=plan['catalog_revision'],budget='不限预算',input=plan['sales'])
             report_rows(rows);checked('通过计算按钮取得全店结果，留存全部22323行')
             win.open_overview(win.overview_codes.index(store),0)
-            win.search.setText(FAST);win.filter_changed()
-            assert win.proxy.rowCount()==1
-            index=win.proxy.index(0,0);win.table.scrollTo(index)
-            click_point=win.table.visualRect(index).center()
-            QTest.mouseClick(win.table.viewport(),Qt.MouseButton.LeftButton,pos=click_point)
-            if not win.detail_panel.isVisible():win.show_detail(index)
-            note=win.details.toPlainText()
-            assert '0.3.7-rules' in note and '趋势调整前需求 AO' in note,note
-            assert '− 可用库存 3 − 在途库存 0' in note,note
-            fast=next(d for d in rows if d['E']==FAST)
-            assert (fast['K'],fast['L'],sem.order_quantity(fast))==(3,0,2)
-            state['shown']['快充线详情']=note
-            save_picture(win,'02-快充线详情')
-            win.show_technical_detail(fast)
-            tech=win.details.toPlainText()
-            assert '0.3.7-rules' in tech and '趋势调整前需求 AO' in tech and '− 可用库存 3 − 在途库存 0' in tech,tech
-            state['shown']['快充线完整技术依据']=tech
-            save_picture(win,'03-快充线技术依据')
+            win.mode.setCurrentText('全部商品')
+            for case in plan['products']:
+                show_live_product(case)
+                checked(case['sku']+' 数量及界面计算依据一致')
             state['step']='export';export_button(win.export_all,root/'单店全量明细.xlsx')
         elif state['step']=='export' and not win.worker and (root/'单店全量明细.xlsx').is_file():
             checked('单店全量明细通过界面导出')
@@ -133,10 +157,11 @@ def start_smoke(app, win, args):
         return {r[0]:r[1:] for r in dialog.model.rows}
 
     def check_form(case, values):
-        version,basis=values['模型版本'][0],values['泊松均值依据'][0]
-        assert (version,basis)==(plan['model_version'],plan['mean_basis']),values
+        expected=(plan['model_version'],plan['mean_basis'],plan['safety_formula'])
+        assert tuple(values[key][0] for key in ('模型版本','泊松均值依据','安全库存公式'))==expected,values
         q,net=values['泊松分位数 Q'][0],values['净需求']
         assert q==case['quantile'] and net[0]==case['net'],values
+        assert values['安全库存量'][0]==case['safety'],values
         for text in case['reason']:
             assert text in net[-1],(text,net)
         state['shown'][case['sku']+' / '+state['scope']]=values

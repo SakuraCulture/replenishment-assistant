@@ -102,7 +102,8 @@ def field_row(d,key,why=''):
 def model_version_rows(result,outer_version=None):
     version=sem.saved_model_version(result,outer_version)
     return [['模型版本',version or '未留存','','计算快照留存版本'],
-            ['泊松均值依据',sem.poisson_mean_label(version),'','用于计算和校验泊松分位数 Q']]
+            ['泊松均值依据',sem.poisson_mean_label(version),'','用于计算和校验泊松分位数 Q'],
+            ['安全库存公式',sem.safety_stock_formula(version),'','按该模型版本从泊松分位数 Q 扣减需求']]
 
 
 def demand_rows(result,d,model_version=None):

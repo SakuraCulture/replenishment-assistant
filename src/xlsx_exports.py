@@ -96,6 +96,7 @@ def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,pro
         info=[['软件版本',VERSION],['模型版本',recorded_version or '未留存'],['构建信息',json.dumps(exporter,ensure_ascii=False)],['计算时间',result['created']],['门店',result['store_name']],['导出范围',scope],['一箱例外',result['enabled']],
             ['计价口径','商品资料基本售价；地采缺价不计为0'],['规则口径','原库存额度BH/BN日均；一箱例外仅后置修改最终建议'],
             ['泊松分位数 Q','按服务水平 p 求分位数。'],['泊松均值依据',poisson_mean_label(recorded_version)],
+            ['安全库存公式',safety_stock_formula(recorded_version)],
             ['取整前目标持有量','趋势调整后需求 AP 加安全库存 AL。'],
             ['商品数',summary['rows']],['默认补货商品',summary['positive']],['默认补货金额',summary['amount']],['地采商品',summary['local']],['数据异常商品',summary['issues']],
             ['排除规则','商品资料状态=禁用 或 补货建议状态=停采，任一命中即排除；计算保留，执行量和执行金额为0'],
@@ -193,7 +194,9 @@ def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,ca
         for s,r in ready.items():
             recorded_version=saved_model_version(r,model_version)
             info.extend([[s+' / '+k,str(v)] for k,v in (r.get('version') or {}).items() if k!='model_version'])
-            info.extend([[s+' / model_version',recorded_version or '未留存'],[s+' / 泊松均值依据',poisson_mean_label(recorded_version)]])
+            info.extend([[s+' / model_version',recorded_version or '未留存'],
+                         [s+' / 泊松均值依据',poisson_mean_label(recorded_version)],
+                         [s+' / 安全库存公式',safety_stock_formula(recorded_version)]])
             if r.get('effective_settings'):info.append([s+' / 方案与实际生效配置',json.dumps(r['effective_settings'],ensure_ascii=False)])
             info.extend([[s+' / 参数',json.dumps(r['config'],ensure_ascii=False)],[s+' / 仓参数',json.dumps(r['warehouses'],ensure_ascii=False)],[s+' / 一箱例外',r['enabled']],[s+' / 必卖清单',json.dumps(r['must_list'],ensure_ascii=False)],[s+' / 输入校验',json.dumps(r['sources'],ensure_ascii=False)]])
             if r.get('catalogs'):info.extend([[s+' / 主从仓',json.dumps(r['supply_route'],ensure_ascii=False)],[s+' / 仓资料快照',json.dumps(r['catalogs'],ensure_ascii=False)],[s+' / 选仓口径','可用数>0优先主仓；主仓禁用/无货/无商品则归属从仓，从仓无货不清零需求；不拆单、不限量、不扣减仓库存']])

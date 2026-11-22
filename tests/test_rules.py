@@ -11,14 +11,18 @@ META={'match':'商品编码精确匹配','blocking':[],'export_status':'正常'}
 
 class ModelTests(unittest.TestCase):
     def test_screenshot(self):
-        d=model.calculate(row());self.assertEqual((d['BJ'],d['BK'],d['AR'],d['BP'],d['BQ'],d['AS']),(24,0,0,0,0,0))
+        d=model.calculate(row())
+        self.assertEqual((d['L'],d['BF'],d['AQ']),(24,23,0))
+        self.assertEqual((d['BJ'],d['BK'],d['AR'],d['BP'],d['BQ'],d['AS']),(0,0,0,0,0,0))
         self.assertFalse(model.sales_floor_eligible(d));self.assertNotIn('_inbound_cap',d)
     def test_both_zero_holding_and_cartons(self):
         for step in (1,2,6,24,40):
             for sales in ((.07,1,1),(1.71,14,38),(5,35,150)):
                 d=model.calculate(row(O=step,L=0,H=sales[0],I=sales[1],J=sales[2]));self.assertGreater(d['AS'],0);self.assertEqual(d['AS']%step,0);self.assertNotIn('_inbound_cap',d)
     def test_disabled_cap_and_recompute_clear_audit(self):
-        d=model.calculate(row());n=model.calculate(d,model.Rules(cap_days=0));self.assertGreater(n['AS'],0);self.assertNotIn('_inbound_cap',n)
+        d=model.calculate(row(L=22))
+        self.assertEqual((d['AQ'],d['BJ'],d['BK'],d['AS']),(1,24,0,0))
+        n=model.calculate(d,model.Rules(cap_days=0));self.assertGreater(n['AS'],0);self.assertNotIn('_inbound_cap',n)
     def test_stockout_conflict_only_discards_N(self):
         a=model.calculate(row(N=31,L=0));b=model.calculate(row(N=0,L=0));self.assertEqual(a['N'],31);self.assertEqual(a['BA'],0)
         for k in ['W','Z','AA','AN','AM','AS']:self.assertEqual(a[k],b[k])
@@ -28,7 +32,7 @@ class ModelTests(unittest.TestCase):
     def test_missing_data_not_zero(self):
         d=model.calculate(row(J=None));self.assertIsInstance(d['AS'],str)
     def test_box_wrapper_does_not_readd(self):
-        d=model.calculate(row());d.update(BI=1,AN=10,AM=1,AH=5)
+        d=model.calculate(row(L=22));d.update(BI=1,AN=10,AM=1,AH=5)
         out,a=box.apply_one_box_exception(d,META);self.assertEqual(out['AS'],0);self.assertFalse(a['applied']);self.assertIn('已有在途',a['reason'])
         old={k:v for k,v in d.items() if k!='_inbound_cap'};out,a=box.apply_one_box_exception(old,META);self.assertFalse(a['applied']);self.assertTrue(a['inbound_cap_blocked'])
         old['L']=0;out,a=box.apply_one_box_exception(old,META);self.assertTrue(a['applied']);self.assertEqual(out['AS'],24)

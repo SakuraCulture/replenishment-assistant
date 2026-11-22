@@ -307,7 +307,7 @@ def calculate(inputs: dict, rules: Rules | None = None, *, extreme_restore: bool
             and (q == 0 or poisson_cdf(q-1, base_demand) < p.probability)
         )
         d["BG"] = "通过" if quantile_valid else "分位计算待复核"
-        d["AL"] = max(q - base_demand, 0) if quantile_valid else PENDING
+        d["AL"] = max(q - d["AP"], 0) if quantile_valid else PENDING
         d["AQ"] = max(d["AP"] + d["AL"] - k - l, 0) if quantile_valid else PENDING
         historical = d["BC"] if bb == "销量窗口异常" else j/(30-d["BA"])
         corrected = ((j-s14)/max(az,p.historical_reference_days/p.single_sample_multiple)

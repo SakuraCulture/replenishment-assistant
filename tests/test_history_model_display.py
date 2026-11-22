@@ -26,12 +26,13 @@ class HistoryModelDisplay(unittest.TestCase):
     def test_outer_inner_and_unknown_versions_match_history_and_excel(self):
         base, row=calculate()
         row.update(E='QA001',AU='山东仓',BF=6,AP=2.6704125,AL=3.3295875,AQ=3)
-        for outer,inner,version,basis in (
-            ('0.3.6-rules',None,'0.3.6-rules','趋势调整后需求 AP'),
-            ('0.3.6-rules','0.3.7-rules','0.3.6-rules','趋势调整后需求 AP'),
-            (None,'0.3.6-rules','0.3.6-rules','趋势调整后需求 AP'),
-            (None,None,'未留存','未留存'),
-            ('0.3.7-rules',None,'0.3.7-rules','趋势调整前需求 AO'),
+        for outer,inner,version,basis,formula in (
+            ('0.3.6-rules',None,'0.3.6-rules','趋势调整后需求 AP','max(Q − AP, 0)'),
+            ('0.3.6-rules','0.3.8-rules','0.3.6-rules','趋势调整后需求 AP','max(Q − AP, 0)'),
+            (None,'0.3.6-rules','0.3.6-rules','趋势调整后需求 AP','max(Q − AP, 0)'),
+            (None,None,'未留存','未留存','未留存'),
+            ('0.3.7-rules',None,'0.3.7-rules','趋势调整前需求 AO','max(Q − AO, 0)'),
+            (None,'0.3.8-rules','0.3.8-rules','趋势调整前需求 AO','max(Q − AP, 0)'),
         ):
             with self.subTest(outer=outer,inner=inner),TemporaryDirectory() as temp:
                 result={**base,'rows':[row]}
@@ -43,21 +44,22 @@ class HistoryModelDisplay(unittest.TestCase):
                 frozen=deepcopy(order)
                 for scope in ('决策总览','商品完整计算依据'):
                     fields={name:v for name,v,_,_ in presenter.historical(None,order,scope,'QA001')}
-                    self.assertEqual((fields['模型版本'],fields['泊松均值依据']),(version,basis))
+                    self.assertEqual((fields['模型版本'],fields['泊松均值依据'],fields['安全库存公式']),(version,basis,formula))
                     self.assertEqual((fields['泊松分位数 Q'],fields['安全库存量'],fields['净需求']),('6','3.3295875','3'))
                 headers,rows,_=decision_export.projected(order,'山东仓')
                 excel=dict(zip(headers,next(rows)));book=Path(temp)/'store.xlsx';batch=Path(temp)/'batch.xlsx'
-                self.assertEqual((excel['模型版本'],excel['泊松均值依据']),(version,basis))
+                self.assertEqual((excel['模型版本'],excel['泊松均值依据'],excel['安全库存公式']),(version,basis,formula))
                 self.assertEqual(excel['最终签发执行数'],sem.order_quantity(row))
                 xlsx_exports.export_xlsx(result,book,model_version=outer)
                 with closing(load_workbook(book,read_only=True,data_only=True)) as wb:
                     fields=dict(list(wb['运行概览'].values)[1:])
-                    self.assertEqual((fields['模型版本'],fields['泊松均值依据']),(version,basis))
+                    self.assertEqual((fields['模型版本'],fields['泊松均值依据'],fields['安全库存公式']),(version,basis,formula))
                 code=result['store'];states={code:{'name':result['store_name'],'state':'已完成'}}
                 xlsx_exports.export_batch({code:result},states,batch,model_version=outer)
                 with closing(load_workbook(batch,read_only=True,data_only=True)) as wb:
                     fields=dict(list(wb['版本及参数'].values)[1:])
-                    self.assertEqual((fields[code+' / model_version'],fields[code+' / 泊松均值依据']),(version,basis))
+                    self.assertEqual((fields[code+' / model_version'],fields[code+' / 泊松均值依据'],
+                                      fields[code+' / 安全库存公式']),(version,basis,formula))
                 self.assertEqual(order,frozen)
 
     def test_extreme_recovery_separates_rule_quantity_from_subsequent_execution(self):

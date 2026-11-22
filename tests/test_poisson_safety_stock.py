@@ -1,4 +1,4 @@
-"""The Poisson buffer and the trended forecast have separate demand inputs."""
+"""The base-demand quantile sets a floor for the trended forecast target."""
 from math import exp, floor, sqrt
 from pathlib import Path
 from statistics import NormalDist
@@ -17,18 +17,16 @@ YITANG = dict(H=.29, I=3, J=6, K=3, L=0, O=1, N=0, V=8.5, AB=.4, AC=.5, AD=.25)
 
 class PoissonSafetyStock(unittest.TestCase):
     def test_yitang_three_protection_periods(self):
-        for depth, quantile, quantity in ((3, 4, 2), (4, 4, 2), (5, 4, 2)):
+        for depth in (3, 4, 5):
             with self.subTest(depth=depth):
                 row = model.calculate(YITANG, model.Rules(depth=depth, lead=2, probability=.95))
-                self.assertEqual((row['AN'], row['AM'], row['BF'], row['BG']), (.28125, 1.3564, quantile, '通过'))
+                self.assertEqual((row['AN'], row['AM'], row['BF'], row['BG']), (.28125, 1.3564, 4, '通过'))
                 self.assertEqual(row['AO'], .28125 * (depth + 2))
                 self.assertAlmostEqual(row['AP'], row['AO'] * 1.3564)
-                self.assertAlmostEqual(row['AL'], quantile - row['AO'])
-                self.assertAlmostEqual(row['AQ'], row['AP'] + row['AL'] - 3)
-                self.assertEqual(row['AS'], quantity)
-        row = model.calculate(YITANG, model.Rules(depth=3, lead=2, probability=.95))
-        self.assertAlmostEqual(pre_round_target(row), 4.5011875)
-        self.assertAlmostEqual(row['AQ'], 1.5011875)
+                self.assertAlmostEqual(row['AL'], 4 - row['AP'])
+                self.assertAlmostEqual(pre_round_target(row), 4)
+                self.assertAlmostEqual(row['AQ'], 1)
+                self.assertEqual(row['AS'], 1)
 
     def test_fixed_mean_and_probability_under_rising_falling_and_zero_trend(self):
         rules = model.Rules(depth=3, lead=2, probability=.95)
@@ -42,12 +40,15 @@ class PoissonSafetyStock(unittest.TestCase):
         self.assertTrue(0 < falling['AM'] < 1)
         self.assertEqual((zero['AM'], zero['AP']), (0, 0))
         for row in (rising, flat, falling, zero):
-            self.assertEqual((row['AO'], row['BF'], row['AL'], row['BG']), (1.40625, 4, 2.59375, '通过'))
+            self.assertEqual((row['AO'], row['BF'], row['BG']), (1.40625, 4, '通过'))
+            self.assertAlmostEqual(row['AL'], 4 - row['AP'])
+            self.assertAlmostEqual(row['AQ'], 1)
         self.assertGreater(rising['AP'], flat['AP'])
         self.assertGreater(flat['AP'], falling['AP'])
         self.assertGreater(falling['AP'], zero['AP'])
-        self.assertEqual(pre_round_target(zero), 2.59375)
-        self.assertEqual(pre_round_target(flat), flat['BF'])
+        self.assertEqual(zero['AL'], 4)
+        self.assertEqual(pre_round_target(zero), 4)
+        self.assertEqual((flat['AO'], flat['AP'], flat['AL'], pre_round_target(flat)), (1.40625, 1.40625, 2.59375, 4))
 
     def test_quantile_start_and_result_use_base_demand(self):
         rules = model.Rules(depth=5, lead=2, probability=.95)
@@ -62,11 +63,18 @@ class PoissonSafetyStock(unittest.TestCase):
             term *= mean / quantile
             cumulative += term
         self.assertEqual((row['BF'], row['BG']), (quantile, '通过'))
-        self.assertAlmostEqual(row['AL'], quantile - mean)
+        self.assertAlmostEqual(row['AL'], max(quantile - row['AP'], 0))
+
+    def test_forecast_above_quantile_preserves_forecast_in_target(self):
+        row = model.calculate(dict(YITANG, K=0), model.Rules(depth=3, lead=2, probability=.5))
+        self.assertEqual((row['AO'], row['BF'], row['BG'], row['AL']), (1.40625, 1, '通过', 0))
+        self.assertGreater(row['AP'], row['BF'])
+        self.assertAlmostEqual(row['AP'], 1.9074375)
+        self.assertEqual((pre_round_target(row), row['AQ'], row['AS']), (row['AP'], row['AP'], 2))
 
     def test_only_inbound_and_carton_rounding(self):
         row = model.calculate(dict(YITANG, K=0, L=3, O=3), model.Rules(depth=3, lead=2, probability=.95))
-        self.assertAlmostEqual(row['AQ'], 1.5011875)
+        self.assertAlmostEqual(row['AQ'], 1)
         self.assertEqual((row['BJ'], row['BQ'], row['AS']), (3, 0, 3))
 
     def test_invalid_quantile_keeps_target_and_result_pending(self):

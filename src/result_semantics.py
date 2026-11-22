@@ -28,6 +28,11 @@ def poisson_mean_label(model_version):
     return {'AO':'趋势调整前需求 AO','AP':'趋势调整后需求 AP'}.get(poisson_mean_field(model_version),'未留存')
 
 
+def safety_stock_formula(model_version):
+    forecast_field = {'0.3.6-rules':'AP', '0.3.7-rules':'AO', '0.3.8-rules':'AP'}.get(model_version)
+    return f'max(Q − {forecast_field}, 0)' if forecast_field else '未留存'
+
+
 def pre_round_target(row):
     """Read the target from the saved forecast and buffer, without recalculating either."""
     forecast, safety = row.get('AP'), row.get('AL')
