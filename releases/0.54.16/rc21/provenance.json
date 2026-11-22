@@ -1,0 +1,76 @@
+{
+  "release": "0.54.16 rc21",
+  "model_version": "0.3.8-rules",
+  "previous_main_commit": "161e5b218f55307e0aa8d79a7e2d028fa2b5f5c3",
+  "previous_candidate_commit": "4cfafbaa4e5ec23bbb138f6c878af9d4abab6733",
+  "source_commit": "76a50ed4109b9b69c26cb36908cde9e9b9680228",
+  "source_tree": "5260a1c7bb68dd43b25c0b070c811041d8b8de70",
+  "source_archive_sha256": "0cdb7d083107c09030afc1f2e98073f73e49df9f7a573bdda68bb531999e465e",
+  "deliverables": {
+    "exe_sha256": "74b4974c55116ce92be6452c5cf479a03029624b11da25cd8b5cc40a7f7227e8",
+    "standalone_zip_name": "补货助手_0.54.16_rc21_全商品档案_45天仓新品.zip",
+    "standalone_zip_sha256": "69bd1ddb5b4e191665e6acf3a48ab9aa49f42c9f496618b0047cb67812abaa41",
+    "standalone_zip_bytes": 157222890
+  },
+  "acceptance": {
+    "hebei_live_sync": {
+      "original_submissions": 1,
+      "reused_original_after_download_interruption": true,
+      "adopted_in_isolated_settings": true,
+      "raw_rows": 4512,
+      "adopted_rows": 4494,
+      "quarantined_rows": 18,
+      "conditions": {
+        "sales": "unlimited",
+        "enabled": "all",
+        "excludeZero": false,
+        "excludeCancelledBeforeShipment": true
+      },
+      "available_stock_differences_against_earlier_ordinary_export": 2
+    },
+    "hebei_fixed_report": {
+      "as_of_beijing_date": "2026-11-22",
+      "raw_rows": 4525,
+      "matched_skus": 4494,
+      "quarantined_rows": 31,
+      "retained_previously_filtered_out": 279,
+      "new_skus": 9,
+      "enabled_new_skus": 4,
+      "standby_new_skus": 5,
+      "zero_stock_new_skus": 2
+    },
+    "dual_warehouse_45_day": {
+      "actual_exe_from_zip": true,
+      "checks_passed": 25,
+      "hebei_original_data": true,
+      "shandong_isolated_sample": true,
+      "shandong_live_platform": "login_required",
+      "same_sku_separate_warehouse_dates": true,
+      "same_membership_quantity_amount_allocation_and_order_match": true,
+      "historical_signature_readback": true
+    },
+    "python_regression": {
+      "total": 209,
+      "passed": 204,
+      "skipped": 4,
+      "errors": 1,
+      "same_error_on_rc20": "test_own_warehouse_revision_still_rejects_old_purchase"
+    },
+    "jst_component_passed": 140
+  },
+  "original_local_evidence_sha256": {
+    "frozen_source": "30c8c6f8fd882237dee3580dfc23a07019c91e15d67372a2d50e751ea3787537",
+    "package_verification": "a2a4cf5de00673d1a6f859a38e8451b687c6bfb9033ce690cb2beaad6827470f",
+    "acceptance_report": "12b1084632599379f746b8e9037c79b52c6191b13f92d9a90c410f42434f12e1",
+    "hebei_original_comparison": "66dfd572f60ad7a53d38393876e363080a0c1bed672ec4114b69970fa01833cb",
+    "hebei_live_sync_receipt": "e4c22a9b58ad0e441a9e764ad6908072e914dae601079b14a308a36341a093af",
+    "hebei_live_native_workbook": "d658560d2c787940f888f4e50c70393e662b2e4640878cb0afea8906c60b796c",
+    "dual_warehouse_executable_acceptance": "87a0db74b904638a18d719455a5d4069ae9f0de3c55a45579fc51b5cb8803829",
+    "hebei_workbench_screenshot": "24fd6d6d062f8729c1431863570d11119a0a3e7bedfec6cf7b530627d10d8bfd",
+    "shandong_workbench_screenshot": "86a60396ee3222881883e1f3129ee67a0a5222255226488feeded105ceb824cc",
+    "signed_history_screenshot": "06596165f7d542b42a1508b5bb6e6b0072b447211b911111c87f65ae78bac6bb",
+    "python_regression_log": "2d1e4c080ba8f4c690a1d9f162661a20ed6b3f174769e9293862a2fe7336d94b",
+    "rc20_reference_failure_log": "b8329221b12048792e3b920bea7181d34ffa4a30aac27b88e2064b8761987324",
+    "component_regression_log": "3ccd6e03ba08ea215bd06b45cc53a5c698e068b6d8516d87d81fafcd0c11da30"
+  }
+}
