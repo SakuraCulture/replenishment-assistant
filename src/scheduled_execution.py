@@ -66,6 +66,7 @@ def check_signature(frozen):
     for k in ('day','catalog_digests','app_version'):value.pop(k,None)
     for job in value['jobs'].values():
         job['admission'].pop('day',None)
+        job.pop('warehouse_new_day',None)
         if job.get('monthly_first_fill'):job['monthly_first_fill'].pop('day',None)
     return sr.signature(value)
 
@@ -82,17 +83,12 @@ def matches_check_signature(frozen, expected, folder):
     return check_signature({**frozen,'profile':previous})==expected
 
 
-def overlap(repo,run,codes):
+def check_signed(repo,run,codes):
     with repo.db() as db:
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         if 'normal_orders' in tables:
             signed={r[0] for r in db.execute('SELECT store FROM normal_orders WHERE day=?',(run['day'],))}
             if signed.intersection(codes):raise ValueError('本日已有签发：'+ '、'.join(s for s in codes if s in signed)+'；请人工核对，不自动覆盖')
-        for raw, in db.execute("SELECT payload FROM scheduled_runs WHERE day=? AND rowid<(SELECT rowid FROM scheduled_runs WHERE id=?) AND state NOT IN ('ENDED','MISSED')",(run['day'],run['id'])):
-            other=wr.loads(raw)
-            # Later queued occurrences never block the earlier one.
-            selected={i['code'] for i in other['schedule'].get('stores',other['stores'])}
-            if selected.intersection(codes):raise ValueError('同日门店已有自动任务，请先核对或结束原任务：'+other['schedule']['name'])
 
 
 class Runner:
@@ -116,7 +112,7 @@ class Runner:
                 frozen=freeze(self.folder,run['schedule'],run['day'])
                 if not matches_check_signature(frozen,run['schedule'].get('check_signature'),self.folder):
                     raise ValueError('预案、默认参数或准入依据已变化，请重新检查运行条件后新建任务')
-                codes=[i['code'] for i in frozen['plan']['stores']];overlap(self.repo,run,codes)
+                codes=[i['code'] for i in frozen['plan']['stores']];check_signed(self.repo,run,codes)
                 self.repo.change(rid,epoch=self.epoch,stores=[{**i,'state':'PENDING','message':'等待处理'} for i in frozen['plan']['stores']])
                 self.repo.save_value(rid,'basis',frozen,self.epoch)
             from version_info import MODEL_VERSION

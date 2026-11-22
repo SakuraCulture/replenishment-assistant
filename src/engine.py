@@ -41,9 +41,8 @@ def sheet_name(path,kind):
         return candidates[0]
     finally:book.close()
 
-def read_identified(path,kind,required):
+def read_identified(path,kind,required,*,alternate=None):
     """Recognize and read using one open archive; callers retain both hashes."""
-    from table_records import table_records
     warnings.filterwarnings('ignore',message='Workbook contains no default style')
     book=openpyxl.load_workbook(path,read_only=True,data_only=True,keep_links=False)
     try:
@@ -52,12 +51,14 @@ def read_identified(path,kind,required):
         for ws in book.worksheets:
             ws.reset_dimensions();it=ws.iter_rows(values_only=True);header=next(it,())
             heads={str(x).strip() for x in header if x is not None}
-            if required_sheet<=heads:candidates.append((ws.title,heads,header,it))
+            if alternate and set(alternate)<=heads:candidates.append((ws.title,heads,header,it,alternate))
+            elif required_sheet<=heads:candidates.append((ws.title,heads,header,it,required))
             elif hasattr(it,'close'):it.close()
         if not candidates:raise ValueError(('补货建议' if kind=='sales' else '商品资料')+'未找到唯一可用工作表。必需列：'+ '、'.join(sorted(required_sheet)))
         if len(candidates)!=1:raise ValueError('发现多个可用工作表：'+ '、'.join(x[0] for x in candidates)+'；请保留本次要使用的一张表。')
-        sheet,heads,header,it=candidates[0]
-        rows,info=adapter.read_table(path,sheet,required,_cells=(header,it))
+        sheet,heads,header,it,fields=candidates[0]
+        rows,info=adapter.read_table(path,sheet,fields,_cells=(header,it))
+        if alternate is not None:info['alternate']=fields is alternate
         return sheet,heads,rows,info
     finally:book.close()
 
@@ -145,7 +146,7 @@ def preview(loaded,store):
         rows.append(x)
     return rows
 
-def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabled:bool,budget=None,profile=None,progress=lambda s:None,cancel=None,*,monthly_first_fill=None) -> CalculationResult:
+def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabled:bool,budget=None,profile=None,progress=lambda s:None,cancel=None,*,monthly_first_fill=None,warehouse_new_day=None) -> CalculationResult:
     from restock_policy import values
     extreme_restore=values(loaded['config'])['extreme_restore']
     rows=[copy.deepcopy(x) for x in loaded['normalized'] if x[0]['B']==store]
@@ -160,6 +161,10 @@ def run_calculation(loaded:InputBatch,store:str,warehouses:WarehouseCycles,enabl
             depth,lead=warehouses.get(d['AU'],(-1,-1))
             if depth<0 or lead<0 or depth+lead<=0:m['blocking'].append('所属仓的备货/到货天数未配置')
             else:d.update(AG=depth,AH=lead)
+        inbound=m.pop('first_inbound_source',None)
+        if warehouse_new_day and inbound and inbound['warehouse']==d['AU'] and d['_source']=='资料匹配':
+            from warehouse_newness import decide
+            m['warehouse_newness']=decide(inbound,warehouse_new_day)
         name='快销' if d.get('U')=='无分类' else d.get('U')
         row_rules=profile_rules.get(name,p) if d['_source']=='资料匹配' else p
         exclusions=default_exclusions(m)
@@ -238,8 +243,7 @@ def apply_budget(result,budget=None,profile=None,progress=lambda s:None,cancel=N
         d['_candidate_qty']=0 if excluded else quantity(d)
         d['_candidate_amount']=0 if excluded else amount_value(d)
         mandatory_holding.apply(d,minimum)
-    if monthly_first_fill is not None:
-        new_products.seed_monthly(result,monthly_first_fill,cancel,budget=budget)
+    new_products.seed_monthly(result,monthly_first_fill,cancel,budget=budget)
     progress('正在按门店预算分配必卖与其他商品…' if budget is not None else '正在标记必卖清单…')
     result['budget']=allocation.apply(result['rows'],budget,lambda:checkpoint(cancel)) if budget is not None else {'enabled':False}
     by_code={row_key(d):d for d in result['rows']}

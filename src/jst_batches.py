@@ -207,8 +207,9 @@ def register(path, plan, progress=lambda _:None, cancel=None):
                     raise wr.Conflict(wh+'当前仓资料已刷新，请重新预览库存分配')
             for p in v['plans']:
                 h = p['head']; orders.purchases.validate_head(db,h)
-                if orders.active(db,h) or orders.locked(db,h) or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):
-                    raise wr.Conflict('订单已生成、已下单或已有下游资料：'+h['number'])
+                blocker, payment = orders.allocation_gate(db,h,orders.active(db,h))
+                if blocker or payment != p.get('previous_payment'):
+                    raise wr.Conflict((blocker or '付款或重做依据已变化')+'：'+h['number'])
                 if db.execute("SELECT 1 FROM jst_batch_members WHERE oid=? AND warehouse=? AND status IN ('pending','failed')", (h['oid'],h['warehouse'])).fetchone():
                     raise wr.Conflict('订单已加入其他未完成批次：'+h['number'])
                 full = {**h,'products':p.get('signed_products',p['basis']['products'])}

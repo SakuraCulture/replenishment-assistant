@@ -1,9 +1,6 @@
-"""Four outcome-oriented entrypoints; existing business services remain shared."""
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QGroupBox, QPushButton, QTabWidget
+"""Top-level business navigation and home task shortcuts."""
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTabWidget
 from ui_controls import button, label
-
-SCENES = [('补货出单', 1), ('订单跟踪', 3), ('决策复查', 2), ('参数设置', 4)]
 
 
 def clear_layout(layout, keep=()):
@@ -59,21 +56,6 @@ def install(host, home_layout, nav):
     from business_flow_ui import HomeTasks
     host.home_tasks = HomeTasks(host)
     home_layout.addWidget(host.home_tasks)
-    cards = QGridLayout()
-    descriptions = [
-        ('准备门店数据，核对建议，取得分仓签发单。', '进入补货出单'),
-        ('收到回传、付款或收货资料，保存到对应订单。', '进入订单跟踪'),
-        ('对某次建议有异议，查当时事实、参数和数量变化。', '进入决策复查'),
-        ('维护门店主从仓、默认参数和可复用参数方案。', '进入参数设置'),
-    ]
-    for i, ((title, index), (description, action)) in enumerate(zip(SCENES, descriptions)):
-        group = QGroupBox(title)
-        layout = QVBoxLayout(group)
-        layout.addWidget(label(description))
-        layout.addStretch()
-        layout.addWidget(button(action, lambda checked=False, n=index: host.show_section(n), True))
-        cards.addWidget(group, i // 2, i % 2)
-    home_layout.addLayout(cards, 1)
     row = QHBoxLayout()
     row.addWidget(button('继续已保存的今日草稿', host.resume_today))
     row.addWidget(button('全部未收齐订单', lambda: open_tracking(host, pending=True)))

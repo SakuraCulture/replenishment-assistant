@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import {StateStore} from '../src/state.mjs';
+import {StateStore,assetKey} from '../src/state.mjs';
+import {MachineCommands,mappingVersion} from '../src/machine-commands.mjs';
 import {Coordinator} from '../src/coordinator.mjs';
 import {freshConfig,fieldContract} from '../src/config.mjs';
 import {createArchive} from '../src/zip.mjs';
@@ -45,6 +46,38 @@ test('明确未派发的菜单失败可继续原作业，原意图留档且不�
 test('完整作业只提交一次；当日再次正常运行复用合格资产',async()=>{
   const c=await context();const first=await new Coordinator(c.args).run();assert.equal(first.status,'SUCCEEDED');assert.deepEqual(c.counts(),{submits:1,downloads:1});
   const second=await new Coordinator(c.args).run();assert.equal(second.status,'SUCCEEDED');assert.deepEqual(c.counts(),{submits:1,downloads:1});assert.equal(c.state.getItems(second.id)[0].stage,'REUSED');c.state.close();
+});
+
+test('同店的新命令独立提交，晚来的旧文件只进入旧批次',async t=>{
+  const c=await context();t.after(()=>c.state.close());
+  const commands=new MachineCommands(c.state),config=c.args.config;
+  const reserve=async(id,freshness)=>{
+    const response=await commands.reserve({protocol_version:1,command_id:id,operation:'replenishment.export',
+      account_binding:{account_id:identity.accountId,merchant_code:identity.merchantCode},
+      scope:{warehouse_codes:[target.buyerWarehouseCode]},basis_versions:{store_mapping:mappingVersion(config)},
+      policy:{freshness}},config);
+    return response.record.items[0].run_id;
+  };
+  const coordinator=new Coordinator(c.args),old=await reserve('old','refresh');
+  const original=c.adapter.submitOnce;let serial=0;
+  c.adapter.submitOnce=async function(p){
+    const callback=this.onReceipt;
+    this.onReceipt=r=>callback({...r,taskId:'fixture-'+serial});
+    try{return {...await original.call(this,p),taskId:'fixture-'+serial};}
+    finally{this.onReceipt=callback;}
+  };
+  serial=1;await coordinator.run({runId:old,phase:'submit',independent:true});
+  const replacement=await reserve('fresh','refresh');
+  serial=2;await coordinator.run({runId:replacement,independent:true});
+  await coordinator.run({runId:old,phase:'collect',independent:true});
+  const first=c.state.getItems(old)[0].assetSnapshot,next=c.state.getItems(replacement)[0].assetSnapshot;
+  assert.notEqual(first.relativePath,next.relativePath);
+  assert.deepEqual([first.taskId,next.taskId],['fixture-1','fixture-2']);
+  assert.equal(c.state.getAsset(assetKey(next)).runId,replacement);
+  const reuse=await reserve('reuse','reuse');
+  await coordinator.run({runId:reuse,independent:true});
+  assert.equal(c.state.getItems(reuse)[0].assetSnapshot.taskId,next.taskId);
+  assert.deepEqual(c.counts(),{submits:2,downloads:2});
 });
 
 test('提交阶段不等待或下载，轮询未完成立即返回；恢复只取原任务且文件字节一致',async()=>{

@@ -28,13 +28,7 @@ class MaintenanceProcessTests(unittest.TestCase):
         normal_exports.export(signed,self.out/'signed-before.xlsx',warehouse='河北仓')
         signed_cells=cells(self.out/'signed-before.xlsx')
         config=self.client.request('configuration')
-        with self.assertRaisesRegex(ValueError,'不能另建'):
-            prepare(self.jobs,config,['W2','W1'],'refresh',day='2026-11-04')
-        plan=self.jobs.maintenance_preview(self.client,'blocked','end')
-        self.assertEqual(len(plan['related']),1)
-        self.jobs.maintenance_apply(self.client,plan)
-        self.assertEqual(self.jobs.get('old-failed')['state'],'ENDED')
-        self.assertEqual(self.jobs.unfinished(),[])
+        old_failed=self.jobs.get('old-failed')['record']
         job=prepare(self.jobs,config,['W2','W1'],'refresh',day='2026-11-04')
         self.jobs.dispatch(self.client,job['id'])
         until=time.monotonic()+6
@@ -44,7 +38,16 @@ class MaintenanceProcessTests(unittest.TestCase):
             time.sleep(.01)
         # No browser binding in fixture: proves scheduler progressed past original task gates.
         self.assertEqual(job['record']['error']['code'],'SETUP_REQUIRED')
-        self.jobs.maintenance_apply(self.client,self.jobs.maintenance_preview(self.client,job['id'],'end'))
+        self.assertEqual(self.jobs.get('blocked')['state'],'NEEDS_REVIEW')
+        own=self.jobs.maintenance_preview(self.client,job['id'],'end')
+        self.assertEqual(own['related'],[])
+        self.jobs.maintenance_apply(self.client,own)
+        self.assertEqual(self.jobs.get('old-failed')['record'],old_failed)
+        plan=self.jobs.maintenance_preview(self.client,'blocked','end')
+        self.assertEqual(len(plan['related']),1)
+        self.jobs.maintenance_apply(self.client,plan)
+        self.assertEqual(self.jobs.get('old-failed')['state'],'ENDED')
+        self.assertEqual(self.jobs.unfinished(),[])
         for ident in ['blocked','old-failed','adopted',job['id']]:
             self.jobs.maintenance_apply(self.client,self.jobs.maintenance_preview(self.client,ident,'delete'))
         self.assertEqual(self.jobs.recent(),[])

@@ -1,4 +1,5 @@
-import {fail,redact} from './common.mjs';
+import {fail,redact,wait} from './common.mjs';
+import {collectionPurpose} from './state.mjs';
 
 const ordinaryFailures=new Set(['EMPTY_UNVERIFIED','TASK_HAS_FAILURES','QUERY_FILE_COUNT_DIFF','TASK_TYPE_MISMATCH',
   'SCHEMA_DRIFT','ENTITY_MISMATCH','ROW_COUNT_MISMATCH','NULL_KEYS','UNSAFE_NATIVE_ID','NOT_XLSX','SHEET_MISMATCH','HEADER_MISSING',
@@ -8,14 +9,15 @@ export const errorInfo=e=>({code:e.code||'FAILED',message:redact(e.message||'自
 
 // Serial browser queue; control requests remain independent of awaited browser I/O.
 export class MachineRuntime{
-  constructor({commands,executeItem,onEvent=()=>{},needsReview=()=>false,canResumeReview=()=>false,onFatal=()=>{},pipeline=false}){
-    Object.assign(this,{commands,executeItem,onEvent,needsReview,canResumeReview,onFatal,pipeline});
+  constructor({commands,executeItem,onEvent=()=>{},needsReview=()=>false,canResumeReview=()=>false,onFatal=()=>{},pipeline=false,canStart=()=>true,durableQueue=false}){
+    Object.assign(this,{commands,executeItem,onEvent,needsReview,canResumeReview,onFatal,pipeline,canStart,durableQueue});
     this.active=null;this.pumping=null;this.closing=false;
   }
   change(id,next,options){
     const old=this.commands.get(id);
     if(!old)fail('COMMAND_NOT_FOUND','未找到自动化作业');
-    const changed=this.commands.advance(id,old.sequence,next,options);
+    const durableQueue=this.durableQueue&&collectionPurpose(old.request)==='replenishment';
+    const changed=this.commands.advance(id,old.sequence,next,{...options,durableQueue});
     this.onEvent(changed.event);return changed.record;
   }
   progress(id,detail){
@@ -46,6 +48,7 @@ export class MachineRuntime{
   resume(id){
     if(this.closing)fail('SHUTTING_DOWN','组件正在安全退出');
     const record=this.commands.get(id);
+    if(['QUEUED','RUNNING'].includes(record?.state))return record;
     if(!['PAUSED','INTERRUPTED'].includes(record?.state))fail('COMMAND_TRANSITION','请使用核对原回执或重跑失败项，不能直接重派终态作业');
     return this.change(id,'QUEUED',{error:null});
   }
@@ -54,11 +57,11 @@ export class MachineRuntime{
     const record=this.commands.get(id);
     if(record?.state==='NEEDS_REVIEW'){
       const items=structuredClone(record.items);
-      for(const item of items)if(item.state==='NEEDS_REVIEW'&&this.canResumeReview(item))item.state='PENDING';
+      for(const item of items)if(item.state==='NEEDS_REVIEW'&&this.canResumeReview(item,record))item.state='PENDING';
       // Missing receipts stay blocked. Only independently runnable stores or
       // exact receipts already persisted by the component may resume.
       if(!items.some(i=>!['SUCCEEDED','FAILED','ENDED','NEEDS_REVIEW'].includes(i.state)))
-        fail('COMMAND_TRANSITION','原任务尚无可靠受理回执，自动继续不会重发。需要新文件时请勾选门店，点击“重新导出所选门店”；旧记录和原件保留。');
+        fail('COMMAND_TRANSITION','原任务尚无可靠受理回执，继续时保留待核。需要新文件时可新建独立采集。');
       return this.change(id,'QUEUED',{kind:'RESUME_WITH_REVIEW_RETAINED',items,error:null});
     }
     fail('COMMAND_TRANSITION','仅可核对待核原采集，请刷新当前记录');
@@ -82,15 +85,22 @@ export class MachineRuntime{
     }).finally(()=>{this.pumping=null;});
   }
   async idle(){while(this.pumping)await this.pumping;}
-  async shutdown(){
+  stop(){
     this.closing=true;
-    for(const record of this.commands.list())if(['QUEUED','RUNNING'].includes(record.state))this.pause(record.id);
+    for(const record of this.commands.list()){
+      if(record.state==='RUNNING'||record.state==='QUEUED'&&!record.durable_queue)
+        this.pause(record.id);
+    }
+  }
+  async shutdown(){
+    this.stop();
     await this.idle();
   }
   async pump(){
     for(;;){
       if(this.closing)return;
       const record=this.commands.list().find(r=>r.state==='QUEUED');if(!record)return;
+      if(!this.canStart()){await wait(250);continue;}
       await this.run(record.id);
     }
   }
@@ -115,7 +125,7 @@ export class MachineRuntime{
           let result;
           for(let retry=0;;retry++){
             try{result=await execute();break;}catch(e){
-              if(retry||control.signal.aborted||!(e.code==='EXPORT_NOT_DISPATCHED'||this.canResumeReview(initial)&&!['WRONG_IDENTITY','WAIT_LOGIN','QUERY_SCOPE_MISMATCH','WRONG_SCOPE_ACCEPTED'].includes(e.code)))throw e;
+              if(retry||control.signal.aborted||!(e.code==='EXPORT_NOT_DISPATCHED'||this.canResumeReview(initial,record)&&!['WRONG_IDENTITY','WAIT_LOGIN','QUERY_SCOPE_MISMATCH','WRONG_SCOPE_ACCEPTED'].includes(e.code)))throw e;
               this.progress(id,{index:initial.index,stage:'RECOVERING',message:'重新核验原范围并恢复一次；没有可靠未提交证据时不新建导出'});
             }
           }

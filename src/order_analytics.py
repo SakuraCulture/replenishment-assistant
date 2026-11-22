@@ -143,7 +143,10 @@ class Evidence:
         stock=values[0][1] if values and not notes else None
         if not values and not notes:notes.append('当时可用数未留存')
         barcode,error=identifier(row.get('F'))
-        target=num(row.get('BF'))
+        payload=order['payload']
+        model_version=sem.saved_model_version(payload['result'],payload.get('model_version'))
+        # Earlier reports used the retained quantile when present. Keep that historical value.
+        target=None if sem.poisson_mean_field(model_version)=='AO' else num(row.get('BF'))
         if target is None:
             predicted,safety=num(row.get('AP')),num(row.get('AL'))
             if predicted is not None and safety is not None:target=predicted+safety
@@ -387,7 +390,8 @@ def validate_basis(path,report,progress=lambda _:None,cancel=None):
 
 
 _ANALYSIS_FIELDS=(('work_revision',),('new_focus',),('result','rows'),('result','store_name'),
-                  ('result','must_list'),('result','must_list_audit'))
+                  ('result','must_list'),('result','must_list_audit'),('model_version',),
+                  ('result','version','model_version'))
 _WAREHOUSES=('山东仓','河北仓')
 
 

@@ -540,7 +540,9 @@ class QueueDialog(QDialog):
             QMessageBox.information(self,'选择重建范围','请先勾选需要结束并重建的采购任务。');return
         names='\n'.join((i.get('head') or i.get('basis') or {}).get('name','')+' · '+i['key']+' · '+STATES.get(i['state'],i['state'])+
             '\n原任务号：'+str((i.get('purchase_observation') or {}).get('taskId') or '未取得')+'；原采购单号：'+str((i.get('result') or {}).get('binding',{}).get('orderId') or '未关联') for i in selected)
-        text='将结束以下本地旧任务，按当前有效签发和付款生成新采购预览：\n'+names+'\n\n旧上传结果可能未核清，重建后再次确认上传可能在平台产生重复单。原平台单不会撤销，请业务核对并作废多余单。旧记录及晚到回执保留；未勾选项不变。本次只生成预览，不直接上传。'
+        text=('按当前有效签发和付款核对重建范围：\n'+names+
+              '\n\n仅已证明未上传或已核实作废且无待处理实收的原任务可重建。'
+              '其余订单请继续核对原采购。新预览需另行确认上传。')
         if QMessageBox.question(self,'确认结束并重建采购预览',text,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return
         try:
             from business_ui import run

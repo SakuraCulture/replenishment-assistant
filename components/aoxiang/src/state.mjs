@@ -155,7 +155,11 @@ export class StateStore{
   collectionEnded(runId){return !!(runId&&this.db.prepare('SELECT 1 FROM retired_collections WHERE run_id=?').get(runId));}
   collectionPurposeForRun(runId,fallback){return (runId&&this.db.prepare('SELECT purpose FROM collection_consumers WHERE run_id=?').get(runId)?.purpose)||collectionPurpose(fallback);}
   requireCollection(runId){if(this.collectionEnded(runId))fail('RUN_ENDED','原采集已在本地结束；晚到结果仅保留在原记录，不接入新采集');}
-  putRun(run){this.requireCollection(run.id);this.write(()=>this.db.prepare('INSERT OR REPLACE INTO runs VALUES(?,?)').run(run.id,JSON.stringify(run)));}
+  putRun(run){
+    this.requireCollection(run.id);
+    this.write(()=>this.db.prepare('INSERT INTO runs VALUES(?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload')
+      .run(run.id,JSON.stringify(run)));
+  }
   getRun(id){const r=this.db.prepare('SELECT payload FROM runs WHERE id=?').get(id);return r?JSON.parse(r.payload):null;}
   putItem(item){this.requireCollection(item.runId);const old=this.db.prepare('SELECT run_id FROM items WHERE id=?').get(item.id);if(old&&old.run_id!==item.runId)fail('ITEM_ID_CHANGED','原采集明细不能改属其他作业');this.write(()=>this.db.prepare('INSERT OR REPLACE INTO items VALUES(?,?,?)').run(item.id,item.runId,JSON.stringify(item)));}
   getItems(runId){return this.db.prepare('SELECT payload FROM items WHERE run_id=?').all(runId).map(r=>JSON.parse(r.payload));}
@@ -192,10 +196,17 @@ export class StateStore{
   putAsset(asset,{replace=false}={}){
     this.requireCollection(asset.runId||asset.sourceRunId);
     const key=assetKey(asset),old=this.getAsset(key);
+    if(old?.runId&&asset.runId){
+      // Historical versions changed rowid when saving a run. Compare the frozen start
+      // time first so reopening a legacy run cannot replace a newer daily choice.
+      const order=this.db.prepare("SELECT rowid AS n,json_extract(payload,'$.createdAt') AS created FROM runs WHERE id=?");
+      const previous=order.get(old.runId),incoming=order.get(asset.runId);
+      if(previous&&incoming){
+        const difference=Date.parse(previous.created)-Date.parse(incoming.created);
+        if(difference>0||(!difference&&previous.n>incoming.n))return key;
+      }
+    }
     if(old&&old.sha256!==asset.sha256&&!replace)fail('ASSET_CONFLICT','同日同范围已有不同内容的资产，需要明确重跑或处理冲突');
-    // A delayed older valid run may retain its own original, but cannot move the current pointer back.
-    const ordinal=id=>id?this.db.prepare('SELECT rowid AS n FROM runs WHERE id=?').get(id)?.n||0:0;
-    if(old?.runId&&asset.runId&&ordinal(old.runId)>ordinal(asset.runId))return key;
     this.write(()=>this.db.prepare('INSERT OR REPLACE INTO assets VALUES(?,?,?)').run(key,asset.sha256,JSON.stringify({...asset,assetKey:key})));return key;
   }
   getAsset(key){const r=this.db.prepare('SELECT payload FROM assets WHERE asset_key=?').get(key);return r?JSON.parse(r.payload):null;}

@@ -3,7 +3,7 @@ import copy
 
 LABELS = {'extreme_restore': '极端缺货自动恢复', 'new_stocking': '新品铺设'}
 HELP = {'extreme_restore': '有效缺货达到30天时，是否自动恢复一个出库单位。普通缺货、有销量双零最低持有不变。',
-        'new_stocking': '是否允许新品首铺及新品清单补足。开启后符合资格的本月关注新品自动带量；往期新品仍手工选择。关闭不删除候选或历史单。'}
+        'new_stocking': '允许符合门店资格的新品自动首铺。全商品档案按归属仓45天清单判定，旧资料沿用本月人工关注清单。'}
 KEY = 'restock_switches'
 
 def values(config):

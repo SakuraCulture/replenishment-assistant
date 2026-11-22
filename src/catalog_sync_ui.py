@@ -48,7 +48,7 @@ class Dialog(QDialog):
         else:
             self.setWindowTitle('聚水潭商品资料 · 刷新当前仓资料');self.resize(1090,710)
             v.addWidget(label('选择仓 → 核验账号 → 获取并采用；两仓独立登录，按仓依次处理。','section'))
-            v.addWidget(label('采用后，补货检查和新分配共用该仓最新资料。原分配批次继续使用当时的库存。当前未签发的计算需重新检查。','muted'))
+            v.addWidget(label('通过对应仓聚水潭账号获取全商品档案。采用后补货检查和新分配共用该仓资料，按首入库日期判断仓新品。','muted'))
         row=QHBoxLayout();self.warehouse=QComboBox();self.warehouse.addItems(warehouses if binding_repair else WAREHOUSES)
         if warehouses:self.warehouse.setCurrentText(warehouses[0])
         row.addWidget(self.warehouse);self.account=label('尚未读取连接设置');row.addWidget(self.account,1);v.addLayout(row)

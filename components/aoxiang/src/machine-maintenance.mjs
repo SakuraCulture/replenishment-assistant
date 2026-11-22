@@ -64,8 +64,9 @@ export class CollectionMaintenance{
     if(action==='delete'&&!CLOSED.has(command.state))fail('COLLECTION_NOT_ENDED','请先结束本次采集，再删除记录');
     const runs=new Set(command.items.map(i=>i.run_id)),identity=command.config_snapshot.tenantBinding;
     const blocked=[],retained=[];
-    // A blocked new command may point at earlier failed attempts for these stores.
-    if(action==='end')for(const code of command.request.scope.warehouse_codes){
+    // Legacy conflicts can require ending a separately identified blocking run.
+    // An independent command owns only the runs frozen in its own scope.
+    if(action==='end'&&!command.durable_queue)for(const code of command.request.scope.warehouse_codes){
       for(const a of this.state.pending(identity,code,undefined,this.purpose(command))){
         if(!a.runId){blocked.push({store:code,task_id:a.taskId||null,reason:'迁入任务尚未核对，请先处理原迁入记录'});continue;}
         runs.add(a.runId);

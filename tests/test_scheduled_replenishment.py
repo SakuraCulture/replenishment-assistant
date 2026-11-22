@@ -135,8 +135,20 @@ class ExecutionTests(unittest.TestCase):
         d=self.work.stores()['A'];d['preset']['config']['warehouses']['河北仓']=[20,2];self.work.save_stores({'A':d})
         self.backend.cancel=None;se.Runner(self.repo,self.backend,self.root).execute(r['id'])
         self.assertEqual(self.repo.get(r['id'])['state'],'COMPLETE');self.assertEqual(self.repo.value(r['id'],'basis'),original)
-    def test_same_day_overlap_not_overwrite(self):
-        first=self.run_one();second=self.run_one();self.assertEqual(first['state'],'COMPLETE');self.assertEqual(second['state'],'REVIEW');self.assertIn('同日',second['message'])
+    def test_same_day_new_run_does_not_overwrite_earlier_plans_or_draft(self):
+        first=self.run_one();saved=self.repo.value(first['id'],'result:A')
+        second=self.run_one()
+        self.assertNotEqual(first['id'],second['id'])
+        self.assertEqual(self.repo.get(first['id']),first)
+        self.assertEqual(second['state'],'COMPLETE',second['message'])
+        self.assertEqual(self.repo.value(first['id'],'result:A'),saved)
+        self.assertEqual(self.work.list_jobs(),[])
+
+    def test_recovery_keeps_browser_wait_bound_to_original_command(self):
+        r=self.repo.manual(self.s);running=self.repo.claim(r['id'])
+        self.repo.change(r['id'],epoch=running['epoch'],stage='等待浏览器可用',external={'ax':'original-command'})
+        self.repo.recover();again=self.repo.next_queued()
+        self.assertEqual((again['id'],again['external'],again['state']),(r['id'],{'ax':'original-command'},'QUEUED'))
     def test_non_alphabetical_plan_order_survives_chunks_and_restore(self):
         old=plans.Repository(self.work.path).list()[0];new=copy.deepcopy(old);new['stores'].reverse();plans.Repository(self.work.path).save(new,old)
         self.s['stores'].reverse();self.s['check_signature']=se.check_signature(se.freeze(self.root,self.s,'2026-11-04'))

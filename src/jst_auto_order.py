@@ -63,6 +63,12 @@ def _online(h):
     return 'BH'+sha256(('replenishment-jst-v1:'+h['number']).encode('utf-8')).hexdigest()[:24].upper()
 
 
+def _successor_online(db, head):
+    from jst_cancellation import redo_case
+    case = redo_case(db, head)
+    return (case or {}).get('successor')
+
+
 def _generation_proof(db, generation, digest):
     require_generation(db,generation,digest)
     require_generation_basis(db,generation)
@@ -74,12 +80,15 @@ def _generation_proof(db, generation, digest):
 
 def _require_plan(db, p):
     proof=p['generation']
+    successor = _successor_online(db, p['head'])
+    if successor is not None and p['online'] != successor:
+        raise Check('仓单执行轮次已变化，请刷新后重新准备下单')
     require_generation(db,{'head':p['head'],'gid':p['gid'],**proof},proof['digest'])
     if upstream_stamp(db,p['head'],proof['legacy_products'])!=proof['stamp']:
         raise Check('门店回传或运营签发已更新，请按有效生成单重新制表')
     if _shop(db,p['head'])!=p['shop'] or store.profile(db,p['head']['store'],p['head']['warehouse'])!=p['profile']:
         raise Check('店铺对应或收货资料已更新，请重新制表并预览')
-    reason=saved_execution_reason(db,p['head'])
+    reason=saved_execution_reason(db,p['head'],allow_redo=True)
     if reason:
         raise Check(reason+'，请核对原订单')
 
@@ -116,9 +125,9 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
                 if old and old['stage'] in store.RELEASED:
                     ready.append(old['online'])
                     continue
-                online = old['online'] if old else _online(h)
+                online = old['online'] if old else (_successor_online(db,h) or _online(h))
                 proof=_generation_proof(db,generation,digest)
-                reason=saved_execution_reason(db,h)
+                reason=saved_execution_reason(db,h,allow_redo=True)
                 if reason:
                     raise Check(reason+'，请核对原订单')
                 shop=_shop(db,h)
@@ -312,11 +321,15 @@ def _legacy_audit_not_dispatched(order):
 
 
 def _record_found(path, order, result, cancel, *, identity_only=False):
+    from jst_cancellation import CANCELLED, PAYMENT_REVIEW, record as record_cancellation
+    if order.get('historical'):
+        return order
     not_dispatched=_legacy_audit_not_dispatched(order)
     if result.get('found') is not True:
         if not_dispatched:
             return {**order,'reason':'尚未查到唯一原单，请继续核对'}
-        return _save(path,order,order['stage'],cancel,reason='按原线上单号尚未查到唯一订单，保留原状态，请继续核对')
+        saved = _save(path,order,order['stage'],cancel,reason='按原线上单号尚未查到唯一订单，保留原状态，请继续核对')
+        return {**saved,'lookup_missing':True}
     proof=order['proof']
     if result.get('binding')!=proof['binding'] or result.get('online')!=order['online']:
         raise Check('回查的企业、店铺或线上单号与原任务不同')
@@ -334,7 +347,7 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
     native_status=result.get('native_status')
     if identity_only and native_status not in confirmation.PAYMENT_STATES | confirmation.REVERSED:
         raise Check('已查到原单，平台状态仍待核')
-    state=reported_state
+    state='review' if native_status == CANCELLED else reported_state
     confirmed=identity_only and native_status in confirmation.PAYMENT_STATES
     if confirmed:
         state='audited' if native_status==confirmation.AUDITED else 'awaiting' if native_status==confirmation.AWAITING else 'ordered'
@@ -373,9 +386,19 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             reason+=' · '+issues
     if confirmed and stage in ('IMPORTED','AUDITED'):
         reason=f'已核对原单，聚水潭当前为“{native_status}”'
+    if native_status == CANCELLED:
+        stage, state = 'CANCELLED', 'cancelled'
+        reason = PAYMENT_REVIEW+'；可沿原仓单重做'
+    elif order['stage'] == 'CANCELLED':
+        raise Check('本次未读到原单已取消的确切状态，请继续核对原单')
     h=order['payload']['head']
     with closing(store.connection(path)) as db,db:
         begin(db,cancel)
+        latest = store.read(db, order['online'])
+        if latest and latest.get('historical'):
+            # The reply belongs to the earlier online number. It cannot change
+            # the successor's state, reference, payment or inventory.
+            return latest
         if allocations.active(db,h)!=order['gid']:
             raise wr.Conflict('外部原单已查到，本机原生成版本已变化，请核对关联')
         current=store.update(db,order,stage,internal=internal,status=state,reason=reason)
@@ -398,6 +421,11 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             detail['native_status']=native_status
         if (stage=='AUDITED' and not identity_only) or native_status in confirmation.REVERSED:
             confirmation.record(db,current,native_status)
+        if stage == 'CANCELLED':
+            from jst_fulfillment_store import current as payment_candidate, observe
+            record_cancellation(db,current)
+            candidate = payment_candidate(db,current['online']) or {}
+            observe(db,current['online'],'PAYMENT_SOURCE_PENDING',reason,candidate.get('digest'))
         _event(db,current,'聚水潭原单核对',detail)
         commit(db,cancel)
     return current
@@ -426,6 +454,10 @@ def _audit(path, browser, order, cancel):
 
 
 def _process(path, browser, order, action, cancel, *, expected_binding=None):
+    if order.get('historical'):
+        if action in ('recover','recover_delete'):
+            return order
+        raise Check('这是已经取消的历史原单，请打开后继下单任务')
     if action=='probe':
         browser.action('probe',order)
         return _save(path,order,order['stage'],cancel,reason='已核对本仓企业、店铺和导入入口')
@@ -482,12 +514,13 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
             ok=False
             with closing(wr.read_connection(path)) as db:
                 current=store.read(db,online)
-            if current and not _legacy_audit_not_dispatched(current):
+            if (current and not current.get('historical') and not _legacy_audit_not_dispatched(current)
+                    and (current['stage']!='CANCELLED' or action in ('recover','recover_delete'))):
                 current=_save(path,current,current['stage'],cancel if action in ('recover','recover_delete') else None,reason=str(exc))
             result={**(current or order),'reason':str(exc)}
-        response={'online':online,'stage':result['stage'],'reason':result['reason'],'ok':ok,
+        response={'online':online,'stage':result['stage'],'reason':result['reason'],'ok':ok and not result.get('lookup_missing'),
                   'sequence':result['sequence'],'internal':result.get('internal')}
-        if (prepare_payment and action in ('submit','recover') and result.get('internal')
+        if (prepare_payment and ok and not result.get('lookup_missing') and action in ('submit','recover') and result.get('internal')
                 and result['stage'] in ('IMPORTED','AUDITED','AUDIT_UNKNOWN','REVIEW')):
             payment=prepare_payment(path,[online],browser,progress,cancel)[0]
             response['payment']=payment

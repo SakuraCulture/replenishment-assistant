@@ -29,7 +29,7 @@ class Client:
         if action == 'purchase.list': return {'total': 1, 'items': [{'id': 'p1', 'state': 'BOUND', 'basis': {'number': 'BH-1', 'warehouse': '河北仓', 'store': 'T'}, 'binding': {'orderId': 'PO1'}}]}
         if action == 'receipt.start': self.receipt.update(active=True, state='RUNNING', sequence=2)
         elif action == 'receipt.pause': self.receipt.update(active=False, state='PAUSED', sequence=3)
-        elif action == 'receipt.synced': self.receipt.update(active=False, state='SYNCED', sequence=6)
+        elif action == 'receipt.synced': self.receipt.update(active=False, state='SYNCED', sequence=6, hostReceipt=kw['receipt'])
         elif action != 'receipt.status': raise AssertionError(action)
         return copy.deepcopy(self.receipt)
 

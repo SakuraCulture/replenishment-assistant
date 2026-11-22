@@ -132,7 +132,7 @@ def start_smoke(app, win, args):
         timer.timeout.connect(tick)
         timer.start(25)
         try:
-            target = button(win.followup, label, direct=True)
+            target = win.followup.cards[label] if label in win.followup.cards else button(win.followup, label, direct=True)
             assert target.isEnabled(), label
             target.click()
         finally:
@@ -205,7 +205,7 @@ def start_smoke(app, win, args):
                     actions = [call[0] for call in port.calls if call[0].startswith('order.') and call[1] == wh]
                     assert actions == ['order.preview', 'order.stage_import', 'order.import', 'order.lookup', 'order.payment_detail']
                 checks.append('每仓刷新一次，预览后只导入一次，再按原单取明细')
-            enter('进入付款核对', 'payment', payment_page)
+            enter('待付款', 'payment', payment_page)
             report['orders'] = evidence()
             checks.append('核对冻结库存、分配明细、内部单号、付款候选及原业务付款状态')
             report['passed'] = True

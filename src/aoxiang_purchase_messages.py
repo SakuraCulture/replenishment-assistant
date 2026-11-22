@@ -1,6 +1,6 @@
 """Business explanations for purchase recovery; raw evidence stays available."""
 
-PAYMENT_PREPARATION_CODES = frozenset({'PAYMENT_MISSING', 'PAYMENT_PENDING', 'PAYMENT_BASIS_CHANGED',
+PAYMENT_PREPARATION_CODES = frozenset({'PAYMENT_MISSING', 'PAYMENT_PENDING', 'PAYMENT_BASIS_CHANGED','PAYMENT_CANCEL_REVIEW',
                                        'PAYMENT_UPSTREAM_NOT_READY', 'PAYMENT_SELECTION_CHANGED', 'PAYMENT_ZERO_QUANTITY'})
 
 
@@ -32,8 +32,9 @@ def explain(error, known=None):
         'IMPORT_SIDE_EFFECT_BLOCKED': '上传保护已阻断额外请求。已有唯一受理回执时只核对原任务和采购明细；尚无回执时保留待核，不能重新上传。具体被拦请求见技术详情。',
         'TASK_PENDING': '翱象已受理，采购单或核对文件仍在处理中。稍后点击“继续核对采购结果”，沿原任务检查完成状态。',
         'TASK_NOT_FOUND': '本次暂未查到原平台任务，已有任务号仍保留。请稍后继续核对采购结果；不要重新导入。',
-        'IMPORT_TASK_FAILED': '翱象报告原导入任务未成功。可继续核对原任务；如需重新导入，在批次中勾选本单，点击“结束所选任务并重建预览”，确认后重新上传。旧平台单由业务核对处理。',
-        'IMPORT_TASK_PARTIAL': '原导入任务未全部成功，可能已有部分商品建单，请核对平台的成功和失败商品。可继续核对原任务，也可在批次中勾选本单后“结束所选任务并重建预览”；重建不撤销旧平台单，业务需处理重复部分。',
+        'IMPORT_TASK_FAILED': '翱象报告原导入任务未成功，请继续核实原任务及采购单结果。',
+        'IMPORT_TASK_PARTIAL': '原导入任务未全部成功，请沿原任务核对成功、失败商品及已有采购单。',
+        'PURCHASE_ORIGINAL_UNRESOLVED': '请继续核对原采购。已有受理、采购和实收待办均按原单处理。',
         'MULTIPLE_IMPORT_TASKS': '同一笔采购发现多个受理任务号，无法自动确定对应采购单。请到单据详情核对原采购记录，保留已有平台单据。',
         'LOGIN_REQUIRED': '翱象登录已失效。请在原浏览器重新登录并核验连接，再继续核对原任务。',
         'WRONG_IDENTITY': '当前Edge登录已变化，与这笔原采购的身份不同；连接无需重新配置。原采购不会自动改绑或重传，请核对原采购归属和当前登录权限后继续原任务。',
@@ -56,7 +57,7 @@ def explain(error, known=None):
         if known.get('taskId'):
             return '已找到原受理任务号。点击“继续核对采购结果”，只读取原采购任务并核对已有采购单。'
         if known.get('uploadAttempted'):
-            return '上传已发起，未取得唯一受理回执，平台可能已建单。可从单据详情核对原采购；需要重做时，在批次中勾选本单后点击“结束所选任务并重建预览”。新预览仍需确认上传，旧平台单由业务处理。'
+            return '上传已发起，原结果待核。请从单据详情或原批次继续核对原采购。'
         return '此记录尚未完成上传结果核对。请先点击“继续核对采购结果”重新读取原任务；若仍缺少回执，再到单据详情核对已有采购单。'
     if code == 'BROWSER_OPERATION_FAILED' and ('next-tree-node-label' in str(error.get('message')) or 'storeCodeList' in str(error.get('message'))):
         return messages['PURCHASE_STORE_NOT_FOUND']

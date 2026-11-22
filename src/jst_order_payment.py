@@ -96,7 +96,7 @@ def prepare(order, receipt, cancel=None):
     return candidate, raw
 
 
-def existing_payment(candidate, payment):
+def existing_payment(candidate, payment, *, original_internal=None):
     """Compare merchandise facts while retaining the official version and its source."""
     if not payment or payment['payload'].get('pending'):
         return None
@@ -118,7 +118,7 @@ def existing_payment(candidate, payment):
     changed = sum(saved.get(sku) != incoming.get(sku) for sku in saved.keys() | incoming.keys())
     refs = {str(r['source_order']['内部订单号']) for r in payment['payload'].get('raw_rows', [])
             if (r.get('source_order') or {}).get('内部订单号')}
-    if refs and refs != {candidate['internal']}:
+    if refs and refs != {candidate['internal']} and refs != {original_internal}:
         raise ValueError('已保存付款单登记了其他聚水潭原单，须先核对关联')
     amounts = [amount for _, amount, _ in saved.values()]
     quantities = [qty for qty, _, _ in saved.values()]

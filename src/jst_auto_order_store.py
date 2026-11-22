@@ -18,9 +18,62 @@ STAGES = {
     'AUDIT_UNKNOWN':'审核结果待核',
     'AUDITED':'普通审核完成',
     'REVIEW':'异常待处理',
+    'CANCELLED':'原单已取消',
 }
-RELEASED = frozenset(('IMPORT_UNKNOWN','IMPORTED','AUDIT_UNKNOWN','AUDITED','REVIEW'))
+RELEASED = frozenset(('IMPORT_UNKNOWN','IMPORTED','AUDIT_UNKNOWN','AUDITED','REVIEW','CANCELLED'))
 UNRESOLVED = ('IMPORT_UNKNOWN','AUDIT_UNKNOWN')
+HISTORY = 'jst_auto_order_history'
+CANCELLATION_HOLDS = 'jst_cancellation_holds'
+LEGACY_CANCELLATION = """stage='REVIEW' AND internal IS NOT NULL
+    AND (reason LIKE '聚水潭状态为已取消%' OR reason LIKE '聚水潭当前为“已取消”%')"""
+
+# rc13 kept the native observation even when a later failed lookup replaced
+# the display note. The event was written after checking the saved binding.
+# Corroborate it with the signed-order snapshot and exact generation.
+# Keep the scoped checks in purchase-host-guard.mjs in step with this query.
+LEGACY_HISTORY_TABLES = frozenset(('jst_auto_orders', 'jst_generations', 'jst_events', 'lifecycle_versions'))
+LEGACY_HISTORY = """
+    FROM jst_auto_orders AS a JOIN jst_generations AS g
+      ON g.gid=a.gid AND g.oid=a.oid AND g.warehouse=a.warehouse
+    WHERE {scope} AND a.internal IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM jst_events AS e WHERE e.day=g.day AND e.oid=a.oid AND e.warehouse=a.warehouse
+          AND e.action='聚水潭原单核对' AND json_valid(e.detail)
+          AND json_extract(e.detail,'$.native_status')='已取消'
+          AND json_extract(e.detail,'$.online')=a.online AND json_extract(e.detail,'$.gid')=a.gid
+          AND json_extract(e.detail,'$.internal')=a.internal
+      )
+      AND g.revision=json_extract(a.payload,'$.head.revision')
+      AND g.digest=json_extract(a.payload,'$.generation.digest')
+      AND json_extract(a.proof,'$.binding.warehouse')=a.warehouse
+      AND json_extract(a.proof,'$.binding.shop')=json_extract(a.payload,'$.shop.name')
+      AND length(json_extract(a.proof,'$.binding.coid'))>0
+      AND length(json_extract(a.proof,'$.binding.uid'))>0
+      AND length(json_extract(a.proof,'$.binding.shop_id'))>0
+      AND EXISTS (
+        SELECT 1 FROM lifecycle_versions AS v
+        WHERE v.oid=a.oid AND v.warehouse=a.warehouse AND v.revision=g.revision AND v.stage='jst_order'
+          AND json_extract(CAST(v.payload AS TEXT),'$.pending')=1
+          AND json_extract(CAST(v.payload AS TEXT),'$.native_status')='已取消'
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.online')=a.online
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.internal')=a.internal
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.gid')=a.gid
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.order_digest')=a.digest
+          AND json_extract(CAST(v.payload AS TEXT),'$.head.digest')=json_extract(a.payload,'$.head.digest')
+          AND json_extract(CAST(v.payload AS TEXT),'$.head.number')=json_extract(a.payload,'$.head.number')
+          AND json_extract(CAST(v.payload AS TEXT),'$.head.store')=json_extract(a.payload,'$.head.store')
+      )
+"""
+
+
+def legacy_cancellation_history(db, head, tables=None):
+    if tables is None:
+        tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if LEGACY_HISTORY_TABLES <= tables:
+        return db.execute('SELECT a.online,a.internal,a.gid' + LEGACY_HISTORY.format(
+            scope='a.oid=? AND a.warehouse=? AND g.revision=?'),
+            (head['oid'], head['warehouse'], head['revision'])).fetchone()
+    return None
 
 
 def profile_schema(db):
@@ -66,9 +119,15 @@ def read(db, online, *, workbook=False):
     if workbook:
         fields+=('workbook',)
     row=db.execute('SELECT '+','.join(fields)+' FROM jst_auto_orders WHERE online=?',(online,)).fetchone()
+    historical = False
+    if row is None and exists(db, HISTORY):
+        row = db.execute('SELECT '+','.join(fields)+' FROM '+HISTORY+' WHERE online=?', (online,)).fetchone()
+        historical = row is not None
     if row is None:
         return None
     value=dict(zip(fields,row))
+    if historical:
+        value['historical'] = True
     value['payload']=wr.loads(value['payload'])
     need(value['payload'],value['digest'],value['online'],value['gid'])
     value['proof']=wr.loads(value['proof']) if value['proof'] else None
@@ -83,6 +142,19 @@ def read_warehouse_order(db, head):
     row = db.execute('SELECT online FROM jst_auto_orders WHERE oid=? AND warehouse=?',
                      (head['oid'],head['warehouse'])).fetchone()
     return read(db,row[0]) if row else None
+
+
+def preserve_cancellation_hold(db, online):
+    # rc13 stored this evidence in the same column as the latest lookup note.
+    # Freeze it in the transaction that would otherwise overwrite it.
+    row = db.execute('SELECT online,oid,warehouse,gid,internal,updated,reason FROM jst_auto_orders '
+                     'WHERE online=? AND '+LEGACY_CANCELLATION, (online,)).fetchone()
+    if row:
+        db.execute('''CREATE TABLE IF NOT EXISTS jst_cancellation_holds(
+            online TEXT PRIMARY KEY,oid TEXT NOT NULL,warehouse TEXT NOT NULL,
+            gid TEXT NOT NULL,internal TEXT NOT NULL,observed TEXT NOT NULL,signal TEXT NOT NULL)''')
+        db.execute('CREATE INDEX IF NOT EXISTS jst_cancellation_hold_scope ON jst_cancellation_holds(oid,warehouse)')
+        db.execute('INSERT OR IGNORE INTO jst_cancellation_holds VALUES(?,?,?,?,?,?,?)', row)
 
 
 def need(payload, digest, online, gid):
@@ -147,7 +219,7 @@ def put_prepared(db, payload, workbook, expected):
     old = read_warehouse_order(db,head)
     if old and old['online'] != online:
         raise wr.Conflict('原下单任务号已变化，请刷新并核对原任务')
-    if not old and db.execute('SELECT 1 FROM jst_auto_orders WHERE online=?',(online,)).fetchone():
+    if not old and read(db, online):
         raise wr.Conflict('线上单号已关联其他仓单，请核对原自动下单任务')
     if old and old['stage'] in RELEASED:
         return old
@@ -170,6 +242,12 @@ def update(db, order, stage, *, proof=None, internal=None, status=None, reason='
     current=db.execute('SELECT sequence,stage FROM jst_auto_orders WHERE online=?',(order['online'],)).fetchone()
     if current!=(order['sequence'],order['stage']):
         raise wr.Conflict('下单任务状态已变化，请刷新原记录')
+    if (internal and exists(db, HISTORY) and db.execute(
+            'SELECT 1 FROM '+HISTORY+' WHERE warehouse=? AND internal=?',
+            (order['payload']['head']['warehouse'], internal)).fetchone()):
+        raise wr.Conflict('回查内部单号已属于历史原单，请核对原订单，不能关联到后继任务')
+    if order['stage'] == 'REVIEW':
+        preserve_cancellation_hold(db,order['online'])
     db.execute('''UPDATE jst_auto_orders SET stage=?,sequence=sequence+1,updated=?,
         proof=?,internal=?,platform_status=?,reason=? WHERE online=?''',
         (stage,wr.now(),wr.dumps(proof if proof is not None else order['proof']),
@@ -177,18 +255,36 @@ def update(db, order, stage, *, proof=None, internal=None, status=None, reason='
     return read(db,order['online'])
 
 
+def archive_cancelled(db, order):
+    """Move a terminal attempt out of the single live warehouse slot."""
+    if order['stage'] != 'CANCELLED' or not order['internal'] or order.get('historical'):
+        raise wr.Conflict('原单取消尚未核实，不能释放下单范围')
+    if not exists(db, HISTORY):
+        db.execute('CREATE TABLE '+HISTORY+' AS SELECT * FROM jst_auto_orders WHERE 0')
+        db.execute('CREATE UNIQUE INDEX jst_auto_history_online ON '+HISTORY+'(online)')
+        db.execute('CREATE UNIQUE INDEX jst_auto_history_internal ON '+HISTORY+'(warehouse,internal)')
+    value = (order['online'], order['sequence'])
+    db.execute('INSERT INTO '+HISTORY+' SELECT * FROM jst_auto_orders WHERE online=? AND sequence=?', value)
+    if db.execute('DELETE FROM jst_auto_orders WHERE online=? AND sequence=?', value).rowcount != 1:
+        raise wr.Conflict('原下单任务状态已变化，请重新核对')
+
+
 def list_orders(path):
     with closing(wr.read_connection(path)) as db:
         if not exists(db):return []
-        return [{'online':online,'stage':stage,'sequence':sequence,'store':store,'name':name,'warehouse':wh,
-                 'number':num,'shop':shop,'sku_count':count,'quantity':qty,'amount':amount,'preview_amount':preview,
-                 'internal':internal,'status':status,'reason':reason}
-                for online,stage,sequence,store,name,wh,num,shop,count,qty,amount,preview,internal,status,reason in db.execute(
-                    '''SELECT online,stage,sequence,json_extract(payload,'$.head.store'),json_extract(payload,'$.head.name'),
-                       warehouse,json_extract(payload,'$.head.number'),json_extract(payload,'$.shop.name'),
-                       json_extract(payload,'$.stats.sku_count'),json_extract(payload,'$.stats.quantity'),
-                       json_extract(payload,'$.stats.amount'),json_extract(proof,'$.amount'),
-                       internal,platform_status,reason FROM jst_auto_orders ORDER BY created DESC,rowid''')]
+        rows = []
+        for table in ('jst_auto_orders', HISTORY):
+            if not exists(db, table):
+                continue
+            fields = ('online','stage','sequence','store','name','warehouse','number','shop',
+                      'sku_count','quantity','amount','preview_amount','internal','status','reason')
+            for row in db.execute('''SELECT online,stage,sequence,json_extract(payload,'$.head.store'),
+                   json_extract(payload,'$.head.name'),warehouse,json_extract(payload,'$.head.number'),
+                   json_extract(payload,'$.shop.name'),json_extract(payload,'$.stats.sku_count'),
+                   json_extract(payload,'$.stats.quantity'),json_extract(payload,'$.stats.amount'),
+                   json_extract(proof,'$.amount'),internal,platform_status,reason FROM '''+table+' ORDER BY created DESC,rowid'):
+                rows.append({**dict(zip(fields,row)), 'historical':table == HISTORY})
+        return rows
 
 
 def _deletion_scope(oid, warehouse):
@@ -232,7 +328,13 @@ def delete_orders(db, scopes):
     require_resolved_deletion(db,scopes)
     for oid,warehouse in scopes:
         condition,arguments=_deletion_scope(oid,warehouse)
-        for table in ('jst_fulfillment_checks','jst_fulfillment_sources'):
+        for order_table in ('jst_auto_orders', HISTORY):
+            if not exists(db, order_table):
+                continue
+            for table in ('jst_fulfillment_checks','jst_fulfillment_sources'):
+                if exists(db,table):
+                    db.execute('DELETE FROM '+table+' WHERE online IN (SELECT online FROM '+order_table+' WHERE '+condition+')',arguments)
+            db.execute('DELETE FROM '+order_table+' WHERE '+condition,arguments)
+        for table in ('jst_cancellation_reviews','jst_cancellations',CANCELLATION_HOLDS):
             if exists(db,table):
-                db.execute('DELETE FROM '+table+' WHERE online IN (SELECT online FROM jst_auto_orders WHERE '+condition+')',arguments)
-        db.execute('DELETE FROM jst_auto_orders WHERE '+condition,arguments)
+                db.execute('DELETE FROM '+table+' WHERE '+condition,arguments)

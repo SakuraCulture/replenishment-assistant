@@ -1,10 +1,50 @@
 """Single definition of calculation/candidate/execution result meanings. No UI or Excel I/O."""
 from decimal import Decimal
+import re
 import model
 
 SIGNED_GROUPS=('往期新品','本月新品','中心仓动销补货清单')
 
 def numeric(v):return model.number(v)
+
+
+def saved_model_version(result, outer_version=None):
+    """The outer version identifies the same saved snapshot as result."""
+    if isinstance(outer_version,str) and outer_version.strip():return outer_version.strip()
+    metadata=result.get('version')
+    version=metadata.get('model_version') if isinstance(metadata,dict) else None
+    return version.strip() if isinstance(version,str) and version.strip() else None
+
+
+def poisson_mean_field(model_version):
+    """Select the calculation basis from the version saved with the result."""
+    version = re.fullmatch(r'(\d+)\.(\d+)\.(\d+)-rules', str(model_version))
+    if version is None:
+        return None
+    return 'AO' if tuple(map(int, version.groups())) >= (0, 3, 7) else 'AP'
+
+
+def poisson_mean_label(model_version):
+    return {'AO':'趋势调整前需求 AO','AP':'趋势调整后需求 AP'}.get(poisson_mean_field(model_version),'未留存')
+
+
+def safety_stock_formula(model_version):
+    forecast_field = {'0.3.6-rules':'AP', '0.3.7-rules':'AO', '0.3.8-rules':'AP'}.get(model_version)
+    return f'max(Q − {forecast_field}, 0)' if forecast_field else '未留存'
+
+
+def pre_round_target(row):
+    """Read the target from the saved forecast and buffer, without recalculating either."""
+    forecast, safety = row.get('AP'), row.get('AL')
+    return forecast + safety if numeric(forecast) and numeric(safety) else None
+
+
+def effective_probability(result, row):
+    config = result.get('effective_settings', {}).get('parameter_config') or result.get('config') or {}
+    profile = '快销' if row.get('U') == '无分类' else row.get('U')
+    default = config.get('parameters', {}).get('probability')
+    category = config.get('profile_parameters', {}).get(profile, {}).get('probability', default)
+    return row.get('_effective_probability', category)
 
 
 def fmt(v,digits=2):
@@ -92,11 +132,15 @@ def signed_rows(rows, profile):
     """Classify signed rows in source order, including an iterable of row blocks."""
     from new_products import is_new
     from new_product_focus import members
+    from warehouse_newness import for_row
     focused=members(profile)
     for row in rows:
         if row.get('_source')!='资料匹配' or not work_eligible(row):continue
         if row.get('_preissue',{}).get('current_month'):yield '本月新品',row
-        elif is_new(row):yield ('本月新品' if row['E'] in focused else '往期新品'),row
+        elif is_new(row):
+            basis=for_row(row)
+            recent=basis['new'] if basis else row['E'] in focused
+            yield ('本月新品' if recent else '往期新品'),row
         elif orderable(row):yield '中心仓动销补货清单',row
 
 
@@ -156,7 +200,7 @@ def coverage(d):
     return (max(d['K'],0)+max(d['L'],0)+d['AS'])/rate if rate>0 else None
 
 
-def explanation(d):
+def _execution_explanation(d):
     if exclusion_reason(d):return '默认不补：'+exclusion_reason(d)+'；计算结果仅供参考'
     if issue_text(d):return issue_text(d)
     adjustment=d.get('_preissue',{})
@@ -165,7 +209,8 @@ def explanation(d):
     if d.get('_budget_overrun'):return d['_budget_reason']+f"；本店超预算{d['_budget_overrun']['overspend']:.2f}元（上限5%）"
     if d.get('_new_requested',0)>0:
         source=d.get('_monthly_first_fill')
-        return ('本月新品自动首铺 '+fmt(d['_new_requested'])+'；'+source['source'] if source else '新品首铺 · 人工选择 '+fmt(d['_new_requested']))+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))+('；保留必采最低持有量' if d.get('_mandatory_holding',{}).get('required_quantity',0)>d['_new_requested'] else '')
+        automatic='仓45天新品自动首铺 ' if source and source.get('warehouse_newness') else '本月新品自动首铺 '
+        return (automatic+fmt(d['_new_requested'])+'；'+source['source'] if source else '新品首铺 · 人工选择 '+fmt(d['_new_requested']))+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))+('；保留必采最低持有量' if d.get('_mandatory_holding',{}).get('required_quantity',0)>d['_new_requested'] else '')
     if d.get('_budget_gap',0)>0:
         return ('必卖：' if d.get('_must_sell') else '普通：')+d.get('_budget_reason','')+('；必采最低持有仍有缺口' if d.get('_holding_gap') and d.get('_mandatory_holding') else '')
     if d.get('_mandatory_holding') and (d['_mandatory_holding'].get('state')!='已核验' or d['_mandatory_holding'].get('added_quantity',0)>0):
@@ -174,6 +219,44 @@ def explanation(d):
     if d['_source']=='地采商品':return '商品资料未匹配，按地采单列；保留销量库存，本版不补造价格或数量'
     if d.get('_preview'):return '已匹配，等待计算'
     return d.get('BM','')
+
+
+def extreme_recovery_reason(d):
+    """Explain the recorded recovery and execution without replaying the rule."""
+    if d.get('AW')!='极端缺货自动拉回':return None
+    audit=d.get('_extreme_restore') or {};saved=d.get('BM') or ''
+    recovery=d.get('BO');unit=str(d.get('G') or '库存单位')
+    if not numeric(recovery) and numeric(d.get('AQ')):recovery=d['AQ']
+    if audit.get('enabled') is False or '极端恢复已关闭' in saved:
+        reason='极端缺货，已关闭自动恢复，恢复量 0 '+unit
+    elif numeric(recovery) and recovery>0:
+        step=d.get('BD')
+        prefix='按一个出库单位恢复' if recovery==step or '恢复一个出库单位' in saved else '记录的恢复量为'
+        reason=f'极端缺货，{prefix} {fmt(recovery,10)} {unit}'
+    elif recovery==0 and '已有最低覆盖' in saved:
+        reason='极端缺货，已有最低覆盖，无需追加，恢复量 0 '+unit
+    else:return '未留存'
+    executed=order_quantity(d)
+    if numeric(recovery) and numeric(executed) and executed!=recovery:
+        detail=_execution_explanation(d)
+        adjustment=detail if detail and detail!=saved else '调整原因未留存'
+        reason+='。后续调整原因 '+adjustment
+    if numeric(executed):return reason+f'。最终执行量 {fmt(executed,10)} {unit}'
+    return reason+'。最终执行量 '+('未留存' if executed is None else str(executed))
+
+
+def net_demand_reason(d):
+    recovery=extreme_recovery_reason(d)
+    if recovery is not None:return recovery
+    if d.get('BG')=='分位计算待复核':return '泊松分位校验待复核'
+    if not all(numeric(d.get(k)) for k in ('AP','AL','K','L','AQ')):return '未留存'
+    ap,al,stock,inbound=(fmt(d[k],10) for k in ('AP','AL','K','L'))
+    return f'趋势后需求 {ap} ＋ 安全库存 {al} − 可用库存 {stock} − 在途库存 {inbound}，最低取 0'
+
+
+def explanation(d):
+    recovery=extreme_recovery_reason(d)
+    return _execution_explanation(d) if recovery is None else recovery
 
 
 def routing(d):return d.get('_meta',{}).get('routing',{})

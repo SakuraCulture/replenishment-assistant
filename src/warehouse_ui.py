@@ -7,15 +7,21 @@ from ui_controls import label,button,FileCard
 import result_semantics as semantics
 from app_defaults import supply_route_choices
 import engine,warehouse_catalog
+import warehouse_newness as newness
 
 class WarehouseUi:
     def make_warehouse_panel(self):
         panel=QFrame();panel.setObjectName('card');v=QVBoxLayout(panel);v.addWidget(label('分仓商品资料 · 分别维护','section'));self.catalog_labels={};self.catalog_buttons={}
         self.catalog_sync_btn=button('聚水潭连接设置 / 刷新仓资料',self.open_catalog_sync);v.addWidget(self.catalog_sync_btn)
         for wh in warehouse_catalog.WAREHOUSES:
-            row=QHBoxLayout();row.addWidget(label(wh,'section'));row.addStretch();pick=button('导入'+wh+'资料',lambda checked=False,w=wh:self.choose_catalog(w));self.catalog_buttons[wh]=pick;row.addWidget(pick);row.addWidget(button('查看'+wh+'资料',lambda checked=False,w=wh:self.show_catalog(w)));v.addLayout(row)
+            row=QHBoxLayout();row.addWidget(label(wh,'section'));row.addStretch()
+            pick=button('导入'+wh+'资料',lambda checked=False,w=wh:self.choose_catalog(w))
+            self.catalog_buttons[wh]=pick;row.addWidget(pick)
+            row.addWidget(button('查看'+wh+'资料',lambda checked=False,w=wh:self.show_catalog(w)))
+            recent=button('45天新品',lambda checked=False,w=wh:self.show_recent(w))
+            recent.setObjectName('warehouseRecent'+wh);row.addWidget(recent);v.addLayout(row)
             text=label('尚未导入','muted');self.catalog_labels[wh]=text;v.addWidget(text)
-        v.addWidget(label('按仓维护当前商品资料。补货检查和新分配批次共用该版本；可用数取本次导入或同步的库存快照。','muted'))
+        v.addWidget(label('支持聚水潭全商品档案和普通商品资料。全商品档案按归属仓首入库日期生成45天新品。','muted'))
         from business_flow_ui import disclosure
         toggle,maintenance,mv=disclosure('恢复与旧版资料兼容',panel);v.addWidget(toggle);v.addWidget(maintenance)
         self.catalog_maintenance_toggle=toggle
@@ -33,10 +39,13 @@ class WarehouseUi:
             c=self.catalogs.get(wh)
             self.catalog_buttons[wh].setText(('更新' if c else '导入')+wh+'资料')
             if not c:text.setText('尚未导入；表内不需要仓库标识');continue
-            text.setToolTip('资料版本：'+c['revision']);text.setText(f"{len(c['items']):,}款\n{Path(c['source_path']).name} · 导入 {c['imported_at']}")
+            kind='全商品档案' if c.get('kind')=='jst_full_archive' else '普通商品资料'
+            pending=f" · 档案待核 {c['quarantine_count']} 行" if c.get('quarantine_count') else ''
+            text.setToolTip('资料版本：'+c['revision'])
+            text.setText(f"{kind} · {len(c['items']):,}款{pending}\n{Path(c['source_path']).name} · 导入 {c['imported_at']}")
     def choose_catalog(self,warehouse):
         from import_ui import choose
-        paths=choose(self,'catalog','导入到'+warehouse+'（完整更新该仓快照）');path=paths[0] if paths else None
+        paths=choose(self,'catalog','导入到'+warehouse+'（全商品档案或普通商品资料）');path=paths[0] if paths else None
         if path:self.import_catalog_path(path,warehouse)
     def restore_catalog(self):
         if self.worker or getattr(self,'readonly',False):return
@@ -62,7 +71,16 @@ class WarehouseUi:
         message=catalog['warehouse']+f"：{len(old['items']) if old else 0} → {len(catalog['items'])} 款\n原版本：{old['revision'] if old else '未导入'}\n新版本：{catalog['revision']}\n将完整更新并保存，跨批次复用；本次须重新检查，历史快照不变。"
         warning=warehouse_catalog.execution_warning(catalog)
         if warning:message+='\n\n'+warning
+        manual=(catalog.get('source_observation') or {}).get('scope')=='manual'
+        if catalog.get('quarantine_count'):
+            message+=f"\n{catalog['quarantine_count']} 行档案资料缺失，单列待核。"
+        if manual:
+            message+='\n\n请核对聚水潭报表的发货仓为'+catalog['warehouse']+'，销量无限制、状态全部、已取消排除零数据，并保留排除发货前取消商品。'
         if not confirm(self,'确认更新并保存仓资料',message):return
+        if manual:
+            catalog['source_observation'].update(scope='manual_confirmed',reportWarehouse=catalog['warehouse'],
+                query={'sales':'unlimited','enabled':'all','excludeZero':False,
+                       'excludeCancelledBeforeShipment':True,'reportedBy':'导入人确认'})
         try:self.catalog_repository.save(catalog,**options)
         except Exception as exc:self.failed('仓资料保存失败，原资料保留：'+str(exc));return
         self.current_warehouse_adopted(catalog)
@@ -87,6 +105,10 @@ class WarehouseUi:
             for j,k in enumerate(fields):table.setItem(i,j,QTableWidgetItem(semantics.fmt(r.get(k))))
         search.textChanged.connect(lambda text:[table.setRowHidden(i,text.lower() not in (str(r.get('商品编码',''))+' '+str(r.get('商品名称',''))).lower()) for i,r in enumerate(rows)])
         v.addWidget(button('关闭',dialog.accept));dialog.exec()
+    def show_recent(self,warehouse):
+        from warehouse_new_ui import NewWarehouseProducts
+        from work_repository import today
+        NewWarehouseProducts(self,warehouse,self.catalogs.get(warehouse),today()).exec()
     def install_route_widgets(self,store,row,saved):
         primary=QComboBox();primary.addItem('请选择主仓',None);secondary=QComboBox();secondary.addItem('无从仓',None)
         for wh in warehouse_catalog.WAREHOUSES:

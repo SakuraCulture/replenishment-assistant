@@ -54,7 +54,7 @@ class Manager(QObject):
         return bool(getattr(h,'_data_location_preparing',False) or getattr(h,'worker',None) or pending is not None and not pending._completed or
                     maintenance or
                     getattr(getattr(h,'browser_startup',None),'workers',None) or
-                    getattr(h,'_aoxiang_dialog',None) or h.catalog_sessions.session.lease or
+                    h.catalog_sessions.session.lease or
                     h.jst_generator.worker or getattr(getattr(h,'stockout',None),'worker',None) or getattr(h,'closing',False))
 
     def poll(self):
@@ -93,9 +93,6 @@ class Manager(QObject):
 
     def start(self,run):
         if self.worker or self.publisher or self.closing:return
-        overlap=set((self.host.loaded or {}).get('stores',{})).intersection(s['code'] for s in run['schedule'].get('stores',[]))
-        if overlap:
-            self.repo.change(run['id'],state='REVIEW',message='当前工作台包含相同门店，请先保存并新建空白草稿，再继续原任务');return
         self.cancel=threading.Event();self.running_id=run['id']
         backend=self.platform(self.cancel)
         task=Call(lambda p:Runner(self.repo,backend,self.folder,self.cancel,p).execute(run['id']),self);self.worker=task

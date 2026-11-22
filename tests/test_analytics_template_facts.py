@@ -74,6 +74,16 @@ class TemplateFacts(unittest.TestCase):
         self.raw['AL']='待核';self.f.save_payload()
         self.assertIsNone(self.first()['template_attributes']['target_holding'])
 
+    def test_new_model_target_uses_forecast_plus_safety_in_full_and_selective_reads(self):
+        self.f.p['model_version']='0.3.7-rules'
+        self.raw.update(BF=4, AP=1.9074375, AL=2.59375)
+        self.f.save_payload()
+        self.assertEqual(self.first()['template_attributes']['target_holding'],D('4.5011875'))
+        detail=analytics.collect(self.f.path,self.f.spec,_mode='analysis_detail')
+        self.assertEqual(detail['rows'][0]['template_attributes']['target_holding'],D('4.5011875'))
+        self.raw['AL']='待复核';self.f.save_payload()
+        self.assertIsNone(self.first()['template_attributes']['target_holding'])
+
     def test_invalid_numeric_fields_stay_unknown_and_explicit_zero_survives(self):
         self.raw.update(F=1234567890123456,K='NaN',J=True,L='Infinity',BF='待核',AP=None,AL=8,
                         BD='待核箱规',_mandatory_holding={'minimum':'待核'})

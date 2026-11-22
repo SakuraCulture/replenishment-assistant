@@ -52,7 +52,7 @@ def run_upload(runner,job):
                             raise ComponentError('PURCHASE_RECEIPT_CONFLICT','原采购已有受理记录，上传标记不一致，请核对原任务')
                         update(item,state='ACCEPTED',submission_started=True,error=None)
                         continue
-                    if r['uploadAttempted']:raise ComponentError('SUBMISSION_UNKNOWN','原上传结果未知；可核对原任务或明确结束并重建')
+                    if r['uploadAttempted']:raise ComponentError('SUBMISSION_UNKNOWN','原上传结果未知，请继续核对原任务')
                     configuration=client.request('configuration');suppliers=Directory(store.folder).suppliers()
                     validate_for_upload(runner.business_path,p,configuration,suppliers,cancel=runner.cancel)
                     update(item,submission_started=True)

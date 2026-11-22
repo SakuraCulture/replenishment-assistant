@@ -48,6 +48,19 @@ def version_rows(db, head, stage):
     )
 
 
+def has_formal_document(db, oid, warehouse, stage):
+    """A later draft or source revision does not erase a saved business fact."""
+    if not exists(db):
+        return False
+    for row in db.execute(
+        'SELECT version,saved,digest,payload FROM lifecycle_versions WHERE oid=? AND warehouse=? AND stage=?',
+        (oid, warehouse, stage),
+    ):
+        if not decode(row)['payload'].get('pending'):
+            return True
+    return False
+
+
 def save_receipt(head, stage, version, changed, digest):
     receipt = {'number': head['number'], 'revision': head['revision'],
                'stage': stage, 'version': version, 'changed': changed}

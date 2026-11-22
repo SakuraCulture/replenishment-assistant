@@ -30,6 +30,14 @@ class BusinessScenes(unittest.TestCase):
         w=self.win
         self.assertEqual(w.sections.count(),5)
         self.assertEqual([b.text() for b in w.top_nav],['首页','补货出单','决策复查','订单跟踪','参数设置'])
+        from PySide6.QtWidgets import QPushButton
+        home={b.text() for b in w.sections.widget(0).findChildren(QPushButton)}
+        self.assertTrue({'继续已保存的今日草稿','全部未收齐订单','经营分析与报表','数据维护','定时补货'}<=home)
+        for name in ('补货出单','决策复查','订单跟踪','参数设置'):
+            self.assertNotIn('进入'+name,home)
+        for b,target in zip(w.top_nav,(0,1,2,3,4)):
+            b.click()
+            self.assertEqual(w.sections.currentIndex(),target)
         self.assertTrue(w.sections.widget(3).isAncestorOf(w.followup))
         self.assertIs(w.tracking_tabs.widget(0),w.followup)
         self.assertIs(w.tracking_tabs.widget(1),w.analytics)

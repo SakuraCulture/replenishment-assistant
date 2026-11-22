@@ -220,6 +220,7 @@ class Workbench(ParameterUi,BatchWindow):
     def reset_job(self):
         self._hydrating=True;self.initializing=True
         self.active_plan=None
+        self.saved_job_model_version=None
         self._store_parameter_origins={}
         self.reset_calculation_snapshot()
         try:
@@ -240,7 +241,8 @@ class Workbench(ParameterUi,BatchWindow):
         self.active_plan=clone(p.get('active_plan'))
         self._hydrating=True;self._restoring=True;self.initializing=True
         try:
-            self.job_day=record['day'];self.saved_time=record['saved'];self.readonly=self.job_day!=wr.today() or p['model_version']!=MODEL_VERSION
+            self.saved_job_model_version=p.get('model_version')
+            self.job_day=record['day'];self.saved_time=record['saved'];self.readonly=self.job_day!=wr.today() or self.saved_job_model_version!=MODEL_VERSION
             self.pending_copy=clone(p.get('pending_copy'))
             self.loaded=clone(p['loaded']);self.catalogs=clone(p['catalogs']);self.profile=clone(p['profile']);self.store_presets=clone(p['store_presets']);self.overrides=clone(p['overrides']);self.default_by_store=clone(p['default_by_store']);self.states=clone(p['states']);self.results=clone(p['results']);self.input_dirty=p['input_dirty'];self.export_log=clone(p.get('export_log',[]));self.run_codes=[];self.current_store=None;self.result=None;self.dirty=True
             if self.loaded:self.loaded['intake']['frozen']=True

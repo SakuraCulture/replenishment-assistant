@@ -453,4 +453,6 @@ class BatchWindow(WarehouseUi,SessionWindow):
             path,_=export_locations.save_file(self,'保存汇总结果','补货结果_'+stamp+'.xlsx','Excel (*.xlsx)',options=QFileDialog.Option.DontConfirmOverwrite)
             if not path:return
             if not path.lower().endswith('.xlsx'):path+='.xlsx'
-        self.job(batch_service.export_batch,(results,states,path,split),self.export_ok)
+        from functools import partial
+        export=partial(batch_service.export_batch,model_version=self.saved_job_model_version)
+        self.job(export,(results,states,path,split),self.export_ok)

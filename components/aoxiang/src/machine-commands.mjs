@@ -3,7 +3,7 @@ import schema from '../assets/schemas/machine.command.schema.json' with {type:'j
 import {canonical,sha256,now,fail} from './common.mjs';
 import {validateConfig} from './config.mjs';
 import {planReplenishmentRun,insertRunPlan} from './run-plan.mjs';
-import {resumableTask} from './collection-recovery.mjs';
+import {resumableTask,resumableReview} from './collection-recovery.mjs';
 import {collectionPurpose} from './state.mjs';
 
 export const PROTOCOL_VERSION=1;
@@ -71,7 +71,7 @@ export class MachineCommands{
     this.db.prepare('INSERT INTO machine_events VALUES(?,?,?)').run(record.id,record.sequence,JSON.stringify(event));
     return event;
   }
-  async reserve(command,config){
+  async reserve(command,config,{durableQueue=false}={}){
     validateCommand(command);await validateConfig('portable.config',config);
     if(command.account_binding.account_id!==config.tenantBinding.accountId||command.account_binding.merchant_code!==config.tenantBinding.merchantCode)fail('WRONG_IDENTITY','自动化命令账号与组件绑定不同');
     const fingerprint=commandFingerprint(command);
@@ -90,6 +90,7 @@ export class MachineCommands{
       }));
       for(const plan of plans)Object.assign(plan.run,{purpose:collectionPurpose(command),consumer:command.consumer||{purpose:'replenishment'}});
       const recovered=plans.map(plan=>{
+        if(collectionPurpose(command)==='replenishment')return null;
         const pending=this.state.pending(config.tenantBinding,plan.run.targets[0].buyerWarehouseCode,undefined,collectionPurpose(command));
         if(pending.length!==1||!resumableTask(pending[0]))return null;
         const attempt=pending[0],run=this.state.getRun(attempt.runId),items=this.state.getItems(attempt.runId);
@@ -101,6 +102,7 @@ export class MachineCommands{
       const at=now();
       const record={id:command.command_id,fingerprint,request:structuredClone(command),state:'QUEUED',sequence:1,
         created_at:at,updated_at:at,config_snapshot:structuredClone(config),
+        ...(durableQueue?{durable_queue:true}:{}),
         items:plans.map((p,index)=>({index,warehouse_code:p.run.targets[0].buyerWarehouseCode,run_id:recovered[index]?.run.id||p.run.id,state:'PENDING',result:null,error:null,
           ...(recovered[index]?{task_id:recovered[index].attempt.taskId,phase:'RECOVER_KNOWN_TASK',resumed_accepted_task:true}:{})})),
         result:null,error:null};
@@ -114,7 +116,7 @@ export class MachineCommands{
       return {created:true,record};
     });
   }
-  advance(id,expectedSequence,next,{kind='STATE',detail={},result,error,items}={}){
+  advance(id,expectedSequence,next,{kind='STATE',detail={},result,error,items,durableQueue=false}={}){
     return this.state.write(()=>{
       const current=this.get(id);
       if(!current)fail('COMMAND_NOT_FOUND','未找到自动化作业');
@@ -124,12 +126,11 @@ export class MachineCommands{
           const old=current.items[index];
           if(old.state!=='NEEDS_REVIEW')return item.state===old.state;
           if(item.state==='NEEDS_REVIEW')return true;
-          const source=this.state.getItems(old.run_id);
-          return item.state==='PENDING'&&source.length===1&&source.every(i=>{const a=this.state.getAttempt(i.attemptId);return a&&!a.additionalTaskIds?.length&&
-            (a.stage==='CANCELLED_BEFORE_SUBMIT'||a.taskId&&['ACCEPTED','RUNNING','FINISHED','DOWNLOADED','VALIDATED','PUBLISHING','SUCCEEDED'].includes(a.stage));});
+          return item.state==='PENDING'&&resumableReview(this.state,old,collectionPurpose(current.request)==='replenishment');
         });
       if(!transitions[current.state]?.includes(next)&&!reviewResume)fail('COMMAND_TRANSITION','该作业状态不能执行此操作');
       const record={...current,state:next,sequence:current.sequence+1,updated_at:now()};
+      if(next==='QUEUED'&&durableQueue)record.durable_queue=true;
       if(next==='QUEUED'&&this.db.prepare("SELECT COUNT(*) AS n FROM machine_commands WHERE state IN ('QUEUED','RUNNING','PAUSE_REQUESTED')").get().n>=32)fail('QUEUE_FULL','自动化等待队列已满');
       if(items!==undefined){
         if(items.some((item,index)=>current.items[index]?.state==='ENDED'&&canonical(item)!==canonical(current.items[index])))fail('COLLECTION_ENDED','所选旧采集项已结束，不能由晚到结果恢复');
@@ -147,6 +148,7 @@ export class MachineCommands{
     // Caller must hold coordinator.lock.sqlite, proving there is no live owner.
     const changed=[];
     for(const record of this.list())if(['QUEUED','RUNNING','PAUSE_REQUESTED'].includes(record.state)){
+      if(record.state==='QUEUED'&&record.durable_queue)continue;
       changed.push(this.advance(record.id,record.sequence,record.state==='QUEUED'?'PAUSED':'INTERRUPTED',{
         kind:'OWNER_EXITED',detail:{reason:'执行进程已退出；继续时核对原 run 和平台任务，不创建新任务'}
       }).record);

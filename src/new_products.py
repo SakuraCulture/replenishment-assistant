@@ -4,6 +4,7 @@ from decimal import Decimal
 import allocation
 import result_semantics as sem
 from runtime_support import checkpoint
+import warehouse_newness
 
 AUTO_RULE='monthly-first-fill-1'
 FIRST_FILL_KEYS=('_new_requested','_candidate_qty','_candidate_amount','_execution_qty','_execution_amount','_new_stockout_basis')
@@ -11,6 +12,7 @@ FIRST_FILL_KEYS=('_new_requested','_candidate_qty','_candidate_amount','_executi
 
 def calculation_settings(settings, new_focus, day):
     out=copy.deepcopy(settings)
+    out['warehouse_new_day']=day
     if new_focus is not None:out['monthly_first_fill']={'day':day,'focus':copy.deepcopy(new_focus)}
     return out
 
@@ -21,20 +23,28 @@ def seed_monthly(result, context, cancel=None,*,budget=None):
     The compact per-row undo evidence avoids retaining a second complete store
     result just to allow a later manual change. It never updates saved results.
     """
-    if not context or context.get('focus') is None:return
-    from datetime import date
     import new_product_focus as focus
     import first_fill
     from restock_policy import result_values
-    profile=focus.validate(context['focus']);day=date.fromisoformat(context['day']).isoformat()
-    audit={'rule':AUTO_RULE,'day':day,'month':profile['month'],'focus_revision':profile['revision'],'selected':0,'budget_input':budget}
+    context=context or {}
+    warehouse_basis={d['E']:basis for d in result['rows'] if (basis:=warehouse_newness.for_row(d))}
+    profile=focus.validate(context['focus']) if context.get('focus') is not None else None
+    if not warehouse_basis and profile is None:return
+    day=context.get('day') or next(iter(warehouse_basis.values()))['day']
+    audit={'rule':AUTO_RULE,'day':day,'month':profile['month'] if profile else day[:7],
+           'focus_revision':profile['revision'] if profile else None,'selected':0,'budget_input':budget}
+    if warehouse_basis:
+        audit['warehouse_rule']=warehouse_newness.RULE
+        audit['warehouse_versions']={b['warehouse']:b['catalog_revision'] for b in warehouse_basis.values()}
     result['monthly_first_fill']=audit
-    if profile['month']!=day[:7]:audit['state']='关注月份与业务日期不同，未自动首铺';return
+    monthly_ok=profile is not None and profile['month']==day[:7]
+    if not warehouse_basis and not monthly_ok:audit['state']='关注月份与业务日期不同，未自动首铺';return
     if not result_values(result)['new_stocking']:audit['state']='本店新品铺设已关闭';return
-    focused=focus.members(profile);selected={};skipped={}
+    focused=focus.members(profile) if monthly_ok else set();selected={};skipped={}
     for d in result['rows']:
         checkpoint(cancel)
-        if d['E'] not in focused:continue
+        basis=warehouse_basis.get(d['E'])
+        if not (basis['new'] if basis is not None else d['E'] in focused):continue
         reason=blocked_reason(d)
         if reason:skipped[d['E']]=reason;continue
         q,note=first_fill.suggestion(d)
@@ -43,12 +53,15 @@ def seed_monthly(result, context, cancel=None,*,budget=None):
         original={k:{'present':k in d,'value':copy.deepcopy(d.get(k))} for k in FIRST_FILL_KEYS}
         floor=d.get('_mandatory_holding',{})
         actual=max(q,floor['required_quantity']) if floor.get('state')=='已核验' else q
+        source='归属仓45天新品，且满足现有门店首铺资格' if basis else '本月关注且满足现有新品资格'
         d.update(_new_requested=q,_candidate_qty=actual,_candidate_amount=float(Decimal(str(actual))*Decimal(str(d['V']))),
                  _execution_qty=actual,_execution_amount=float(Decimal(str(actual))*Decimal(str(d['V']))),
-                 _new_stockout_basis='本月关注且满足现有新品资格，自动使用归属仓首铺量',
-                 _monthly_first_fill={'rule':AUTO_RULE,'source':note,'original_fields':original})
+                 _new_stockout_basis=source+'，自动使用归属仓首铺量',
+                 _monthly_first_fill={'rule':AUTO_RULE,'source':note,'original_fields':original,
+                                      **({'warehouse_newness':basis} if basis else {})})
         selected[d['E']]=q
-    audit.update(state='已自动安排' if selected else '没有符合自动首铺资格的本月新品',selected=len(selected),skipped=skipped)
+    audit.update(state='已自动安排' if selected else '没有符合自动首铺资格的新品' if warehouse_basis else '没有符合自动首铺资格的本月新品',
+                 selected=len(selected),skipped=skipped)
     if selected:result['new_products']={'selection':selected,'rule':AUTO_RULE,'priority':allocation.POLICY,'automatic':True}
 
 

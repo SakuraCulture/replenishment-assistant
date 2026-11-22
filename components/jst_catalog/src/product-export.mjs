@@ -200,24 +200,24 @@ async function boundDownloadUrl(page,history,row,recordId){
   }catch(e){await release();throw e;}
   finally{pending.dispose();}
 }
-export function exportRowReady(text,expectedRows){
+export function exportRowReady(text,expectedRows,type='商品资料'){
   // A visible row is not a completed export: progress/count cells can still be
   // blank or zero while the native task is generating or the table is rendering.
   if(/失败|已取消/.test(text))throw new CatalogError('PLATFORM_FAILED','原导出任务失败，请核对平台记录');
   if(!text.includes('下载完成'))return false;
-  if(!text.split(/\s+/).includes('商品资料')||!text.split(/\s+/).includes(String(expectedRows)))
+  if(!text.split(/\s+/).includes(type)||!text.split(/\s+/).includes(String(expectedRows)))
     throw new CatalogError('FILE_IDENTITY','原任务已完成，但类型或条数与查询不符；未下载其他任务');
   return true;
 }
-export async function receiveKnownExport(page,{recordId,expectedRows,output,expectedPath,signal,onProgress=()=>{},timeout=120000}){
+export async function receiveKnownExport(page,{recordId,expectedRows,output,expectedPath,signal,onProgress=()=>{},timeout=120000,type='商品资料',history:existingHistory,verifyAddress,receiveFile=receiveBoundFile}){
   recordId=nativeTaskId(recordId);if(!Number.isSafeInteger(expectedRows)||expectedRows<1)throw Error('原任务缺少已核对行数');
-  check(signal);const history=await openHistory(page);const until=Date.now()+timeout;let row;
+  check(signal);const history=existingHistory||await openHistory(page);const until=Date.now()+timeout;let row;
   for(;;){
     check(signal);row=history.locator('div._jt_row').filter({has:history.getByText(recordId,{exact:true})});
     const count=await row.count();if(count>1)throw Error('同任务号出现多条记录，未下载');
     if(count===1){
       const text=await row.innerText();
-      if(exportRowReady(text,expectedRows))break;
+      if(exportRowReady(text,expectedRows,type))break;
     }
     if(Date.now()>=until)throw new CatalogError('TASK_PENDING','原导出任务尚未完成，请继续原任务；未重新提交');
     onProgress('WAIT_EXPORT','等待原任务 '+recordId+' 完成');await sleep(1500);check(signal);
@@ -232,7 +232,9 @@ export async function receiveKnownExport(page,{recordId,expectedRows,output,expe
   if(urls.length===1)url=nativeFileUrl(urls[0].replaceAll('&amp;','&'));
   else ({url,release}=await boundDownloadUrl(page,history,row,recordId));
   try{
-    return {...await receiveBoundFile(page,url,{recordId,expectedRows,expectedPath,output,signal,onProgress}),
+    if(verifyAddress)verifyAddress(url);
+    if(receiveFile!==receiveBoundFile){await release();release=async()=>{};}
+    return {...await receiveFile(page,url,{recordId,expectedRows,expectedPath,output,signal,onProgress}),
       fileIdentity:urls.length?'native_row_link':'native_task_callback'};
   }finally{await release();}
 }
@@ -249,11 +251,7 @@ export async function receiveBoundFile(page,address,{recordId,expectedRows,expec
       throw Error('原生文件接收 HTTP '+response.status());
     }
     const bytes=await response.body();check(signal);
-    if(bytes.length<100||bytes.length>60*1024*1024||bytes.subarray(0,4).toString('hex')!=='504b0304')throw Error('下载不是受支持的XLSX');
-    const sha256=crypto.createHash('sha256').update(bytes).digest('hex');await fs.mkdir(output,{recursive:true});
-    const file=path.join(output,'聚水潭商品资料_'+recordId+'_'+sha256.slice(0,12)+'.xlsx');
-    await fs.writeFile(file,bytes,{flag:'wx'}).catch(async e=>{if(e.code!=='EEXIST')throw e;if(crypto.createHash('sha256').update(await fs.readFile(file)).digest('hex')!==sha256)throw Error('已有文件内容冲突');});
-    return {file,recordId,expectedRows,bytes:bytes.length,sha256,nativePath:url.origin+url.pathname,sourceBytesPreserved:true};
+    return await saveExportBytes(bytes,url,{recordId,expectedRows,output});
   }finally{
     // The shared request context outlives this download and retains response
     // bodies until explicitly disposed. Release only this response, after its
@@ -269,7 +267,15 @@ export async function receiveBoundFile(page,address,{recordId,expectedRows,expec
     }
   }
 }
-function observe(page,event,predicate,timeout){
+export async function saveExportBytes(bytes,address,{recordId,expectedRows,output}){
+  const url=nativeFileUrl(String(address));recordId=nativeTaskId(recordId);
+  if(bytes.length<100||bytes.length>60*1024*1024||bytes.subarray(0,4).toString('hex')!=='504b0304')throw Error('下载不是受支持的XLSX');
+  const sha256=crypto.createHash('sha256').update(bytes).digest('hex');await fs.mkdir(output,{recursive:true});
+  const file=path.join(output,'聚水潭商品资料_'+recordId+'_'+sha256.slice(0,12)+'.xlsx');
+  await fs.writeFile(file,bytes,{flag:'wx'}).catch(async e=>{if(e.code!=='EEXIST')throw e;if(crypto.createHash('sha256').update(await fs.readFile(file)).digest('hex')!==sha256)throw Error('已有文件内容冲突');});
+  return {file,recordId,expectedRows,bytes:bytes.length,sha256,nativePath:url.origin+url.pathname,sourceBytesPreserved:true};
+}
+export function observe(page,event,predicate,timeout){
   let listener,timer,finish;
   const promise=new Promise((resolve,reject)=>{
     finish=(error,value)=>{clearTimeout(timer);page.off(event,listener);error?reject(error):resolve(value);};
@@ -287,11 +293,12 @@ export function exportScopeValid(body,scope){
   return Object.entries(s).every(([k,v])=>ignore.has(k)||v===null||v===undefined||v===''||(Array.isArray(v)&&!v.length));
 }
 export const nativeExportEndpoint=url=>url.pathname==='/erp/webapi/ItemApi/Export/ItemSkuAndInventory';
-export async function validateProductFile(file,{validator,expectedRows,warehouse,output,signal}){
+export async function validateProductFile(file,{validator,expectedRows,warehouse,output,signal,evidence}){
   check(signal);if(!validator?.executable||!Array.isArray(validator.prefix))throw Error('缺少包内文件校验入口');
   const id=crypto.randomUUID(),request=path.join(output,'validate-'+id+'.request.json'),result=path.join(output,'validate-'+id+'.result.json');
   const sha256=crypto.createHash('sha256').update(await fs.readFile(file)).digest('hex');
-  await atomic(request,{schema:1,file,sha256,warehouse,expected_rows:expectedRows,candidate:path.join(output,'candidate-'+id+'.json')});
+  await atomic(request,{schema:1,file,sha256,warehouse,expected_rows:expectedRows,candidate:path.join(output,'candidate-'+id+'.json'),
+    ...(evidence?{evidence}:{})});
   let failed;
   try{await execFileAsync(validator.executable,[...validator.prefix,'--request',request,'--result',result],{windowsHide:true,timeout:120000,maxBuffer:65536,signal});}catch(e){failed=e;}
   check(signal);const receipt=await fs.readFile(result,'utf8').then(JSON.parse).catch(()=>null);

@@ -4,7 +4,7 @@ from contextlib import closing
 from pathlib import Path
 from PySide6.QtCore import Qt,QTimer
 from PySide6.QtGui import QFont,QFontDatabase
-from PySide6.QtWidgets import QApplication,QLabel,QMessageBox,QTableView
+from PySide6.QtWidgets import QApplication,QLabel,QMessageBox,QPushButton,QTableView
 from PySide6.QtTest import QTest
 
 
@@ -68,14 +68,14 @@ def start_smoke(app,win,args):
             win.show_section(3);w=win.analytics
             if hasattr(w.parentWidget(),'setCurrentWidget'):w.parentWidget().setCurrentWidget(w)
             w.start.setText(days[0]);w.end.setText(days[1]);started=time.monotonic()
-            if mode == 'allocation-revisions':
+            if mode in ('allocation-revisions','sku-completion'):
                 w.lifecycle_range.setCurrentIndex(w.lifecycle_range.findData(''))
             QTest.mouseClick(w.query_btn,Qt.MouseButton.LeftButton)
             wait(lambda:w.worker is None and w.report is not None,timeout=240)
             observation.update(query_seconds=time.monotonic()-started,query_days=days,warehouse_orders=len(w.report['heads']))
             assert len(w.report['heads'])==order_count
-            assert [(w.export_kind.itemText(i),w.export_kind.itemData(i)) for i in range(w.export_kind.count())]==[('订单经营分析','analysis'),('订单经营细则分析','analysis_detail')]
-            checks.append('Actual analytics menu contains the two requested names and retains original query range')
+            assert [(w.export_kind.itemText(i),w.export_kind.itemData(i)) for i in range(w.export_kind.count())]==[('订单经营分析','analysis'),('订单经营细则分析','analysis_detail'),('SKU订单完成率汇总','sku_completion')]
+            checks.append('Actual analytics menu contains all three exports and retains the query range')
             capture(w,'menu')
             def export(index,selected=False):
                 w.export_kind.setCurrentIndex(index)
@@ -86,7 +86,54 @@ def start_smoke(app,win,args):
                 observation['export_seconds']=time.monotonic()-started
                 created=set((out/'exports').glob('*.xlsx'))-previous;assert len(created)==1
                 path=created.pop();assert path.name.startswith(w.export_kind.currentText()+'_');files.append(str(path));return path
-            if mode == 'allocation-revisions':
+            if mode == 'sku-completion':
+                index = w.export_kind.findData('sku_completion')
+                for selected in (False, True):
+                    if selected:
+                        w.selected = {fixture['head']['number']}
+                        w.controls()
+                    path = export(index, selected)
+                    with closing(openpyxl.load_workbook(path, data_only=True)) as book:
+                        assert book.sheetnames == ['SKU汇总']
+                        sheet = book.active
+                        body = {row[0]: row[2:] for row in sheet.iter_rows(min_row=8, values_only=True)}
+                        assert body['0001'] == (5, 5, 1, 1, 1)
+                        if selected:
+                            assert set(body) == {'0001'} and sheet['E5'].value == 1
+                        else:
+                            assert set(body) == {'0001', '0002'} and body['0002'] == ('待核',) * 5
+                            assert sheet['E5'].value == '待核'
+                        assert sheet.freeze_panes == 'A8' and 'SkuOrders' in sheet.tables
+                checks.append('SKU完成率独立文件已通过当前范围与勾选仓单两个按钮核验')
+                overview = win.followup
+                win.tracking_tabs.setCurrentWidget(overview)
+                overview.start.setText(days[0]); overview.end.setText(days[1]); overview.search.setText('BH-T')
+                overview.query()
+                wait(lambda: overview.reader.active is None and overview.reader.pending is None and len(overview.records) == 2)
+                buttons = {b.text() for b in overview.findChildren(QPushButton, options=Qt.FindChildOption.FindDirectChildrenOnly)}
+                assert '聚水潭导入单' in buttons
+                assert {'进入回传处理', '进入运营签发', '进入付款核对', '进入收货核对'}.isdisjoint(buttons)
+                capture(overview, '流程处理')
+                for selected in (False, True):
+                    overview.select_page(selected)
+                    expected_scope = {h['number'] for h in overview.checked.values()}
+                    assert len(expected_scope) == (2 if selected else 0)
+                    for title, stage in [('待回传','return'),('待运营签发','operations'),('待付款','payment'),('待收货','receipt')]:
+                        observed = []
+                        def inspect_stage():
+                            dialog = QApplication.activeModalWidget()
+                            try:
+                                panel = dialog.panel
+                                observed.append((dialog.stage, {h['number'] for h in panel.fixed_scope or ()},
+                                                 panel.start.text(), panel.end.text(), panel.search.text()))
+                            finally:
+                                dialog.reject()
+                        QTimer.singleShot(30, inspect_stage)
+                        QTest.mouseClick(overview.cards[title], Qt.MouseButton.LeftButton)
+                        assert observed == [(stage, expected_scope, days[0], days[1], 'BH-T')]
+                        wait(lambda: overview.reader.active is None and overview.reader.pending is None)
+                checks.append('四个上方环节入口在未勾选和同店双仓勾选时均打开正确的工作页和订单范围')
+            elif mode == 'allocation-revisions':
                 from openpyxl import load_workbook
                 for case in fixture['cutoffs']:
                     if case['as_of']:

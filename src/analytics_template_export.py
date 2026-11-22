@@ -382,7 +382,7 @@ def append_detail(book, report, rows, progress=lambda _: None, cancel=None):
         sheet.merge(reference)
     sheet.row(); sheet.row(['补货SKU生命周期明细'], 'title')
     sheet.row(['每行对应一张仓单的一个SKU。排除行省略。模型建议为0时，签发至实收有任一阶段确认数量大于0就保留。生命周期范围为'+lifecycle_scope.label(report.get('query',{}))+'。'], 'note')
-    sheet.row(['种类按阶段数量>0计1；货值=数量×签发冻结V单价。目标持有量为当时预测需求含安全库存，不按签发量倒推；数量非同单位物量。'
+    sheet.row(['种类按阶段数量>0计1；货值=数量×签发冻结V单价。新口径目标持有量为趋势后需求加安全库存。旧签发按当时口径展示；数量非同单位物量。'
                '库存分配读取当时的仓单记录。'], 'note')
     sheet.row(['比率＝对应后阶段数量÷前阶段数量。' + DISPLAY_NOTE], 'note')
     groups = [None] * len(DETAIL_HEADERS)

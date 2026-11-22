@@ -17,7 +17,7 @@ from aoxiang_purchase_pricing import HEADERS, preview_rows, intent_summary
 STATES = {'RESERVED': '已准备，尚未上传', 'PREPARING': '核验上传准备', 'READY': '准备就绪',
           'SUBMITTING': '正在上传，等待唯一回执', 'ACCEPTED': '已受理，待核对原任务', 'VERIFYING': '正在核对采购单',
           'BOUND': '已关联采购单', 'PAUSED': '已停止，尚未上传', 'FAILED_PRECHECK': '准备未通过，尚未上传',
-          'NEEDS_REVIEW': '结果待核，可继续核对或从批次重建', 'CANCELLED_BEFORE_UPLOAD': '已在上传前取消', 'SUPERSEDED':'已结束并重建，旧平台单保留'}
+          'NEEDS_REVIEW': '结果待核，请继续核对原采购', 'CANCELLED_BEFORE_UPLOAD': '已在上传前取消', 'SUPERSEDED':'已结束并重建，旧平台单保留'}
 
 
 class PurchaseDialog(BindingActions, ComponentDialog):

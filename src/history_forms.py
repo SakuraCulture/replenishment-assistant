@@ -35,13 +35,17 @@ def work_parts(repo,order,paths,*,db=None):
 
 def form(repo,order,scope,sku,cancel=None):
     p=order['payload'];r=p['result']
+    version=sem.saved_model_version(r,p.get('model_version'))
+    model_basis={'模型版本':version or '未留存','泊松均值依据':sem.poisson_mean_label(version),
+                 '安全库存公式':sem.safety_stock_formula(version)}
     wh=order.get('warehouse')
     if wh:
         import archive_orders as ao
         r={**r,'rows':[d for d in r['rows'] if ao.warehouse(d)==wh]};r['summary']=sem.summarize(r['rows']);order={**order,'number':ao.number(order['number'],wh)}
     if scope=='单据概况':
         data={'补货单号':order['number'],'业务日期':order['day'],'门店编码':order['store'],'门店名称':r['store_name'],'签发修订':order['revision'],'归档时间':order['saved'],'签发金额':r['summary']['amount'],'签发款数':r['summary']['positive'],'说明':'原签发建议只读；门店回传独立保存'}
-    elif scope=='当时参数':data={'实际生效设置':r.get('effective_settings'),'当时完整参数方案':p.get('preset'),'模型实际配置':r.get('config'),'关注清单':p.get('new_focus'),'首铺选择':r.get('new_products'),'输入来源':r.get('sources')}
+        data.update(model_basis)
+    elif scope=='当时参数':data={**model_basis,'实际生效设置':r.get('effective_settings'),'当时完整参数方案':p.get('preset'),'模型实际配置':r.get('config'),'关注清单':p.get('new_focus'),'首铺选择':r.get('new_products'),'输入来源':r.get('sources')}
     elif scope=='签发前调整':
         d=next((x for x in r['rows'] if x['E']==sku),None)
         if d is None:return [['商品','请选择本单商品','提示']]
@@ -74,10 +78,12 @@ def form(repo,order,scope,sku,cancel=None):
               '后续资料有效性':{'当前进度':downstream['status'],'提示':downstream['note'],'各环节已有效核对':downstream['health']} if downstream else '未分仓历史，仅能查原快照',
               '证据边界':'上述为原签发快照和已保存后续单据；保底中间值不等于实际增量，历史未留存的归因不补写。'}
         if d.get('_preissue'):data['签发前调整']={'原自动安排':d['_preissue']['automatic_quantity'],'最终量':d['_preissue']['quantity'],'差额':d['_preissue']['delta'],'原因':d['_preissue']['reason'],'查看方式':'选择“签发前调整”查看完整清单与风险依据'}
+        data.update(model_basis,净需求依据=sem.net_demand_reason(d))
     elif scope in ('商品建议与销量库存','商品完整计算依据'):
         d=next((x for x in r['rows'] if x['E']==sku),None)
         if d is None:return [['商品','请输入本单内的精确商品编码','提示']]
-        if scope=='商品完整计算依据':data=d
+        if scope=='商品完整计算依据':
+            data={**model_basis,'净需求依据':sem.net_demand_reason(d),**d}
         else:
             data={k:d.get(k) for k in 'A B D E G H I J K L N BA BD V AU AS _base_qty _candidate_qty _execution_qty _execution_amount _budget_gap'.split()}
             if d.get('_budget_overrun'):

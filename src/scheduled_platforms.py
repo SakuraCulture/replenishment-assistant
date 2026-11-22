@@ -4,7 +4,8 @@ import uuid
 from pathlib import Path
 from runtime_support import Cancelled, checkpoint
 from aoxiang_jobs import Jobs
-from aoxiang_acquisition import prepare, manifest, ACTIVE
+from aoxiang_acquisition import configuration_for_new, prepare, manifest, ACTIVE
+from aoxiang_client import ComponentError
 import catalog_sync_validation as validation
 from source_archive import capture
 from catalog_sync import stock_observation
@@ -78,11 +79,13 @@ class Platforms:
 
     def sales(self,runner,basis):
         repo=runner.repo;rid=runner.rid;run=repo.get(rid);external=dict(run['external'])
-        jobs=Jobs(self.folder/'aoxiang'/'jobs.sqlite3');client=self.ax_client()
+        jobs=Jobs(self.folder/'aoxiang'/'jobs.sqlite3')
+        checkpoint(self.cancel)
+        self.ax=self.ax_manager.session.lease(cancelled=self.stopped,control_only=True)
+        self.ax.start();client=self.ax
         cid=external.get('ax')
         if cid is None:
-            from aoxiang_current_login import current_configuration
-            config=current_configuration(client,lambda message:runner.update('获取补货建议',message),self.cancel)
+            config=configuration_for_new(client,lambda message:runner.update('获取补货建议',message),self.cancel)
             job=prepare(jobs,config,[i['code'] for i in basis['plan']['stores']],'refresh',day=run['day'])
             cid=job['id'];external['ax']=cid;repo.change(rid,epoch=runner.epoch,external=external)
             # Intent is linked before dispatch; same command has a durable idempotency contract.
@@ -94,18 +97,27 @@ class Platforms:
                 job=jobs.refresh(client,cid)
                 if job['state'] in ('PAUSED','INTERRUPTED'):
                     jobs.observe(cid,client.request('resume',command_id=cid))
+                elif job['state']=='NEEDS_REVIEW':
+                    try:jobs.observe(cid,client.request('collection.continue',command_id=cid))
+                    except ComponentError as error:
+                        if error.code!='COMMAND_TRANSITION':raise
                 elif job['state']=='COMPLETED_WITH_ERRORS':
                     wanted=run.get('retry_codes')
                     ids=[i['index'] for i in job['record']['items'] if i['state']=='FAILED' and (wanted is None or i['warehouse_code'] in wanted)]
                     if ids:jobs.observe(cid,client.request('retry',command_id=cid,indices=ids,sequence=job['sequence']))
-        self.active_ax=cid;sent_stop=False;deadline=time.monotonic()+3600
+        self.active_ax=cid;sent_stop=False;deadline=None
         while True:
             job=jobs.refresh(client,cid)
             if job['state'] not in ACTIVE:break
-            if (self.stopped() or time.monotonic()>deadline) and not sent_stop:
+            waiting=job['state']=='QUEUED'
+            if not waiting and deadline is None:
+                deadline=time.monotonic()+3600
+            if (self.stopped() or deadline is not None and time.monotonic()>deadline) and not sent_stop:
                 client.request('pause',command_id=cid);sent_stop=True
             items=job['record']['items'];done=sum(i['state'] in ('SUCCEEDED','FAILED','ENDED') for i in items)
-            runner.update('获取补货建议',f'已处理 {done}/{len(items)} 家；'+str(job['record'].get('message') or job['state']))
+            stage='等待浏览器可用' if waiting else '获取补货建议'
+            detail=stage if waiting else job['record'].get('message') or '正在按本批范围取数'
+            runner.update(stage,f'{detail} · 已处理 {done}/{len(items)} 家')
             time.sleep(.5)
         self.active_ax=None
         if sent_stop or self.stopped():raise Cancelled('取数已安全暂停；继续原任务')

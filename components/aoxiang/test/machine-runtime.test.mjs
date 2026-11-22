@@ -19,9 +19,31 @@ async function context(t,executeItem,options={}){
   const runtime=new MachineRuntime({commands,executeItem,...options});t.after(async()=>{await runtime.shutdown();state.close();});
   const reserve=async(id='job-1')=>commands.reserve({protocol_version:1,command_id:id,operation:'replenishment.export',
     account_binding:{account_id:'100',merchant_code:'M'},scope:{warehouse_codes:['W2','W1','W3']},
-    basis_versions:{store_mapping:mappingVersion(config)},policy:{freshness:'reuse'}},config);
+    basis_versions:{store_mapping:mappingVersion(config)},policy:{freshness:'reuse'}},config,{durableQueue:options.durableQueue});
   return {root,state,commands,runtime,reserve};
 }
+
+test('真实占用期间保持排队，重复继续和进程交接沿用同一命令',async t=>{
+  const executed=[];let browserBusy=true;
+  const c=await context(t,async({record,item})=>{
+    executed.push([record.id,item.index]);return {file:item.warehouse_code};
+  },{canStart:()=>!browserBusy,durableQueue:true});
+  const original=(await c.reserve('queued')).record;
+  c.runtime.kick();
+  assert.equal(c.runtime.active,null);
+  assert.equal(c.runtime.resume('queued').sequence,original.sequence);
+  assert.equal(c.runtime.resume('queued').sequence,original.sequence);
+  await c.runtime.shutdown();
+  assert.deepEqual(c.commands.get('queued'),original);
+  assert.deepEqual(c.commands.recoverInterrupted(),[]);
+  const runtime=new MachineRuntime({commands:c.commands,executeItem:c.runtime.executeItem,canStart:()=>!browserBusy});
+  t.after(async()=>{if(runtime.pumping)await runtime.shutdown();});
+  runtime.kick();
+  assert.deepEqual(executed,[]);
+  browserBusy=false;await runtime.idle();
+  assert.equal(c.commands.get('queued').state,'SUCCEEDED');
+  assert.deepEqual(executed,[['queued',0],['queued',1],['queued',2]]);
+});
 test('一店受理未知不拦其他店；无回执不可重发，迟到确切回执只恢复原项',async t=>{
   const visits=[];let receipt=false;
   const c=await context(t,async({item})=>{
