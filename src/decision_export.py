@@ -12,7 +12,8 @@ INPUTS=[('库存单位','G'),('日销（原14天日均）','H'),('近7天销量'
 STAGES=[('近7天参考日均','W'),('8至14天参考日均','Z'),('15至30天参考日均','AA'),
         ('近7天有货天数','AX'),('8至14天有货天数','AY'),('15至30天有货天数','AZ'),
         ('销售状态','BL'),('校正综合日均','AN'),('趋势修正系数','AM'),('安全库存量','AL'),
-        ('保护期预测基值','AO'),('趋势后需求','AP'),('净需求','AQ'),('常规规整量','AR'),
+        ('趋势调整前保护期需求','AO'),('趋势调整后保护期需求','AP'),
+        ('泊松分位数 Q','BF'),('泊松分位校验','BG'),('净需求','AQ'),('常规规整量','AR'),
         ('常规补货资格','BI'),('库存额度参考日均','BH'),('增长额度参考日均','BN'),
         ('库存额度目标量','库存额度目标量'),('额度允许数量','BK'),('资金金额上限','BT'),
         ('资金允许整箱数量','BU'),('最低恢复参考量','BQ'),('原计算建议量','AS')]
@@ -56,7 +57,9 @@ def master_snapshot(repo,order,warehouse,skus,cancel=None):
 def projected(order,warehouse,*,repo=None,cancel=None):
     import archive_orders as ao
     from parameter_schema import HELP
-    result=order['payload']['result']
+    payload=order['payload'];result=payload['result']
+    model_version=payload.get('model_version') or result.get('version',{}).get('model_version')
+    mean_field=sem.poisson_mean_field(model_version)
     rows=[d for d in result['rows'] if ao.warehouse(d)==warehouse]
     originals,note=master_snapshot(repo,order,warehouse,{d['E'] for d in rows},cancel)
     config=result.get('effective_settings',{}).get('parameter_config') or result.get('config') or {}
@@ -88,7 +91,11 @@ def projected(order,warehouse,*,repo=None,cancel=None):
         record.update({name:d.get(key) for name,key in INPUTS})
         record.update({'参数·'+HELP[key][0]:actual.get(key) for key in PARAMETERS})
         record.update({name:d.get(key) for name,key in STAGES})
-        record.update({'原模型建议量':d.get('_base_qty'),'一箱例外追加量':d.get('_audit',{}).get('applied') and d.get('BD') or 0,
+        mean=d.get(mean_field)
+        record.update({'泊松均值依据':mean_field if sem.numeric(mean) else None,
+                       '泊松均值':mean if sem.numeric(mean) else None,
+                       '取整前目标持有量（AP＋AL）':sem.pre_round_target(d),
+                       '原模型建议量':d.get('_base_qty'),'一箱例外追加量':d.get('_audit',{}).get('applied') and d.get('BD') or 0,
                        '必采最低持有基数':audit.get('minimum'),'必采最低补货量':audit.get('required_quantity'),
                        '必采保底追加量':audit.get('added_quantity'),'预算前候选量':d.get('_candidate_qty'),
                        '预算分配量':d.get('_allocated_qty') if d.get('_budget_active') else None,
@@ -96,7 +103,7 @@ def projected(order,warehouse,*,repo=None,cancel=None):
                        '人工改量差额':manual.get('delta'),'人工改量原因':manual.get('reason'),
                        '补后预计持有天数':coverage,'执行状态':sem.order_status(d),'业务说明':sem.explanation(d),
                        '资料说明':'；'.join(filter(None,[note,sem.issue_text(d)])),
-                       '模型版本':order['payload'].get('model_version',result.get('version',{}).get('model_version')),
+                       '模型版本':model_version,
                        '最终签发执行数':q,'最终签发金额':sem.order_amount(d),'核心决策理由':__import__('normal_exports').decision(d)})
         return record
     from itertools import chain
@@ -111,6 +118,8 @@ def definitions():
           ['字段缺失','历史未记录的字段保持空白；未知不当作0。原始商品资料请使用独立原表下载入口。'],
           ['数量链路','原模型建议→一箱例外后的原计算建议→必采最低持有→预算候选/分配→人工调整→最终签发。'],
           ['周期与参数','采用商品当时实际仓周期、分类权重与分类覆盖；通用参数保留当时有效配置。'],
+          ['泊松分位数 Q','服务水平 p 对应 Q。0.3.7-rules 起使用趋势调整前保护期需求 AO 作为均值。旧版依据留存模型版本显示。'],
+          ['取整前目标持有量','当时趋势调整后保护期需求 AP 加上安全库存 AL。库存额度单独计算。'],
           ['预算','门店预算为全店共享金额，不能把两仓表中的预算相加。'],
           ['补后预计持有天数','按（非负可用＋非负在途＋最终签发执行数）÷当时预测日均；无正预测留空。'],
           ['业务字段','商品类目与模型权重分类分别保存；供货仓库存来自当时资料，非当前实时库存。'],

@@ -11,7 +11,7 @@ from math import exp, log, sqrt, floor, ceil, lgamma, isfinite
 from statistics import NormalDist, stdev
 from typing import Any
 
-VERSION = "2026-10-22-8+5-v1+sales-floor-zero-v1"
+VERSION = "2026-10-22-8+5-v1+sales-floor-zero-v1+base-poisson-v1"
 FLOOR_RULE = 'sales-floor-zero-v1'
 PENDING = "待复核"
 CONFLICTS = {"销量窗口异常", "缺货销量冲突"}
@@ -295,14 +295,20 @@ def calculate(inputs: dict, rules: Rules | None = None, *, extreme_restore: bool
             d["AM"] = 1+ax/7*(max(0,min(trend,supported/d["AN"]))-1)
         d["AO"] = d["AN"]*(d["AG"]+d["AH"])
         d["AP"] = d["AO"]*d["AM"]
-        demand = d["AP"]
+        base_demand = d["AO"]
         normal_q = NormalDist().inv_cdf(p.probability)
-        d["BE"] = max(0,floor(demand+normal_q*sqrt(demand)+(normal_q**2-1)/6)-3)
-        d["BF"] = 0 if demand == 0 else d["BE"] + sum(poisson_cdf(d["BE"]+t,demand)<p.probability for t in range(10))
+        d["BE"] = max(0, floor(base_demand + normal_q*sqrt(base_demand) + (normal_q**2-1)/6) - 3)
+        d["BF"] = 0 if base_demand == 0 else d["BE"] + sum(
+            poisson_cdf(d["BE"]+t, base_demand) < p.probability for t in range(10)
+        )
         q = d["BF"]
-        d["BG"] = "通过" if demand == 0 or (poisson_cdf(q,demand)>=p.probability and (q==0 or poisson_cdf(q-1,demand)<p.probability)) else "分位计算待复核"
-        d["AL"] = max(q-demand,0) if d["BG"] == "通过" else PENDING
-        d["AQ"] = max(demand+d["AL"]-k-l,0) if d["BG"] == "通过" else PENDING
+        quantile_valid = base_demand == 0 or (
+            poisson_cdf(q, base_demand) >= p.probability
+            and (q == 0 or poisson_cdf(q-1, base_demand) < p.probability)
+        )
+        d["BG"] = "通过" if quantile_valid else "分位计算待复核"
+        d["AL"] = max(q - base_demand, 0) if quantile_valid else PENDING
+        d["AQ"] = max(d["AP"] + d["AL"] - k - l, 0) if quantile_valid else PENDING
         historical = d["BC"] if bb == "销量窗口异常" else j/(30-d["BA"])
         corrected = ((j-s14)/max(az,p.historical_reference_days/p.single_sample_multiple)
                      if bb == "单段样本" else d["AN"]*d["AM"])

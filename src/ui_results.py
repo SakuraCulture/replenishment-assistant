@@ -195,13 +195,17 @@ class ResultsView:
         self.filtered_caption.setText(f"当前筛选 {s['rows']:,} 行  ·  执行金额 {s['amount']:,.2f} 元  ·  计算金额 {s['calculated_amount']:,.2f} 元  ·  已排除 {s['excluded']:,} 行  ·  数据异常 {s['issues']:,} 行")
 
     def show_detail(self,index):
-        from business_presenter import stage_rows,field_row,parameter_rows
+        from business_presenter import stage_rows,field_row,parameter_rows,demand_rows
+        from version_info import MODEL_VERSION
         d=self.model.rows[self.proxy.mapToSource(index).row()];result=self.result or {}
         def table(rows):
             return '<table width="100%">'+''.join('<tr>'+''.join('<td style="padding:5px">'+html.escape(str(x))+'</td>' for x in row)+'</tr>' for row in rows)+'</table>'
         content='<h2>'+html.escape(str(d.get('D','')))+'</h2><p>'+html.escape(str(d.get('AU','')))+' · '+html.escape(str(d.get('E','')))+'</p>'
         content+='<h3>最终安排</h3>'+table([['数量',semantics.order_quantity(d),d.get('G') or '库存单位'],['金额',semantics.order_amount(d),'元']])
         content+='<p>'+html.escape(semantics.explanation(d))+'</p><h3>数量形成过程</h3>'+table(stage_rows(d,final_label='最终安排量（待签发）'))
+        if not d.get('_preview') and d.get('_source')=='资料匹配':
+            version=result.get('version',{}).get('model_version',MODEL_VERSION)
+            content+='<h3>保护期需求与安全库存</h3>'+table(demand_rows(result,d,version))
         if d['_meta'].get('product_tags_known'):
             content+='<h3>商品标签</h3><p>'+html.escape(str(d['_meta'].get('product_tags') or '未标记标签'))+'</p>'
         content+='<h3>销量与库存</h3>'+table([field_row(d,k) for k in ('H','I','J','K','L','AG','AH','BD')])
@@ -215,6 +219,8 @@ class ResultsView:
             else:self.details.setHtml(content)
         self.details.anchorClicked.connect(follow);self.details.setHtml(content);self.detail_panel.show()
     def show_technical_detail(self,d):
+        from business_presenter import demand_rows
+        from version_info import MODEL_VERSION
         esc=lambda x:html.escape(semantics.fmt(x))
         def group(title,items):return '<h3>'+title+'</h3><table width="100%">'+''.join(f'<tr><td style="color:#60777D;padding:5px 0">{html.escape(k)}</td><td align="right">{esc(v)}</td></tr>' for k,v in items)+'</table>'
         content=f'<h2>{esc(d.get("D"))}</h2><p>{esc(d.get("E"))} · {d["_source"]}</p>'
@@ -238,9 +244,11 @@ class ResultsView:
         elif not d.get('_preview'):
             rate=d['AN']*d['AM'] if semantics.numeric(d.get('AN')) and semantics.numeric(d.get('AM')) else None
             current=(max(d['K'],0)+max(d['L'],0))/rate if rate and semantics.numeric(d.get('K')) and semantics.numeric(d.get('L')) else None
-            content+=group('需求预测与库存额度',[('预测日均',rate),('额度基准日均 BH',d.get('BH')),('增长调整日均 BN',d.get('BN')),('当前可售天数',current),('到货天数',d.get('AH')),('备货天数',d.get('AG')),('安全库存',d.get('AL')),('库存额度总量',d.get('库存额度目标量'))])
+            result=self.result or {};version=result.get('version',{}).get('model_version',MODEL_VERSION)
+            content+=group('保护期需求与安全库存',[(name,value) for name,value,_,_ in demand_rows(result,d,version)])
+            content+=group('需求预测与库存额度',[('预测日均',rate),('额度基准日均 BH',d.get('BH')),('增长调整日均 BN',d.get('BN')),('当前可售天数',current),('到货天数',d.get('AH')),('备货天数',d.get('AG')),('库存额度总量',d.get('库存额度目标量'))])
             content+='<p style="color:#60777D">库存额度受历史销量约束，未统一为预测日均。可售天数按预测日均折算；无正预测时不显示为0天。</p>'
-            content+=group('从需求到计算建议',[('净需求',d.get('AQ')),('向上整箱',d.get('BJ')),('额度后',d.get('AR')),('资金前',d.get('BR')),('原模型建议',d.get('_base_qty')),('原模型金额',d.get('_base_amount')),('计算建议',semantics.quantity(d)),('计算金额',semantics.amount_value(d)),('按计算建议持有天数',semantics.coverage(d))])
+            content+=group('从需求到计算建议',[('向上整箱',d.get('BJ')),('额度后',d.get('AR')),('资金前',d.get('BR')),('原模型建议',d.get('_base_qty')),('原模型金额',d.get('_base_amount')),('计算建议',semantics.quantity(d)),('计算金额',semantics.amount_value(d)),('按计算建议持有天数',semantics.coverage(d))])
             a=d.get('_audit',{});content+='<h3>一箱例外</h3><p>'+esc(a.get('reason','未执行'))+'</p>'
             if a.get('applied'):content+=group('放行依据',[('原拦截',a.get('blocked_by')),('新增金额',a.get('incremental_amount'))])
         content+='<h3>结果说明</h3><p>'+esc(semantics.explanation(d))+'</p><p>'+esc('；'.join(d['_meta']['notes']))+'</p>'

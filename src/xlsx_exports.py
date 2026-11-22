@@ -88,11 +88,16 @@ def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,pro
     if path.suffix.lower()!='.xlsx':raise ValueError('导出文件必须为.xlsx')
     if not raw_rows:raise ValueError('当前筛选没有商品可导出。')
     with stream_book() as book:
-        def sheet(name,headers,data,widths=None,row_count=None):
-            return write_table(book,name,headers,data,widths=widths,style='single',cancel=cancel,progress=progress,row_count=row_count)
+        def sheet(name,headers,data,widths=None,row_count=None,formats=None):
+            return write_table(book,name,headers,data,widths=widths,style='single',cancel=cancel,progress=progress,row_count=row_count,formats=formats)
         summary=summarize(rows)
-        info=[['软件版本',VERSION],['模型版本',MODEL_VERSION],['构建信息',json.dumps(diagnostic(),ensure_ascii=False)],['计算时间',result['created']],['门店',result['store_name']],['导出范围',scope],['一箱例外',result['enabled']],
+        recorded_version=result.get('version',{}).get('model_version',MODEL_VERSION)
+        mean_field=poisson_mean_field(recorded_version)
+        mean_note={'AO':'趋势调整前保护期需求 AO','AP':'趋势调整后保护期需求 AP'}.get(mean_field,'历史未留存可识别的模型版本')
+        info=[['软件版本',VERSION],['模型版本',recorded_version],['构建信息',json.dumps(diagnostic(),ensure_ascii=False)],['计算时间',result['created']],['门店',result['store_name']],['导出范围',scope],['一箱例外',result['enabled']],
             ['计价口径','商品资料基本售价；地采缺价不计为0'],['规则口径','原库存额度BH/BN日均；一箱例外仅后置修改最终建议'],
+            ['泊松分位数 Q',f'按服务水平 p 求分位数，均值采用{mean_note}。'],
+            ['取整前目标持有量','趋势调整后需求 AP 加安全库存 AL。'],
             ['商品数',summary['rows']],['默认补货商品',summary['positive']],['默认补货金额',summary['amount']],['地采商品',summary['local']],['数据异常商品',summary['issues']],
             ['排除规则','商品资料状态=禁用 或 补货建议状态=停采，任一命中即排除；计算保留，执行量和执行金额为0'],
             ['已排除商品',summary['excluded']],['排除前计算金额',summary['calculated_amount']],['排除部分计算金额',summary['excluded_amount']],
@@ -112,7 +117,7 @@ def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,pro
         headers=single_headers()
         progress('正在写入商品明细…')
         for name,subset in [('补货清单',[d for d in rows if orderable(d)]),('全部明细' if scope=='本次全部结果' else '筛选明细',rows),('预算未满足',[d for d in rows if d.get('_budget_gap',0)>0]),('已排除',[d for d in rows if exclusion_reason(d)]),('地采商品',[d for d in rows if d['_source']=='地采商品']),('待处理',[d for d in rows if issue_text(d)]),('一箱例外',[d for d in rows if d.get('_audit',{}).get('applied')])]:
-            sheet(name,headers,(single_values(d) for d in subset),{1:55,2:26,14:85,27:50},row_count=len(subset))
+            sheet(name,headers,(single_values(d,result) for d in subset),{1:55,2:26,14:85,27:50},row_count=len(subset),formats={'泊松分位概率 p':'0.0%'})
         if ml:
             scoped='warehouses' in ml
             header=['商品编码','清单商品名称','本店匹配状态']+(['供货仓'] if scoped else [])

@@ -28,19 +28,22 @@ def calculate(fields=None,*,exception=False,must=False,budget=None,**kw):
 
 class SalesFloor(unittest.TestCase):
     def test_A_double_zero_keeps_floor_and_does_not_stack_it_on_normal_demand(self):
-        _,d=calculate({'L':0});self.assertTrue(model.sales_floor_eligible(d));self.assertEqual((d['AQ'],d['AS']),(52,60));self.assertEqual(ne.decision(d),'动销补货')
+        _,d=calculate({'L':0});self.assertTrue(model.sales_floor_eligible(d));self.assertAlmostEqual(d['AQ'],51.5930875)
+        self.assertEqual(d['AS'],60);self.assertEqual(ne.decision(d),'动销补货')
         _,d=calculate({'H':.07,'I':1,'J':1,'L':0});self.assertEqual((d['AR'],d['BP'],d['BQ'],d['AS']),(0,20,20,20))
         self.assertEqual(ne.decision(d),'断货保底');self.assertIn('可用与在途均为0',d['BM'])
     def test_B_inbound_and_failed_ordinary_qualification_cannot_add_a_floor(self):
         for exception in (False,True):
             with self.subTest(exception=exception):
                 _,d=calculate(moq=0,exception=exception)
-                self.assertEqual((d['P'],d['AQ'],d['BI'],d['AR'],d['BP'],d['BQ'],d['AS']),(8,12,0,20,0,0,0))
+                self.assertAlmostEqual(d['AQ'],11.5930875)
+                self.assertEqual((d['P'],d['BI'],d['AR'],d['BP'],d['BQ'],d['AS']),(8,0,20,0,0,0))
                 self.assertEqual(ne.decision(d),'普通补货资格未通过');self.assertFalse(d['_audit']['applied'])
                 self.assertIn('不触发销售型断货保底',sem.explanation(d))
     def test_C_inbound_does_not_block_qualified_net_demand(self):
-        _,d=calculate();self.assertEqual((d['BI'],d['AQ'],d['AR'],d['AS']),(1,12,20,20))
-        self.assertAlmostEqual(d['AP']+d['AL'],52);self.assertEqual(ne.decision(d),'动销补货');self.assertFalse(model.sales_floor_eligible(d))
+        _,d=calculate();self.assertEqual((d['BI'],d['AR'],d['AS']),(1,20,20))
+        self.assertEqual(d['BF'],46);self.assertAlmostEqual(d['AQ'],11.5930875)
+        self.assertAlmostEqual(d['AP']+d['AL'],51.5930875);self.assertEqual(ne.decision(d),'动销补货');self.assertFalse(model.sales_floor_eligible(d))
     def test_D_stock_or_inbound_cover_target_even_when_ordinary_qualification_passes(self):
         for fields in ({'L':80},{'K':80,'L':0}):
             _,d=calculate(fields,moq=100);self.assertEqual((d['BI'],d['AQ'],d['BQ'],d['AS']),(1,0,0,0));self.assertEqual(ne.decision(d),'目标已覆盖')

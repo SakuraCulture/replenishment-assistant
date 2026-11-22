@@ -57,7 +57,8 @@ class TemplateExportTests(unittest.TestCase):
         self.assertIn('范围：纳入', s['E8'].value)
         self.assertEqual(f[names[0]]['Y8'].value,
                          '=IF(COUNT(F8,X8)=2,F8*X8,IF(ISNUMBER(F8),"未留存",IF(F8="","待核",F8)))')
-        self.assertIn('目标持有量为当时预测需求含安全库存', s['A4'].value)
+        self.assertIn('目标持有量为趋势后需求加安全库存', s['A4'].value)
+        self.assertIn('旧签发按当时口径展示', s['A4'].value)
 
     def test_detail_renders_saved_allocation_independently_of_downstream_quantities(self):
         row = fact()

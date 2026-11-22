@@ -1,10 +1,33 @@
 """Single definition of calculation/candidate/execution result meanings. No UI or Excel I/O."""
 from decimal import Decimal
+import re
 import model
 
 SIGNED_GROUPS=('往期新品','本月新品','中心仓动销补货清单')
 
 def numeric(v):return model.number(v)
+
+
+def poisson_mean_field(model_version):
+    """Select the calculation basis from the version saved with the result."""
+    version = re.fullmatch(r'(\d+)\.(\d+)\.(\d+)-rules', str(model_version))
+    if version is None:
+        return None
+    return 'AO' if tuple(map(int, version.groups())) >= (0, 3, 7) else 'AP'
+
+
+def pre_round_target(row):
+    """Read the target from the saved forecast and buffer, without recalculating either."""
+    forecast, safety = row.get('AP'), row.get('AL')
+    return forecast + safety if numeric(forecast) and numeric(safety) else None
+
+
+def effective_probability(result, row):
+    config = result.get('effective_settings', {}).get('parameter_config') or result.get('config') or {}
+    profile = '快销' if row.get('U') == '无分类' else row.get('U')
+    default = config.get('parameters', {}).get('probability')
+    category = config.get('profile_parameters', {}).get(profile, {}).get('probability', default)
+    return row.get('_effective_probability', category)
 
 
 def fmt(v,digits=2):

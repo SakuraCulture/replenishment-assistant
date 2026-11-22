@@ -27,12 +27,18 @@ def import_audit_rows(result):
         for i,source in enumerate(c['sources']):yield ['重复冲突',c['store'],c['sku'],source['file'],source['sheet'],source['row'],'保留' if c['choice']==i else '未处理' if c['choice'] is None else '未选','']
 
 
-def single_headers():
-    return [h for h,f in COLUMNS]+['周销','14天日均','缺货天数','基本售价','原模型建议','原模型金额','例外新增金额','预测日均','BH额度日均','BN增长额度日均','库存额度总量','按计算建议持有天数','备注','导出源行','资料源行']
+DEMAND_HEADERS=['趋势调整前保护期需求','趋势调整后保护期需求','泊松分位概率 p','泊松分位数 Q',
+                '泊松分位校验','安全库存量','取整前目标持有量（AP＋AL）','净需求']
 
-def single_values(d):
+
+def single_headers():
+    return [h for h,f in COLUMNS]+['周销','14天日均','缺货天数','基本售价','原模型建议','原模型金额','例外新增金额','预测日均','BH额度日均','BN增长额度日均','库存额度总量','按计算建议持有天数','备注','导出源行','资料源行']+DEMAND_HEADERS
+
+def single_values(d,result):
     r=d['AN']*d['AM'] if numeric(d.get('AN')) and numeric(d.get('AM')) else None
-    return [f(d) for h,f in COLUMNS]+[d.get('I'),d.get('H'),d.get('N'),d.get('V'),d.get('_base_qty'),d.get('_base_amount'),d.get('_audit',{}).get('incremental_amount',0),r,d.get('BH'),d.get('BN'),d.get('库存额度目标量'),coverage(d),'；'.join(d['_meta']['notes']),d['_meta']['export_row'],d['_meta'].get('product_row')]
+    demand=[d.get('AO'),d.get('AP'),effective_probability(result,d),d.get('BF'),
+            d.get('BG'),d.get('AL'),pre_round_target(d),d.get('AQ')]
+    return [f(d) for h,f in COLUMNS]+[d.get('I'),d.get('H'),d.get('N'),d.get('V'),d.get('_base_qty'),d.get('_base_amount'),d.get('_audit',{}).get('incremental_amount',0),r,d.get('BH'),d.get('BN'),d.get('库存额度目标量'),coverage(d),'；'.join(d['_meta']['notes']),d['_meta']['export_row'],d['_meta'].get('product_row')]+demand
 
 def batch_headers():
     return ["门店编码","门店名称"]+[h for h,f in COLUMNS]+["来源文件","来源工作表","来源行"]

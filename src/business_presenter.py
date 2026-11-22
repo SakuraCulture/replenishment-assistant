@@ -14,6 +14,8 @@ NAMES = {
     '_extreme_restore':'极端恢复开关依据','suppressed_quantity':'关闭前符合规则的恢复数量',
     'AB':'趋势敏感度','AC':'最近7天权重','AD':'此前7天权重','AE':'此前16天权重',
     'AF':'旧安全系数（当前未使用）','AN':'校正综合日均','AM':'趋势修正系数',
+    'AO':'趋势调整前保护期需求','AP':'趋势调整后保护期需求',
+    'BF':'泊松分位数 Q','BG':'泊松分位校验','AL':'安全库存量','AQ':'净需求',
     'AS':'例外后计算建议量','_base_qty':'原模型建议量','_base_amount':'原模型建议金额',
     '_candidate_qty':'预算前候选量','_candidate_amount':'预算前候选金额',
     '_allocated_qty':'预算分配量','_allocated_amount':'预算分配金额',
@@ -97,6 +99,19 @@ def field_row(d,key,why=''):
         return [title(key),'极端缺货（自动恢复已关闭）',field_unit(key,d),why]
     return [title(key),value_text(d.get(key),key,missing=MISSING) if key in d else MISSING,field_unit(key,d),why]
 
+def demand_rows(result,d,model_version=None):
+    mean_field=sem.poisson_mean_field(model_version or result.get('version',{}).get('model_version'))
+    basis={'AO':'均值采用趋势调整前需求 AO','AP':'当时均值采用趋势调整后需求 AP'}
+    probability=sem.effective_probability(result,d)
+    return [field_row(d,'AO','基础日销 × 保护期'),
+            field_row(d,'AP','基础需求 × 趋势系数'),
+            ['泊松分位概率 p',value_text(probability,'probability',missing=MISSING),'%','用于求泊松分位数 Q'],
+            field_row(d,'BF',basis.get(mean_field,'历史未留存可识别的模型版本')),
+            field_row(d,'BG'),field_row(d,'AL'),
+            ['取整前目标持有量',value_text(sem.pre_round_target(d),missing='—'),field_unit('AP',d),'趋势调整后需求 AP ＋ 安全库存 AL'],
+            field_row(d,'AQ','扣除可用库存和在途库存后，最低取 0')]
+
+
 def flat_rows(value,prefix='',technical=False):
     """Technical fallback retains every key; never interpreted as a business step."""
     out=[]
@@ -176,6 +191,7 @@ def historical(repo,order,scope,sku,cancel=None):
         a=d.get('_preissue')
         if a:rows += [['人工 / 清单调整',value_text(a.get('delta')),str(d.get('G') or '库存单位'),a.get('reason','')]]
         rows += [field_row(d,k,'当时快照') for k in ('J','K','L','AG','AH','BD')]
+        rows += demand_rows(r,d,order['payload'].get('model_version'))
         rows += [['复查提示','所有数据来自当时记录','','未留存的阶段不推测；原字母与完整资料在详细依据中']]
         return rows
     raise ValueError('未知核对范围')
