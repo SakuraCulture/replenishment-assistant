@@ -103,8 +103,8 @@ catch(e){console.log(JSON.stringify({ok:false,code:e.code,message:e.message}));}
 
 class Ax:
     """All protocol calls terminate in the isolated fixture. Final dispatch uses bundled Node."""
-    def __init__(self, root, data, component):
-        self.root, self.data, self.component = root,data,component
+    def __init__(self, root, data, component, phase=None):
+        self.root, self.data, self.component, self.phase = root,data,component,phase
         self.path = root/'controlled-ax.json'
         self.state = load(self.path)
         self.calls = []
@@ -122,12 +122,16 @@ class Ax:
 
     def persist(self, record=None):
         atomic_json(self.path,self.state)
-        if record:
-            with closing(sqlite3.connect(self.ledger)) as db,db:
+        with closing(sqlite3.connect(self.ledger)) as db,db:
+            if record:
                 db.execute('CREATE TABLE IF NOT EXISTS purchase_creates(id TEXT PRIMARY KEY,state TEXT,platform_order TEXT,payload TEXT)')
                 db.execute('INSERT OR REPLACE INTO purchase_creates VALUES(?,?,?,?)',
                            (record['id'],record['state'],(record.get('binding') or {}).get('orderId'),
                             json.dumps(record,ensure_ascii=False)))
+            if self.state['receipts']:
+                db.execute('CREATE TABLE IF NOT EXISTS purchase_receipts(id TEXT PRIMARY KEY,payload TEXT)')
+                db.executemany('INSERT OR REPLACE INTO purchase_receipts VALUES(?,?)',
+                               [(key,json.dumps(value,ensure_ascii=False)) for key,value in self.state['receipts'].items()])
 
     def request(self, action, **values):
         assert self.running, action
@@ -148,7 +152,13 @@ class Ax:
             rows = list((records if action=='purchase.list' else received).values())
             offset, limit = values.get('offset',0),values.get('limit',100)
             return {'items':rows[offset:offset+limit],'total':len(rows)}
-        if action=='purchase.reserve':
+        if action in ('purchase.reserve','purchase.rebuild'):
+            prior = records[key] if action=='purchase.rebuild' else None
+            if prior:
+                assert prior['state']=='RESERVED' and prior['uploadAttempted'] is False and not prior['binding'],prior
+                assert prior['sequence']==values['sequence']
+                prior.update(state='SUPERSEDED',sequence=prior['sequence']+1)
+                self.persist(prior)
             file = Path(values['package_file']).resolve()
             assert file.is_relative_to(self.root/'settings/aoxiang/purchase-packages')
             assert file_hash(file)==values['package_sha256']
@@ -187,7 +197,7 @@ class Ax:
             return dict(r)
         if action=='receipt.status':
             return dict(received[key])
-        if action=='receipt.start':
+        if action in ('receipt.start','receipt.pause'):
             # A missing final marker remains pending until the inter-process fixture
             # publishes the retained original receipt during the next launch.
             return dict(received[key])
@@ -195,9 +205,21 @@ class Ax:
             r=received[key]
             assert r['manifest']['sha256']==values['manifest_sha256']
             assert r['basis']['number']==values['receipt']['number']
-            r.update(state='SYNCED',hostReceipt=values['receipt'],sequence=r['sequence']+1)
-            self.state['acknowledged'].append(key)
+            receipt=values['receipt']
+            wh=self.data['warehouse']
+            with closing(sqlite3.connect(self.db.resolve().as_uri()+'?mode=ro',uri=True)) as db:
+                saved=db.execute("SELECT version FROM lifecycle_versions WHERE warehouse=? AND revision=? AND stage='receipt'",
+                                 (wh,receipt['revision'])).fetchall()
+            assert (receipt['version'],) in saved, saved
+            fault=self.data.get('ack_fault') if self.phase=='exercise' and not self.state['ack_attempts'] else None
+            self.state['ack_attempts'].append({'phase':self.phase,'fault':fault,'purchase':key,
+                                               'manifest_sha':values['manifest_sha256'],'version':receipt['version']})
+            if fault!='before-delivery':
+                r.update(state='SYNCED',hostReceipt=receipt,sequence=r['sequence']+1)
+                self.state['acknowledged'].append(key)
             self.persist()
+            if fault:
+                raise AxError('QA_REPLY_INTERRUPTED','隔离场景：确认通道中断')
             return dict(r)
         raise AssertionError(f'隔离环境未开放请求 {action}')
 
@@ -231,5 +253,6 @@ def new_receipt(root, record):
         'supplierCode':intent['supplierCode'],'observedAt':stamped,'terminal':True,'eligible':True,
         'main':main,'rows':rows,'issues':[],'files':files,'quantityBasis':'native_actual_inventory_quantity_no_conversion'})
     return {'id':key,'state':'READY','active':False,'sequence':1,'terminal':True,'terminalKind':'COMPLETED',
-            'scope':{'orderId':po},'basis':intent['basis'],'summary':{'status':'已完成','observedAt':stamped},
+            'scope':{'orderId':po,'store':intent['basis']['store'],'identity':intent['identity'],
+                     'supplier':intent['supplierCode']},'basis':intent['basis'],'summary':{'status':'已完成','observedAt':stamped},
             'manifest':{'file':str(manifest),'sha256':file_hash(manifest)}}

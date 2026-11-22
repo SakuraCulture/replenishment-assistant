@@ -7,7 +7,7 @@ from pathlib import Path
 
 from aoxiang_jobs import encoded
 from app_defaults import WAREHOUSES
-from jst_auto_order_store import LEGACY_CANCELLATION
+from jst_auto_order_store import LEGACY_CANCELLATION, legacy_cancellation_history
 from runtime_support import checkpoint
 from sqlite_write import begin
 import work_repository as wr
@@ -48,6 +48,10 @@ def facts(db, head):
     if cancellation is None:
         cancellation = one('jst_auto_orders', 'SELECT online FROM jst_auto_orders WHERE oid=? AND warehouse=? AND '
                            +LEGACY_CANCELLATION, (oid,warehouse))
+    if cancellation is None:
+        history = legacy_cancellation_history(db, head, tables)
+        if history:
+            cancellation = [history[0]]
     return {'parent': parent[:3] if managed and parent else parent, 'managed': managed, 'child': child, 'signed': signed,
             'visibility': one('archive_visibility', 'SELECT deleted,token FROM archive_visibility WHERE oid=? AND warehouse=?', (oid, warehouse)),
             'deleted': one('deleted_order_tokens', 'SELECT operation_id FROM deleted_order_tokens WHERE oid=?', (oid,)),

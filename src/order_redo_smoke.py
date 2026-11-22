@@ -47,7 +47,7 @@ class Exercise:
         self.original=data['originals'][self.wh]
         self.component=Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parents[1]))/'components/aoxiang'
         self.jst=Jst(root,data,phase)
-        self.ax=Ax(root,data,self.component)
+        self.ax=Ax(root,data,self.component,phase)
         self.manager=win.aoxiang_workflows
         self.steps=[]
         self.shots=[]
@@ -181,41 +181,42 @@ class Exercise:
 
     def legacy(self):
         def review(page):
-            target,=[h for h in page.records if h['warehouse']==self.wh]
+            target, = [h for h in page.records if h['warehouse']==self.wh]
             assert '原单已取消，付款待重新核对' in target['note'],target['note']
-            self.steps.append('默认付款待办仍标记原单取消，付款待重新核对')
             self.shot(page,'旧库付款待核')
             self.pending_scope(page,'付款待重新核对')
-        def lookup(page):
-            self.task_lookup(page)
-        if self.phase=='exercise':
-            self.enter('聚水潭导入单','jst',lookup)
-            clues={'missing':'尚未查到唯一','identity':'与原任务不同','timeout':'超时'}
-            assert clues[self.data['lookup_failure']] in self.details['latest_reason']
-        else:
-            with closing(wr.read_connection(self.path)) as db:
-                assert cancellation.read(db,self.heads[self.wh])['legacy']
-                assert not orders.exists(db,'jst_cancellations')
-            self.steps.append('重开后旧线索继续拦截采购与库存释放')
         self.enter('进入付款核对','payment',review)
         self.assert_old_guard()
+        assert not self.ax.state['uploads']
+        assert self.balance(self.wh,self.original['gid'])==self.data['stock'][self.wh]-self.data['quantity'][self.wh]
         if self.phase=='exercise':
-            id=self.data['queued']
-            self.run_queued(id)
-            failed=self.manager.store.get(id)['items'][0]
-            assert (failed['state'],failed['error']['code'])==('REVIEW','PAYMENT_CANCEL_REVIEW'),failed
-            self.steps.append('取消前已排队的原任务在上传前进入付款待重核')
-        else:
-            self.enter('聚水潭导入单','jst',lookup)
-            self.enter('进入付款核对','payment',review)
-            self.assert_old_guard()
-            self.steps.append('原单精确查实取消后，仍等待人工重核')
-        assert not self.ax.state['uploads'] and self.balance(self.wh,self.original['gid'])==self.data['stock'][self.wh]-20
-        if self.phase=='exercise':
-            with closing(wr.read_connection(self.path)) as db:
-                hold=cancellation.read(db,self.heads[self.wh])
-                assert hold['legacy'] and not hold['successor']
-                assert db.execute('SELECT internal FROM jst_cancellation_holds WHERE online=?',(hold['online'],)).fetchone()==(self.original['internal'],)
+            assert self.task(self.original['online'])['reason']==self.data['overwritten_reason']
+            for failure, text in (('timeout','超时'),('identity','与原任务不同'),('missing','尚未查到唯一')):
+                self.jst.failure=failure
+                self.enter('聚水潭导入单','jst',self.task_lookup)
+                assert text in self.details['latest_reason'],self.details
+                self.steps.append('回查 '+failure+' 后保留原取消证据')
+            self.run_queued(self.data['queued'])
+            item=self.manager.store.get(self.data['queued'])['items'][0]
+            assert (item['state'],item['error']['code'])==('REVIEW','PAYMENT_CANCEL_REVIEW'),item
+            assert not self.ax.state['uploads']
+            self.details['pre_review_uploads']=0
+            self.steps.append('升级前已排队的旧预览被上传前校验拦截')
+            return
+        with closing(wr.read_connection(self.path)) as db:
+            assert cancellation.read(db,self.heads[self.wh])['legacy']
+            assert not orders.exists(db,'jst_cancellations')
+        self.enter('聚水潭导入单','jst',self.task_lookup)
+        self.enter('进入付款核对','payment',review)
+        assert not self.ax.state['uploads']
+        self.details['pre_review_uploads']=0
+        self.enter('进入付款核对','payment',self.review_payment)
+        self.assert_old_guard()
+        if self.data['decision'] != 'stop':
+            self.rebuild_original_preview()
+        assert len(self.ax.state['uploads'])==int(self.data['decision']!='stop')
+        self.steps.append('重开后原款须人工重核；只允许经新预览确认的采购上传')
+
 
     def import_file(self, trigger, filename, stage):
         def batch(dialog):
@@ -226,9 +227,14 @@ class Exercise:
             plan,=dialog.plan['plans']
             assert plan['head']['number']==self.heads[self.wh]['number']
             assert plan['head']['warehouse']==self.wh
-            actual=[(r['sku'],Decimal(r['quantity'])) for r in plan['payload']['raw_rows']]
+            raw=plan['payload']['raw_rows']
+            actual=[(r['sku'],Decimal(r['quantity'])) for r in raw]
             qty=self.data.get('redo_quantity',self.data['quantity'][self.wh])
-            assert actual==[('00000',qty)],actual
+            extra=[('00001',0)] if filename=='payment-correction.xlsx' and self.data.get('zero') else []
+            assert actual==[('00000',qty),*extra],actual
+            if extra:
+                assert Decimal(raw[-1]['amount'])==0 and raw[-1]['quantity_origin']=='zero'
+                assert len(raw)==2
             assert all(row[0]==self.heads[self.wh]['number'] for row in dialog.review.all_rows)
             dialog.review.complete.setChecked(True)
             dialog.review.extra_ack.setChecked(True)
@@ -364,7 +370,8 @@ class Exercise:
                 def task(dialog):
                     self.task_selection(dialog,self.original['online'])
                     assert not dialog.redo_btn.isEnabled()
-                    dialog.redo_btn.click()
+                    for _ in range(2):
+                        dialog.redo_btn.click()
                     self.shot(dialog,'历史原单禁止重复重做')
                 self.dialog(page.auto_tasks_btn.click,Orders,task)
             self.enter('聚水潭导入单','jst',check_redo)
@@ -399,29 +406,7 @@ class Exercise:
     def amount(self):
         key=self.data['bound']
         if self.phase=='exercise':
-            # Normal payment import. Its follow-up must lead back to the
-            # already-bound purchase, even when the current amount is new.
-            def correction(page):
-                self.choose(page,[self.wh])
-                def saved(d):
-                    assert not d.ready_heads and d.table.cellWidget(0,5).text()=='打开原批次'
-                    self.shot(d,'金额更正仍关联原采购')
-                pending=[]
-                error=[]
-                def saved_poll():
-                    if pending or error:return
-                    modal=self.app.activeModalWidget()
-                    if isinstance(modal,PreviewScope):
-                        try:saved(modal);pending.append(True)
-                        except BaseException:error.append(traceback.format_exc())
-                        modal.reject()
-                    else:QTimer.singleShot(30,saved_poll)
-                try:
-                    QTimer.singleShot(30,saved_poll)
-                    self.import_file(page.primary_actions[0].click,'payment-correction.xlsx','金额V002')
-                    assert pending and not error,error
-                finally:pending.append(True)
-            self.enter('进入付款核对','payment',correction)
+            self.import_corrected_payment()
             self.manager.reconcile_orders()
             self.run_queued(self.data['receipt_job'])
             item=self.manager.store.get(self.data['receipt_job'])['items'][0]
@@ -439,7 +424,7 @@ class Exercise:
                 self.shot(page,'收货待办')
                 def receipt(dialog):
                     self.wait(lambda:dialog.current and not dialog.worker and dialog.payment_review,'原款现款')
-                    assert dialog.current['id']==key and Decimal(dialog.payment_review['difference'])==Decimal('1.23')
+                    assert dialog.current['id']==key and Decimal(dialog.payment_review['difference'])==Decimal('-1')
                     self.shot(dialog,'付款差额')
                     def approve(review_dialog):
                         fields=review_dialog.findChildren(QLineEdit)
@@ -465,6 +450,132 @@ class Exercise:
             assert self.manager.store.get(self.data['receipt_job'])['items'][0]['state']=='SYNCED'
             self.steps.append('同一收货原件重复同步沿用原实收版本')
         assert self.ax.state['uploads']==[key],self.ax.state['uploads']
+
+    def select_queue(self, id, action):
+        button(self.win,'首页').click()
+        def selected(dialog):
+            index=dialog.jobs.findData(id)
+            assert index>=0,id
+            dialog.jobs.setCurrentIndex(index)
+            dialog.refresh()
+            assert dialog.current['id']==id
+            action(dialog)
+        self.dialog(button(self.win,'查看翱象批次作业').click,QueueDialog,selected)
+
+    def rebuild_original_preview(self):
+        number=self.heads[self.wh]['number']
+        def run(dialog):
+            dialog.select_all_btn.click()
+            assert dialog.rebuild_btn.isEnabled()
+            self.confirmation(dialog.rebuild_btn.click,'确认结束并重建采购预览',number)
+            self.wait(lambda:self.manager.worker is None and dialog.id != self.data['queued']
+                      and self.manager.store.get(dialog.id)['state']=='READY','付款重核后的新采购预览')
+            dialog.refresh()
+            assert all(i['state']=='PREPARED' and i['key']==number for i in dialog.current['items'])
+            self.shot(dialog,'重核后新采购预览')
+            dialog.select_all_btn.click()
+            self.confirmation(dialog.upload_btn.click,'确认批量上传采购',number)
+            self.wait(lambda:self.manager.worker is None and self.manager.store.get(dialog.id)['items'][0]['state']=='BOUND',
+                      '按本次付款关联新采购')
+            dialog.refresh()
+            self.shot(dialog,'重核后采购成功')
+            package=load(dialog.current['items'][0]['package']['package_file'])
+            assert package['basis']['paymentVersion']==(2 if self.data['decision']=='correct' else 1)
+        self.select_queue(self.data['queued'],run)
+
+    def import_corrected_payment(self):
+        def correction(page):
+            self.choose(page,[self.wh])
+            pending=[]
+            errors=[]
+            def follow_up():
+                if pending or errors:return
+                modal=self.app.activeModalWidget()
+                if isinstance(modal,PreviewScope):
+                    try:
+                        assert not modal.ready_heads and modal.table.cellWidget(0,5).text()=='打开原批次'
+                        self.shot(modal,'保留原采购关联')
+                        pending.append(True)
+                    except BaseException:
+                        errors.append(traceback.format_exc())
+                    modal.reject()
+                else:QTimer.singleShot(25,follow_up)
+            try:
+                QTimer.singleShot(25,follow_up)
+                self.import_file(page.primary_actions[0].click,'payment-correction.xlsx','付款V002')
+                assert pending and not errors,errors
+            finally:
+                pending.append(True)
+        self.enter('进入付款核对','payment',correction)
+        history=lifecycle.history(self.path,self.heads[self.wh],'payment')
+        assert [r['version'] for r in history]==[2,1]
+        expected_amount=Decimal(self.data['quantity'][self.wh]*self.data['price'][self.wh]-1)
+        raw=history[0]['payload']['raw_rows']
+        expected=[('00000',Decimal(self.data['quantity'][self.wh]),expected_amount)]
+        if self.data.get('zero'):
+            expected.append(('00001',Decimal(0),Decimal(0)))
+        assert [(r['sku'],Decimal(r['quantity']),Decimal(r['amount'])) for r in raw]==expected
+        self.details['imported_payment_rows']=[[sku,str(qty),str(amount)] for sku,qty,amount in expected]
+
+    def ack(self):
+        head=self.heads[self.wh]
+        key=self.data['bound']
+        id=self.data['receipt_job']
+        def run(dialog):
+            self.manager.stopping=False
+            if self.phase=='repeat':
+                assert not dialog.recover_btn.isEnabled()
+                dialog.recover_btn.click()
+                self.wait(lambda:not self.manager.worker,'已办结的原队列保持不动')
+            else:
+                assert dialog.recover_btn.isEnabled(),dialog.current
+                dialog.recover_btn.click()
+                wanted='REVIEW' if self.phase=='exercise' else 'SYNCED'
+                self.wait(lambda:not self.manager.worker and self.manager.store.get(id)['items'][0]['state']==wanted,
+                          '原实收队列 '+wanted)
+            dialog.refresh()
+            self.shot(dialog,'原实收队列')
+        self.select_queue(id,run)
+        current=self.ax.state['receipts'][key]
+        doc,=lifecycle.history(self.path,head,'receipt')
+        if self.phase=='exercise':
+            assert current['state']==('READY' if self.data['ack_fault']=='before-delivery' else 'SYNCED')
+            assert len(self.ax.state['ack_attempts'])==1
+            assert self.manager.store.schedule(key)['final_pending']
+            from aoxiang_directory import atomic_json
+            atomic_json(self.root/'posted-before-reprice.json',doc)
+            self.import_corrected_payment()
+            self.steps.append('正式实收 V001 已提交，组件确认通道中断，之后从付款页更正为 V002')
+        else:
+            assert current['state']=='SYNCED'
+            assert doc==load(self.root/'posted-before-reprice.json')
+            assert len(self.ax.state['ack_attempts'])==(2 if self.data['ack_fault']=='before-delivery' else 1)
+            assert self.ax.state['acknowledged']==[key]
+            assert not self.manager.store.schedule(key)['final_pending']
+            self.steps.append('按原采购及同一观察核实确认，实收仍为原 V001')
+        self.details['ack_attempts']=self.ax.state['ack_attempts']
+        assert self.ax.state['uploads']==[key]
+
+    def retired(self):
+        original=self.manager.store.get(self.data['receipt_job'])
+        if self.phase=='exercise':
+            self.manager.reconcile_orders()
+            schedule=self.manager.store.schedule(self.data['bound'])
+            assert not schedule.get('retired') and schedule['payment_review']
+            assert schedule['final_pending']==self.data['completed']
+            assert schedule['automation_paused'] and schedule['interval_seconds']==300
+            assert self.manager.store.get(original['id'])['items'][0]['state']=='REVIEW'
+            self.enter('进入收货核对','receipt',self.shot_receipt_todo)
+            self.steps.append('从 rc14 跳过记录恢复同一采购与原任务，保留已保存的周期及暂停状态')
+        else:
+            self.amount()
+
+    def shot_receipt_todo(self,page):
+        row=next(i for i,h in enumerate(page.records) if h['warehouse']==self.wh)
+        action=page.table.cellWidget(row,2)
+        assert '待人工核对' in action.text() and action.isEnabled(),action.text()
+        self.shot(page,'收货待办')
+
 
     def redo_case(self):
         with closing(wr.read_connection(self.path)) as db:
@@ -537,7 +648,7 @@ def start_smoke(app,win,args):
     root=Path(args[0]).resolve()
     phase=args[1]
     data=load(root/'synthetic.json')
-    if (data['case']!='order-redo-rc14' or data['synthetic'] is not True or data['live_platform'] is not False
+    if (data['case']!='order-redo-rc15' or data['synthetic'] is not True or data['live_platform'] is not False
             or Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve()!=root/'settings'
             or Path(os.environ.get('LOCALAPPDATA','')).resolve()!=root/'test-appdata'
             or win.work_repository.path.resolve()!=root/'settings/workbench.sqlite3'

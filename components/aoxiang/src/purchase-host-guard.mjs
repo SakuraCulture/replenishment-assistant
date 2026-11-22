@@ -8,6 +8,44 @@ import {canonical,sha256,fail,businessDate,now} from './common.mjs';
 const warehouses=['河北仓','山东仓'];
 export const hostIdentity=p=>sha256(canonical({basis:p.basis,identity:p.identity,mappingVersion:p.mappingVersion,fileSha256:p.file.sha256}));
 
+// Same rc13 evidence as LEGACY_HISTORY in jst_auto_order_store.py. This runs
+// under the native dispatch lock even if the upgraded workbench did not open.
+function legacyCancellation(db,tables,{oid,warehouse,revision}){
+  if(!['jst_auto_orders','jst_generations','jst_events','lifecycle_versions'].every(t=>tables.has(t)))return null;
+  const row=db.prepare(`SELECT a.online
+    FROM jst_auto_orders AS a JOIN jst_generations AS g
+      ON g.gid=a.gid AND g.oid=a.oid AND g.warehouse=a.warehouse
+    WHERE a.oid=? AND a.warehouse=? AND g.revision=? AND a.internal IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM jst_events AS e WHERE e.day=g.day AND e.oid=a.oid AND e.warehouse=a.warehouse
+          AND e.action='聚水潭原单核对' AND json_valid(e.detail)
+          AND json_extract(e.detail,'$.native_status')='已取消'
+          AND json_extract(e.detail,'$.online')=a.online AND json_extract(e.detail,'$.gid')=a.gid
+          AND json_extract(e.detail,'$.internal')=a.internal
+      )
+      AND g.revision=json_extract(a.payload,'$.head.revision')
+      AND g.digest=json_extract(a.payload,'$.generation.digest')
+      AND json_extract(a.proof,'$.binding.warehouse')=a.warehouse
+      AND json_extract(a.proof,'$.binding.shop')=json_extract(a.payload,'$.shop.name')
+      AND length(json_extract(a.proof,'$.binding.coid'))>0
+      AND length(json_extract(a.proof,'$.binding.uid'))>0
+      AND length(json_extract(a.proof,'$.binding.shop_id'))>0
+      AND EXISTS (
+        SELECT 1 FROM lifecycle_versions AS v
+        WHERE v.oid=a.oid AND v.warehouse=a.warehouse AND v.revision=g.revision AND v.stage='jst_order'
+          AND json_extract(CAST(v.payload AS TEXT),'$.pending')=1
+          AND json_extract(CAST(v.payload AS TEXT),'$.native_status')='已取消'
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.online')=a.online
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.internal')=a.internal
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.gid')=a.gid
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.order_digest')=a.digest
+          AND json_extract(CAST(v.payload AS TEXT),'$.head.digest')=json_extract(a.payload,'$.head.digest')
+          AND json_extract(CAST(v.payload AS TEXT),'$.head.number')=json_extract(a.payload,'$.head.number')
+          AND json_extract(CAST(v.payload AS TEXT),'$.head.store')=json_extract(a.payload,'$.head.store')
+      )`).get(oid,warehouse,revision);
+  return row?[row.online]:null;
+}
+
 export function hostFacts(db,b){
   const tables=new Set(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r=>r.name));
   const one=(table,sql,args)=>{const r=tables.has(table)?db.prepare(sql).get(...args):null;return r?Object.values(r):null;};
@@ -27,7 +65,8 @@ export function hostFacts(db,b){
     ?? one('jst_cancellation_holds','SELECT online FROM jst_cancellation_holds WHERE oid=? AND warehouse=?',[oid,warehouse])
     ?? one('jst_auto_orders',`SELECT online FROM jst_auto_orders
       WHERE oid=? AND warehouse=? AND stage='REVIEW' AND internal IS NOT NULL
-        AND (reason LIKE '聚水潭状态为已取消%' OR reason LIKE '聚水潭当前为“已取消”%')`,[oid,warehouse]);
+        AND (reason LIKE '聚水潭状态为已取消%' OR reason LIKE '聚水潭当前为“已取消”%')`,[oid,warehouse])
+    ?? legacyCancellation(db,tables,b);
   if(managed&&parent)parent=parent.slice(0,3);
   return {parent,managed,child,signed,
     visibility:one('archive_visibility','SELECT deleted,token FROM archive_visibility WHERE oid=? AND warehouse=?',[oid,warehouse]),

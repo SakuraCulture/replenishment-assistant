@@ -27,6 +27,54 @@ CANCELLATION_HOLDS = 'jst_cancellation_holds'
 LEGACY_CANCELLATION = """stage='REVIEW' AND internal IS NOT NULL
     AND (reason LIKE '聚水潭状态为已取消%' OR reason LIKE '聚水潭当前为“已取消”%')"""
 
+# rc13 kept the native observation even when a later failed lookup replaced
+# the display note. The event was written after checking the saved binding.
+# Corroborate it with the signed-order snapshot and exact generation.
+# Keep the scoped checks in purchase-host-guard.mjs in step with this query.
+LEGACY_HISTORY_TABLES = frozenset(('jst_auto_orders', 'jst_generations', 'jst_events', 'lifecycle_versions'))
+LEGACY_HISTORY = """
+    FROM jst_auto_orders AS a JOIN jst_generations AS g
+      ON g.gid=a.gid AND g.oid=a.oid AND g.warehouse=a.warehouse
+    WHERE {scope} AND a.internal IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM jst_events AS e WHERE e.day=g.day AND e.oid=a.oid AND e.warehouse=a.warehouse
+          AND e.action='聚水潭原单核对' AND json_valid(e.detail)
+          AND json_extract(e.detail,'$.native_status')='已取消'
+          AND json_extract(e.detail,'$.online')=a.online AND json_extract(e.detail,'$.gid')=a.gid
+          AND json_extract(e.detail,'$.internal')=a.internal
+      )
+      AND g.revision=json_extract(a.payload,'$.head.revision')
+      AND g.digest=json_extract(a.payload,'$.generation.digest')
+      AND json_extract(a.proof,'$.binding.warehouse')=a.warehouse
+      AND json_extract(a.proof,'$.binding.shop')=json_extract(a.payload,'$.shop.name')
+      AND length(json_extract(a.proof,'$.binding.coid'))>0
+      AND length(json_extract(a.proof,'$.binding.uid'))>0
+      AND length(json_extract(a.proof,'$.binding.shop_id'))>0
+      AND EXISTS (
+        SELECT 1 FROM lifecycle_versions AS v
+        WHERE v.oid=a.oid AND v.warehouse=a.warehouse AND v.revision=g.revision AND v.stage='jst_order'
+          AND json_extract(CAST(v.payload AS TEXT),'$.pending')=1
+          AND json_extract(CAST(v.payload AS TEXT),'$.native_status')='已取消'
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.online')=a.online
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.internal')=a.internal
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.gid')=a.gid
+          AND json_extract(CAST(v.payload AS TEXT),'$.reference.order_digest')=a.digest
+          AND json_extract(CAST(v.payload AS TEXT),'$.head.digest')=json_extract(a.payload,'$.head.digest')
+          AND json_extract(CAST(v.payload AS TEXT),'$.head.number')=json_extract(a.payload,'$.head.number')
+          AND json_extract(CAST(v.payload AS TEXT),'$.head.store')=json_extract(a.payload,'$.head.store')
+      )
+"""
+
+
+def legacy_cancellation_history(db, head, tables=None):
+    if tables is None:
+        tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if LEGACY_HISTORY_TABLES <= tables:
+        return db.execute('SELECT a.online,a.internal,a.gid' + LEGACY_HISTORY.format(
+            scope='a.oid=? AND a.warehouse=? AND g.revision=?'),
+            (head['oid'], head['warehouse'], head['revision'])).fetchone()
+    return None
+
 
 def profile_schema(db):
     db.execute('''CREATE TABLE IF NOT EXISTS jst_auto_profiles(

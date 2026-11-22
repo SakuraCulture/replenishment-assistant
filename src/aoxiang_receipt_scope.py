@@ -1,4 +1,5 @@
 """Cheap live local eligibility for receipt UI, queue, schedules and dispatch."""
+import json
 import sqlite3
 from contextlib import closing
 from decimal import Decimal
@@ -9,6 +10,7 @@ from purchase_io import number
 
 
 PAYMENT_REVIEW = '待人工核对：正式付款金额已更正，请对照原采购与现款后沿原采购保存实收。'
+PAYMENT_CHANGED = '原付款版本已变化，暂停沿用原采购关联'
 
 
 def _payment_rows(document):
@@ -17,6 +19,7 @@ def _payment_rows(document):
             or not payload.get('basis', {}).get('ready') or payload.get('missing')):
         return None
     values = {}
+    zero = set()
     for row in payload['rows']:
         sku = row['sku']
         quantity = number(row.get('base_quantity'))
@@ -27,7 +30,11 @@ def _payment_rows(document):
                 or (Decimal(quantity) == 0 and amount is not None and Decimal(amount) != 0)):
             return None
         values[sku] = ((Decimal(quantity), row['unit']), Decimal(amount) if amount is not None else None)
-    return values
+        if (Decimal(quantity) == 0 and amount is not None and Decimal(amount) == 0
+                and row.get('quantity_origin') == 'zero' and row.get('quantity') is not None
+                and Decimal(number(row['quantity'])) == 0 and len(row.get('sources', ())) == 1):
+            zero.add(sku)
+    return values, zero
 
 
 def amount_review(db, head, original, current=None):
@@ -44,8 +51,13 @@ def amount_review(db, head, original, current=None):
         return None
     if old['payload']['basis'] != new['payload']['basis']:
         return None
-    before, after = _payment_rows(old), _payment_rows(new)
-    if not before or not after or before.keys() != after.keys():
+    old_rows, new_rows = _payment_rows(old), _payment_rows(new)
+    if not old_rows or not new_rows:
+        return None
+    before, _ = old_rows
+    after, explicit_zero = new_rows
+    added = after.keys() - before.keys()
+    if not before or not before.keys() <= after.keys() or not added <= explicit_zero:
         return None
     delta = []
     for sku, (identity, old_amount) in before.items():
@@ -61,7 +73,7 @@ def amount_review(db, head, original, current=None):
     totals = [sum((v[1] for v in rows.values() if v[1] is not None),Decimal(0)) for rows in (before,after)]
     return {'original':original, 'current':{'version':current[0],'digest':current[1]},
             'old_amount':str(totals[0]), 'new_amount':str(totals[1]), 'difference':str(totals[1]-totals[0]),
-            'rows':delta}
+            'rows':delta, 'added_zero_skus':sorted(added)}
 
 
 def review_stamp(change, purchase_id, order_id, manifest_sha):
@@ -147,7 +159,7 @@ def assess(path, items, *, require_payment=True):
                         if review:
                             out[key]={'eligible':True,'head':head,'payment_review':review,'reason':PAYMENT_REVIEW}
                             continue
-                        raise ValueError('原付款版本已变化，暂停沿用原采购关联')
+                        raise ValueError(PAYMENT_CHANGED)
             except (KeyError,TypeError,IndexError):reason='原关联身份资料不完整，请核对原任务，不能按同号新单继续'
             except ValueError as exc:reason=str(exc)
             out[key]={'eligible':not reason,'reason':reason,'head':head}
@@ -192,6 +204,45 @@ def saved_observations(folder,ids):
                 record=json.loads(row[0])
                 if record.get('summary'):out[id]={**record['summary'],'receipt_state':record['state'],'hostConflict':record.get('hostConflict')}
     return out
+
+
+def restorable_payment_receipts(folder, schedules):
+    """Confirm old source-retirement projections against the same native PO."""
+    path = Path(folder)/'component-state/state.sqlite'
+    if not schedules or not path.is_file():
+        return {}
+    observed = {}
+    with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=.2)) as db:
+        db.execute('BEGIN')
+        tables = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        if not {'purchase_creates','purchase_receipts'} <= tables:
+            return {}
+        for schedule in schedules:
+            last_error = schedule.get('last_error') or {}
+            retired = (schedule.get('retired_reason') == PAYMENT_CHANGED if schedule.get('retired') else
+                       (last_error.get('code'),last_error.get('message')) == ('RECEIPT_SOURCE_RETIRED',PAYMENT_CHANGED))
+            if (not retired or schedule.get('last_state') in ('SYNCED','VOIDED','VOIDED_REVIEW')
+                    or (schedule.get('summary') or {}).get('status') == '已作废'):
+                continue
+            row = db.execute('''SELECT p.payload,r.payload FROM purchase_creates p
+                JOIN purchase_receipts r ON r.id=p.id
+                WHERE p.id=? AND p.state='BOUND' AND p.platform_order=?''',
+                             (schedule['id'],schedule['order_id'])).fetchone()
+            if not row:
+                continue
+            original, receipt = map(json.loads,row)
+            intent, scope = original.get('intent') or {}, receipt.get('scope') or {}
+            if (original.get('id') != schedule['id'] or receipt.get('id') != schedule['id']
+                    or intent.get('basis') != schedule['basis'] or receipt.get('basis') != schedule['basis']
+                    or (original.get('binding') or {}).get('orderId') != schedule['order_id']
+                    or scope.get('orderId') != schedule['order_id'] or scope.get('store') != schedule['basis']['store']
+                    or scope.get('identity') != intent.get('identity') or scope.get('supplier') != intent.get('supplierCode')
+                    or receipt.get('state') in ('SYNCED','VOIDED','VOIDED_REVIEW')
+                    or receipt.get('terminalKind') == 'VOIDED' or (receipt.get('summary') or {}).get('status') == '已作废'
+                    or receipt.get('hostReceipt') or receipt.get('hostConflict')):
+                continue
+            observed[schedule['id']] = receipt
+    return observed
 
 
 def tracking_observations(path,heads):

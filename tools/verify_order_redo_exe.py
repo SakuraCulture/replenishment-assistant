@@ -83,105 +83,124 @@ def native_record(package, record):
 
 
 def seed(root, name, old_evidence, component):
-    from aoxiang_purchase_tasks import validate_for_upload
     import export_settings
     import jst_auto_order_store as orders
-    import jst_cancellation
     import jst_order_store as generations
     import order_lifecycle as lifecycle
+    import purchases
     from test_order_redo_p1 import Dual, SUPPLIERS
+    from test_order_redo_rc15 import corrected_sheet, old_copy
+    from test_aoxiang_purchase import config
     import work_repository as wr
     from order_redo_platform_fixture import Ax, new_receipt
+
     root.mkdir()
-    kind,wh,variant=name
-    if kind=='legacy':
-        case,keys,portal=old_copy(root,old_evidence)
+    kind, wh, variant = name
+    restored = kind == 'retired'
+    if kind == 'legacy':
+        case, old = old_copy(root, old_evidence/'rc13-old', wh)
+        keys, portal = old['online'], old['orders']
+        template = read(old_evidence/'rc13-old'/wh/'isolated-template.json')
+    elif restored:
+        origin = old_evidence/'rc14-retired'/(wh+'-'+variant)
+        shutil.copytree(origin/'settings', root/'settings')
+        old = read(origin/'retired-history.json')
+        keys, portal = old['originals'], old['portal']
+        case = Dual.__new__(Dual)
+        case.path = root/'settings/workbench.sqlite3'
+        case.config = config()
+        case.heads = {h['warehouse']:h for h in purchases.targets(case.path)}
+        template = read(origin/'isolated-template.json')
     else:
-        case=Dual(root)
-        gids=case.begin()
-        keys={w:case.order(w,gid) for w,gid in gids.items()}
+        case = Dual(root)
+        gids = case.begin()
+        keys = {w:case.order(w,gid) for w,gid in gids.items()}
         for key in keys.values():
-            assert case.pay(key)['version']==1
-        portal=case.jst.orders
-    data={'case':'order-redo-rc14','synthetic':True,'live_platform':False,'kind':kind,'warehouse':wh,
-          'day':case.heads[wh]['day'],'stock':STOCK,'quantity':QTY,'price':PRICE,'suppliers':SUPPLIERS,
-          'ax_config':{**case.config,'purchase_pipeline':True},'originals':{}}
-    h=case.heads[wh]
-    online=keys[wh]
+            assert case.pay(key)['version'] == 1
+        portal = case.jst.orders
+        package = case.make_package(wh)
+        template = read(root/'isolated-template.json')
+
+    data = {'case':'order-redo-rc15','synthetic':True,'live_platform':False,'kind':kind,'warehouse':wh,
+            'day':case.heads[wh]['day'],'stock':STOCK,'quantity':QTY,'price':PRICE,'suppliers':SUPPLIERS,
+            'ax_config':{**case.config,'purchase_pipeline':True,'purchase_rebuild':True},'originals':{},
+            'template':template}
+    h = case.heads[wh]
+    online = keys[wh]
+    paid = None
     with closing(wr.read_connection(case.path)) as db:
-        if kind=='legacy':
-            assert jst_cancellation.read(db,h)['legacy']
-            assert not orders.exists(db,orders.CANCELLATION_HOLDS)
-        for w,key in keys.items():
-            task=orders.read(db,key,workbook=True)
-            history=lifecycle.history(case.path,case.heads[w],'payment')
-            assert len(history)==1 and history[0]['version']==1
-            data['originals'][w]={'online':key,'internal':task['internal'],'gid':task['gid'],
-                                  'binding':task['proof']['binding'],'payment_digest':history[0]['digest']}
-            gen,_=generations.read_generation(db,task['gid'])
-            if w==wh:
-                data['original_batch']=gen['batch_id']
+        for w, key in keys.items():
+            task = orders.read(db,key,workbook=True)
+            history = lifecycle.history(case.path,case.heads[w],'payment')
+            assert history[-1]['version'] == 1
+            data['originals'][w] = {'online':key,'internal':task['internal'],'gid':task['gid'],
+                                    'binding':task['proof']['binding'],'payment_digest':history[-1]['digest']}
+            gen, _ = generations.read_generation(db,task['gid'])
+            if w == wh:
+                data['original_batch'] = gen['batch_id']
+                paid = history[-1]['payload']['rows'][0]['document_number']
             lines=task['payload']['lines']
             items=[{'sku':sku,'qty':qty,'price':price,'amount':str(Decimal(qty)*Decimal(price))} for sku,qty,price in lines]
             portal[key]={**portal[key],'binding':task['proof']['binding'],'online':key,'contact_ok':True,'buyer_check':'verified',
                          'lines':lines,'amount':str(sum(Decimal(i['amount']) for i in items)),
                          'items':items,'detail_count':len(items),'currency':'CNY','freight':'0'}
-    if kind=='legacy':
-        # Seed a genuinely pre-authorized queued intent, then restore the rc13
-        # cancellation marker verbatim before the new EXE's first lookup.
-        with closing(case.work.connect()) as db,db:
-            prior=db.execute('SELECT stage,reason FROM jst_auto_orders WHERE online=?',(online,)).fetchone()
-            db.execute("UPDATE jst_auto_orders SET stage='IMPORTED',reason='合成取消前' WHERE online=?",(online,))
-    package=case.make_package(wh)
-    validate_for_upload(case.path,package,case.config,SUPPLIERS)
-    if kind=='legacy':
-        queued=case.queue(wh,package)
-        data.update(queued=queued['id'],lookup_failure=variant,phases=['exercise','reopen'])
-        with closing(case.work.connect()) as db,db:
-            db.execute('UPDATE jst_auto_orders SET stage=?,reason=? WHERE online=?',(*prior,online))
-    template=read(root/'isolated-template.json')
-    data['template']=template
-    state={'records':{},'receipts':{},'uploads':[],'acknowledged':[]}
-    key=package['id']
-    if kind=='redo':
-        qty=12 if variant=='correct' else QTY[wh]
-        data.update(decision=variant,redo_quantity=qty,phases=['exercise','allocate','reopen'])
-        if variant=='correct':
-            sheet(root/'return-correction.xlsx',h,'return',qty)
-            sheet(root/'payment-correction.xlsx',h,'payment',qty,Decimal(qty*PRICE[wh]))
-    if kind in ('redo','legacy'):
-        data['old_preview']=package
+
+    state = {'records':{},'receipts':{},'uploads':[],'acknowledged':[],'ack_attempts':[]}
+    if kind == 'legacy':
+        package = old['preview']
+        key = package['id']
+        intent = read(package['package_file'])
+        state['records'][key] = native_record({**package,'intent':intent},case.ax.records[key])
+        data.update(queued=old['queued'],lookup_failure='timeout',decision=variant,old_preview=package,
+                    phases=['exercise','reopen'],overwritten_reason=old['overwritten_reason'])
+        corrected_sheet(root/'payment-correction.xlsx',h,paid,QTY[wh],QTY[wh]*PRICE[wh]-1)
+    elif kind == 'redo':
+        qty = 12
+        data.update(decision='correct',redo_quantity=qty,old_preview=package,phases=['exercise','allocate','reopen'])
+        from aoxiang_purchase_tasks import validate_for_upload
+        validate_for_upload(case.path,package,case.config,SUPPLIERS)
         portal[online].update(native_status='已取消',status='review')
-        if kind=='legacy':
-            state['records'][key]=native_record(package,case.ax.records[key])
-    if kind=='amount':
-        completed=variant=='completed'
-        queued=case.queue(wh,package)
-        original=case.runner().run(queued['id'])['items'][0]
-        assert original['state']=='BOUND'
-        record=native_record(package,case.ax.records[key])
-        observe=new_receipt(root,record)
-        write(root/'final-observation.json',observe)
-        current=observe if completed else {**observe,'state':'IDLE','terminal':False,'terminalKind':None,
-                                            'summary':{'status':'采购中'},'manifest':None}
-        case.workflow.configure_schedules([record],5,True)
-        receipt_job=case.workflow.receipt([record])
-        case.workflow.observe_schedule(key,current)
-        data.update(completed=completed,bound=key,receipt_job=receipt_job['id'],phases=['exercise','reopen'],
-                    bound_index=str(Path(package['plan_file']).parent/'本地任务索引.json'))
+        sheet(root/'return-correction.xlsx',h,'return',qty)
+        corrected_sheet(root/'payment-correction.xlsx',h,paid,qty,qty*PRICE[wh])
+    elif restored:
+        record, current, observe = old['order'],old['current'],old['finished']
+        key = record['id']
+        data.update(bound=key,receipt_job=old['job'],completed=variant=='completed',zero=True,
+                    bound_index=str(root/'settings/aoxiang/purchase-packages'/key/'本地任务索引.json'),
+                    phases=['exercise','reopen'])
         state.update(records={key:record},receipts={key:current},uploads=[key])
-        sheet(root/'payment-correction.xlsx',h,'payment',QTY[wh],
-              Decimal(package['intent']['totalAmount'])+Decimal('1.23'))
+        write(root/'final-observation.json',observe)
+    else:
+        completed = kind=='ack' or variant.startswith('completed')
+        key = package['id']
+        original = case.runner().run(case.queue(wh,package)['id'])['items'][0]
+        assert original['state'] == 'BOUND'
+        record = native_record(package,case.ax.records[key])
+        observe = new_receipt(root,record)
+        write(root/'final-observation.json',observe)
+        current = observe if completed else {**observe,'state':'IDLE','terminal':False,'terminalKind':None,
+                                             'summary':{'status':'采购中'},'manifest':None}
+        case.workflow.configure_schedules([record],5,True)
+        receipt_job = case.workflow.receipt([record])
+        case.workflow.observe_schedule(key,current)
+        zero = variant.endswith('zero')
+        data.update(completed=completed,bound=key,receipt_job=receipt_job['id'],zero=zero,
+                    bound_index=str(Path(package['plan_file']).parent/'本地任务索引.json'),
+                    phases=['exercise','reopen'])
+        if kind=='ack':
+            data.update(ack_fault=variant,phases=['exercise','reopen','repeat'])
+        state.update(records={key:record},receipts={key:current},uploads=[key])
+        corrected_sheet(root/'payment-correction.xlsx',h,paid,QTY[wh],QTY[wh]*PRICE[wh]-1,zero=zero)
     (root/'exports').mkdir()
     export_settings.save(root/'settings'/export_settings.FILENAME,str(root/'exports'))
     write(root/'synthetic.json',data)
     write(root/'controlled-jst.json',portal)
     write(root/'controlled-ax.json',state)
-    if state['records']:
-        fake=Ax(root,data,component)
-        for record in state['records'].values():
-            fake.persist(record)
+    fake=Ax(root,data,component)
+    for record in state['records'].values():
+        fake.persist(record)
     return data
+
 
 
 def run(command, folder, phase, build, *, headless=False):
@@ -217,9 +236,13 @@ def run(command, folder, phase, build, *, headless=False):
 
 
 def matrix():
-    return ([('legacy','河北仓',failure) for failure in ('missing','identity','timeout')]
-            +[('redo',wh,choice) for wh in QTY for choice in ('reuse','correct','stop')]
-            +[('amount',wh,stage) for wh in QTY for stage in ('pending','completed')])
+    return ([('legacy',wh,decision) for wh in QTY for decision in ('reuse','correct','stop')]
+            +[('redo',wh,'correct') for wh in QTY]
+            +[('amount',wh,f'{stage}-{shape}') for wh in QTY for stage in ('pending','completed')
+              for shape in ('control','zero')]
+            +[('retired',wh,stage) for wh in QTY for stage in ('pending','completed')]
+            +[('ack',wh,fault) for wh in QTY for fault in ('before-delivery','after-delivery')])
+
 
 
 def name_of(case):
@@ -250,7 +273,7 @@ def main():
         metadata=read(unpacked/'_internal/build_info.json')
         command=[str(unpacked/'补货助手.exe')]
         component=unpacked/'_internal/components/aoxiang'
-        assert metadata['build_id']=='rc14'
+        assert metadata['build_id']=='rc15'
     else:
         command=[sys.executable,str(a.source.resolve()/'src/app.py')]
         component=a.worktree/'components/aoxiang'
@@ -261,7 +284,7 @@ def main():
         data=seed(case,spec,a.old_evidence.resolve(),component)
         case_results=[]
         for phase in data['phases']:
-            if data['kind']=='amount' and phase=='reopen':
+            if data['kind'] in ('amount','retired') and phase=='reopen':
                 from aoxiang_directory import atomic_json
                 controlled=read(case/'controlled-ax.json')
                 controlled['receipts'][data['bound']]=read(case/'final-observation.json')
@@ -279,7 +302,7 @@ def main():
     summary={'passed':True,'build':metadata,'case_count':len(cases),'runs':reports,'old_sha256':before}
     if metadata:
         assert contents(unpacked)==expected_files
-        name=a.delivery/'补货助手_0.54.16_rc14_订单撤回重做.zip'
+        name=a.delivery/'补货助手_0.54.16_rc15_订单撤回重做.zip'
         assert not name.exists()
         summary.update(exe_sha256=expected_files['补货助手.exe'][1],zip_sha256=sha(pending),
                        zip_bytes=pending.stat().st_size,files=len(expected_files))

@@ -9,7 +9,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QComboBox, QLineEdit, QProgressBar, QHeaderView, QDialog, QFormLayout
 from aoxiang_client import ProcessClient
 from aoxiang_directory import Directory
-from aoxiang_receipts import checked_json, synchronize
+from aoxiang_receipts import checked_json, existing_receipt, synchronize, verify_acknowledgement
 from aoxiang_receipt_scope import assess, formal_receipt_exists, review_stamp
 from aoxiang_purchase_tasks import inspect_basis
 from aoxiang_ui_common import ComponentDialog, component_root, show_modal
@@ -50,6 +50,7 @@ class ReceiptDialog(ComponentDialog):
         self.configuration = self.suppliers = None
         self.pending_save = self.local_saving = False
         self.payment_review = None
+        self.posted_receipt = None
         self.local_cancel = threading.Event()
         self.poll = QTimer(self)
         self.poll.setInterval(1000)
@@ -104,7 +105,8 @@ class ReceiptDialog(ComponentDialog):
         idle = not self.worker and not self._closing
         active = bool((self.current or {}).get('active'))
         state = (self.current or {}).get('state')
-        self.save_btn.setText('人工核对并保存原采购实收' if self.payment_review else '重试保存已验收实收')
+        self.save_btn.setText('补发原实收确认' if self.posted_receipt else
+                              '人工核对并保存原采购实收' if self.payment_review else '重试保存已验收实收')
         self.sync_btn.setEnabled(idle and not active and bool(self.current) and state not in ('READY', 'SYNCED', 'VOIDED', 'VOIDED_REVIEW') and not self.head.get('deleted'))
         self.save_btn.setEnabled(idle and not active and state == 'READY' and not self.head.get('deleted'))
         self.stop_btn.setEnabled((idle and active) or (self.local_saving and not self.local_cancel.is_set()))
@@ -140,6 +142,7 @@ class ReceiptDialog(ComponentDialog):
         self.orders.blockSignals(False)
         self.current = None
         self.payment_review = None
+        self.posted_receipt = None
         self.basis_note.setText('正在核对原采购依据与当前付款…' if self.records else '尚无已关联采购记录。')
         self.model.replace([])
         if self.records:
@@ -153,11 +156,12 @@ class ReceiptDialog(ComponentDialog):
         if 0 <= index < len(self.records):
             self.current = None
             self.payment_review = None
+            self.posted_receipt = None
             self.basis_note.setText('正在核对原采购依据与当前付款…')
             self.pending_read = self.records[index]['id']
             self.on_idle()
 
-    def status_data(self, id, *, check_basis=False):
+    def status_data(self, id, *, check_basis=False, acknowledged=None):
         record = self.client.request('receipt.status', purchase_id=id)
         original = next((r for r in self.records if r['id']==id),None)
         if (not original or record['scope']['orderId']!=original['binding']['orderId']
@@ -166,20 +170,31 @@ class ReceiptDialog(ComponentDialog):
         record = {**record,'basis':original['basis']}
         if record['state']=='VOIDED' and formal_receipt_exists(self.host.work_repository.path,record['basis']):
             record=self.client.request('receipt.host_void_conflict',purchase_id=id,reason='本机已有正式收货记录，平台现已作废；保留原实收，需人工核对后续处理')
+        path = self.host.work_repository.path
+        local = assess(path,[{'key':id,'basis':record['basis']}])[id]
+        context = self.folder / 'purchase-packages' / id / '本地任务索引.json'
+        posted = None
+        if local['eligible'] and record['state'] in ('READY','SYNCED'):
+            posted = existing_receipt(path,local['head'],context,record)
+        verified = record['state'] == 'SYNCED'
+        if verified:
+            verify_acknowledgement(record,*(acknowledged or (record,posted)))
         manager=getattr(self.host,'aoxiang_workflows',None)
-        if manager:manager.store.observe_schedule(id,record)
-        observation = checked_json(record['manifest']['file'], record['manifest']['sha256']) if record.get('manifest') else None
-        local = assess(self.host.work_repository.path,[{'key':id,'basis':record['basis']}])[id]
+        if manager:manager.store.observe_schedule(id,record,acknowledgement_verified=verified)
+        manifest = record.get('manifest')
+        observation = checked_json(manifest['file'],manifest['sha256']) if manifest and (
+            not posted or Path(manifest['file']).is_file()) else None
         payment = None if record['state'] in ('SYNCED','VOIDED','VOIDED_REVIEW') else local.get('payment_review')
-        state = {'payment_review':payment}
+        state = {'payment_review':payment,'posted_receipt':posted if record['state']=='READY' else None}
         if record['state']=='SYNCED':
             state['message']='原采购正式实收已保存。'
+        elif posted:
+            state['message']=f"正式实收 V{posted['version']:03d} 已入账，继续向原采购补发确认。"
         elif payment:
             state['message'] = (f"待人工核对 · 原付款 V{payment['original']['version']:03d} ¥{payment['old_amount']} · "
                                 f"当前 V{payment['current']['version']:03d} ¥{payment['new_amount']} · "
                                 f"差额 ¥{payment['difference']}")
         elif check_basis:
-            context = self.folder / 'purchase-packages' / id / '本地任务索引.json'
             try:
                 package = json.loads(context.read_text(encoding='utf-8'))
             except (OSError, ValueError):
@@ -205,6 +220,7 @@ class ReceiptDialog(ComponentDialog):
         self.current = record
         if len(data)>2 and data[2] is not None:
             self.payment_review = data[2].get('payment_review')
+            self.posted_receipt = data[2].get('posted_receipt')
             if data[2].get('message'):
                 self.basis_note.setText(data[2]['message'])
         summary = record.get('summary') or {}
@@ -212,7 +228,9 @@ class ReceiptDialog(ComponentDialog):
                              '\n平台状态：' + summary.get('status', '尚未查询') + ' · 最后观察：' + display_time(summary.get('observedAt')))
         note = (STATES[record['state']]+'；保留原签发和付款，不记收货0，不自动退款。') if record['state'] in ('VOIDED','VOIDED_REVIEW') else '已见“已完成”：常规监控已停止；最终实收任务单独保留。' if record['terminal'] else '尚未见“已完成”；已知入库值仅作进度观察，不提前记账。'
         if record.get('hostConflict'):note+='\n'+record['hostConflict']
-        if self.payment_review:
+        if self.posted_receipt:
+            note+='\n已找到同一份原实收，继续操作只补发确认。'
+        elif self.payment_review:
             note+='\n待人工核对。可继续查询原采购，取得完整实收后由业务核对差额并保存。'
         if record.get('error'):
             note += '\n' + record['error']['message']
@@ -261,7 +279,7 @@ class ReceiptDialog(ComponentDialog):
         self.run(operation, started)
 
     def retry_save(self):
-        if self.payment_review:
+        if self.payment_review and not self.posted_receipt:
             approval = self.review_amount()
             if approval:
                 self.save_receipt(approval)
@@ -310,16 +328,26 @@ class ReceiptDialog(ComponentDialog):
         self.local_cancel = threading.Event()
         self.local_saving = True
         def operation(progress):
+            record, observation, state = self.status_data(id)
+            if record['state']=='SYNCED':
+                return record,observation,state
+            if record['state']!='READY' or record['manifest']['sha256']!=manifest['sha256']:
+                raise ValueError('收货原件或原采购状态已变化，请重新打开核对')
             context = self.folder / 'purchase-packages' / id / '本地任务索引.json'
-            if not context.is_file():
-                raise ValueError('原采购付款依据未找到；保留终态及原件，不能猜测写入实收')
-            package = json.loads(context.read_text(encoding='utf-8'))
-            config = self.client.request('configuration')
-            receipt = synchronize(self.host.work_repository.path, package, manifest, config, Directory(self.folder).suppliers(),
-                                  approval=approval, cancel=self.local_cancel, progress=progress)
+            receipt = state['posted_receipt']
+            if not receipt:
+                if not context.is_file():
+                    raise ValueError('原采购付款依据未找到；保留终态及原件，不能猜测写入实收')
+                package = json.loads(context.read_text(encoding='utf-8'))
+                config = self.client.request('configuration')
+                receipt = synchronize(self.host.work_repository.path, package, manifest, config, Directory(self.folder).suppliers(),
+                                      approval=approval, cancel=self.local_cancel, progress=progress)
+            from runtime_support import checkpoint
+            checkpoint(self.local_cancel)
             progress('正式实收已保存，登记同步回执；若回执中断，重试不会新增实收版本。')
-            self.client.request('receipt.synced', purchase_id=id, manifest_sha256=manifest['sha256'], receipt=receipt)
-            return self.status_data(id)
+            reply = self.client.request('receipt.synced', purchase_id=id, manifest_sha256=manifest['sha256'], receipt=receipt)
+            verify_acknowledgement(reply,record,receipt)
+            return self.status_data(id,acknowledged=(record,receipt))
         def saved(data):
             self.local_saving = False
             self.render(data)

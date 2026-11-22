@@ -46,6 +46,8 @@ def read(db, head):
     if not row and orders.exists(db):
         row = db.execute('SELECT online,internal,gid FROM jst_auto_orders WHERE oid=? AND warehouse=? AND '
                          +orders.LEGACY_CANCELLATION, scope).fetchone()
+    if not row:
+        row = orders.legacy_cancellation_history(db, head)
     if row:
         return {'online':row[0], 'internal':row[1], 'gid':row[2], 'successor':None, 'legacy':True}
     return None
@@ -53,14 +55,16 @@ def read(db, head):
 
 def affected_scopes(db, batches):
     scopes = set()
-    tables = [table for table in ('jst_cancellations', orders.CANCELLATION_HOLDS) if orders.exists(db,table)]
-    has_orders = orders.exists(db)
+    tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     for marks, oids in batches:
-        for table in tables:
+        for table in tables & {'jst_cancellations', orders.CANCELLATION_HOLDS}:
             scopes.update(db.execute('SELECT DISTINCT oid,warehouse FROM '+table+' WHERE oid IN ('+marks+')',oids))
-        if has_orders:
+        if 'jst_auto_orders' in tables:
             scopes.update(db.execute('SELECT oid,warehouse FROM jst_auto_orders WHERE oid IN ('+marks+') AND '
                                      +orders.LEGACY_CANCELLATION,oids))
+        if orders.LEGACY_HISTORY_TABLES <= tables:
+            scopes.update(db.execute('SELECT a.oid,a.warehouse' + orders.LEGACY_HISTORY.format(
+                scope='a.oid IN ('+marks+')'), oids))
     return scopes
 
 

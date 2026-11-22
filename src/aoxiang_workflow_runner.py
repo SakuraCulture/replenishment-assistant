@@ -8,7 +8,7 @@ from aoxiang_client import ComponentError
 from aoxiang_directory import Directory, atomic_json
 from aoxiang_purchase_tasks import prepare, validate_for_upload
 from aoxiang_purchase import preflight_payment
-from aoxiang_receipts import ReceiptPaymentReview, synchronize
+from aoxiang_receipts import ReceiptPaymentReview, existing_receipt, synchronize, verify_acknowledgement
 from aoxiang_workflows import DONE_ITEM
 
 RETRYABLE = {'TASK_PENDING', 'PURCHASE_DOWNLOAD_HTTP', 'DOWNLOAD_FAILED', 'DOWNLOAD_TIMEOUT', 'TASK_NOT_FOUND', 'SAVE_BLOCKED'}
@@ -131,7 +131,7 @@ class Runner:
         guard_item={**item,'basis':{**item['basis'],**initial['head']}}
         id = item['purchase_id']
         current = initial
-        def observe(r):
+        def observe(r, *, acknowledged=False):
             nonlocal current
             if r['scope']['orderId'] != item['order_id'] or r['basis'] != item['basis']:
                 raise ValueError('收货任务关联变化，停止采用')
@@ -141,7 +141,8 @@ class Runner:
                 self.client.request('receipt.pause',purchase_id=id)
                 code = 'RECEIPT_PAYMENT_REVIEW' if current.get('retain_receipt') else 'RECEIPT_SOURCE_RETIRED'
                 raise ComponentError(code,current['reason']+'；已请求安全停止，原受理任务及文件保留')
-            self.store.observe_schedule(id, r)
+            if r['state'] != 'SYNCED' or acknowledged:
+                self.store.observe_schedule(id, r, acknowledgement_verified=acknowledged)
         record = self.client.request('receipt.status', purchase_id=id)
         observe(record)
         if record['state'] not in ('READY', 'SYNCED', 'VOIDED', 'VOIDED_REVIEW'):
@@ -156,15 +157,22 @@ class Runner:
         if record['state']=='VOIDED_REVIEW':
             issues=(record.get('summary') or {}).get('issues') or []
             raise ComponentError('RECEIPT_VOID_REVIEW',record.get('hostConflict') or '；'.join(i['message'] for i in issues) or '平台已作废，但存在实收或状态冲突；原事实保留，请核对处理')
-        if record['state'] == 'READY':
+        if record['state'] in ('READY','SYNCED'):
             index = self.store.folder / 'purchase-packages' / id / '本地任务索引.json'
-            if not index.is_file():
-                raise ValueError('原采购付款依据未找到，最终实收保留待核')
-            package = json.loads(index.read_text(encoding='utf-8'))
-            receipt = synchronize(self.business_path, package, record['manifest'], configuration, suppliers, cancel=self.cancel, progress=self.progress)
-            record = self.client.request('receipt.synced', purchase_id=id, manifest_sha256=record['manifest']['sha256'], receipt=receipt)
-            observe(record)
-        if record['state'] == 'SYNCED':
+            receipt = existing_receipt(self.business_path,current['head'],index,record,cancel=self.cancel)
+            original = record
+            if record['state'] == 'READY':
+                if not receipt:
+                    if not index.is_file():
+                        raise ValueError('原采购付款依据未找到，最终实收保留待核')
+                    package = json.loads(index.read_text(encoding='utf-8'))
+                    receipt = synchronize(self.business_path, package, record['manifest'], configuration, suppliers,
+                                          cancel=self.cancel, progress=self.progress)
+                checkpoint(self.cancel)
+                record = self.client.request('receipt.synced', purchase_id=id,
+                                             manifest_sha256=record['manifest']['sha256'], receipt=receipt)
+            verify_acknowledgement(record,original,receipt)
+            observe(record,acknowledged=True)
             return 'SYNCED', {'receipt': record.get('hostReceipt'), 'summary': record.get('summary')}
         if record['state'] == 'IDLE':
             if current.get('payment_review'):
