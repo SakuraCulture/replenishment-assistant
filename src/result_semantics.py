@@ -132,11 +132,15 @@ def signed_rows(rows, profile):
     """Classify signed rows in source order, including an iterable of row blocks."""
     from new_products import is_new
     from new_product_focus import members
+    from warehouse_newness import for_row
     focused=members(profile)
     for row in rows:
         if row.get('_source')!='资料匹配' or not work_eligible(row):continue
         if row.get('_preissue',{}).get('current_month'):yield '本月新品',row
-        elif is_new(row):yield ('本月新品' if row['E'] in focused else '往期新品'),row
+        elif is_new(row):
+            basis=for_row(row)
+            recent=basis['new'] if basis else row['E'] in focused
+            yield ('本月新品' if recent else '往期新品'),row
         elif orderable(row):yield '中心仓动销补货清单',row
 
 
@@ -205,7 +209,8 @@ def _execution_explanation(d):
     if d.get('_budget_overrun'):return d['_budget_reason']+f"；本店超预算{d['_budget_overrun']['overspend']:.2f}元（上限5%）"
     if d.get('_new_requested',0)>0:
         source=d.get('_monthly_first_fill')
-        return ('本月新品自动首铺 '+fmt(d['_new_requested'])+'；'+source['source'] if source else '新品首铺 · 人工选择 '+fmt(d['_new_requested']))+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))+('；保留必采最低持有量' if d.get('_mandatory_holding',{}).get('required_quantity',0)>d['_new_requested'] else '')
+        automatic='仓45天新品自动首铺 ' if source and source.get('warehouse_newness') else '本月新品自动首铺 '
+        return (automatic+fmt(d['_new_requested'])+'；'+source['source'] if source else '新品首铺 · 人工选择 '+fmt(d['_new_requested']))+'；'+(d.get('_budget_reason','不限预算，按首铺候选执行'))+('；保留必采最低持有量' if d.get('_mandatory_holding',{}).get('required_quantity',0)>d['_new_requested'] else '')
     if d.get('_budget_gap',0)>0:
         return ('必卖：' if d.get('_must_sell') else '普通：')+d.get('_budget_reason','')+('；必采最低持有仍有缺口' if d.get('_holding_gap') and d.get('_mandatory_holding') else '')
     if d.get('_mandatory_holding') and (d['_mandatory_holding'].get('state')!='已核验' or d['_mandatory_holding'].get('added_quantity',0)>0):

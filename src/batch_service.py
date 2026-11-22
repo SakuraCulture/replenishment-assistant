@@ -119,7 +119,9 @@ def calculate_store(loaded:InputBatch,store:str,settings:StoreSettings,profile,p
     if settings.get('admission'):
         import admission
         loaded=admission.apply(loaded,store,settings['admission'])
-    result=engine.run_calculation(loaded,store,settings['warehouses'],settings['exception'],settings['budget'],profile,progress,cancel,monthly_first_fill=settings.get('monthly_first_fill'))
+    day=settings.get('warehouse_new_day') or (settings.get('admission') or {}).get('day')
+    result=engine.run_calculation(loaded,store,settings['warehouses'],settings['exception'],settings['budget'],profile,
+        progress,cancel,monthly_first_fill=settings.get('monthly_first_fill'),warehouse_new_day=day)
     if loaded.get('catalogs'):result.update(catalogs=loaded['catalogs'],supply_route=loaded['supply_route'])
     result['version']=diagnostic();result['task']={'pid':os.getpid(),'started':started,'finished':time.time()}
     result['effective_settings']=copy.deepcopy(settings)

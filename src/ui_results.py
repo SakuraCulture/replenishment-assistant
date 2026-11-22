@@ -199,7 +199,7 @@ class ResultsView:
         self.filtered_caption.setText(f"当前筛选 {s['rows']:,} 行  ·  执行金额 {s['amount']:,.2f} 元  ·  计算金额 {s['calculated_amount']:,.2f} 元  ·  已排除 {s['excluded']:,} 行  ·  数据异常 {s['issues']:,} 行")
 
     def show_detail(self,index):
-        from business_presenter import stage_rows,field_row,parameter_rows,demand_rows
+        from business_presenter import stage_rows,field_row,parameter_rows,demand_rows,warehouse_newness_rows
         d=self.model.rows[self.proxy.mapToSource(index).row()];result=self.result or {}
         content='<h2>'+html.escape(str(d.get('D','')))+'</h2><p>'+html.escape(str(d.get('AU','')))+' · '+html.escape(str(d.get('E','')))+'</p>'
         content+='<h3>最终安排</h3>'+_detail_table([['数量',semantics.order_quantity(d),d.get('G') or '库存单位'],['金额',semantics.order_amount(d),'元']])
@@ -208,6 +208,8 @@ class ResultsView:
             content+='<h3>保护期需求与安全库存</h3>'+_detail_table(demand_rows(result,d,self.saved_job_model_version))
         if d['_meta'].get('product_tags_known'):
             content+='<h3>商品标签</h3><p>'+html.escape(str(d['_meta'].get('product_tags') or '未标记标签'))+'</p>'
+        warehouse_basis=warehouse_newness_rows(d)
+        if warehouse_basis:content+='<h3>归属仓新品依据</h3>'+_detail_table(warehouse_basis)
         content+='<h3>销量与库存</h3>'+_detail_table([field_row(d,k) for k in ('H','I','J','K','L','AG','AH','BD')])
         content+='<p><a href="parameters">查看实际参数</a> · <a href="technical">查看完整技术依据</a></p>'
         self.details.setOpenLinks(False)

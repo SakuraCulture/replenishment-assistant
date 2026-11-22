@@ -8,7 +8,7 @@ export const canonical=value=>JSON.stringify(value&&typeof value==='object'?Arra
 export class CatalogError extends Error {constructor(code,message,details){super(message);this.code=code;if(details)this.details=details;}}
 export function check(signal){if(signal?.aborted)throw new CatalogError('CANCELLED','已请求停止；已受理任务保留，未重复提交');}
 export const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-export const safeError=e=>({code:e.code||'CATALOG_FAILED',message:String(e.message||e).replace(/https?:\/\/[^\s；]+/g,v=>{try{const u=new URL(v);return u.origin+u.pathname;}catch{return '[平台地址]';}}).slice(0,1600),...(e.code==='CATALOG_STATE_BUSY'&&e.details?{details:e.details}:{})});
+export const safeError=e=>({code:e.code||'CATALOG_FAILED',message:String(e.message||e).split(/\r?\nCall log:/,1)[0].replace(/https?:\/\/[^\s；]+/g,v=>{try{const u=new URL(v);return u.origin+u.pathname;}catch{return '[平台地址]';}}).slice(0,1600),...(e.code==='CATALOG_STATE_BUSY'&&e.details?{details:e.details}:{})});
 export async function atomic(file,value){
   await fs.mkdir(path.dirname(file),{recursive:true});const tmp=file+'.'+crypto.randomUUID()+'.tmp';
   const handle=await fs.open(tmp,'wx');

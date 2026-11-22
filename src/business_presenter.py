@@ -173,6 +173,20 @@ def parameter_rows(result,d):
     return rows
 
 HEADERS=['项目','当时值','单位','用途 / 变化说明']
+
+def warehouse_newness_rows(row):
+    from warehouse_newness import AGE_LIMIT,for_row
+    basis=for_row(row)
+    if basis is None:return []
+    return [
+        ['仓新品判定日',basis['day'],'','北京时间，整批共用'],
+        ['新品判定采用仓',basis['warehouse'],'','按商品归属仓'],
+        ['仓资料版本',basis['catalog_revision'],'','本次作业采用的原版本'],
+        ['首入库日期',basis['first_date'] or MISSING,'',basis['issue']],
+        ['仓龄',value_text(basis['age'],missing=MISSING),'天',basis['warning']],
+        ['仓新品','是' if basis['new'] else '否','',f'仓龄0～{AGE_LIMIT}天，含两端'],
+    ]
+
 def historical(repo,order,scope,sku,cancel=None):
     from runtime_support import checkpoint
     import history_forms
@@ -185,7 +199,7 @@ def historical(repo,order,scope,sku,cancel=None):
     if d is None:return [['商品','请选择本单商品','','未使用其他订单或当前资料补填']]
     if scope=='当时参数':return model_version_rows(r,version)+parameter_rows(r,d)
     if scope=='商品完整计算依据':
-        return demand_rows(r,d,version)+flat_rows({k:v for k,v in d.items() if k not in ('AO','AP','AL','AQ','BF','BG')},technical=True)
+        return demand_rows(r,d,version)+warehouse_newness_rows(d)+flat_rows({k:v for k,v in d.items() if k not in ('AO','AP','AL','AQ','BF','BG')},technical=True)
     if scope=='数量形成过程':return stage_rows(d)
     if scope=='商品建议与销量库存':return [field_row(d,k) for k in ('D','E','AU','H','I','J','K','L','N','BA','BD','V')]
     import normal_exports
@@ -197,7 +211,7 @@ def historical(repo,order,scope,sku,cancel=None):
         a=d.get('_preissue')
         if a:rows += [['人工 / 清单调整',value_text(a.get('delta')),str(d.get('G') or '库存单位'),a.get('reason','')]]
         rows += [field_row(d,k,'当时快照') for k in ('J','K','L','AG','AH','BD')]
-        rows += demand_rows(r,d,version)
+        rows += demand_rows(r,d,version)+warehouse_newness_rows(d)
         rows += [['复查提示','所有数据来自当时记录','','未留存的阶段不推测；原字母与完整资料在详细依据中']]
         return rows
     raise ValueError('未知核对范围')

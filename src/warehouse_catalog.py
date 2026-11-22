@@ -1,6 +1,6 @@
 """Externally labelled warehouse snapshots and demand ownership, not stock reservation."""
 from __future__ import annotations
-import copy,hashlib,json,os,sqlite3
+import copy,hashlib,json,os,re,sqlite3
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -10,6 +10,7 @@ from openpyxl.cell import WriteOnlyCell
 import engine
 from priority_list import atomic_json
 from first_fill import FIELD as FIRST_FILL_FIELD,FIELDS as FIRST_FILL_FIELDS
+import warehouse_newness as newness
 
 from app_defaults import WAREHOUSES
 from data_contracts import InputBatch
@@ -18,6 +19,12 @@ _CURRENT_FIELD='_current_warehouse_catalog'
 _CURRENT_PREFIX=b'{\n  "_current_warehouse_catalog": 1,'
 REQUIRED=['商品编码','分类','基本售价','出库箱规','商品状态','可用数']
 FIELDS=REQUIRED+['商品名称','商品等级','补货模型分类','实际库存数','采购在途数','订单占有数']
+ARCHIVE_ALIASES={'商品名称':'商品名','分类':'产品分类','商品状态':'启用',
+                 '实际库存数':'主仓实际库存','采购在途数':'采购在途'}
+ARCHIVE_REQUIRED=[ARCHIVE_ALIASES.get(key,key) for key in REQUIRED]+[
+    '商品名','商品创建日期','商品标签','主仓实际库存']
+ARCHIVE_EXTRA=('主仓实际库存','标准装箱数量',newness.CREATED,newness.FIRST_INBOUND)
+ORPHAN_REASON='备用、可用数为0，商品名、基本售价、建档时间均缺失'
 
 def revision(items):return hashlib.sha256(json.dumps(items,ensure_ascii=False,sort_keys=True,allow_nan=False).encode()).hexdigest()[:16]
 
@@ -27,19 +34,80 @@ def validate(data):
         if not isinstance(row,dict) or engine.adapter.identifier(row.get('商品编码'))!=(sku,None):raise ValueError('仓资料存在无效商品编码')
         if not all(k in row for k in REQUIRED):raise ValueError('仓资料缺少必需字段')
     if revision(data['items'])!=data.get('revision'):raise ValueError('仓资料版本与内容不一致，请重新导入')
+    if data.get('kind')=='jst_full_archive':
+        pending=data.get('quarantined')
+        if (not isinstance(pending,list) or data.get('source_rows')!=len(pending)+len(data['items'])
+                or data.get('quarantine_count')!=len(pending) or type(data.get('first_inbound_column')) is not bool):
+            raise ValueError('全商品档案有效与待核记录条数不一致')
+        seen=set(data['items'])
+        for row in pending:
+            sku=row.get('商品编码')
+            if not isinstance(sku,str) or not sku.strip() or sku in seen or not row.get('reason'):
+                raise ValueError('全商品档案待核记录存在无效编码、重复或缺失原因')
+            seen.add(sku)
     return data
 
-def import_catalog(path,warehouse,progress=lambda s:None,cancel=None):
+def archive_evidence(path,warehouse,source_rows,evidence):
+    if evidence is not None:
+        q=evidence.get('query',{})
+        if (evidence.get('kind')!='jst_full_archive' or evidence.get('warehouse')!=warehouse
+                or evidence.get('expectedRows')!=source_rows or not evidence.get('reportWarehouse')
+                or q.get('sales')!='unlimited' or q.get('enabled')!='all'
+                or q.get('excludeZero') is not False or q.get('excludeCancelledBeforeShipment') is not True
+                or not re.fullmatch(r'[1-9]\d*',str(evidence.get('taskId','')))
+                or not evidence.get('queriedAt') or not evidence.get('exportedAt')):
+            raise ValueError('全商品档案的网页仓库、完整查询条件或原生导出回执未通过核验')
+        saved={key:evidence[key] for key in ('warehouse','reportWarehouse','company','query','queriedAt','exportedAt','taskId','expectedRows')}
+        if 'reportWarehouseId' in evidence:saved['reportWarehouseId']=evidence['reportWarehouseId']
+        return saved
+    observation={'warehouse':warehouse,'query':None,'expectedRows':source_rows,'scope':'manual'}
+    name=re.fullmatch(r'商品主题分析_全商品档案_(\d{14})_([1-9]\d*)_1(?: \(\d+\))?',path.stem)
+    if name:
+        try:
+            at=datetime.strptime(name[1],'%Y%m%d%H%M%S').isoformat()+'+08:00'
+        except ValueError:
+            return observation
+        observation.update(exportedAt=at,taskId=name[2],identifiers_from='原文件名')
+    return observation
+
+
+def import_catalog(path,warehouse,progress=lambda s:None,cancel=None,*,evidence=None):
     if warehouse not in WAREHOUSES:raise ValueError('请明确选择河北仓或山东仓')
     path=Path(path).resolve();before=engine.adapter.digest(path)
-    progress('读取'+warehouse+'商品资料…');sheet,heads,rows,info=engine.read_identified(path,'products',REQUIRED)
-    if (set(FIELDS)|{'商品标签'})&set(info['duplicate_unused_headers']):raise ValueError('商品资料存在重复业务表头')
-    items={}
+    progress('读取'+warehouse+'商品资料…')
+    sheet,heads,rows,info=engine.read_identified(path,'products',REQUIRED,alternate=ARCHIVE_REQUIRED)
+    archive=info['alternate']
+    if evidence is not None and (not archive or newness.FIRST_INBOUND not in heads):
+        raise ValueError('本次自动同步需要包含首次入库时间的全商品档案')
+    used=set(FIELDS)|{'商品标签','标准装箱数量'}
+    if archive:
+        used.update(ARCHIVE_ALIASES.values());used.update(ARCHIVE_EXTRA)
+        if any(k in heads and v in heads for k,v in ARCHIVE_ALIASES.items()):
+            raise ValueError('全商品档案存在重复语义的字段，请使用平台原件')
+    if used&set(info['duplicate_unused_headers']):raise ValueError('商品资料存在重复业务表头')
+    items={};pending=[];seen={}
     for raw in rows:
         engine.checkpoint(cancel);sku,error=engine.adapter.identifier(raw.get('商品编码'))
+        if archive and not isinstance(raw.get('商品编码'),str):
+            error='全商品档案须保留平台原文本编码'
         if error:raise ValueError(f"第{raw['_row']}行商品编码待核：{error}；未更新旧资料")
-        if sku in items:raise ValueError(f"本仓商品编码重复：{sku}，第{items[sku]['_row']}和{raw['_row']}行；请处理后导入")
-        row={k:raw.get(k) for k in FIELDS};row.update(商品编码=sku,_row=raw['_row']);items[sku]=row
+        if sku in seen:raise ValueError(f"本仓商品编码重复：{sku}，第{seen[sku]}和{raw['_row']}行；请处理后导入")
+        seen[sku]=raw['_row']
+        row={k:raw.get(ARCHIVE_ALIASES.get(k,k) if archive else k) for k in FIELDS}
+        row.update(商品编码=sku,_row=raw['_row'])
+        if archive:
+            if row['商品状态'] not in ('启用','备用','禁用'):
+                raise ValueError(f"第{raw['_row']}行商品状态无法识别：{sku}")
+            if row['分类']=='分类-未设置':row['分类']=None
+            for name in ARCHIVE_EXTRA:
+                if name in heads:row[name]=newness.json_cell(raw.get(name))
+            available=engine.adapter.numeric(row['可用数'])
+            if (row['商品状态']=='备用' and available==0 and newness.blank(raw.get('商品标签'))
+                    and all(newness.blank(row.get(key)) for key in ('商品名称','基本售价',newness.CREATED))):
+                pending.append({**row,'reason':ORPHAN_REASON})
+                continue
+        if '标准装箱数量' in heads:row['标准装箱数量']=raw.get('标准装箱数量')
+        items[sku]=row
         if '商品标签' in heads:row['商品标签']=raw.get('商品标签')
         first_fill_fields=[f for f in FIRST_FILL_FIELDS if f in heads]
         if len(first_fill_fields)>1 or any(f in info['duplicate_unused_headers'] for f in first_fill_fields):
@@ -48,9 +116,13 @@ def import_catalog(path,warehouse,progress=lambda s:None,cancel=None):
             source=first_fill_fields[0];row[FIRST_FILL_FIELD]=raw.get(source);row['_first_fill_source_field']=source
     if before!=engine.adapter.digest(path):raise ValueError('读取期间文件发生变化，请重新导入')
     data={'schema':1,'warehouse':warehouse,'source_path':str(path),'source_sha256':before,'sheet':sheet,'imported_at':datetime.now().isoformat(timespec='seconds'),'items':items,'revision':revision(items)}
+    if archive:
+        data.update(kind='jst_full_archive',first_inbound_column=newness.FIRST_INBOUND in heads,
+                    source_rows=len(rows),quarantined=pending,quarantine_count=len(pending),
+                    source_observation=archive_evidence(path,warehouse,len(rows),evidence))
     return validate(data)
 
-def metadata(catalog):return {k:v for k,v in catalog.items() if k!='items'}|{'count':len(catalog['items'])}
+def metadata(catalog):return {k:v for k,v in catalog.items() if k not in ('items','quarantined')}|{'count':len(catalog['items'])}
 
 def execution_warning(catalog):
     missing=sum('商品标签' not in row for row in catalog['items'].values())
@@ -327,6 +399,8 @@ def _prepare_catalogs(catalogs,load):
             m['first_fill']=basis(catalog,wh,d['E'])
             if row:
                 m.update(product_row=row['_row'],warehouse_available=engine.adapter.numeric(row.get('可用数')))
+                inbound=newness.source(catalog,row)
+                if inbound is not None:m['first_inbound_source']=inbound
                 if any('商品标签' in c['items'].get(d['E'],{}) for c in catalogs.values()):
                     from admission import catalog_meta
                     m.update(catalog_meta(catalogs,wh,d['E']))

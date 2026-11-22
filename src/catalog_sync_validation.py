@@ -26,8 +26,9 @@ def validate(request, progress=lambda _: None, cancel=None):
     expected = request.get('sha256')
     if not isinstance(expected, str) or len(expected) != 64 or digest(source) != expected:
         raise ValueError('原文件哈希不符，未校验或采用')
-    catalog = wc.import_catalog(source, request['warehouse'], progress, cancel)
-    if len(catalog['items']) != count or catalog['source_sha256'] != expected:
+    catalog = wc.import_catalog(source, request['warehouse'], progress, cancel,evidence=request.get('evidence'))
+    raw_rows=catalog.get('source_rows',len(catalog['items']))
+    if raw_rows != count or catalog['source_sha256'] != expected:
         raise ValueError('平台条数、文件条数或源文件哈希不一致')
     rows = list(catalog['items'].values())
     states = Counter(str(row.get('商品状态')) for row in rows)
@@ -41,7 +42,8 @@ def validate(request, progress=lambda _: None, cancel=None):
     atomic_json(candidate, catalog)
     return {'schema': 1, 'status': 'VALIDATED', 'validator': 'catalog.v1',
             'warehouse': catalog['warehouse'], 'source_sha256': expected,
-            'rows': len(rows), 'unique_skus': len(rows), 'states': dict(states),
+            'rows': len(rows), 'raw_rows': raw_rows, 'unique_skus': len(rows), 'states': dict(states),
+            'source_format':catalog.get('kind','ordinary'), 'quarantined':catalog.get('quarantine_count',0),
             'missing': {k: sum(r.get(k) in (None, '') for r in rows) for k in wc.REQUIRED},
             'revision': catalog['revision'], 'candidate': str(candidate),
             'candidate_sha256': digest(candidate), 'source': str(source)}
@@ -58,6 +60,8 @@ def candidate(receipt):
     if (data['warehouse'], data['revision'], len(data['items']), data['source_sha256']) != (
             receipt['warehouse'], receipt['revision'], receipt['rows'], receipt['source_sha256']):
         raise ValueError('校验候选与回执不一致')
+    if 'raw_rows' in receipt and data.get('source_rows',len(data['items']))!=receipt['raw_rows']:
+        raise ValueError('校验候选的平台原始条数已变化')
     if Path(data['source_path']).resolve() != Path(receipt['source']).resolve():
         raise ValueError('校验候选原件路径不一致')
     if digest(data['source_path']) != receipt['source_sha256']:

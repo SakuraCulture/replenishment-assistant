@@ -66,6 +66,7 @@ def check_signature(frozen):
     for k in ('day','catalog_digests','app_version'):value.pop(k,None)
     for job in value['jobs'].values():
         job['admission'].pop('day',None)
+        job.pop('warehouse_new_day',None)
         if job.get('monthly_first_fill'):job['monthly_first_fill'].pop('day',None)
     return sr.signature(value)
 

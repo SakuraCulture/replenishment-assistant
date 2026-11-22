@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import {JobStore} from './job-store.mjs';
 import {AccountSessions,accountId,validateIdentity} from './accounts.mjs';
 import * as native from './product-export.mjs';
+import {ARCHIVE,exportArchive,recoverArchive} from './archive-export.mjs';
 import {CatalogError,check,now,sha,canonical,safeError,WAREHOUSES} from './common.mjs';
 import {disconnectBounded} from './service-lifetime.mjs';
 import {version as bindingVersion,retired,requireLive,resetPlan,resetBindings} from './binding-recovery.mjs';
@@ -32,6 +33,7 @@ export class CatalogService {
       query:(page,a)=>native.queryAll(page,a),
       export:(page,o)=>native.exportAll(page,o),
       recover:(page,o)=>native.receiveKnownExport(page,o),
+      exportArchive,recoverArchive,
       validate:(file,o)=>native.validateProductFile(file,{...o,validator}),
       close:()=>this.sessions.close(),
     };
@@ -258,7 +260,8 @@ export class CatalogService {
     const items=c.items.map((i,index)=>{
       const a=data.accounts?.[i.warehouse];if(!a?.enabled)throw Error(i.warehouse+'尚未启用自动同步');validateIdentity(a);
       if(Object.values(data.batches).some(b=>b.items.some(x=>x.account.id===a.id&&unresolved(x))))throw new CatalogError('PENDING_TASK',i.warehouse+'有已受理未决任务，请继续原批次');
-      return {id:crypto.randomUUID(),index,account:businessAccount(a),expected_catalog_digest:i.expected_catalog_digest??null,stage:'QUEUED',native:null,receipt:null,adoption:null,observation:null,error:null};
+      return {id:crypto.randomUUID(),index,account:businessAccount(a),expected_catalog_digest:i.expected_catalog_digest??null,
+        ...(this.driver.exportArchive?{sourceFormat:ARCHIVE}:{}),stage:'QUEUED',native:null,receipt:null,adoption:null,observation:null,error:null};
     });
     const id=crypto.randomUUID();await this.store.write(d=>{d.batches[id]={id,operation_id:c.operation_id,fingerprint,purpose:c.purpose,state:'QUEUED',createdAt:now(),items};});
     this.launch(id,'batch',signal=>this.run(id,items.map(i=>i.id),signal));return {batch_id:id};
@@ -274,6 +277,7 @@ export class CatalogService {
       if(!ids.includes(initial.id)||initial.adoption||retired(initial))continue;
       if(signal.aborted)break;
       const id=initial.id,a=initial.account;let item=this.current(batchId,id);
+      const archive=item.sourceFormat===ARCHIVE;
       const phase=async(stage,message)=>{this.active.phase={phase:stage,message,warehouse:a.warehouse,at:now()};};
       try{
         const latest=this.store.read().accounts?.[a.warehouse];
@@ -286,16 +290,23 @@ export class CatalogService {
           await phase('CONNECTING','连接'+a.warehouse+'专用浏览器');const page=await this.driver.page(a,signal);check(signal);
           await this.patch(batchId,id,{connection_state:'READY',error:null});
           if(item.native?.nativeTaskRef){
-            await this.driver.query(page,a);check(signal);
+            if(archive){
+              const identity=await this.driver.query(page,a);check(signal);
+              native.requireWarehouseAccount(identity.scope,a);
+            }
             await phase('RECOVERING','恢复原任务 '+item.native.nativeTaskRef);
-            const received=await this.driver.recover(page,{recordId:item.native.nativeTaskRef,expectedRows:item.native.scope.expectedRows,output:path.join(this.stateRoot,'downloads',batchId,id),expectedPath:item.native.nativeFilePath?new URL(item.native.nativeFilePath).pathname:undefined,signal,onProgress:phase});
+            const receive=archive?this.driver.recoverArchive:this.driver.recover;
+            const received=await receive.call(this.driver,page,{recordId:item.native.nativeTaskRef,scope:item.native.scope,
+              expectedRows:item.native.scope.expectedRows,output:path.join(this.stateRoot,'downloads',batchId,id),
+              expectedPath:item.native.nativeFilePath?new URL(item.native.nativeFilePath).pathname:undefined,signal,onProgress:phase});
             await this.patch(batchId,id,{native:{...item.native,...received,stage:'DOWNLOADED',nativeFilePath:received.nativePath},stage:'DOWNLOADED'});
           }else{
             if(item.native?.submissions>0)throw new CatalogError('SUBMISSION_UNKNOWN','缺少原任务号，禁止再次提交');
             await this.observation(batchId,id,signal);check(signal);
             await phase('QUERYING','查询'+a.warehouse+'全部商品');const queried=await this.driver.query(page,a);check(signal);
             native.requireWarehouseAccount(queried.scope,a);
-            await this.driver.export(page,{...a,queried,output:path.join(this.stateRoot,'downloads',batchId,id),signal,onProgress:phase,
+            const exportFile=archive?this.driver.exportArchive:this.driver.export;
+            await exportFile.call(this.driver,page,{...a,queried,output:path.join(this.stateRoot,'downloads',batchId,id),signal,onProgress:phase,
               onManifest:async native=>{await this.patch(batchId,id,{native,stage:native.stage});}});
           }
         }
@@ -304,9 +315,12 @@ export class CatalogService {
         let receipt=item.receipt;
         if(!receipt||await fs.readFile(receipt.candidate).then(b=>sha(b)!==receipt.candidate_sha256,()=>true)){
           await phase('VALIDATING','校验'+a.warehouse+'文件与商品字段');
-          receipt=await this.driver.validate(item.native.file,{expectedRows:item.native.scope.expectedRows,warehouse:a.warehouse,output:path.dirname(item.native.file),signal});
+          receipt=await this.driver.validate(item.native.file,{expectedRows:item.native.scope.expectedRows,warehouse:a.warehouse,output:path.dirname(item.native.file),signal,
+            evidence:archive?item.native.scope:undefined});
         }
         if(receipt.source_sha256!==item.native.sha256||receipt.warehouse!==a.warehouse)throw Error('校验回执与原任务不一致');
+        if(archive&&(receipt.source_format!==ARCHIVE||receipt.raw_rows!==item.native.scope.expectedRows))
+          throw Error('全商品档案可用及待核条数与平台回执不一致');
         await this.patch(batchId,id,{receipt,stage:'READY_TO_ADOPT',error:null});
       }catch(e){
         item=this.current(batchId,id);const stage=item.native?.stage==='SUBMITTING'?'SUBMISSION_UNKNOWN':item.native?.stage||'QUEUED';

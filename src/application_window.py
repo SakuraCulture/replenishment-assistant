@@ -150,7 +150,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if not hasattr(self,'focus_label'):return
         p=self.new_focus
         self.focus_empty_btn.setText('清空本月关注清单' if p and focus.members(p) else '确认本月暂无关注新品')
-        self.focus_label.setText(f"新品关注：{p['month']} · {p['name']} · {len(focus.members(p))} 个关注商品"+(' · 月份不符，签发前请更新' if p['month']!=self.job_day[:7] else '') if p else '新品关注：未设置；签发前请导入新品明细，或明确本月无关注新品')
+        self.focus_label.setText(
+            f"人工新品关注：{p['month']} · {p['name']} · {len(focus.members(p))} 款" if p
+            else '人工新品关注：未设置。全商品档案按归属仓45天新品判定，普通资料沿用人工入口。')
 
     def import_focus(self):
         if self.worker or self.readonly:return

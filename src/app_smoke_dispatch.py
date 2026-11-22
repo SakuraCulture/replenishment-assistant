@@ -19,6 +19,7 @@ WINDOW_SMOKES = {
     '--jst-carton-smoke': 'jst_carton_smoke',
     '--stockout-hub-smoke': 'stockout_hub_smoke',
     '--monthly-first-fill-smoke': 'monthly_first_fill_smoke',
+    '--warehouse-archive-smoke': 'warehouse_archive_smoke',
     '--paid-return-reallocation-smoke': 'paid_return_reallocation_smoke',
     '--warehouse-stockout-export-smoke': 'warehouse_stockout_export_smoke',
     '--business-repairs-smoke': 'business_repairs_smoke',
