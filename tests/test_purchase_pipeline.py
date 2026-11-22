@@ -1,5 +1,6 @@
 """Durable workflow scheduling, explicit rebuild scope, no real platform/data."""
 import copy
+import json
 import sys
 import tempfile
 import threading
@@ -57,6 +58,15 @@ class PipelineTests(unittest.TestCase):
         return self.store.upload(prep['id'],list(range(count)),ready['sequence'],max_inflight=limit)
     def run_batch(self,job,client,*,cancel=None,wait=2):
         return Runner(self.store,client,self.root,self.root/'unused-isolated.sqlite3',cancel=cancel or threading.Event(),delay=.001,verification_interval=.001,verification_wait=wait).run(job['id'])
+
+    def unsent_component_record(self, n):
+        folder = self.root/'component-state'
+        folder.mkdir(exist_ok=True)
+        id = 'p'+str(n)
+        payload = {'id':id,'intent':{'basis':head(n)},'state':'RESERVED','uploadAttempted':False}
+        with closing(sqlite3.connect(folder/'state.sqlite')) as db, db:
+            db.execute('CREATE TABLE IF NOT EXISTS purchase_creates(id TEXT PRIMARY KEY,state TEXT,platform_order TEXT,payload TEXT)')
+            db.execute('INSERT INTO purchase_creates VALUES(?,?,?,?)',(id,'RESERVED',None,json.dumps(payload)))
     def test_all_uploads_precede_first_observation_without_pending_cap(self):
         job=self.batch(9);client=Platform(['p'+str(n) for n in range(9)],pending=1)
         out=self.run_batch(job,client)
@@ -159,38 +169,41 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual([i['head']['oid'] for i in out['items']],['0','2'])
         self.assertEqual([i['result']['binding']['orderId'] for i in out['items']],['PO-p0','PO-p2'])
         self.assertEqual(out['items'][1]['item_id'],job['items'][2]['item_id'])
-    def test_rebuild_unknown_and_bound_items_preserves_unselected_package_and_new_operation(self):
+    def test_rebuild_unknown_and_bound_items_stops_before_any_batch_changes(self):
         job=self.batch();self.store.update(job['id'],position=0,changes={'state':'REVIEW','error':{'code':'SUBMISSION_UNKNOWN'}})
         self.store.update(job['id'],position=1,changes={'state':'BOUND','result':{'binding':{'orderId':'PO1'}}})
-        old=self.store.update(job['id'],state='COMPLETED_WITH_ERRORS');untouched=copy.deepcopy(old['items'][2])
-        new=self.store.rebuild_selected(old['id'],[old['items'][0]['key'],old['items'][1]['key']],old['sequence'],[head(i) for i in range(3)])
-        after=self.store.get(old['id']);self.assertEqual(after['items'][2],untouched)
-        self.assertEqual([i['state'] for i in after['items'][:2]],['SKIPPED','SKIPPED'])
-        self.assertEqual([i['rebuild']['purchase_id'] for i in new['items']],['p0','p1'])
-        self.assertNotIn('package',new['items'][0]);self.assertEqual(len({i['rebuild']['operation_id'] for i in new['items']}),2)
-        again=self.store.rebuild_selected(old['id'],[i['key'] for i in old['items'][:2]],old['sequence'],[head(i) for i in range(3)])
-        self.assertEqual(again['id'],new['id'])
+        old=self.store.update(job['id'],state='COMPLETED_WITH_ERRORS');before=self.store.list()
+        for _ in range(2):
+            with self.assertRaisesRegex(ValueError,'继续核对原采购'):
+                self.store.rebuild_selected(old['id'],[i['key'] for i in old['items'][:2]],old['sequence'],[head(i) for i in range(3)])
+        self.assertEqual(self.store.list(),before)
     def test_rebuild_does_not_retarget_same_number_to_new_oid_or_running_task(self):
         job=self.batch(1);old=self.store.update(job['id'],state='COMPLETED_WITH_ERRORS');wrong={**head(0),'oid':'different'}
         with self.assertRaisesRegex(ValueError,'身份不符'):self.store.rebuild_selected(old['id'],[old['items'][0]['key']],old['sequence'],[wrong])
         old=self.store.update(job['id'],state='RUNNING')
         with self.assertRaisesRegex(ValueError,'安全退出'):self.store.rebuild_selected(old['id'],[old['items'][0]['key']],old['sequence'],[head(0)])
-    def test_rebuild_stops_selected_purchase_schedule_and_preserves_other_schedule(self):
+    def test_rebuild_keeps_original_terminal_receipt_and_other_schedule(self):
         job=self.batch(2);records=[{'id':'p'+str(i),'basis':head(i),'binding':{'orderId':'PO'+str(i)}} for i in range(2)]
         self.store.configure_schedules(records,5,True)
         receipt=self.store.receipt(records)
+        self.store.observe_schedule('p0',{'state':'READY','terminal':True,'summary':{'status':'已完成'}})
         old=self.store.update(job['id'],state='COMPLETED_WITH_ERRORS')
-        before=self.store.schedule('p1');self.store.rebuild_selected(old['id'],[old['items'][0]['key']],old['sequence'],[head(0),head(1)])
-        self.assertFalse(self.store.schedule('p0')['enabled']);self.assertEqual(self.store.schedule('p1'),before)
-        receipt=self.store.get(receipt['id']);self.assertEqual([i['state'] for i in receipt['items']],['SKIPPED','PENDING'])
+        before=self.store.schedules()
+        with self.assertRaisesRegex(ValueError,'继续核对原采购'):
+            self.store.rebuild_selected(old['id'],[old['items'][0]['key']],old['sequence'],[head(0),head(1)])
+        self.assertEqual(self.store.schedules(),before)
+        self.assertTrue(self.store.schedule('p0')['final_pending'])
+        self.assertEqual(self.store.get(receipt['id']),receipt)
     def test_related_pending_prepare_is_ended_without_touching_unselected_item(self):
         job=self.batch(1);other=self.store.prepare([head(0),head(9)]);untouched=copy.deepcopy(other['items'][1])
+        self.unsent_component_record(0)
         old=self.store.update(job['id'],state='COMPLETED_WITH_ERRORS')
         new=self.store.rebuild_selected(old['id'],[old['items'][0]['key']],old['sequence'],[head(0)])
         related=self.store.get(other['id']);self.assertEqual(related['items'][1],untouched)
         self.assertEqual(related['items'][0]['rebuild_to'],new['id']);self.assertEqual(related['items'][0]['state'],'SKIPPED')
     def test_mixed_existing_successor_and_new_item_is_rejected_atomically(self):
         job=self.batch(2);old=self.store.update(job['id'],state='COMPLETED_WITH_ERRORS')
+        self.unsent_component_record(0)
         self.store.rebuild_selected(old['id'],[old['items'][0]['key']],old['sequence'],[head(0),head(1)])
         before=self.store.get(old['id'])
         with self.assertRaisesRegex(ValueError,'后继'):self.store.rebuild_selected(old['id'],[i['key'] for i in old['items']],before['sequence'],[head(0),head(1)])

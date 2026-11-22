@@ -54,6 +54,8 @@ def guard_resign(db, oid):
 
 def guard_return(db, head):
     pending=automatic.state(db,head)
+    if pending and pending[0] == 'CANCELLED':
+        raise Conflict('原单已取消，请在聚水潭自动下单任务使用「核对取消并重做」，再沿原仓单更正回传')
     if pending and pending[0] in automatic.RELEASED:
         raise Conflict('该仓单已有聚水潭下单结果或提交待核，请先核对原自动下单任务')
     if locked(db, head):
@@ -65,7 +67,7 @@ def guard_payment(db, p):
     if gid and active(db,p['head'])!=gid:raise Conflict('付款草稿对应生成单已变化，请重新核对')
 
 
-def saved_execution_reason(db, head):
+def saved_execution_reason(db, head, *, allow_redo=False):
     """A saved fact survives later changes to the upstream comparison basis."""
     order=automatic.state(db,head)
     if order and order[0] in automatic.RELEASED:
@@ -81,6 +83,10 @@ def saved_execution_reason(db, head):
     except (ValueError, KeyError, TypeError):
         return '聚水潭内部订单号待核'
     for stage, title in (('receipt', '实收记录'), ('payment', '已确认付款')):
+        if allow_redo and stage == 'payment':
+            from jst_cancellation import redo_case
+            if redo_case(db,head):
+                continue
         for row in version_rows(db, head, stage):
             try:
                 if not decode(row)['payload'].get('pending'):
@@ -110,14 +116,23 @@ def previous_payment_for_return(db, head, payment):
 
 
 def allocation_gate(db, head, old, correction=False):
-    """Return a blocker and, for a return correction, the old payment token."""
+    """Freeze payment and any registered redo used to permit allocation."""
     order=automatic.state(db,head)
+    if order and order[0] == 'CANCELLED':
+        return '原单已取消，请先在聚水潭自动下单任务核对取消并重做',None
     if order and order[0] in automatic.RELEASED:
         return '已有聚水潭下单结果或提交待核，请核对原任务',None
     if locked(db,head):return '已锁单',None
     if current(db,head,'receipt'):return '已有收货记录，请先核对收货事实，不能直接重新分配',None
     payment=current(db,head,'payment')
-    previous=previous_payment_for_return(db,head,payment) if correction else None
+    from jst_cancellation import redo_case
+    redo = redo_case(db,head)
+    if redo and payment and not payment['payload'].get('pending'):
+        # The original reserve was explicitly released for this successor.
+        # The finance hold still applies at procurement, even for equal demand.
+        previous = {**basis_token(payment), 'redo':redo['successor']}
+    else:
+        previous = previous_payment_for_return(db,head,payment) if correction else None
     if payment and not previous:return '已有付款记录，当前回传未形成可更正的旧付款依据，请先核对付款',None
     if old and not correction:return '已生成，原样导出或选择重新分配',None
     return None,previous

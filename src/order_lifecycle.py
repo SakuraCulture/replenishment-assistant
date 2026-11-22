@@ -140,7 +140,8 @@ def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=N
         bindings[binding_key(row)]=h
     return prepare(path,scanned,bindings,progress,cancel,staged=staged,_owned=True)
 
-def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False, *, staged=None,_verified=None):
+def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False, *, staged=None,_verified=None,
+              aoxiang_payment_review=None):
     proofs={}
     basis=upstream(db,head,stage,staged,_proofs=proofs,_verified=_verified)
     if explicit_zero and not basis['ready']:raise ValueError('上游未就绪，不能确认整单为0')
@@ -151,6 +152,8 @@ def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=Fals
         kinds=list(dict.fromkeys(r.get('adapter','payment_file') for r in raw_rows))
         if 'jst_import_return' in kinds:
             payload['payment_source']={'type':'jst_import_return','external_order_number':None,'amount_basis':'数量×单价'}
+    if stage=='receipt' and aoxiang_payment_review:
+        payload['aoxiang_payment_review']=aoxiang_payment_review
     digest=fingerprint(payload);old=current(db,head,stage,_proofs=proofs);prior={r['sku']:r for r in old['payload']['rows']} if old else {}
     differences=[]
     for r in effective:
@@ -318,6 +321,9 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
             checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'],_verified=verified)
             if p['stage'] in ('return','operations') and p['changed']:guard_return(db,p['head'])
             if p['stage']=='payment':guard_payment(db,p)
+            if p['stage']=='receipt' and p['payload'].get('aoxiang_payment_review'):
+                from aoxiang_receipt_scope import validate_review
+                validate_review(db,p['head'],p['payload']['aoxiang_payment_review'])
             identity=(*key(p['head']),p['stage'])
             if identity in staged:raise ValueError('同一订单同一环节只能保存一份完整单据')
             if (old['version'] if old else None) != p['expected']: raise wr.Conflict('单据在预览后被更新，请重新核对')

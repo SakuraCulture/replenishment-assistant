@@ -83,11 +83,22 @@ def _view(db, path, head, cancel):
             "flow_version": 2 if route == CURRENT else 1}
 
 
-def require_selected_payment(head, payment, expected):
-    if expected is not None and _token(payment) != expected:
+def payment_authorization(db, head, payment):
+    from jst_cancellation import payment_state
+    reason, evidence = payment_state(db,head,payment)
+    if reason:
+        raise PaymentPreparationError('PAYMENT_CANCEL_REVIEW', head['number']+'：'+reason,
+                                      {'payment':_token(payment)})
+    return evidence
+
+
+def require_selected_payment(head, payment, expected, authorization=None):
+    token = _token(payment)
+    if expected is not None and (any(token[k] != expected.get(k) for k in ('version','digest')) or
+                                 ('cancellation_review' in expected and expected['cancellation_review'] != authorization)):
         raise PaymentPreparationError(
             'PAYMENT_SELECTION_CHANGED', head['number'] + '：已选付款版本已变化，请刷新并重新选择采购范围。',
-            {'expected': expected, 'current': _token(payment)})
+            {'expected': expected, 'current': token})
 
 
 def preflight_payment(path, head, *, expected=None, require_quantity=False, cancel=None, db=None):
@@ -104,10 +115,14 @@ def preflight_payment(path, head, *, expected=None, require_quantity=False, canc
         raise ValueError("只能以当前有效签发对应的已确认付款单生成采购文件")
     purchases.validate_head(db, head)
     view = _view(db, path, head, cancel)
+    authorization = payment_authorization(db,head,view['documents'].get('payment'))
     payment = require_payment(head, view)
-    require_selected_payment(head, payment, expected)
+    require_selected_payment(head, payment, expected, authorization)
     if require_quantity and not positive(payment['payload']['rows']):
         raise PaymentPreparationError('PAYMENT_ZERO_QUANTITY', head['number'] + '：正式付款数量为零，无需生成采购预览。', {})
     checkpoint(cancel)
+    token = _token(payment)
+    if authorization is not None:
+        token['cancellation_review'] = authorization
     return {"head": {k: head[k] for k in ("oid", "revision", "warehouse", "number")},
-            "payment": _token(payment), "flow_version": view["flow_version"]}
+            "payment": token, "flow_version": view["flow_version"]}

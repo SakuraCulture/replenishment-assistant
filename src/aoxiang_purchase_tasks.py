@@ -83,7 +83,7 @@ def validate_for_upload(path, package, configuration, suppliers, *, cancel=None,
     if file_hash(intent['file']['path']) != intent['file']['sha256']:
         raise ValueError('采购上传文件已变化')
     def validate(db=None):
-        validate_basis(path, plan, configuration, suppliers, cancel=cancel, _db=db)
+        validate_basis(path, plan, configuration, suppliers, cancel=cancel, _db=db, for_binding=for_binding)
         current_admission=check_admission(path,plan,db=db)
         if plan.get('admission') is not None and current_admission!=plan['admission']:
             raise ValueError('采购准入依据已变化，请重新核对采购预览；未重新上传')

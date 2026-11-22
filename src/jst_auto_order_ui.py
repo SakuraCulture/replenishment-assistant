@@ -219,6 +219,7 @@ class Orders(QDialog):
         self.records=[]
         self.busy=False
         self.initial=True
+        self.redo_target=None
         self.setWindowTitle('聚水潭自动下单')
         self.resize(1280,580)
         pane=QVBoxLayout(self)
@@ -257,6 +258,8 @@ class Orders(QDialog):
             row.addWidget(control)
         self.export=button('保存核对用 XLS',self.save_file)
         row.addWidget(self.export)
+        self.redo_btn=button('核对取消并重做',self.redo)
+        row.addWidget(self.redo_btn)
         row.addStretch()
         row.addWidget(button('关闭',self.reject))
         pane.addLayout(row)
@@ -308,13 +311,46 @@ class Orders(QDialog):
         rows=self.selected()
         stages={r['stage'] for r in rows}
         free=not self.busy and bool(rows)
-        self.buttons['probe'].setEnabled(free)
+        self.buttons['probe'].setEnabled(free and not any(r.get('historical') for r in rows))
         self.buttons['preview'].setEnabled(free and not stages&RELEASED)
         self.buttons['submit'].setEnabled(free and stages=={'PREVIEWED'})
         self.buttons['recover'].setEnabled(free and stages<=RELEASED)
         self.export.setEnabled(free and len(rows)==1 and not stages&RELEASED)
-        self.allocation.setEnabled(free and all(r['internal'] for r in rows))
+        self.allocation.setEnabled(free and all(r['internal'] and r['stage']!='CANCELLED' for r in rows))
         self.payment_history.setEnabled(free and len(rows)==1 and bool(rows[0]['internal']))
+        self.redo_btn.setEnabled(free and len(rows)==1 and stages<=RELEASED and not rows[0].get('historical'))
+
+    def redo(self):
+        rows = self.selected()
+        if self.busy or len(rows) != 1 or rows[0].get('historical'):
+            return
+        row = rows[0]
+        from catalog_session_ui import manager
+        from jst_cancellation import begin_redo
+        self.busy = True
+        self.controls()
+        try:
+            owner = manager(self.host).session
+            result = notify(self,lambda:run(self,service.run_browser,
+                (self.path,[row['online']],owner,'recover'),'核实聚水潭原单是否取消'))
+            if not result:
+                return
+            checked = result[0]
+            self.note.setText(checked['reason'])
+            if not checked['ok'] or checked['stage'] != 'CANCELLED':
+                return
+            if not confirm(self,'确认沿原仓单重做',
+                           f"{row['number']} · {row['warehouse']} · 聚水潭 {checked['internal']} 已核实取消。\n"
+                           '确认后按原记录释放占用，保留原单和付款，并返回本仓单。维持需求可直接一键分配下单，改量请先更正回传。'):
+                return
+            redo = notify(self,lambda:run(self,begin_redo,(self.path,row['online']),'登记后继执行并核销原占用'))
+            if redo:
+                self.redo_target = redo['head']
+                self.accept()
+        finally:
+            self.busy = False
+            if self.redo_target is None:
+                self.reload()
 
     def show_payment_history(self):
         from contextlib import closing
@@ -393,5 +429,6 @@ def open_orders(parent,host,focus=(),failures=()):
     dialog=Orders(parent,host,focus,failures)
     try:
         dialog.exec()
+        return dialog.redo_target
     finally:
         dialog.deleteLater()

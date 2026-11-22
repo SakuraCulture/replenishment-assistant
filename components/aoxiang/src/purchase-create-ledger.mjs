@@ -5,6 +5,7 @@ import {canonical,sha256,now,uid,fail} from './common.mjs';
 import {orderKey,validatePurchaseIntent,checkImportReceipt,checkCreatedPurchase,canBind,bindingEligible,checkedBinding} from './purchase-create-contract.mjs';
 import {requireUnretired,requireHostOrder,retiredRecord,lateRetiredReceipt} from './order-retirement.mjs';
 import {requireAbortedDispatch} from './purchase-host-guard.mjs';
+import {requireReplaceable} from './purchase-replacement.mjs';
 
 const transitions={
   RESERVED:['PREPARING','PAUSED','CANCELLED_BEFORE_UPLOAD'],PREPARING:['READY','PAUSED','FAILED_PRECHECK'],
@@ -50,35 +51,50 @@ export class PurchaseCreates{
         AND json_extract(payload,'$.intent.basis.warehouse')=?
         AND json_extract(payload,'$.intent.basis.store')=? LIMIT 1`).get(intent.identity.merchantCode,intent.basis.number,intent.basis.warehouse,intent.basis.store);
       if(otherAccount)fail('PURCHASE_ALREADY_RESERVED','同一商家的这张订单已有原采购任务；换登录人不会解除防重，请核对原采购结果',{id:otherAccount.id});
+      for(const previous of this.previousAttempts(intent))requireReplaceable(this.db,previous);
       const at=now(),r={id:intent.id,intent:structuredClone(intent),requestHash,state:'RESERVED',sequence:1,createdAt:at,updatedAt:at,uploadAttempted:false,receipt:null,binding:null,error:null,...rebuild};
       this.db.prepare('INSERT INTO purchase_creates VALUES(?,?,?,?,?,?,?,?)').run(r.id,key,sha256(canonical(intent.identity)),requestHash,r.state,r.sequence,null,JSON.stringify(r));this.event(r,'RESERVED');return {created:true,record:r};
+  }
+  previousAttempts(intent){
+    const {basis,identity,id}=intent;
+    return this.db.prepare(`SELECT payload FROM purchase_creates WHERE id<>?
+      AND json_extract(payload,'$.intent.basis.warehouse')=?
+      AND ((? IS NOT NULL AND json_extract(payload,'$.intent.basis.oid')=?)
+           OR (json_extract(payload,'$.intent.basis.number')=? AND json_extract(payload,'$.intent.basis.store')=?
+               AND json_extract(payload,'$.intent.identity.merchantCode')=?))`)
+      .all(id,basis.warehouse,basis.oid??null,basis.oid??null,basis.number,basis.store,identity.merchantCode)
+      .map(r=>JSON.parse(r.payload));
   }
   rebuild(id,sequence,intent,requestHash,operationId,reason){
     requireUnretired(this.db,id);requireUnretired(this.db,intent.id,intent.basis?.oid,intent.basis?.warehouse);requireHostOrder(intent.basis?.oid,intent.basis?.warehouse);validatePurchaseIntent(intent);
     if(id===intent.id)fail('PURCHASE_REBUILD_SCOPE','重建必须生成新的采购命令，不能覆盖原记录');
     return this.state.write(()=>{
+      const row=this.db.prepare('SELECT payload FROM purchase_creates WHERE id=?').get(id);
+      if(!row)fail('PURCHASE_ORIGINAL_UNRESOLVED','原任务记录缺失，无法证明未上传；请核对原采购',{id});
+      const old=JSON.parse(row.payload);
       const successor=this.db.prepare('SELECT payload FROM purchase_creates WHERE id=?').get(intent.id);
       if(successor){
         const known=JSON.parse(successor.payload);
         if(known.rebuildOf!==id||known.rebuildOperationId!==operationId)fail('PURCHASE_REBUILD_STALE','已有新任务的重建关系不同，不能覆盖');
+        requireReplaceable(this.db,old);
         return this.reserveWithin(intent,requestHash);
       }
-      const row=this.db.prepare('SELECT payload FROM purchase_creates WHERE id=?').get(id);
-      const old=row?JSON.parse(row.payload):null;
-      if(old?.state==='SUPERSEDED'){
+      if(old.state==='SUPERSEDED'){
         if(old.successorId!==intent.id||old.rebuildOperationId!==operationId)fail('PURCHASE_REBUILD_STALE','原任务已重建，请打开已有后继任务');
+        requireReplaceable(this.db,old);
         return this.reserveWithin(intent,requestHash);
       }
-      if(old&&old.sequence!==sequence)fail('PURCHASE_STATE_CONFLICT','原采购状态已更新，请刷新后再确认重建');
-      if(old&&(!old.intent.basis.oid||old.intent.identity.merchantCode!==intent.identity.merchantCode||
-        ['oid','number','store','warehouse'].some(k=>old.intent.basis[k]!==intent.basis[k])))fail('PURCHASE_REBUILD_SCOPE','只能为同一商家、同一本机原仓单重建，不能换绑其他订单');
+      if(old.sequence!==sequence)fail('PURCHASE_STATE_CONFLICT','原采购状态已更新，请刷新后再确认重建');
+      if(!old.intent.basis.oid||old.intent.identity.merchantCode!==intent.identity.merchantCode||
+        ['oid','number','store','warehouse'].some(k=>old.intent.basis[k]!==intent.basis[k]))fail('PURCHASE_REBUILD_SCOPE','只能为同一商家、同一本机原仓单重建，不能换绑其他订单');
       const also=[],candidates=this.db.prepare(`SELECT payload FROM purchase_creates WHERE state NOT IN ('CANCELLED_BEFORE_UPLOAD','SUPERSEDED')
         AND json_extract(payload,'$.intent.identity.merchantCode')=? AND json_extract(payload,'$.intent.basis.number')=?
         AND json_extract(payload,'$.intent.basis.store')=? AND json_extract(payload,'$.intent.basis.warehouse')=?`).all(intent.identity.merchantCode,intent.basis.number,intent.basis.store,intent.basis.warehouse).map(r=>JSON.parse(r.payload));
-      if(old&&!candidates.some(r=>r.id===old.id))candidates.push(old);
+      if(!candidates.some(r=>r.id===old.id))candidates.push(old);
       for(const extra of candidates){
         if(extra.intent.basis.oid!==intent.basis.oid)continue;
         if(['PREPARING','READY','SUBMITTING','VERIFYING'].includes(extra.state))fail('PURCHASE_CREATE_BUSY','同一原仓单还有动作未安全退出');
+        requireReplaceable(this.db,extra);
         // Rotate only the retired reservation key; preserve frozen intent,
         // platform-order uniqueness and every historical event.
         const replaced={...extra,state:'SUPERSEDED',supersededFromState:extra.state,successorId:intent.id,rebuildOperationId:operationId,rebuildReason:reason,sequence:extra.sequence+1,updatedAt:now()};
@@ -87,7 +103,7 @@ export class PurchaseCreates{
         this.event(replaced,extra.id===id?'OPERATOR_REBUILD':'OPERATOR_REBUILD_RELATED');if(extra.id!==id)also.push(extra.id);
       }
       return this.reserveWithin(intent,requestHash,orderKey(intent),{rebuildOf:id,rebuildAlso:also,rebuildOperationId:operationId,
-        ...(!old?{predecessorMissing:true}:{}),previousOrderId:old?.binding?.orderId||null,previousTaskId:old?.receipt?.taskId||null});
+        previousOrderId:old.binding?.orderId||null,previousTaskId:old.receipt?.taskId||null});
     });
   }
   event(r,kind){this.db.prepare('INSERT INTO purchase_create_events VALUES(?,?,?)').run(r.id,r.sequence,JSON.stringify({id:r.id,sequence:r.sequence,state:r.state,at:r.updatedAt,kind,error:r.error,taskId:r.receipt?.taskId||null,orderId:r.binding?.orderId||null,
@@ -98,6 +114,11 @@ export class PurchaseCreates{
       const old=this.get(id);if(old.sequence!==sequence)fail('PURCHASE_STATE_CONFLICT','采购任务已更新，请读取原记录');
       requireUnretired(this.db,id,old.intent?.basis?.oid);
       if(!transitions[old.state]?.includes(next))fail('PURCHASE_STATE_TRANSITION','采购任务不允许从 '+old.state+' 进入 '+next);
+      if(next==='SUBMITTING'){
+        // Also protect successors reserved by an older build and recheck
+        // late receipts immediately before recording this request's dispatch.
+        for(const previous of this.previousAttempts(old.intent))requireReplaceable(this.db,previous);
+      }
       if(Object.keys(changes).some(k=>!['baseline','uploadAttempted','receipt','binding','error','evidence','additionalTaskIds','uploadWarning'].includes(k)))fail('PURCHASE_STATE_IMMUTABLE','不能修改采购冻结依据');
       if(old.uploadAttempted&&changes.uploadAttempted===false)fail('PURCHASE_STATE_IMMUTABLE','已进入上传边界，不能清除提交事实');
       if(old.receipt&&changes.receipt?.taskId&&old.receipt.taskId!==changes.receipt.taskId)fail('PURCHASE_RECEIPT_CONFLICT','原导入任务号不能覆盖');

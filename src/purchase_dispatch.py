@@ -7,6 +7,7 @@ from pathlib import Path
 
 from aoxiang_jobs import encoded
 from app_defaults import WAREHOUSES
+from jst_auto_order_store import LEGACY_CANCELLATION
 from runtime_support import checkpoint
 from sqlite_write import begin
 import work_repository as wr
@@ -38,12 +39,22 @@ def facts(db, head):
     if legacy is not None:
         legacy[1] = _hash(legacy[1])
     admission = one('store_admission', 'SELECT payload FROM store_admission WHERE store=?', (head['store'],))
+    cancellation = one('jst_cancellations', '''SELECT online,successor,
+        (SELECT max(id) FROM jst_cancellation_reviews WHERE cancelled_online=jst_cancellations.online)
+        FROM jst_cancellations WHERE oid=? AND warehouse=? ORDER BY observed DESC,rowid DESC LIMIT 1''', (oid,warehouse))
+    if cancellation is None:
+        cancellation = one('jst_cancellation_holds', 'SELECT online FROM jst_cancellation_holds WHERE oid=? AND warehouse=?',
+                           (oid,warehouse))
+    if cancellation is None:
+        cancellation = one('jst_auto_orders', 'SELECT online FROM jst_auto_orders WHERE oid=? AND warehouse=? AND '
+                           +LEGACY_CANCELLATION, (oid,warehouse))
     return {'parent': parent[:3] if managed and parent else parent, 'managed': managed, 'child': child, 'signed': signed,
             'visibility': one('archive_visibility', 'SELECT deleted,token FROM archive_visibility WHERE oid=? AND warehouse=?', (oid, warehouse)),
             'deleted': one('deleted_order_tokens', 'SELECT operation_id FROM deleted_order_tokens WHERE oid=?', (oid,)),
             'retirement': one('warehouse_execution_retirements', 'SELECT operation_id FROM warehouse_execution_retirements WHERE oid=? AND warehouse=?', (oid, warehouse)),
             'operations': bool(versions['operations'] or route and route[0] >= 2), 'versions': versions, 'legacy': legacy,
-            'admission': _hash(admission[0]) if admission else None}
+            'admission': _hash(admission[0]) if admission else None,
+            **({'jstCancellation': cancellation} if cancellation is not None else {})}
 
 
 def authorize(path, intent, validate, *, cancel=None):

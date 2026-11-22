@@ -1,8 +1,83 @@
 """Cheap live local eligibility for receipt UI, queue, schedules and dispatch."""
 import sqlite3
 from contextlib import closing
+from decimal import Decimal
 from pathlib import Path
-from lifecycle_store import latest_version
+from lifecycle_store import decode, latest_version, version_row
+from lifecycle_rules import DOCUMENT_SCHEMA
+from purchase_io import number
+
+
+PAYMENT_REVIEW = '待人工核对：正式付款金额已更正，请对照原采购与现款后沿原采购保存实收。'
+
+
+def _payment_rows(document):
+    payload = document['payload']
+    if (payload.get('schema') != DOCUMENT_SCHEMA or payload.get('pending')
+            or not payload.get('basis', {}).get('ready') or payload.get('missing')):
+        return None
+    values = {}
+    for row in payload['rows']:
+        sku = row['sku']
+        quantity = number(row.get('base_quantity'))
+        amount = number(row.get('amount'), optional=True)
+        if (sku in values or row.get('quantity_origin') in ('missing','blank')
+                or row.get('currency','') not in ('','CNY','人民币','RMB')
+                or (Decimal(quantity) > 0 and amount is None)
+                or (Decimal(quantity) == 0 and amount is not None and Decimal(amount) != 0)):
+            return None
+        values[sku] = ((Decimal(quantity), row['unit']), Decimal(amount) if amount is not None else None)
+    return values
+
+
+def amount_review(db, head, original, current=None):
+    """Only a formal amount-only correction can use the original receipt path."""
+    current = latest_version(db,head,'payment') if current is None else current
+    if not current or tuple(current) == (original['version'],original['digest']):
+        return None
+    from jst_cancellation import read as cancellation
+    if cancellation(db,head):
+        return None
+    old = decode(version_row(db,head,'payment',original['version']))
+    new = decode(version_row(db,head,'payment',current[0]))
+    if not old or old['digest'] != original['digest'] or not new or new['digest'] != current[1]:
+        return None
+    if old['payload']['basis'] != new['payload']['basis']:
+        return None
+    before, after = _payment_rows(old), _payment_rows(new)
+    if not before or not after or before.keys() != after.keys():
+        return None
+    delta = []
+    for sku, (identity, old_amount) in before.items():
+        new_identity, new_amount = after[sku]
+        if identity != new_identity:
+            return None
+        if old_amount != new_amount:
+            if old_amount is None or new_amount is None:
+                return None
+            delta.append([sku, str(identity[0]), str(old_amount), str(new_amount), str(new_amount-old_amount)])
+    if not delta:
+        return None
+    totals = [sum((v[1] for v in rows.values() if v[1] is not None),Decimal(0)) for rows in (before,after)]
+    return {'original':original, 'current':{'version':current[0],'digest':current[1]},
+            'old_amount':str(totals[0]), 'new_amount':str(totals[1]), 'difference':str(totals[1]-totals[0]),
+            'rows':delta}
+
+
+def review_stamp(change, purchase_id, order_id, manifest_sha):
+    return {'original':change['original'], 'current':change['current'], 'purchase_id':purchase_id,
+            'order_id':order_id, 'observation_sha':manifest_sha}
+
+
+def validate_review(db, head, review):
+    """Final write-lock check of the specific original and current paid facts."""
+    from jst_cancellation import read as cancellation
+    from work_repository import Conflict
+    old = version_row(db,head,'payment',review['original']['version'])
+    current = review['current']
+    if (cancellation(db,head) or not old or old[2] != review['original']['digest']
+            or latest_version(db,head,'payment') != (current['version'],current['digest'])):
+        raise Conflict('原采购或付款版本在实收核对后变化，请重新核对')
 
 
 def assess(path, items, *, require_payment=True):
@@ -62,7 +137,17 @@ def assess(path, items, *, require_payment=True):
                     payment=latest_version(db, head, 'payment')
                     pv=basis.get('paymentVersion');pd=basis.get('paymentDigest')
                     if not payment or pv is None or not pd:raise ValueError('原采购缺少可复核的付款版本，需核对原任务')
-                    if tuple(payment)!=(pv,pd):raise ValueError('原付款版本已变化，暂停沿用原采购关联')
+                    if tuple(payment)!=(pv,pd):
+                        from jst_cancellation import read as cancellation_case
+                        if cancellation_case(db,head):
+                            out[key]={'eligible':False,'head':head,'retain_receipt':True,
+                                      'reason':'原采购对应的付款版本已变化。原单与实收待办保留，请按原采购和原付款核对实收。'}
+                            continue
+                        review = amount_review(db,head,{'version':pv,'digest':pd},payment)
+                        if review:
+                            out[key]={'eligible':True,'head':head,'payment_review':review,'reason':PAYMENT_REVIEW}
+                            continue
+                        raise ValueError('原付款版本已变化，暂停沿用原采购关联')
             except (KeyError,TypeError,IndexError):reason='原关联身份资料不完整，请核对原任务，不能按同号新单继续'
             except ValueError as exc:reason=str(exc)
             out[key]={'eligible':not reason,'reason':reason,'head':head}
@@ -119,8 +204,10 @@ def tracking_observations(path,heads):
         if not db.execute("SELECT 1 FROM sqlite_master WHERE name='ax_schedules'").fetchone():return out
         for row in db.execute('SELECT payload FROM ax_schedules'):
             value=json.loads(row[0]);h=value.get('local_head') or {};key=(h.get('oid'),h.get('revision'),h.get('warehouse'))
-            if key not in by_key or value.get('retired') or not value.get('summary'):continue
-            summary=value['summary'];old=out.get(key)
-            if not old or summary.get('observedAt','')>old.get('observedAt',''):
-                out[key]={**summary,'orderId':value['order_id'],'receipt_state':value.get('last_state')}
+            if key not in by_key or value.get('retired') or not (value.get('summary') or value.get('payment_review')):continue
+            summary=value.get('summary') or {};old=out.get(key)
+            rank = lambda r: (bool(r.get('payment_review')),r.get('observedAt') or '')
+            if not old or rank({**summary,'payment_review':value.get('payment_review')}) > rank(old):
+                out[key]={'status':'尚未查询',**summary,'orderId':value['order_id'],'receipt_state':value.get('last_state'),
+                          'payment_review':bool(value.get('payment_review')), 'purchase_id':value['id']}
     return out

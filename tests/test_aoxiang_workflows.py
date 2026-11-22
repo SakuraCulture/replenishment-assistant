@@ -185,17 +185,18 @@ class RunnerTests(unittest.TestCase):
         result=self.runner(Client()).run(job['id'])
         self.assertEqual(result['items'][0]['state'],'REVIEW');self.assertNotIn('purchase.submit',calls)
 
-    def test_real_component_rebuild_reply_loss_restores_same_new_preview_and_preserves_payment(self):
+    def test_real_unsent_component_rebuild_reply_loss_restores_same_preview(self):
         p=self.f.package();self.f.reserve(p);real=self.f.client
         self.assertTrue(real.close(timeout=10))
-        self.f.node("""import {StateStore} from './src/state.mjs';import {PurchaseCreates} from './src/purchase-create-ledger.mjs';
-const s=await StateStore.open(process.argv[1]),l=await PurchaseCreates.open(s),id=process.argv[2];let r=l.get(id);
-for(const phase of ['PREPARING','READY','SUBMITTING','NEEDS_REVIEW'])r=l.update(id,r.sequence,phase,phase==='SUBMITTING'?{uploadAttempted:true}:{});s.close();""",str(self.f.root/'component'),p['id'])
+        import shutil
+        state=self.store.folder/'component-state'
+        shutil.copytree(real.state_root,state)
         from aoxiang_client import ProcessClient
-        self.f.client=real=ProcessClient(real.component_root,real.state_root)
-        real.start();before=self.f.f.view()
+        self.f.client=real=ProcessClient(real.component_root,state)
+        before=self.f.f.view()
         job=self.store.prepare([self.f.f.h]);self.store.update(job['id'],position=0,changes={'state':'REVIEW','package':{k:p[k] for k in ('id','package_file','package_sha256','plan_file','plan_sha256')},'purchase_id':p['id']})
         job=self.store.update(job['id'],state='COMPLETED_WITH_ERRORS')
+        real.start()
         new=self.store.rebuild_selected(job['id'],[job['items'][0]['key']],job['sequence'],[self.f.f.h]);f=self.f
         class Client:
             lose=True

@@ -21,12 +21,20 @@ export function hostFacts(db,b){
   const legacy=versions.return?null:one('merchant_feedback','SELECT version,payload FROM merchant_feedback WHERE oid=? AND revision=? ORDER BY version DESC LIMIT 1',[oid,revision]);
   if(legacy)legacy[1]=sha256(legacy[1]);
   const admission=one('store_admission','SELECT payload FROM store_admission WHERE store=?',[store]);
+  const cancellation=one('jst_cancellations',`SELECT online,successor,
+    (SELECT max(id) FROM jst_cancellation_reviews WHERE cancelled_online=jst_cancellations.online)
+    FROM jst_cancellations WHERE oid=? AND warehouse=? ORDER BY observed DESC,rowid DESC LIMIT 1`,[oid,warehouse])
+    ?? one('jst_cancellation_holds','SELECT online FROM jst_cancellation_holds WHERE oid=? AND warehouse=?',[oid,warehouse])
+    ?? one('jst_auto_orders',`SELECT online FROM jst_auto_orders
+      WHERE oid=? AND warehouse=? AND stage='REVIEW' AND internal IS NOT NULL
+        AND (reason LIKE '聚水潭状态为已取消%' OR reason LIKE '聚水潭当前为“已取消”%')`,[oid,warehouse]);
   if(managed&&parent)parent=parent.slice(0,3);
   return {parent,managed,child,signed,
     visibility:one('archive_visibility','SELECT deleted,token FROM archive_visibility WHERE oid=? AND warehouse=?',[oid,warehouse]),
     deleted:one('deleted_order_tokens','SELECT operation_id FROM deleted_order_tokens WHERE oid=?',[oid]),
     retirement:one('warehouse_execution_retirements','SELECT operation_id FROM warehouse_execution_retirements WHERE oid=? AND warehouse=?',[oid,warehouse]),
-    operations:!!(versions.operations||route&&route[0]>=2),versions,legacy,admission:admission?sha256(admission[0]):null};
+    operations:!!(versions.operations||route&&route[0]>=2),versions,legacy,admission:admission?sha256(admission[0]):null,
+    ...(cancellation?{jstCancellation:cancellation}:{})};
 }
 
 // json.dumps(sort_keys=True, ensure_ascii=False) with original numeric lexemes.
@@ -97,6 +105,8 @@ export function checkHostDispatch(p,{consume=false,requestHash=null}={}){
     checkLegacyCatalogs(db,proof);
     const actual=hostFacts(db,p.basis);
     if(canonical(actual)!==canonical(proof.facts)){
+      if(canonical(actual.jstCancellation??null)!==canonical(proof.facts.jstCancellation??null))
+        fail('PURCHASE_BASIS_CHANGED','聚水潭原单取消或付款重核依据已变化；尚未上传，请重新核对');
       const message=canonical(actual.versions.payment)!==canonical(proof.facts.versions.payment)?'付款单已更新，不能上传旧付款数量':'本仓签发、上游或准入依据已变化';
       fail('PURCHASE_BASIS_CHANGED',message+'；尚未上传，请在主程序重新核对并生成预览');
     }

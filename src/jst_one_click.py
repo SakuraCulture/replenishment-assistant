@@ -9,6 +9,7 @@ import jst_auto_order as automatic
 import jst_auto_order_store as tasks
 import jst_auto_order_template as template
 import jst_batches as batches
+import jst_cancellation as cancellation
 import jst_fulfillment
 import jst_order_store as generations
 import jst_orders
@@ -34,11 +35,12 @@ def _result(head, status, message, **details):
 def _verified_binding(db, head, shop, profile, cancel):
     """A prior successful native preview is evidence for the same saved inputs."""
     if tasks.exists(db):
-        rows = db.execute(
-            """SELECT a.online FROM jst_auto_orders a JOIN normal_orders o ON o.oid=a.oid
-               WHERE o.store=? AND a.warehouse=? AND a.proof IS NOT NULL
-               ORDER BY a.updated DESC,a.rowid DESC""",
-            (head['store'], head['warehouse']))
+        sources = 'SELECT online,oid,warehouse,proof,updated,rowid FROM jst_auto_orders'
+        if tasks.exists(db,tasks.HISTORY):
+            sources += ' UNION ALL SELECT online,oid,warehouse,proof,updated,rowid FROM '+tasks.HISTORY
+        rows = db.execute(f"""SELECT a.online FROM ({sources}) a JOIN normal_orders o ON o.oid=a.oid
+            WHERE o.store=? AND a.warehouse=? AND a.proof IS NOT NULL ORDER BY a.updated DESC,a.rowid DESC""",
+                          (head['store'],head['warehouse']))
         for online, in rows:
             checkpoint(cancel)
             saved = tasks.read(db, online)
@@ -71,15 +73,18 @@ def _configuration(db, head, cancel):
 def _prepare_entry(path, db, head, pending, cancel):
     purchases.validate_head(db, head)
     original = tasks.read_warehouse_order(db, head)
+    if original and original['stage'] == 'CANCELLED':
+        raise automatic.Check('原单已取消，请先使用「核对取消并重做」')
     if original and original['stage'] in tasks.RELEASED:
         if not same_head(original['payload']['head'], head):
             raise automatic.Check('已有其他签发版本的下单记录，请核对原任务')
         paid = lifecycle.current(db, head, 'payment')
-        if paid and not paid['payload'].get('pending'):
+        redo = cancellation.redo_case(db, head)
+        if paid and not paid['payload'].get('pending') and not (redo and redo['successor']==original['online']):
             raise automatic.Check('该单已保存正式付款，请进入后续环节')
         return {'head': head, 'mode': 'recover', 'online': original['online'], 'sequence': original['sequence'],
                 'shop': original['payload']['shop']}
-    blocker = saved_execution_reason(db, head)
+    blocker = saved_execution_reason(db, head, allow_redo=True)
     if blocker:
         raise automatic.Check(blocker + '，请核对原订单')
     if _key(head) in pending:
@@ -229,6 +234,15 @@ def _order(path, entry, gid, browser, progress, cancel):
         status, = automatic.process(path, [online], browser, 'submit', progress, cancel,
                                     approved={online: preview['sequence']}, prepare_payment=jst_fulfillment.pull_order_payment)
     payment = status.get('payment') or {}
+    if status.get('internal') and status['ok'] and status['stage'] in ('IMPORTED','AUDITED'):
+        with closing(wr.read_connection(path)) as db:
+            db.execute('BEGIN')
+            redo = cancellation.redo_case(db,head)
+            paid = lifecycle.current(db,head,'payment') if redo else None
+            if redo and redo['successor'] == online and paid and not paid['payload'].get('pending'):
+                reason, _ = cancellation.payment_state(db, head, paid)
+                if reason:
+                    return _result(head, '付款待重新核对', reason, online=online, internal=status['internal'])
     label = ('待人工确认付款' if payment.get('state') == 'READY' else
              '已查回原单，付款资料待核' if status.get('internal') and status['ok'] else
              '导入结果待核' if status['stage'] in tasks.RELEASED else '下单待核')

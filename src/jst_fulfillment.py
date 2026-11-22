@@ -60,6 +60,8 @@ class Browser(automatic.Browser):
 
 def _order(db, online, expected=None):
     order = orders.read(db, online)
+    if order and (order.get('historical') or order['stage'] == 'CANCELLED'):
+        raise ValueError('聚水潭原单已取消，请在付款核对重新核对原付款')
     if not order or not re.fullmatch(r'[1-9]\d*', order['internal'] or ''):
         raise ValueError('原任务尚未确认聚水潭内部订单号，请先核对原单')
     payload = order['payload']
@@ -196,6 +198,18 @@ def _original(path, online, payload, raw):
     return {'path': str(dest), **payload['file']}
 
 
+def _existing_payment(db, payload):
+    from jst_cancellation import redo_case
+    head = payload['head']
+    payment = lifecycle.current(db, head, 'payment')
+    redo = redo_case(db, head) if payment else None
+    original = None
+    if (redo and redo['successor']==payload['online']
+            and (payment['version'],payment['digest'])==(redo['payment_version'],redo['payment_digest'])):
+        original = redo['internal']
+    return order_payment.existing_payment(payload, payment, original_internal=original)
+
+
 def prepare_review(path, keys, progress=lambda _: None, cancel=None):
     plans, files, guards, overview = [], [], [], []
     for online in dict.fromkeys(keys):
@@ -209,7 +223,7 @@ def prepare_review(path, keys, progress=lambda _: None, cancel=None):
             order = _order(db, online, payload)
             source_kind = payload.get('source_kind')
             is_native = source_kind in order_payment.NATIVE_KINDS
-            former = order_payment.existing_payment(payload, lifecycle.current(db, payload['head'], 'payment')) if is_native else None
+            former = _existing_payment(db,payload) if is_native else None
             if former and not (former['changed_skus'] or former['freight_to_check']):
                 raise ValueError(f"原单商品数量和金额与正式付款 V{former['version']:03d} 一致，沿用该付款版本")
         file = _original(path, online, payload, raw)
@@ -333,6 +347,10 @@ def _observe_payment(path, order, state, message, native_status, candidate, canc
         digest = (previous or {}).get('digest')
         if native_status == confirmation.AUDITED and current['stage'] != 'AUDITED':
             current = orders.update(db, current, 'AUDITED', status='audited', reason='已核对原单，聚水潭当前为“已客审待财审”')
+        elif native_status == '已取消':
+            from jst_cancellation import PAYMENT_REVIEW, record
+            current = orders.update(db,current,'CANCELLED',status='cancelled',reason=PAYMENT_REVIEW)
+            record(db,current)
         elif native_status in confirmation.REVERSED and current['stage'] != 'REVIEW':
             current = orders.update(db, current, 'REVIEW', status='review', reason=f'聚水潭当前为“{native_status}”，原付款资料待核')
         if state == 'READY':
@@ -341,11 +359,14 @@ def _observe_payment(path, order, state, message, native_status, candidate, canc
                 old, original = sources.source(db, online, digest)
                 if old.get('source_kind') == order_payment.LEGACY_KIND and order_payment.same_order_facts(old,payload):
                     payload, raw = old, original
-            formal = order_payment.existing_payment(payload, lifecycle.current(db, payload['head'], 'payment'))
+            formal = _existing_payment(db,payload)
             if formal:
                 version = f"V{formal['version']:03d}"
                 if not (formal['changed_skus'] or formal['freight_to_check']):
                     state, message = 'MATCHES_PAYMENT', f'原单商品数量和金额与正式付款 {version} 一致，沿用该版本'
+                    from jst_cancellation import payment_state
+                    hold, _ = payment_state(db,payload['head'],lifecycle.current(db,payload['head'],'payment'))
+                    if hold: message = f'商品数量和金额与 {version} 一致。'+hold
                 else:
                     freight = '，另需核对运费' if formal['freight_to_check'] else ''
                     message = f"与正式付款 {version} 有 {formal['changed_skus']} 款商品差异{freight}，等待人工核对"
@@ -386,6 +407,8 @@ def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None
                     status = receipt.get('native_status') or '未知状态'
                     buyer_problem = confirmation.buyer_issue(receipt)
                     if receipt.get('buyer_check') == 'mismatch':
+                        state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
+                    elif status == '已取消' and buyer_problem:
                         state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
                     elif status not in confirmation.PAYMENT_STATES:
                         state, message = 'PAYMENT_SOURCE_PENDING', f'聚水潭当前为“{status}”，须核对原订单后准备付款资料'

@@ -168,6 +168,10 @@ def publish(db,oid,source_revision,identity_digest,saved,payload,selected,progre
         if previous and previous[0]==snapshot_digest:
             continue
         if old and old['state']=='active':
+            from lifecycle_store import has_formal_document
+            for stage, title, page in (('receipt', '正式实收', '收货核对'), ('payment', '正式付款', '付款核对')):
+                if has_formal_document(db, oid, warehouse, stage):
+                    raise wr.Conflict(f'{warehouse}的仓单已有{title}。请在订单跟踪进入「{page}」沿原单更正，或补导原签发单。')
             if jst_exists(db) and db.execute('SELECT 1 FROM jst_active WHERE oid=? AND warehouse=?',(oid,warehouse)).fetchone():
                 raise wr.Conflict('所选仓已有聚水潭生成记录，请通过该仓原单更正；另一仓不受影响：'+warehouse)
         child_revision=(old.get('child_revision',0) if old else 0)+1

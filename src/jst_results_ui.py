@@ -132,6 +132,8 @@ class ResultsPage(QWidget):
         if self.last_plan and new-old:self.status.setText(f'新增 {len(new-old)} 份可导出结果；不会加入已开始的导出，可再次导出。')
         elif self.last_plan is None:self.status.setText('查询完成；业务进度见各单状态。可重复导出有效结果，不重新分配。' if c['ready'] else '旧分配已失效，不能直接导出；请勾选要更正的订单，点击“按原批重新分配勾选单”。旧付款保留，新分配后需重新核对付款。' if any((r.get('gid') or r.get('original_zero')) and r['state']=='stale' for r in self.records) else '当前范围没有可导出结果：尚未回传请先确认回传；已回传请准备分配批次，或选择原批继续。')
         if self.payment_notice:self.status.setText(self.payment_notice)
+        if getattr(self,'redo_target',None) in self.chosen:
+            self.status.setText('已返回重做仓单。维持需求可点击「一键分配下单」；改量请先在订单跟踪更正本仓回传。')
         self.progress.hide();self.controls()
         if getattr(self,'auto_payment_scope',None):QTimer.singleShot(0,self.prepare_payment_automatically)
 
@@ -436,7 +438,7 @@ class ResultsPage(QWidget):
             selected=jst_auto_order.selection(self.visible_records(),self.chosen)
             result=run(self,jst_auto_order.prepare,(self.path,selected),'按勾选仓单制表')
             if not self.closing and not self.host.closing:
-                if result['ready']:open_orders(self,self.host,result['ready'],result['failed'])
+                if result['ready']:self.focus_redo(open_orders(self,self.host,result['ready'],result['failed']))
                 else:raise ValueError('\n'.join(e['order']+'：'+e['reason'] for e in result['failed']))
         try:notify(self,prepare)
         finally:self.reviewing=False;self.refresh()
@@ -445,8 +447,22 @@ class ResultsPage(QWidget):
         from jst_auto_order_ui import notify,open_orders
         if self.worker or self.reviewing:return
         self.reviewing=True;self.controls()
-        try:notify(self,lambda:open_orders(self,self.host))
+        try:self.focus_redo(notify(self,lambda:open_orders(self,self.host)))
         finally:self.reviewing=False;self.refresh()
+
+    def focus_redo(self,head):
+        if not head:return
+        self.batch_id=None
+        self.scope=[head]
+        self.scope_btn.show()
+        self.redo_target=service.key(head)
+        self.chosen={self.redo_target}
+        day=QDate.fromString(head['day'],'yyyy-MM-dd')
+        with QSignalBlocker(self.day),QSignalBlocker(self.end),QSignalBlocker(self.search),QSignalBlocker(self.warehouse):
+            self.day.setDate(day)
+            self.end.setDate(day)
+            self.search.clear()
+            self.warehouse.setCurrentText('全部仓')
 
     def auto_profiles(self):
         from jst_auto_order_ui import notify,profiles

@@ -94,6 +94,7 @@ class LifecycleWidget(QWidget):
                 row.addWidget(button('导出'+TITLES[stage],lambda:export_selected(self,self.host,list(self.checked.values()),stage)))
                 if stage=='payment':row.addWidget(button('使用聚水潭导入单作为付款来源',self.review_payment))
                 if stage=='payment':row.addWidget(button('核对聚水潭付款资料',self.review_platform_payment))
+                if stage=='payment':row.addWidget(button('原单取消付款重核',self.review_cancelled_payment))
                 if stage=='payment':row.addWidget(button('勾选单批量生成翱象采购预览',self.aoxiang_prepare))
                 if stage=='receipt':row.addWidget(button('勾选单批量同步翱象收货',self.aoxiang_receipts))
                 if stage=='return':row.addWidget(button('导出原签发单',self.export_signed))
@@ -138,6 +139,15 @@ class LifecycleWidget(QWidget):
         self.query(keep_page=True)
     def review_platform_payment(self):
         self._review_platform_payment(list(self.checked.values()))
+
+    def review_cancelled_payment(self):
+        from jst_cancellation_ui import review
+        heads = list(self.checked.values())
+        if len(heads) != 1:
+            QMessageBox.information(self,'选择原仓单','请勾选一张原单已取消的仓单核对付款。')
+            return
+        if review(self,self.host,heads[0]):
+            self.query(keep_page=True)
 
     def _review_platform_payment(self,heads):
         from jst_fulfillment_jobs import originals_for_scope
@@ -274,6 +284,8 @@ class LifecycleWidget(QWidget):
             notices=[h['note']] if h.get('note') else []
             platform=h.get('platform_purchase')
             if platform:notices.append('翱象 '+platform['orderId']+'：'+platform['status']+'（观察 '+platform.get('observedAt','未知')+'）'+('；作废后实收待处理' if platform.get('receipt_state')=='VOIDED_REVIEW' else ''))
+            receipt_review=bool((platform or {}).get('payment_review'))
+            if receipt_review:notices.append('付款金额已更正，原采购实收待人工核对')
             if h.get('locked'):notices.append('有历史下单标记。更正前请在聚水潭导入单核对。')
             if h.get('generation_summary'):notices.append('聚水潭生成 '+h['generation_summary']['amount']+' 元')
             if h.get('generation_task'):notices.append(h['generation_task']['message'])
@@ -285,7 +297,7 @@ class LifecycleWidget(QWidget):
                 tracking=h.get('platform_tracking',{})
                 values[4:4]=['、'.join(tracking.get('jst_numbers',[])) or '未提供',
                              '、'.join(tracking.get('ax_numbers',[])) or ('待绑定' if tracking.get('await_binding') else '未关联'),
-                             tracking.get('receipt_status','未记录收货')]
+                             '待人工核对' if receipt_review else tracking.get('receipt_status','未记录收货')]
             for j,x in enumerate(values,3):self.table.setItem(i,j,QTableWidgetItem(str(x)))
             if self.stage is None:
                 self.table.item(i,7).setToolTip(self.table.item(i,7).text()+' · '+tracking.get('jst_source','未提供'))
@@ -300,6 +312,7 @@ class LifecycleWidget(QWidget):
                 applicable=s in ({'jst_generate'} if self.stage=='jst' else {'payment','jst_payment'} if self.stage=='payment' else {self.stage})
                 if not applicable:title='本环节已处理'
                 elif self.stage=='payment' and s=='payment' and h['health'].get(JST_ORDER):title='核对聚水潭付款资料'
+                if self.stage=='receipt' and receipt_review:title,applicable='待人工核对 · 打开原采购',True
             else:
                 applicable=s is not None
                 if s:title='进入'+self.STAGES[{'jst_generate':'jst','jst_payment':'payment'}.get(s,s)]
@@ -369,6 +382,12 @@ class LifecycleWidget(QWidget):
     def open_receipt_record(self,head):
         tracking=head.get('platform_tracking',{})
         try:
+            platform=head.get('platform_purchase') or {}
+            if platform.get('payment_review'):
+                from aoxiang_receipt_ui import open_receipts
+                open_receipts(self,self.host,head,focus=platform['purchase_id'])
+                self.query(keep_page=True)
+                return
             if head['present'].get('receipt'):
                 from lifecycle_ui import Document
                 dialog=Document(self,self.host,head,'receipt');dialog.exec();dialog.deleteLater()
@@ -386,6 +405,8 @@ class LifecycleWidget(QWidget):
                 if open_receipts(self,self.host,head):self.query(keep_page=True)
         except Exception as exc:warn(self,exc)
     def next(self,head):
+        if self.stage=='receipt' and (head.get('platform_purchase') or {}).get('payment_review'):
+            self.open_receipt_record(head);return
         s=head['next']
         if not s:return
         if not self.stage:self.open_stage({'jst_generate':'jst','jst_payment':'payment'}.get(s,s),[head]);return

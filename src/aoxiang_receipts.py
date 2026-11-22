@@ -14,7 +14,12 @@ import purchases
 from purchase_io import number, code
 from runtime_support import checkpoint
 from aoxiang_directory import file_hash
-from aoxiang_purchase import validate_basis
+from aoxiang_purchase import validate_basis, validate_original_context
+from aoxiang_receipt_scope import PAYMENT_REVIEW, amount_review, review_stamp
+
+
+class ReceiptPaymentReview(ValueError):
+    code = 'RECEIPT_PAYMENT_REVIEW'
 
 
 def checked_json(file, sha):
@@ -63,13 +68,35 @@ def validate_observation(observation, intent):
     return o
 
 
-def prepare(path, package, manifest, configuration, suppliers, *, cancel=None, progress=lambda _: None):
+def _payment_review(change, intent, observation, manifest, old, approval):
+    if not change:
+        if approval:
+            raise ValueError('付款版本或收货依据已变化，请重新打开原采购核对')
+        return None
+    stamp = review_stamp(change,intent['id'],observation['orderId'],manifest['sha256'])
+    recorded = old['payload'].get('aoxiang_payment_review') if old else None
+    if recorded and all(recorded.get(k)==v for k,v in stamp.items()):
+        return recorded
+    if old:
+        raise ValueError('这份原采购实收已入账，请查看原实收和当前付款差额。')
+    if not approval:
+        raise ReceiptPaymentReview(PAYMENT_REVIEW)
+    if approval.get('stamp') != stamp:
+        raise ValueError('付款版本、采购关联或收货原件已变化，请重新打开核对')
+    reviewer, basis = approval['reviewer'].strip(), approval['basis'].strip()
+    if not reviewer or not basis:
+        raise ValueError('请填写实收核对人和处理依据')
+    from work_repository import now
+    return {**stamp,'reviewer':reviewer,'basis':basis,'checked_at':now(),
+            **{k:change[k] for k in ('old_amount','new_amount','difference')}}
+
+
+def prepare(path, package, manifest, configuration, suppliers, *, approval=None, cancel=None, progress=lambda _: None):
     checkpoint(cancel)
     intent = checked_json(package['package_file'], package['package_sha256'])
     frozen = checked_json(package['plan_file'], package['plan_sha256'])
     if intent['id'] != package['id'] or intent['basis']['planFingerprint'] != frozen['fingerprint']:
         raise ValueError('采购本地索引与冻结付款依据不一致')
-    validate_basis(path, frozen, configuration, suppliers, cancel=cancel)
     o = validate_observation(checked_json(manifest['file'], manifest['sha256']), intent)
     files = []
     for f in o['files']:
@@ -99,7 +126,13 @@ def prepare(path, package, manifest, configuration, suppliers, *, cancel=None, p
         db.execute('BEGIN')
         purchases.validate_head(db, head)
         basis = lifecycle.upstream(db, head, 'receipt')
-        token = {'version': frozen['payment']['version'], 'digest': frozen['payment']['digest']}
+        original = {'version': frozen['payment']['version'], 'digest': frozen['payment']['digest']}
+        change = amount_review(db, head, original)
+        if change:
+            validate_original_context(db, frozen, configuration, suppliers, cancel=cancel)
+        else:
+            validate_basis(path, frozen, configuration, suppliers, cancel=cancel, _db=db, for_binding=True)
+        token = change['current'] if change else original
         if not basis['ready'] or basis['dependencies'].get('payment') != token:
             raise ValueError('付款或上游依据已变化，需先核对，不能自动同步实收')
         old = lifecycle.current(db, head, 'receipt')
@@ -107,13 +140,14 @@ def prepare(path, package, manifest, configuration, suppliers, *, cancel=None, p
             old_raw = old['payload'].get('raw_rows', [])
             if (not old_raw or any(r.get('adapter') != 'aoxiang_actual_receipt' or r.get('aoxiang_receipt') != provenance for r in old_raw)):
                 raise ValueError('已有人工收货或其他观察版本；自动同步不覆盖，请在原生命周期中核对校准')
-        plan = lifecycle.make_plan(db, head, 'receipt', raw, files)
+        review = _payment_review(change, intent, o, manifest, old, approval)
+        plan = lifecycle.make_plan(db, head, 'receipt', raw, files, aoxiang_payment_review=review)
     if plan['payload']['pending'] or plan['payload']['missing'] or plan['payload']['extra']:
         raise ValueError('收货与当前付款范围不一致；不能按缺行补0或自动接受清单外商品')
     return {'plans': [plan], 'files': files}
 
 
-def synchronize(path, package, manifest, configuration, suppliers, *, cancel=None, progress=lambda _: None):
-    plan = prepare(path, package, manifest, configuration, suppliers, cancel=cancel, progress=progress)
+def synchronize(path, package, manifest, configuration, suppliers, *, approval=None, cancel=None, progress=lambda _: None):
+    plan = prepare(path, package, manifest, configuration, suppliers, approval=approval, cancel=cancel, progress=progress)
     # Original service checks version, dependencies, files and cancellation under the write lock.
     return lifecycle.commit(path, plan, progress, cancel)[0]

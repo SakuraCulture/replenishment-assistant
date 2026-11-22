@@ -26,8 +26,11 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
     records=base['records']
     batches=list(oid_batches(r['oid'] for r in records))
     with closing(wr.read_connection(path)) as db:
+        from jst_cancellation import affected_scopes, payment_state
+        from lifecycle_facts import current as document
         tasks = latest_statuses(db, batches, cancel)
         current, locks = list_generation_state(db, batches, cancel)
+        affected = affected_scopes(db,batches)
         for r in records:
             checkpoint(cancel);key=(r['oid'],r['warehouse']);g=current.get(key)
             r.update(gid=g[0] if g else None,locked=key in locks,generation_summary=g[1]['summary'] if g else None)
@@ -41,6 +44,13 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
                         r['note']='回传或签发依据已变化，请核对生成单；未自动重分配'
                 else:r['note']='待生成聚水潭导入单；也可直接导入实际付款单'
             if key in tasks:r['generation_task']=tasks[key]
+            if key in affected:
+                hold, authorization = payment_state(db,r,document(db,r,'payment'))
+                if hold:
+                    r['cancelled_payment_hold'] = hold
+                    r['note'] = hold
+                if authorization:
+                    r['cancellation_review'] = authorization
     counts={s:sum(r['status']==s for r in records) for s in STATUSES}
     wh=request.get('warehouse');lock=request.get('lock');stage=request.get('status','')
     view=request.get('stage_view');kind=request.get('stage_filter');scope=request.get('scope')
@@ -55,7 +65,7 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
             if kind=='已生成未锁':return bool(r['gid']) and not r['locked']
             if kind=='已锁':return r['locked']
             return bool(r['gid']) or r['next']=='payment'
-        pending=r['next'] in ('payment','jst_payment') if view=='payment' else r['next']==view
+        pending=(r['next'] in ('payment','jst_payment') or bool(r.get('cancelled_payment_hold'))) if view=='payment' else r['next']==view
         return pending if kind=='待处理' else pending or r['present'].get(view,False) or (
             view=='payment' and r['health'].get(JST_ORDER,False))
     def in_status(r):return not stage or stage==r['status'] or stage=='全部未完成' and r['next']
@@ -74,6 +84,8 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
             version, digest = tracking['payment_basis']
             if task:
                 purchase_excluded[key] = task['message']
+            elif r.get('cancelled_payment_hold'):
+                purchase_excluded[key] = r['cancelled_payment_hold']
             elif r['warehouse'] not in ('山东仓', '河北仓') or r['revision'] != r['current_revision']:
                 purchase_excluded[key] = '仓单身份或签发修订待核'
             elif not r['health'].get('payment') or version is None or not digest:
@@ -82,6 +94,8 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
                 purchase_excluded[key] = '正式付款数量为零'
             else:
                 r['preview_payment'] = {'version': version, 'digest': digest}
+                if r.get('cancellation_review'):
+                    r['preview_payment']['cancellation_review'] = r['cancellation_review']
                 eligible.append(r)
         matched = eligible
     explanation={}

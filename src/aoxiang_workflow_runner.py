@@ -8,7 +8,7 @@ from aoxiang_client import ComponentError
 from aoxiang_directory import Directory, atomic_json
 from aoxiang_purchase_tasks import prepare, validate_for_upload
 from aoxiang_purchase import preflight_payment
-from aoxiang_receipts import synchronize
+from aoxiang_receipts import ReceiptPaymentReview, synchronize
 from aoxiang_workflows import DONE_ITEM
 
 RETRYABLE = {'TASK_PENDING', 'PURCHASE_DOWNLOAD_HTTP', 'DOWNLOAD_FAILED', 'DOWNLOAD_TIMEOUT', 'TASK_NOT_FOUND', 'SAVE_BLOCKED'}
@@ -82,13 +82,10 @@ class Runner:
         rebuild=item.get('rebuild') or {}
         if rebuild.get('purchase_id'):
             if not configuration.get('purchase_rebuild'):raise ValueError('当前组件不支持采购重建，请使用完整新版程序')
-            try:old=self.client.request('purchase.status',purchase_id=rebuild['purchase_id'])
-            except ComponentError as exc:
-                if exc.code!='PURCHASE_CREATE_NOT_FOUND':raise
-                old={'sequence':1}
+            old=self.client.request('purchase.status',purchase_id=rebuild['purchase_id'])
             accepted=self.client.request('purchase.rebuild',purchase_id=rebuild['purchase_id'],sequence=old['sequence'],
                 package_file=p['package_file'],package_sha256=p['package_sha256'],operation_id=rebuild['operation_id'],
-                reason='业务确认结束原任务并重新生成采购预览；原平台采购单由业务处理',acknowledge_uncertainty=True)
+                reason='业务确认按已核实的原采购事实重建预览',acknowledge_uncertainty=True)
         else:
             accepted = self.client.request('purchase.reserve', package_file=p['package_file'], package_sha256=p['package_sha256'])
         if accepted['record']['uploadAttempted']:
@@ -129,18 +126,21 @@ class Runner:
             raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'), error.get('message', '原采购任务尚未核实成功，不能重传'), error.get('details'))
 
     def receipt_item(self, item, configuration, suppliers):
-        from aoxiang_receipt_scope import require,formal_receipt_exists
+        from aoxiang_receipt_scope import PAYMENT_REVIEW, require,formal_receipt_exists
         initial=require(self.business_path,[item])[item['key']]
         guard_item={**item,'basis':{**item['basis'],**initial['head']}}
         id = item['purchase_id']
+        current = initial
         def observe(r):
+            nonlocal current
             if r['scope']['orderId'] != item['order_id'] or r['basis'] != item['basis']:
                 raise ValueError('收货任务关联变化，停止采用')
             from aoxiang_receipt_scope import assess
             current=assess(self.business_path,[guard_item])[item['key']]
             if not current['eligible']:
                 self.client.request('receipt.pause',purchase_id=id)
-                raise ComponentError('RECEIPT_SOURCE_RETIRED',current['reason']+'；已请求安全停止，原受理任务及文件保留')
+                code = 'RECEIPT_PAYMENT_REVIEW' if current.get('retain_receipt') else 'RECEIPT_SOURCE_RETIRED'
+                raise ComponentError(code,current['reason']+'；已请求安全停止，原受理任务及文件保留')
             self.store.observe_schedule(id, r)
         record = self.client.request('receipt.status', purchase_id=id)
         observe(record)
@@ -167,6 +167,8 @@ class Runner:
         if record['state'] == 'SYNCED':
             return 'SYNCED', {'receipt': record.get('hostReceipt'), 'summary': record.get('summary')}
         if record['state'] == 'IDLE':
+            if current.get('payment_review'):
+                raise ReceiptPaymentReview(PAYMENT_REVIEW)
             return 'OBSERVED', {'summary': record.get('summary')}
         error = record.get('error') or {}
         raise ComponentError(error.get('code', 'RECEIPT_NEEDS_REVIEW'), error.get('message', '实收字段或主子状态未通过；保留原件待核'))
@@ -202,6 +204,11 @@ class Runner:
                     from aoxiang_receipt_scope import assess
                     eligibility=assess(self.business_path,[item])[item['key']]
                     if not eligibility['eligible']:
+                        if eligibility.get('retain_receipt'):
+                            error={'code':'RECEIPT_PAYMENT_REVIEW','message':eligibility['reason']}
+                            self.store.observe_schedule(item['purchase_id'],None,error=error,review=True)
+                            update(changes={'state':'REVIEW','error':error})
+                            continue
                         self.store.observe_schedule(item['purchase_id'],None,error={'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']},review=True)
                         update(changes={'state':'SKIPPED','source_retired':True,'error':{'code':'RECEIPT_SOURCE_RETIRED','message':eligibility['reason']}})
                         continue

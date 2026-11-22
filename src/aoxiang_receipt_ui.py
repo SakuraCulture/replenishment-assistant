@@ -6,10 +6,11 @@ from decimal import Decimal
 from pathlib import Path
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QComboBox, QLineEdit, QProgressBar, QHeaderView
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QComboBox, QLineEdit, QProgressBar, QHeaderView, QDialog, QFormLayout
 from aoxiang_client import ProcessClient
 from aoxiang_directory import Directory
 from aoxiang_receipts import checked_json, synchronize
+from aoxiang_receipt_scope import assess, formal_receipt_exists, review_stamp
 from aoxiang_purchase_tasks import inspect_basis
 from aoxiang_ui_common import ComponentDialog, component_root, show_modal
 from business_ui import grid
@@ -36,9 +37,10 @@ def display_time(value):
 
 
 class ReceiptDialog(ComponentDialog):
-    def __init__(self, parent, host, head, *, client_factory=ProcessClient):
+    def __init__(self, parent, host, head, *, client_factory=ProcessClient, focus=None):
         super().__init__(parent)
         self.host, self.head = host, head
+        self.focus = focus
         self.folder = Path(host.repository.folder) / 'aoxiang'
         self.init_client(host, client_factory)
         self.started = False
@@ -47,6 +49,7 @@ class ReceiptDialog(ComponentDialog):
         self.records, self.current = [], None
         self.configuration = self.suppliers = None
         self.pending_save = self.local_saving = False
+        self.payment_review = None
         self.local_cancel = threading.Event()
         self.poll = QTimer(self)
         self.poll.setInterval(1000)
@@ -101,6 +104,7 @@ class ReceiptDialog(ComponentDialog):
         idle = not self.worker and not self._closing
         active = bool((self.current or {}).get('active'))
         state = (self.current or {}).get('state')
+        self.save_btn.setText('人工核对并保存原采购实收' if self.payment_review else '重试保存已验收实收')
         self.sync_btn.setEnabled(idle and not active and bool(self.current) and state not in ('READY', 'SYNCED', 'VOIDED', 'VOIDED_REVIEW') and not self.head.get('deleted'))
         self.save_btn.setEnabled(idle and not active and state == 'READY' and not self.head.get('deleted'))
         self.stop_btn.setEnabled((idle and active) or (self.local_saving and not self.local_cancel.is_set()))
@@ -131,14 +135,16 @@ class ReceiptDialog(ComponentDialog):
         self.orders.clear()
         for r in self.records:
             self.orders.addItem('采购单 ' + r['binding']['orderId'], r['id'])
-        self.orders.setCurrentIndex(0)
+        index = max(0,self.orders.findData(self.focus))
+        self.orders.setCurrentIndex(index)
         self.orders.blockSignals(False)
         self.current = None
+        self.payment_review = None
         self.basis_note.setText('正在核对原采购依据与当前付款…' if self.records else '尚无已关联采购记录。')
         self.model.replace([])
         if self.records:
             # load's worker has not finished yet; defer the selected status call to on_idle.
-            self.pending_read = self.records[0]['id']
+            self.pending_read = self.records[index]['id']
         else:
             self.summary.setText('本单尚无已核验关联的翱象采购单。请先在翱象采购中核对原任务。')
             self.status.setText('未连接平台。')
@@ -146,26 +152,39 @@ class ReceiptDialog(ComponentDialog):
     def select_record(self, index):
         if 0 <= index < len(self.records):
             self.current = None
+            self.payment_review = None
             self.basis_note.setText('正在核对原采购依据与当前付款…')
             self.pending_read = self.records[index]['id']
             self.on_idle()
 
     def status_data(self, id, *, check_basis=False):
         record = self.client.request('receipt.status', purchase_id=id)
-        from aoxiang_receipt_scope import formal_receipt_exists
+        original = next((r for r in self.records if r['id']==id),None)
+        if (not original or record['scope']['orderId']!=original['binding']['orderId']
+                or record.get('basis') not in (None,original['basis'])):
+            raise ValueError('收货任务与所选原采购关联不同，请重新打开核对')
+        record = {**record,'basis':original['basis']}
         if record['state']=='VOIDED' and formal_receipt_exists(self.host.work_repository.path,record['basis']):
             record=self.client.request('receipt.host_void_conflict',purchase_id=id,reason='本机已有正式收货记录，平台现已作废；保留原实收，需人工核对后续处理')
         manager=getattr(self.host,'aoxiang_workflows',None)
         if manager:manager.store.observe_schedule(id,record)
         observation = checked_json(record['manifest']['file'], record['manifest']['sha256']) if record.get('manifest') else None
-        state = None
-        if check_basis:
+        local = assess(self.host.work_repository.path,[{'key':id,'basis':record['basis']}])[id]
+        payment = None if record['state'] in ('SYNCED','VOIDED','VOIDED_REVIEW') else local.get('payment_review')
+        state = {'payment_review':payment}
+        if record['state']=='SYNCED':
+            state['message']='原采购正式实收已保存。'
+        elif payment:
+            state['message'] = (f"待人工核对 · 原付款 V{payment['original']['version']:03d} ¥{payment['old_amount']} · "
+                                f"当前 V{payment['current']['version']:03d} ¥{payment['new_amount']} · "
+                                f"差额 ¥{payment['difference']}")
+        elif check_basis:
             context = self.folder / 'purchase-packages' / id / '本地任务索引.json'
             try:
                 package = json.loads(context.read_text(encoding='utf-8'))
             except (OSError, ValueError):
                 package = None
-            state = inspect_basis(self.host.work_repository.path, package, self.client.request('configuration'), Directory(self.folder).suppliers())
+            state.update(inspect_basis(self.host.work_repository.path, package, self.client.request('configuration'), Directory(self.folder).suppliers()))
         return record, observation, state
 
     def on_idle(self):
@@ -185,12 +204,16 @@ class ReceiptDialog(ComponentDialog):
             return
         self.current = record
         if len(data)>2 and data[2] is not None:
-            self.basis_note.setText(data[2]['message'])
+            self.payment_review = data[2].get('payment_review')
+            if data[2].get('message'):
+                self.basis_note.setText(data[2]['message'])
         summary = record.get('summary') or {}
         self.summary.setText('采购单 ' + record['scope']['orderId'] + ' · ' + STATES.get(record['state'], record['state']) +
                              '\n平台状态：' + summary.get('status', '尚未查询') + ' · 最后观察：' + display_time(summary.get('observedAt')))
         note = (STATES[record['state']]+'；保留原签发和付款，不记收货0，不自动退款。') if record['state'] in ('VOIDED','VOIDED_REVIEW') else '已见“已完成”：常规监控已停止；最终实收任务单独保留。' if record['terminal'] else '尚未见“已完成”；已知入库值仅作进度观察，不提前记账。'
         if record.get('hostConflict'):note+='\n'+record['hostConflict']
+        if self.payment_review:
+            note+='\n待人工核对。可继续查询原采购，取得完整实收后由业务核对差额并保存。'
         if record.get('error'):
             note += '\n' + record['error']['message']
         if o and o['issues']:
@@ -221,7 +244,7 @@ class ReceiptDialog(ComponentDialog):
         id = self.current['id']
         def received(data):
             self.render(data)
-            if self.current and self.current['state'] == 'READY' and not self._closing:
+            if self.current and self.current['state'] == 'READY' and not self._closing and not self.payment_review:
                 self.pending_save = True
         self.run(lambda _: self.status_data(id), received)
 
@@ -229,7 +252,7 @@ class ReceiptDialog(ComponentDialog):
         id = self.current['id']
         def started(r):
             self.render((r, None))
-            if r['state'] == 'READY':
+            if r['state'] == 'READY' and not self.payment_review:
                 self.pending_save = True
         def operation(_):
             from aoxiang_receipt_scope import require
@@ -238,10 +261,51 @@ class ReceiptDialog(ComponentDialog):
         self.run(operation, started)
 
     def retry_save(self):
+        if self.payment_review:
+            approval = self.review_amount()
+            if approval:
+                self.save_receipt(approval)
+            return
         self.pending_save = True
         self.on_idle()
 
-    def save_receipt(self):
+    def review_amount(self):
+        if not self.current or self.current['state'] != 'READY':
+            return None
+        change, record = self.payment_review, self.current
+        stamp = review_stamp(change,record['id'],record['scope']['orderId'],record['manifest']['sha256'])
+        dialog = QDialog(self)
+        dialog.setWindowTitle('核对原采购实收')
+        dialog.resize(760,430)
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(label('采购单 '+stamp['order_id']+' · '+self.basis_note.text()))
+        layout.addWidget(label('按原采购实收入账。付款差额请按实际凭据说明。','muted'))
+        table, model = grid(dialog,['SKU','付款数量','原款（元）','现款（元）','差额（元）'])
+        model.replace(change['rows'])
+        layout.addWidget(table,1)
+        form = QFormLayout()
+        reviewer, basis = QLineEdit(), QLineEdit()
+        form.addRow('核对人',reviewer)
+        form.addRow('差额处理依据',basis)
+        layout.addLayout(form)
+        row = QHBoxLayout()
+        accept = button('确认并保存实收',dialog.accept,True)
+        def enabled():
+            accept.setEnabled(bool(reviewer.text().strip() and basis.text().strip()))
+        reviewer.textChanged.connect(enabled)
+        basis.textChanged.connect(enabled)
+        enabled()
+        row.addWidget(accept)
+        row.addWidget(button('返回',dialog.reject))
+        layout.addLayout(row)
+        try:
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                return {'stamp':stamp,'reviewer':reviewer.text(),'basis':basis.text()}
+        finally:
+            dialog.deleteLater()
+        return None
+
+    def save_receipt(self, approval=None):
         id, manifest = self.current['id'], self.current['manifest']
         self.local_cancel = threading.Event()
         self.local_saving = True
@@ -251,7 +315,8 @@ class ReceiptDialog(ComponentDialog):
                 raise ValueError('原采购付款依据未找到；保留终态及原件，不能猜测写入实收')
             package = json.loads(context.read_text(encoding='utf-8'))
             config = self.client.request('configuration')
-            receipt = synchronize(self.host.work_repository.path, package, manifest, config, Directory(self.folder).suppliers(), cancel=self.local_cancel, progress=progress)
+            receipt = synchronize(self.host.work_repository.path, package, manifest, config, Directory(self.folder).suppliers(),
+                                  approval=approval, cancel=self.local_cancel, progress=progress)
             progress('正式实收已保存，登记同步回执；若回执中断，重试不会新增实收版本。')
             self.client.request('receipt.synced', purchase_id=id, manifest_sha256=manifest['sha256'], receipt=receipt)
             return self.status_data(id)
@@ -277,5 +342,5 @@ class ReceiptDialog(ComponentDialog):
         super().failure(text)
 
 
-def open_receipts(parent, host, head):
-    return show_modal(host, ReceiptDialog(parent, host, head))
+def open_receipts(parent, host, head, *, focus=None):
+    return show_modal(host, ReceiptDialog(parent, host, head, focus=focus))

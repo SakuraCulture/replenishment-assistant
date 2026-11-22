@@ -11,7 +11,8 @@ from purchase_io import code, number
 from runtime_support import checkpoint
 from aoxiang_jobs import encoded
 from aoxiang_purchase_pricing import POLICY, priced_row
-from aoxiang_payment_preflight import PaymentPreparationError, preflight_payment, require_payment, require_selected_payment
+from aoxiang_payment_preflight import (PaymentPreparationError, preflight_payment, payment_authorization,
+                                       require_payment, require_selected_payment)
 
 
 def fingerprint(plan):
@@ -35,8 +36,9 @@ def freeze_payment(path, head, configuration, suppliers, *, expected_payment=Non
         db.execute('BEGIN')
         purchases.validate_head(db, head)
         view = lifecycle.snapshot(path, head, cancel=cancel, db=db,_comparison=False)
+        authorization = payment_authorization(db,head,view['documents'].get('payment'))
         payment = require_payment(head, view)
-        require_selected_payment(head, payment, expected_payment)
+        require_selected_payment(head, payment, expected_payment, authorization)
         del view  # This call owns the fresh checked document; retain only payment.
         rows, omitted = [], []
         seen = set()
@@ -78,11 +80,13 @@ def freeze_payment(path, head, configuration, suppliers, *, expected_payment=Non
                 'payment_total_amount': str(sum((Decimal(r['payment_amount']) for r in rows), Decimal(0))),
                 'rounding_delta': str(sum((Decimal(r['rounding_delta']) for r in rows), Decimal(0))),
                 'create_external_order': False, 'post_creation_state': '待提交'}
+    if authorization is not None:
+        plan['cancellation_review'] = authorization
     plan['fingerprint'] = fingerprint(plan)
     return plan
 
 
-def validate_basis(path, plan, configuration, suppliers, *, cancel=None, _db=None):
+def validate_original_context(db, plan, configuration, suppliers, *, cancel=None):
     checkpoint(cancel)
     if fingerprint(plan) != plan['fingerprint']:
         raise ValueError('采购预览内容变化，请重新生成')
@@ -90,11 +94,17 @@ def validate_basis(path, plan, configuration, suppliers, *, cancel=None, _db=Non
             or configuration['store_mapping_version'] != plan['store_mapping_version']
             or suppliers.get(plan['head']['warehouse']) != plan['supplier_code']):
         raise ValueError('翱象身份、门店绑定或供应商配置已变化，请重新核对')
+    purchases.validate_head(db, plan['head'])
+
+
+def validate_basis(path, plan, configuration, suppliers, *, cancel=None, _db=None, for_binding=False):
     with (closing(purchases.connect(path)) if _db is None else nullcontext(_db)) as db:
         if _db is None:db.execute('BEGIN')
-        purchases.validate_head(db, plan['head'])
+        validate_original_context(db, plan, configuration, suppliers, cancel=cancel)
         view = lifecycle.snapshot(path, plan['head'], cancel=cancel, db=db,_comparison=False)
         current = view['documents']['payment']
+        if not for_binding and payment_authorization(db,plan['head'],current) != plan.get('cancellation_review'):
+            raise ValueError('原单取消后的付款核对依据已变化，请重新生成采购预览')
         if not current or document_version(current) != document_version(plan['payment']):
             raise ValueError('付款单已更新，请重新预览，不能上传旧付款数量')
         if not view['health']['payment']:
