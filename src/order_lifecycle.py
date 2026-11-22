@@ -345,7 +345,7 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
                 detail=wr.dumps(evidence);action='业务未变化，留存新原件'
                 if not store.event_exists(db, h, p['stage'], v, action, detail):
                     store.insert_event(db, wr.now(), h, p['stage'], v, action, detail)
-            receipts.append({'number': h['number'], 'revision': h['revision'], 'stage': p['stage'], 'version': v, 'changed': p['changed']})
+            receipts.append(store.save_receipt(h, p['stage'], v, p['changed'], p['digest']))
         if plan.get('payment_matching'):
             payment_match_commit.apply(db, plan['payment_matching'])
         try:db.commit()

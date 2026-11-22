@@ -21,9 +21,10 @@ STATES = {'RESERVED': '已准备，尚未上传', 'PREPARING': '核验上传准�
 
 
 class PurchaseDialog(BindingActions, ComponentDialog):
-    def __init__(self, parent, host, head, *, client_factory=ProcessClient):
+    def __init__(self, parent, host, head, *, client_factory=ProcessClient, original_id=None):
         super().__init__(parent)
         self.host, self.head = host, head
+        self.original_id = original_id
         self.folder = Path(host.repository.folder) / 'aoxiang'
         self.init_client(host, client_factory)
         self.started = False
@@ -100,7 +101,8 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         available = bool((self.configuration or {}).get('enabled'))
         pending = any(r['state'] not in ('CANCELLED_BEFORE_UPLOAD','SUPERSEDED') for r in self.records)
         attempted = bool((self.current or {}).get('uploadAttempted'))
-        self.preview_btn.setEnabled(idle and not active and available and not pending and not self.head.get('deleted'))
+        self.preview_btn.setEnabled(idle and not active and available and not pending
+                                    and not self.original_id and not self.head.get('deleted'))
         self.upload_btn.setEnabled(idle and not active and available and bool(self.package) and bool((self.basis_state or {}).get('valid')) and not attempted
                                    and (self.current or {}).get('state') not in ('CANCELLED_BEFORE_UPLOAD','SUPERSEDED') and not self.head.get('deleted'))
         self.verify_btn.setEnabled(idle and not active and bool((self.current or {}).get('taskId'))
@@ -132,6 +134,8 @@ class PurchaseDialog(BindingActions, ComponentDialog):
 
     def loaded(self, data):
         self.configuration, self.suppliers, self.records = data
+        if self.original_id:
+            self.records = [record for record in self.records if record['id'] == self.original_id]
         self.history.blockSignals(True)
         self.history.clear()
         for r in self.records:
@@ -140,7 +144,10 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         self.history.blockSignals(False)
         self.select_record(len(self.records) - 1)
         if not self.records:
-            self.summary.setText('本单尚未创建翱象采购任务。' + ('' if self.configuration.get('enabled') else ' 请先在准备数据页配置并核验翱象连接。'))
+            if self.original_id:
+                self.summary.setText('当前尚未读到原采购记录，请检查连接或从批次作业继续核对。')
+            else:
+                self.summary.setText('本单尚未创建翱象采购任务。' + ('' if self.configuration.get('enabled') else ' 请先在准备数据页配置并核验翱象连接。'))
         self.status.setText('本地记录已读取；生成预览会获取最新原生模板，预览本身不会创建采购单。')
 
     def failure(self, text):
@@ -343,6 +350,6 @@ class PurchaseDialog(BindingActions, ComponentDialog):
             self.run(lambda _: self.client.request('purchase.cancel', purchase_id=self.current['id']), self.purchase_status)
 
 
-def open_purchase(parent, host, head):
-    dialog = PurchaseDialog(parent, host, head)
+def open_purchase(parent, host, head, *, original_id=None):
+    dialog = PurchaseDialog(parent, host, head, original_id=original_id)
     show_modal(host, dialog)

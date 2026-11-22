@@ -6,7 +6,7 @@ from pathlib import Path
 import order_lifecycle as lifecycle
 import purchases
 from runtime_support import checkpoint
-from lifecycle_rules import basis_token as _token, document_summary
+from lifecycle_rules import basis_token as _token, document_summary, positive
 from lifecycle_stages import CURRENT, LEGACY, TITLES, progress_state
 
 
@@ -83,7 +83,14 @@ def _view(db, path, head, cancel):
             "flow_version": 2 if route == CURRENT else 1}
 
 
-def preflight_payment(path, head, *, cancel=None, db=None):
+def require_selected_payment(head, payment, expected):
+    if expected is not None and _token(payment) != expected:
+        raise PaymentPreparationError(
+            'PAYMENT_SELECTION_CHANGED', head['number'] + '：已选付款版本已变化，请刷新并重新选择采购范围。',
+            {'expected': expected, 'current': _token(payment)})
+
+
+def preflight_payment(path, head, *, expected=None, require_quantity=False, cancel=None, db=None):
     """Read current local facts only; a success is not a durable upload permit."""
     checkpoint(cancel)
     if db is None:
@@ -91,12 +98,16 @@ def preflight_payment(path, head, *, cancel=None, db=None):
         uri = Path(path).resolve().as_uri() + "?mode=ro"
         with closing(sqlite3.connect(uri, uri=True, timeout=10)) as connection:
             connection.execute("BEGIN")
-            return preflight_payment(path, head, cancel=cancel, db=connection)
+            return preflight_payment(path, head, expected=expected, require_quantity=require_quantity,
+                                     cancel=cancel, db=connection)
     if head["revision"] != head["current_revision"]:
         raise ValueError("只能以当前有效签发对应的已确认付款单生成采购文件")
     purchases.validate_head(db, head)
     view = _view(db, path, head, cancel)
     payment = require_payment(head, view)
+    require_selected_payment(head, payment, expected)
+    if require_quantity and not positive(payment['payload']['rows']):
+        raise PaymentPreparationError('PAYMENT_ZERO_QUANTITY', head['number'] + '：正式付款数量为零，无需生成采购预览。', {})
     checkpoint(cancel)
     return {"head": {k: head[k] for k in ("oid", "revision", "warehouse", "number")},
             "payment": _token(payment), "flow_version": view["flow_version"]}

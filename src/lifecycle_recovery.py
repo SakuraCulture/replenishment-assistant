@@ -208,8 +208,9 @@ def inspect(path,identity,progress=lambda _:None,cancel=None):
         action='retry';message='本批修改尚未提交；可恢复原核对内容，完整复核后原子保存'
     else:
         action='review';message='原单、上游或本环节已有变化；保留现有事实，请重新核对，未自动保存任何部分'
-    receipt=[{'number':p['head']['number'],'revision':p['head']['revision'],'stage':p['stage'],
-              'version':p['version'],'changed':p['changed']} for p in value['entries']] if action=='completed' else None
+    from lifecycle_store import save_receipt
+    receipt = [save_receipt(p['head'], p['stage'], p['version'], p['changed'], p['digest'])
+               for p in value['entries']] if action == 'completed' else None
     return {'checkpoint':value,'rows':rows,'action':action,'message':message,'receipt':receipt}
 
 

@@ -11,6 +11,7 @@ from query_scope import oid_batches
 
 STATUSES=('待回传','待运营签发','待付款','待收货','已结束')
 GENERATION_FILTERS={'generated':'已生成导入单','missing':'未生成导入单'}
+PURCHASE_FILTER = '可生成采购预览'
 
 
 def read(path,cache,request,cancel=None,progress=lambda _:None):
@@ -19,7 +20,9 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
     Business connections are read-only. Only the disposable projection cache
     may be updated. The returned scope and counts precede list pagination.
     """
-    base=lifecycle_home.read(path,cache,{**request,'status':'','all_records':True,'_with_tokens':True},cancel,progress)
+    purchase_filter = request.get('stage_view') == 'payment' and request.get('stage_filter') == PURCHASE_FILTER
+    base=lifecycle_home.read(path,cache,{**request,'status':'','all_records':True,'_with_tokens':True,
+                                       'platform_tracking':purchase_filter or request.get('platform_tracking')},cancel,progress)
     records=base['records']
     batches=list(oid_batches(r['oid'] for r in records))
     with closing(wr.read_connection(path)) as db:
@@ -58,6 +61,29 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
     def in_status(r):return not stage or stage==r['status'] or stage=='全部未完成' and r['next']
     def in_generation(r):return generation not in GENERATION_FILTERS or bool(r['gid'])==(generation=='generated')
     matched=[r for r in records if in_scope(r) and in_stage(r) and in_status(r) and in_generation(r) and (not wh or r['warehouse']==wh) and (not lock or r['locked']==(lock=='已锁'))]
+    purchase_excluded = {}
+    if purchase_filter:
+        from aoxiang_preview_scope import existing_tasks
+        prior = existing_tasks(path, Path(path).parent/'aoxiang', matched, cancel=cancel)
+        eligible = []
+        for r in matched:
+            checkpoint(cancel)
+            key = (r['oid'], r['warehouse'])
+            task = prior.get(key)
+            tracking = r['platform_tracking']
+            version, digest = tracking['payment_basis']
+            if task:
+                purchase_excluded[key] = task['message']
+            elif r['warehouse'] not in ('山东仓', '河北仓') or r['revision'] != r['current_revision']:
+                purchase_excluded[key] = '仓单身份或签发修订待核'
+            elif not r['health'].get('payment') or version is None or not digest:
+                purchase_excluded[key] = '尚无有效正式付款'
+            elif not tracking['payment_positive']:
+                purchase_excluded[key] = '正式付款数量为零'
+            else:
+                r['preview_payment'] = {'version': version, 'digest': digest}
+                eligible.append(r)
+        matched = eligible
     explanation={}
     if request.get('explain_filters'):
         # Reuse the same active-head projection. No source details, extra SQL,
@@ -79,6 +105,8 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
             if not in_generation(r):
                 actual=GENERATION_FILTERS['generated' if r['gid'] else 'missing']
                 add('jst_generation',f'聚水潭生成状态筛选：所选“{GENERATION_FILTERS[generation]}”，该单“{actual}”')
+            if (r['oid'], r['warehouse']) in purchase_excluded:
+                add('purchase_preview', purchase_excluded[r['oid'], r['warehouse']])
             if reasons:excluded.append({**{k:r[k] for k in ('oid','number','store','name','warehouse','status')},'reason_codes':codes,'reasons':reasons})
         explanation={'filter_explanation':{'excluded_count':len(excluded),'excluded':excluded}}
     if request.get('all_matched'):return {'records':matched,'count':len(matched),'counts':counts,'scope':len(records),**explanation}
@@ -90,6 +118,10 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
         for h in visible:
             value=observed.get((h['oid'],h['revision'],h['warehouse']))
             if value:h['platform_purchase']=value
+    if purchase_filter:
+        from aoxiang_preview_scope import MAX_ORDERS
+        # Retain exact all-page selections only up to the existing batch limit.
+        explanation['purchase_scope'] = matched if len(matched) <= MAX_ORDERS else None
     return {'records':visible,'count':len(matched),'page':page,'counts':counts,'scope':len(records),**explanation}
 
 

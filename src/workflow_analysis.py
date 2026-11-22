@@ -38,27 +38,30 @@ def _generation(db, gid, as_of=None):
     return jst.decode(db.execute(sql, (gid,)).fetchone())
 
 
-def _matches_allocation_basis(plan, head, view):
-    if not plan or plan['head']['revision'] != head['revision'] or plan['basis'].get('signed_digest') != head['digest']:
-        return False
-    for stage, token in plan['basis'].get('dependencies', {}).items():
-        doc = view['documents'].get(stage)
-        actual = lc.rules.basis_token(doc)
-        if stage == 'return' and doc is None and view.get('legacy_return'):
-            old = view['legacy_return']
-            actual = {'version': old['version'], 'digest': old['digest']}
-        if actual != token or not view['health'].get(stage):
-            return False
-    return True
+def _allocation_basis_state(plan, head, view):
+    """Compare the whole demand route in the same lifecycle snapshot."""
+    if not plan or not same_head(plan['head'], head):
+        return None
+    basis = plan['basis']
+    if basis.get('signed_digest') != head['digest']:
+        return None
 
-
-def _matches_detail_scope(plan, head):
-    return same_head(plan['head'], head) and plan['basis'].get('dependencies', {}).get('return') is not None
+    route = lc.flow.CURRENT if view['flow_version'] == 2 else lc.flow.LEGACY
+    stages = route[:route.index('payment')]
+    tokens = {stage: lc.rules.basis_token(view['documents'].get(stage)) for stage in stages}
+    legacy = view.get('legacy_return')
+    if tokens['return'] is None and legacy and legacy['complete']:
+        tokens['return'] = {'version': legacy['version'], 'digest': legacy['digest']}
+    if not all(tokens.values()):
+        return None
+    if basis.get('stage') != stages[-1] or basis.get('dependencies') != tokens:
+        return 'outdated'
+    return 'current' if basis.get('ready') and all(view['health'].get(stage) for stage in stages) else None
 
 
 def allocation_fact(db,head,view,as_of=None,*,event=None):
-    """Only a saved execution decision matching this exact signed/dependency set."""
-    if not jst.exists(db):return None
+    """Return the matching decision and whether its predecessor needs reallocation."""
+    if not jst.exists(db):return None, False
     if event is not None:pass
     elif as_of:
         event=db.execute('''SELECT action,detail,at FROM jst_events WHERE oid=? AND warehouse=?
@@ -67,18 +70,19 @@ def allocation_fact(db,head,view,as_of=None,*,event=None):
     else:
         event=db.execute('''SELECT action,detail,at FROM jst_events WHERE oid=? AND warehouse=?
           AND action IN ('生成聚水潭订单','库存不足未生成','撤销未下单生成单') ORDER BY id DESC LIMIT 1''',(head['oid'],head['warehouse'])).fetchone()
-    if not event or event[0]=='撤销未下单生成单':return None
+    if not event or event[0]=='撤销未下单生成单':return None, False
     detail=json.loads(event[1]);p=None
     if event[0]=='生成聚水潭订单':
-        p=_generation(db,detail['gid'])
-        if not as_of and jst.active(db,head)!=detail['gid']:return None
+        p=_generation(db,detail['gid'],as_of)
     elif detail.get('runid'):
         run=jst.decode(db.execute('SELECT payload,digest FROM jst_runs WHERE runid=?',(detail['runid'],)).fetchone())
         p=next((p for p in (run or {}).get('plans',[]) if p['head']['oid']==head['oid'] and p['head']['warehouse']==head['warehouse']),None)
-    if not _matches_allocation_basis(p,head,view):return None
+    state = _allocation_basis_state(p,head,view)
+    if state != 'current':return None, state == 'outdated'
+    if not as_of and event[0]=='生成聚水潭订单' and jst.active(db,head)!=detail['gid']:
+        return None, False
     return {'rows':{r['sku']:r for r in p['rows']},'saved':event[2],'gid':p['gid'],
-            'digest':jst.digest(p),'catalog':p['catalog'],'bid':p['bid'],
-            'detail_matches':_matches_detail_scope(p,head)}
+            'digest':jst.digest(p),'catalog':p['catalog'],'bid':p['bid']}, False
 
 
 def allocation_detail_rows(db, head, view, allocation, as_of=None):
@@ -90,12 +94,11 @@ def allocation_detail_rows(db, head, view, allocation, as_of=None):
     if not gid and health.get('payment'):
         gid = documents['payment']['payload'].get('jst_generation')
     if not gid or (allocation and allocation['gid'] == gid):
-        return allocation['rows'] if allocation and allocation['detail_matches'] else {}
+        return allocation['rows'] if allocation else {}
     if not jst.exists(db):
         return {}
     plan = _generation(db, gid, as_of)
-    if (not _matches_allocation_basis(plan, head, view)
-            or plan.get('gid') != gid or not _matches_detail_scope(plan, head)):
+    if _allocation_basis_state(plan, head, view) != 'current' or plan.get('gid') != gid:
         return {}
     return {r['sku']: r for r in plan['rows']}
 
@@ -107,7 +110,7 @@ def set_operations(row,view,operation):
     row['states']['operations']='已确认' if row['valid']['operations'] else '待重新核对' if doc else '未启用／未留存' if view['flow_version']==1 else '未导入'
 
 
-def enrich(rows,head,view,allocation,signed_at):
+def enrich(rows,head,view,allocation,signed_at,*,needs_reallocation=False):
     doc=view['documents'].get('operations');ops={r['sku']:r for r in doc['payload']['rows']} if doc else {}
     docs={s:d for s,d in view['documents'].items() if s!=lc.JST_ORDER}
     if view['health'].get(lc.JST_ORDER):
@@ -121,7 +124,12 @@ def enrich(rows,head,view,allocation,signed_at):
         a=(allocation or {}).get('rows',{}).get(sku)
         r['quantities']['allocation']=num(a.get('quantity')) if a else Decimal(0) if allocation else None
         r['valid']['allocation']=r['quantities']['allocation'] is not None and not (a or {}).get('issue',False)
-        r['states']['allocation']='已分配' if r['valid']['allocation'] else '执行字段待核' if allocation else '未分配／依据已变化'
+        if r['valid']['allocation']:
+            r['states']['allocation'] = '已分配'
+        elif allocation:
+            r['states']['allocation'] = '执行字段待核'
+        else:
+            r['states']['allocation'] = '待重新分配' if needs_reallocation else '未分配／依据已变化'
         r['stage_saved']=saved;r['stage_versions']=versions;r['allocation_basis']=allocation_basis
     return rows
 

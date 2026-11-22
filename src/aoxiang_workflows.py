@@ -8,6 +8,7 @@ from contextlib import contextmanager,closing
 from pathlib import Path
 
 from aoxiang_jobs import encoded
+from aoxiang_preview_scope import MAX_ORDERS, existing_tasks
 
 HEAD_FIELDS = ('oid', 'day', 'store', 'name', 'warehouse', 'number', 'revision', 'current_revision', 'digest', 'visibility_token')
 ACTIVE = ('QUEUED', 'RUNNING', 'YIELDED', 'PAUSED')
@@ -96,7 +97,7 @@ class Workflows:
         return job
 
     def _new(self, db, kind, items, **kw):
-        if not items or len(items) > 256:
+        if not items or len(items) > MAX_ORDERS:
             raise ValueError('每批请选择1至256张明确仓单')
         keys = [i['key'] for i in items]
         if len(set(keys)) != len(keys):
@@ -109,17 +110,24 @@ class Workflows:
                'sequence': 0, 'items': [{**copy.deepcopy(i), 'position': n, 'state': 'PENDING', 'error': None} for n, i in enumerate(items)], **kw}
         return self._save(db, job, 'QUEUED')
 
-    def prepare(self, heads):
+    def prepare(self, heads, *, payments=None):
         items = []
         for h in heads:
             head = {k: copy.deepcopy(h[k]) for k in HEAD_FIELDS}
             if h['warehouse'] not in ('山东仓', '河北仓') or h.get('deleted'):
                 raise ValueError('只能准备有效且明确供货仓的订单')
-            items.append({'key': h['number'], 'head': head})
+            item = {'key': h['number'], 'head': head}
+            if payments is not None:
+                item['expected_payment'] = copy.deepcopy(payments[h['number']])
+                if 'execution_epoch' in h:
+                    head['execution_epoch'] = h['execution_epoch']
+            items.append(item)
         with self.db(True) as db:
             if self.business_path:
                 from aoxiang_order_guard import require_orders
                 require_orders(self.business_path,items)
+                if payments is not None and existing_tasks(self.business_path, self.folder, heads, db=db):
+                    raise ValueError('所选仓单已有原采购任务，请刷新并继续原批次。')
             return self._new(db, 'prepare', items)
 
     def upload(self, prepared_id, positions, expected_sequence, *, max_inflight=None):

@@ -413,6 +413,8 @@ def append_detail(book, report, rows, progress=lambda _: None, cancel=None):
         allocation = row.get('allocation_detail') or {}
         saved_numbers = [_finite_number(allocation.get(key)) for key in ('stock', 'before', 'quantity')]
         reason = allocation.get('reason')
+        if not allocation and row.get('states', {}).get('allocation') == '待重新分配':
+            reason = '待重新分配'
         allocation_cells = [v if v is not None else NOT_RETAINED for v in saved_numbers]
         allocation_cells.append(reason if isinstance(reason, str) and reason.strip() else NOT_RETAINED)
         attrs = row.get('template_attributes') or {}
