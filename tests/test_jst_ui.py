@@ -22,12 +22,40 @@ class JstUI(unittest.TestCase):
         w=self.win.followup
         from PySide6.QtWidgets import QPushButton,QComboBox
         texts=[b.text() for b in w.findChildren(QPushButton)]
-        self.assertIn('聚水潭导入单',texts);self.assertIn('进入回传处理',texts)
+        self.assertIn('聚水潭导入单',texts)
+        self.assertTrue({'进入回传处理','进入运营签发','进入付款核对','进入收货核对'}.isdisjoint(texts))
         self.assertNotIn('生成勾选聚水潭订单',texts);self.assertNotIn('确认勾选已下单并锁定',texts)
         self.assertNotIn('全部锁状态',[c.itemText(0) for c in w.findChildren(QComboBox)])
         self.assertEqual(list(w.cards),['待回传','待运营签发','待付款','待收货','已结束'])
         self.assertEqual(w.start.text(),w.end.text())
         w.query();request=self.reader_mock.call_args.args[0];self.assertEqual(request['kind'],'daily_batch');self.assertNotIn('lock',request)
+    def test_progress_cards_route_selected_orders_or_overview_filters(self):
+        import order_lifecycle
+        from PySide6.QtCore import QTimer
+        w = self.win.followup
+        w.start.setText('2026-11-11'); w.end.setText('2026-11-17')
+        w.search.setText('门店T'); w.warehouse_filter.setCurrentText('山东仓')
+        heads = [dict(oid='T1', warehouse=wh, number='BH-T-'+code, revision=1)
+                 for wh, code in [('山东仓','SD'),('河北仓','HB')]]
+        routes = {'待回传':'return', '待运营签发':'operations', '待付款':'payment', '待收货':'receipt'}
+        for selected in ([], heads):
+            w.checked = {order_lifecycle.key(h):h for h in selected}
+            for title, stage in routes.items():
+                with self.subTest(title=title, selected=bool(selected)):
+                    observed = []
+                    def inspect():
+                        dialog = self.app.activeModalWidget()
+                        panel = dialog.panel
+                        observed.append((dialog.stage, panel.fixed_scope, list(panel.checked.values()),
+                                         panel.start.text(), panel.end.text(), panel.search.text(), panel.warehouse_filter.currentText()))
+                        dialog.reject()
+                    QTimer.singleShot(15, inspect)
+                    w.cards[title].click()
+                    self.assertEqual(observed, [(stage, selected or None, selected, '2026-11-11','2026-11-17','门店T','山东仓')])
+        with patch.object(w,'open_stage') as opened:
+            w.cards['已结束'].click()
+            opened.assert_not_called()
+            self.assertEqual(w.status.currentText(),'已结束')
     def test_stage_workspace_has_only_its_own_actions_and_keeps_overview(self):
         from PySide6.QtWidgets import QPushButton
         from lifecycle_home_ui import StageDialog

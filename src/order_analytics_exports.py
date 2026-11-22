@@ -35,12 +35,14 @@ def detail_rows(rows):
 
 
 def export(path,report,target,level='store',orders=None,progress=lambda _:None,cancel=None):
-    if level not in ('store','order','detail','coverage_rounds','workflow','analysis','analysis_detail'):raise ValueError('未知报表类型')
+    if level not in ('store','order','detail','coverage_rounds','workflow','analysis','analysis_detail','sku_completion'):raise ValueError('未知报表类型')
+    if level == 'sku_completion' and orders is not None and not orders:
+        raise ValueError('请先勾选需要导出的仓单')
     target=Path(target).resolve()
     if target.suffix.lower()!='.xlsx' or target.exists():raise ValueError('请使用新的.xlsx文件，保留已导出分析快照')
     from analytics_export_validation import SnapshotCheck
     anchor=None
-    if report.get('_projection')=='overview' and level!='analysis':
+    if report.get('_projection')=='overview' and level not in ('analysis','sku_completion'):
         anchor=report
         mode='analysis_detail' if level=='analysis_detail' else 'full'
         report=service.collect_view(path,anchor,mode,orders,progress,cancel)
@@ -60,7 +62,7 @@ def _export_verified(path,report,target,level,orders,progress,cancel,check):
     selected=set(orders or [])
     if selected-set(h['number'] for h in report['heads']):raise ValueError('勾选订单不在当前查询范围')
     rows=[r for r in report['rows'] if not selected or r['order'] in selected]
-    if level in ('analysis','analysis_detail'):
+    if level in ('analysis','analysis_detail','sku_completion'):
         return export_template(path,report,target,level,rows,progress,cancel,_check=check)
     included=[r for r in rows if r['scope']=='纳入'];pending=[r for r in rows if r['scope']=='待核']
     tabs=[]
@@ -107,14 +109,17 @@ def export_template(path,report,target,level,rows,progress,cancel,*,_check=None)
     """The new presentation uses the same frozen query and atomic publication."""
     from analytics_formula_cache import FormulaCache
     from analytics_template_export import append_summary, append_detail, select_detail_rows
-    if level == 'analysis_detail':
+    from analytics_sku_completion import append_sku_completion
+    writers = {'analysis': ('summary', append_summary), 'analysis_detail': ('detail', append_detail),
+               'sku_completion': ('sku_completion', append_sku_completion)}
+    template, writer = writers[level]
+    if level in ('analysis_detail', 'sku_completion'):
         rows = select_detail_rows(rows, cancel)
     fd,tmp=tempfile.mkstemp(dir=target.parent,prefix='.analytics-',suffix='.xlsx');os.close(fd)
     try:
         with FormulaCache(target.parent,cancel) as cache:
             with stream_book() as book:
                 book._analytics_formula_cache=cache.add
-                writer=append_summary if level=='analysis' else append_detail
                 sheets=writer(book,report,rows,progress,cancel)
                 progress('写出 Excel 与公式缓存…')
                 cache.save(book,tmp)
@@ -128,4 +133,4 @@ def export_template(path,report,target,level,rows,progress,cancel,*,_check=None)
     with target.open('rb') as stream:digest=hashlib.file_digest(stream,'sha256').hexdigest()
     return {'path':str(target),'sha256':digest,'snapshot_id':report['snapshot_id'],
             'rows':sum(r['scope']=='纳入' for r in rows),'pending':sum(r['scope']=='待核' for r in rows),
-            'sheets':sheets,'coverage_version':report.get('coverage',{}).get('version',COVERAGE_VERSION),'template':'summary' if level=='analysis' else 'detail'}
+            'sheets':sheets,'coverage_version':report.get('coverage',{}).get('version',COVERAGE_VERSION),'template':template}

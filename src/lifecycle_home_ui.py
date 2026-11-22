@@ -68,15 +68,13 @@ class LifecycleWidget(QWidget):
             from order_migration_ui import open_migration
             v.addWidget(button('完整订单迁移／导入与参数导出（全部本地资料）',lambda:open_migration(self,host)))
             row=QHBoxLayout()
-            for key,title in self.STAGES.items():
-                if key!='jst':row.addWidget(button('进入'+title,lambda checked=False,k=key:self.open_stage(k)))
             row.addWidget(button('聚水潭导入单',lambda:self.open_stage('jst')))
-            v.addLayout(row);row=QHBoxLayout();row.addWidget(button('批次作业日志',self.logs));row.addWidget(button('导出勾选签发单',self.export_signed));row.addWidget(button('批量导入混合环节单据',lambda:self.import_stage(None)));v.addLayout(row)
+            row.addWidget(button('批次作业日志',self.logs));row.addWidget(button('导出勾选签发单',self.export_signed));row.addWidget(button('批量导入混合环节单据',lambda:self.import_stage(None)));v.addLayout(row)
             from data_maintenance_ui import remove
             maintenance=QWidget();layout=QHBoxLayout(maintenance);layout.addWidget(label('永久删除包含关联数据，请先勾选并核对范围。','muted'));layout.addWidget(button('彻底删除勾选订单',lambda:remove(self,self.host,list(self.checked.values()))));maintenance.hide()
             row.addWidget(button('订单维护',lambda:maintenance.setVisible(not maintenance.isVisible())));v.addWidget(maintenance)
             self.actions.hide()
-            v.addWidget(label('勾选后带入所选订单。未勾选时，各环节沿用日期、仓和搜索条件。','muted'))
+            v.addWidget(label('点击上方待办数量进入对应环节。勾选后带入所选订单，未勾选时沿用日期、仓和搜索条件。','muted'))
         else:
             row=QHBoxLayout()
             def primary(title,fn):

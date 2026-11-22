@@ -87,7 +87,7 @@ def start_smoke(app,win,args):
                     with patch.object(export_locations,'save_file',return_value=(str(target),'Excel (*.xlsx)')):export_button.click()
                     wait(lambda:analytics.worker is None)
                 drive(export_wait,export_notice)
-                require(target.is_file() and bool(notices) and analytics.export_kind.count()==2,'实际趋势按钮导出成功，主菜单仍为两种模板')
+                require(target.is_file() and bool(notices) and analytics.export_kind.findData('sku_completion')>=0,'实际趋势按钮导出成功，主菜单提供 SKU 完成率汇总')
                 book=openpyxl.load_workbook(target,read_only=True);require(bool(book.sheetnames),'实际趋势导出工作簿可打开');book.close()
             hub=win.stockout_hub;hub.enter_kind('store');entries=[hub,*hub.children.values()]
             wait(lambda:not any(e.worker or e.queued for e in entries));child=win.stockout

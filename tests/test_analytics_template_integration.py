@@ -123,11 +123,11 @@ class ExportMenu(unittest.TestCase):
         import test_order_analytics_ui as fixture
         self.f=fixture.AnalyticsUiTests();self.f.setUp();self.widget=self.f.widget
     def tearDown(self):self.f.tearDown()
-    def test_two_titles_and_filename_follow_selected_template(self):
+    def test_titles_and_filename_follow_selected_template(self):
         w=self.widget;w.show_report(self.f.f.report())
         self.assertEqual([(w.export_kind.itemText(n),w.export_kind.itemData(n)) for n in range(w.export_kind.count())],
-                         [('订单经营分析','analysis'),('订单经营细则分析','analysis_detail')])
-        for index,prefix in enumerate(('订单经营分析','订单经营细则分析')):
+                         [('订单经营分析','analysis'),('订单经营细则分析','analysis_detail'),('SKU订单完成率汇总','sku_completion')])
+        for index,prefix in enumerate(('订单经营分析','订单经营细则分析','SKU订单完成率汇总')):
             with self.subTest(index=index):
                 calls=[];w.export_kind.setCurrentIndex(index)
                 with patch('export_settings.load',return_value=str(self.f.f.root)),patch.object(w,'start_task',side_effect=lambda *a,**kw:calls.append((a,kw))):w.export(False)
