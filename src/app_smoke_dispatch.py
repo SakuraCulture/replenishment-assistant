@@ -3,7 +3,7 @@ from importlib import import_module
 
 
 WINDOW_SMOKES = {
-    '--order-redo-smoke': 'order_redo_smoke',
+    '--poisson-display-smoke': 'poisson_display_smoke',
     '--warehouse-must-sell-smoke': 'warehouse_must_sell_smoke',
     '--data-location-smoke': 'data_location_smoke',
     '--global-crud-smoke': 'global_crud_smoke',

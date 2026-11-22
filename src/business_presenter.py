@@ -99,17 +99,21 @@ def field_row(d,key,why=''):
         return [title(key),'极端缺货（自动恢复已关闭）',field_unit(key,d),why]
     return [title(key),value_text(d.get(key),key,missing=MISSING) if key in d else MISSING,field_unit(key,d),why]
 
+def model_version_rows(result,outer_version=None):
+    version=sem.saved_model_version(result,outer_version)
+    return [['模型版本',version or '未留存','','计算快照留存版本'],
+            ['泊松均值依据',sem.poisson_mean_label(version),'','用于计算和校验泊松分位数 Q']]
+
+
 def demand_rows(result,d,model_version=None):
-    mean_field=sem.poisson_mean_field(model_version or result.get('version',{}).get('model_version'))
-    basis={'AO':'均值采用趋势调整前需求 AO','AP':'当时均值采用趋势调整后需求 AP'}
     probability=sem.effective_probability(result,d)
-    return [field_row(d,'AO','基础日销 × 保护期'),
+    return model_version_rows(result,model_version)+[field_row(d,'AO','基础日销 × 保护期'),
             field_row(d,'AP','基础需求 × 趋势系数'),
             ['泊松分位概率 p',value_text(probability,'probability',missing=MISSING),'%','用于求泊松分位数 Q'],
-            field_row(d,'BF',basis.get(mean_field,'历史未留存可识别的模型版本')),
+            field_row(d,'BF'),
             field_row(d,'BG'),field_row(d,'AL'),
             ['取整前目标持有量',value_text(sem.pre_round_target(d),missing='—'),field_unit('AP',d),'趋势调整后需求 AP ＋ 安全库存 AL'],
-            field_row(d,'AQ','扣除可用库存和在途库存后，最低取 0')]
+            field_row(d,'AQ',sem.net_demand_reason(d))]
 
 
 def flat_rows(value,prefix='',technical=False):
@@ -171,15 +175,16 @@ HEADERS=['项目','当时值','单位','用途 / 变化说明']
 def historical(repo,order,scope,sku,cancel=None):
     from runtime_support import checkpoint
     import history_forms
-    r=order['payload']['result'];wh=order.get('warehouse')
+    p=order['payload'];r=p['result'];version=p.get('model_version');wh=order.get('warehouse')
     d=next((x for x in r['rows'] if x.get('E')==sku and (not wh or x.get('AU')==wh)),None)
     checkpoint(cancel)
-    if scope=='完整参数与技术资料':return flat_rows({'实际设置':r.get('effective_settings'),'方案':order['payload'].get('preset'),'配置':r.get('config'),'来源':r.get('sources')},technical=True)
+    if scope=='完整参数与技术资料':return model_version_rows(r,version)+flat_rows({'实际设置':r.get('effective_settings'),'方案':p.get('preset'),'配置':r.get('config'),'来源':r.get('sources')},technical=True)
     if scope in ('单据概况','当时商品资料快照','签发前调整'):
         return [[path_title(k),v,'' if t in ('文字','数字','开关','缺失') else t,''] for k,v,t in history_forms.form(repo,order,scope,sku,cancel)]
     if d is None:return [['商品','请选择本单商品','','未使用其他订单或当前资料补填']]
-    if scope=='当时参数':return parameter_rows(r,d)
-    if scope=='商品完整计算依据':return flat_rows(d,technical=True)
+    if scope=='当时参数':return model_version_rows(r,version)+parameter_rows(r,d)
+    if scope=='商品完整计算依据':
+        return demand_rows(r,d,version)+flat_rows({k:v for k,v in d.items() if k not in ('AO','AP','AL','AQ','BF','BG')},technical=True)
     if scope=='数量形成过程':return stage_rows(d)
     if scope=='商品建议与销量库存':return [field_row(d,k) for k in ('D','E','AU','H','I','J','K','L','N','BA','BD','V')]
     import normal_exports
@@ -191,7 +196,7 @@ def historical(repo,order,scope,sku,cancel=None):
         a=d.get('_preissue')
         if a:rows += [['人工 / 清单调整',value_text(a.get('delta')),str(d.get('G') or '库存单位'),a.get('reason','')]]
         rows += [field_row(d,k,'当时快照') for k in ('J','K','L','AG','AH','BD')]
-        rows += demand_rows(r,d,order['payload'].get('model_version'))
+        rows += demand_rows(r,d,version)
         rows += [['复查提示','所有数据来自当时记录','','未留存的阶段不推测；原字母与完整资料在详细依据中']]
         return rows
     raise ValueError('未知核对范围')

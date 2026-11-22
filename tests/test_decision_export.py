@@ -32,6 +32,7 @@ class DecisionExportTests(unittest.TestCase):
         headers,rows,_=export.projected(order,'河北仓');record=dict(zip(headers,next(rows)))
         self.assertIsNone(record['虚拟分类']);self.assertIsNone(record['采购状态']);self.assertIsNone(record['参数·普通库存额度天数'])
         self.assertIn('历史',record['资料说明'])
+        self.assertEqual((record['模型版本'],record['泊松均值依据']),('未留存','未留存'))
 
     def test_quantile_and_pre_round_target_use_the_snapshot_version_and_fields(self):
         for version,mean_field,safety in [('0.3.6-rules','AP',2.0925625),('0.3.7-rules','AO',2.59375)]:
@@ -42,7 +43,7 @@ class DecisionExportTests(unittest.TestCase):
                 order={'day':'2026-11-10','number':'BH-T-ZC','store':'T','revision':1,
                        'payload':{'model_version':version,'result':{'rows':[d]}}}
                 headers,rows,_=export.projected(order,'河北仓');record=dict(zip(headers,next(rows)))
-                self.assertEqual(record['泊松均值依据'],mean_field)
+                self.assertEqual(record['泊松均值依据'],{'AP':'趋势调整后需求 AP','AO':'趋势调整前需求 AO'}[mean_field])
                 self.assertEqual(record['泊松均值'],d[mean_field])
                 self.assertEqual(record['泊松分位数 Q'],4)
                 self.assertAlmostEqual(record['取整前目标持有量（AP＋AL）'],d['AP']+safety)

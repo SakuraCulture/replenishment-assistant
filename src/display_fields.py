@@ -28,7 +28,7 @@ def import_audit_rows(result):
 
 
 DEMAND_HEADERS=['趋势调整前保护期需求','趋势调整后保护期需求','泊松分位概率 p','泊松分位数 Q',
-                '泊松分位校验','安全库存量','取整前目标持有量（AP＋AL）','净需求']
+                '泊松分位校验','安全库存量','取整前目标持有量（AP＋AL）','净需求','净需求依据']
 
 
 def single_headers():
@@ -37,7 +37,7 @@ def single_headers():
 def single_values(d,result):
     r=d['AN']*d['AM'] if numeric(d.get('AN')) and numeric(d.get('AM')) else None
     demand=[d.get('AO'),d.get('AP'),effective_probability(result,d),d.get('BF'),
-            d.get('BG'),d.get('AL'),pre_round_target(d),d.get('AQ')]
+            d.get('BG'),d.get('AL'),pre_round_target(d),d.get('AQ'),net_demand_reason(d)]
     return [f(d) for h,f in COLUMNS]+[d.get('I'),d.get('H'),d.get('N'),d.get('V'),d.get('_base_qty'),d.get('_base_amount'),d.get('_audit',{}).get('incremental_amount',0),r,d.get('BH'),d.get('BN'),d.get('库存额度目标量'),coverage(d),'；'.join(d['_meta']['notes']),d['_meta']['export_row'],d['_meta'].get('product_row')]+demand
 
 def batch_headers():

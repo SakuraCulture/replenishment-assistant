@@ -144,7 +144,7 @@ class Evidence:
         if not values and not notes:notes.append('当时可用数未留存')
         barcode,error=identifier(row.get('F'))
         payload=order['payload']
-        model_version=payload.get('model_version') or payload['result'].get('version',{}).get('model_version')
+        model_version=sem.saved_model_version(payload['result'],payload.get('model_version'))
         # Earlier reports used the retained quantile when present. Keep that historical value.
         target=None if sem.poisson_mean_field(model_version)=='AO' else num(row.get('BF'))
         if target is None:

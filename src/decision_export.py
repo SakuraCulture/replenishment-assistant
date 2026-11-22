@@ -58,7 +58,7 @@ def projected(order,warehouse,*,repo=None,cancel=None):
     import archive_orders as ao
     from parameter_schema import HELP
     payload=order['payload'];result=payload['result']
-    model_version=payload.get('model_version') or result.get('version',{}).get('model_version')
+    model_version=sem.saved_model_version(result,payload.get('model_version'))
     mean_field=sem.poisson_mean_field(model_version)
     rows=[d for d in result['rows'] if ao.warehouse(d)==warehouse]
     originals,note=master_snapshot(repo,order,warehouse,{d['E'] for d in rows},cancel)
@@ -92,9 +92,10 @@ def projected(order,warehouse,*,repo=None,cancel=None):
         record.update({'参数·'+HELP[key][0]:actual.get(key) for key in PARAMETERS})
         record.update({name:d.get(key) for name,key in STAGES})
         mean=d.get(mean_field)
-        record.update({'泊松均值依据':mean_field if sem.numeric(mean) else None,
+        record.update({'泊松均值依据':sem.poisson_mean_label(model_version),
                        '泊松均值':mean if sem.numeric(mean) else None,
                        '取整前目标持有量（AP＋AL）':sem.pre_round_target(d),
+                       '净需求依据':sem.net_demand_reason(d),
                        '原模型建议量':d.get('_base_qty'),'一箱例外追加量':d.get('_audit',{}).get('applied') and d.get('BD') or 0,
                        '必采最低持有基数':audit.get('minimum'),'必采最低补货量':audit.get('required_quantity'),
                        '必采保底追加量':audit.get('added_quantity'),'预算前候选量':d.get('_candidate_qty'),
@@ -103,7 +104,7 @@ def projected(order,warehouse,*,repo=None,cancel=None):
                        '人工改量差额':manual.get('delta'),'人工改量原因':manual.get('reason'),
                        '补后预计持有天数':coverage,'执行状态':sem.order_status(d),'业务说明':sem.explanation(d),
                        '资料说明':'；'.join(filter(None,[note,sem.issue_text(d)])),
-                       '模型版本':model_version,
+                       '模型版本':model_version or '未留存',
                        '最终签发执行数':q,'最终签发金额':sem.order_amount(d),'核心决策理由':__import__('normal_exports').decision(d)})
         return record
     from itertools import chain

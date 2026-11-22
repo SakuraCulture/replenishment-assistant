@@ -23,6 +23,7 @@ class SessionWindow(BackgroundJobs,ResultsView,QMainWindow):
     def __init__(self,*,initializing=False):
         super().__init__()
         self.loaded=None;self.result=None;self.worker=None;self.dirty=True
+        self.saved_job_model_version=None
         self.initializing=initializing;self.closing=False;self.last_export=None
         self.profile=None;self.config_warning=""
         from data_location import root

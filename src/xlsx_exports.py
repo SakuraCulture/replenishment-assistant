@@ -18,7 +18,7 @@ _SINGLE_ALIGN=Alignment(vertical="top",wrap_text=True)
 _HEADER_FONT={True:Font(name="微软雅黑",bold=True,color="FFFFFF"),False:Font(bold=True,color="FFFFFF")}
 _HEADER_FILL={True:PatternFill("solid",fgColor="183F45"),False:PatternFill("solid",fgColor="176C63")}
 _HEADER_ALIGN=Alignment(wrap_text=True)
-from version_info import VERSION,MODEL_VERSION,diagnostic
+from version_info import VERSION,diagnostic
 
 @contextmanager
 def stream_book():
@@ -80,7 +80,7 @@ def _with_header(headers,rows):
     yield from rows
 
 
-def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,progress=lambda s:None):
+def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,progress=lambda s:None,*,model_version=None):
     """Application's native offline exporter. Text identifiers/formula-looking input stay text."""
     path=Path(path).resolve();raw_rows=result['rows'] if rows is None else rows;rows=working_rows(raw_rows)
     result=export_projection(result)
@@ -91,12 +91,11 @@ def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,pro
         def sheet(name,headers,data,widths=None,row_count=None,formats=None):
             return write_table(book,name,headers,data,widths=widths,style='single',cancel=cancel,progress=progress,row_count=row_count,formats=formats)
         summary=summarize(rows)
-        recorded_version=result.get('version',{}).get('model_version',MODEL_VERSION)
-        mean_field=poisson_mean_field(recorded_version)
-        mean_note={'AO':'趋势调整前保护期需求 AO','AP':'趋势调整后保护期需求 AP'}.get(mean_field,'历史未留存可识别的模型版本')
-        info=[['软件版本',VERSION],['模型版本',recorded_version],['构建信息',json.dumps(diagnostic(),ensure_ascii=False)],['计算时间',result['created']],['门店',result['store_name']],['导出范围',scope],['一箱例外',result['enabled']],
+        recorded_version=saved_model_version(result,model_version)
+        exporter={k:v for k,v in diagnostic().items() if k!='model_version'}
+        info=[['软件版本',VERSION],['模型版本',recorded_version or '未留存'],['构建信息',json.dumps(exporter,ensure_ascii=False)],['计算时间',result['created']],['门店',result['store_name']],['导出范围',scope],['一箱例外',result['enabled']],
             ['计价口径','商品资料基本售价；地采缺价不计为0'],['规则口径','原库存额度BH/BN日均；一箱例外仅后置修改最终建议'],
-            ['泊松分位数 Q',f'按服务水平 p 求分位数，均值采用{mean_note}。'],
+            ['泊松分位数 Q','按服务水平 p 求分位数。'],['泊松均值依据',poisson_mean_label(recorded_version)],
             ['取整前目标持有量','趋势调整后需求 AP 加安全库存 AL。'],
             ['商品数',summary['rows']],['默认补货商品',summary['positive']],['默认补货金额',summary['amount']],['地采商品',summary['local']],['数据异常商品',summary['issues']],
             ['排除规则','商品资料状态=禁用 或 补货建议状态=停采，任一命中即排除；计算保留，执行量和执行金额为0'],
@@ -140,7 +139,7 @@ def export_xlsx(result,path,rows=None,scope='本次全部结果',cancel=None,pro
 
 
 
-def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,cancel=None):
+def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,cancel=None,*,model_version=None):
     """Only current successful results count as spend; missing results are blank, never zero."""
     path=Path(path).resolve()
     if path.exists():raise ValueError('目标已存在，请选择新名称。')
@@ -153,8 +152,8 @@ def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,ca
                 prefix=f'门店 {index}/{len(ready)} · '+r['store_name'];checkpoint(cancel);progress(prefix)
                 safe=re.sub(r'[<>:"/\\|?*\x00-\x1f]','_',s)[:80]
                 file=path/(safe+'_'+uuid.uuid4().hex[:6]+'.xlsx')
-                export_xlsx(r,file,cancel=cancel,progress=ep.prefixed(progress,prefix));written.append(str(file))
-            export_batch(ready,statuses,path/'门店汇总及明细.xlsx',cancel=cancel,progress=ep.prefixed(progress,'全部门店文件完成 · 汇总及明细'))
+                export_xlsx(r,file,cancel=cancel,progress=ep.prefixed(progress,prefix),model_version=model_version);written.append(str(file))
+            export_batch(ready,statuses,path/'门店汇总及明细.xlsx',cancel=cancel,progress=ep.prefixed(progress,'全部门店文件完成 · 汇总及明细'),model_version=model_version)
         except Exception:
             (path/'部分导出说明.txt').write_text('导出未全部完成。已生成文件：\n'+'\n'.join(written),encoding='utf-8');raise
         return str(path)
@@ -192,7 +191,9 @@ def export_batch(results,statuses,path,per_store=False,progress=lambda s:None,ca
         write_sheet(book,'导入记录',IMPORT_HEADERS,(row for r in audits.values() for row in import_audit_rows(r)))
         info=[['批次状态','全部完成' if len(ready)==len(statuses) else '部分完成'],['导出时间',datetime.now().isoformat(timespec='seconds')],['说明','只有已完成且未过期的门店计入金额；失败、未运行、待重算均留空。'],['计价','商品资料基本售价；地采和缺价未知金额不计为0。']]
         for s,r in ready.items():
-            info.extend([[s+' / '+k,str(v)] for k,v in r.get('version',diagnostic()).items()])
+            recorded_version=saved_model_version(r,model_version)
+            info.extend([[s+' / '+k,str(v)] for k,v in (r.get('version') or {}).items() if k!='model_version'])
+            info.extend([[s+' / model_version',recorded_version or '未留存'],[s+' / 泊松均值依据',poisson_mean_label(recorded_version)]])
             if r.get('effective_settings'):info.append([s+' / 方案与实际生效配置',json.dumps(r['effective_settings'],ensure_ascii=False)])
             info.extend([[s+' / 参数',json.dumps(r['config'],ensure_ascii=False)],[s+' / 仓参数',json.dumps(r['warehouses'],ensure_ascii=False)],[s+' / 一箱例外',r['enabled']],[s+' / 必卖清单',json.dumps(r['must_list'],ensure_ascii=False)],[s+' / 输入校验',json.dumps(r['sources'],ensure_ascii=False)]])
             if r.get('catalogs'):info.extend([[s+' / 主从仓',json.dumps(r['supply_route'],ensure_ascii=False)],[s+' / 仓资料快照',json.dumps(r['catalogs'],ensure_ascii=False)],[s+' / 选仓口径','可用数>0优先主仓；主仓禁用/无货/无商品则归属从仓，从仓无货不清零需求；不拆单、不限量、不扣减仓库存']])

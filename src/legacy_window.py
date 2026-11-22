@@ -134,6 +134,8 @@ class MainWindow(SessionWindow):
         budget=self.budget_amount.value() if self.budget_enabled.isChecked() else None
         self.dirty=True;self.status.setText('开始计算…');self.job(engine.run_calculation,(self.loaded,self.selected_store(),settings,self.exception.isChecked(),budget,self.profile),self.calculated_ok)
     def calculated_ok(self,result):
+        from version_info import diagnostic
+        result['version']=diagnostic()
         self.result=result;self.dirty=False;self.set_rows(result['rows'],True);self.pages.setCurrentIndex(1);self.status.setText('计算完成；原输入文件保持不变。')
         try:self.repository.save_budget(result['store'],self.budget_enabled.isChecked(),self.budget_amount.value())
         except Exception as exc:self.status.setText(f'计算完成，但门店预算未能保存：{exc}')
