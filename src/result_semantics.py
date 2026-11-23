@@ -128,19 +128,26 @@ def orderable(d):
     return not exclusion_reason(d) and d.get('_source')=='资料匹配' and numeric(order_quantity(d)) and order_quantity(d)>0
 
 
+def new_product_group(row, focused=(), known=True):
+    """Use the same saved grouping for selection, review and signed export."""
+    from new_products import is_new
+    from warehouse_newness import for_row
+    if row.get('_preissue',{}).get('current_month'):return '本月新品'
+    if not is_new(row):return None
+    basis=for_row(row)
+    if basis is not None:return '本月新品' if basis['new'] else '往期新品'
+    if not known:return '新品归期待核'
+    return '本月新品' if row['E'] in focused else '往期新品'
+
+
 def signed_rows(rows, profile):
     """Classify signed rows in source order, including an iterable of row blocks."""
-    from new_products import is_new
     from new_product_focus import members
-    from warehouse_newness import for_row
     focused=members(profile)
     for row in rows:
         if row.get('_source')!='资料匹配' or not work_eligible(row):continue
-        if row.get('_preissue',{}).get('current_month'):yield '本月新品',row
-        elif is_new(row):
-            basis=for_row(row)
-            recent=basis['new'] if basis else row['E'] in focused
-            yield ('本月新品' if recent else '往期新品'),row
+        group=new_product_group(row,focused)
+        if group:yield group,row
         elif orderable(row):yield '中心仓动销补货清单',row
 
 

@@ -36,10 +36,15 @@ def start_smoke(app,win,args):
             time.sleep(.012)
     def run():
         from collections import Counter
+        from contextlib import closing
         from unittest.mock import patch
         import jst_allocation
         import new_product_focus as focus
+        import new_products
         import normal_delivery
+        import normal_exports
+        from new_product_ui import NewProductDialog
+        from openpyxl import load_workbook
         import result_semantics as sem
         import warehouse_newness as recent
         import work_repository as wr
@@ -86,6 +91,27 @@ def start_smoke(app,win,args):
                         '历史决策总览展示原仓新品依据')
                 dialog.grab().save(str(out/'历史签发新品依据.png'))
             finally:dialog.reject();dialog.deleteLater()
+        def examine_selection(result,profile,expected):
+            base=new_products.original(result)
+            dialog=NewProductDialog(win,base,base,profile)
+            try:
+                dialog.group.setCurrentText('本月新品')
+                current=[dialog.rows[i]['E'] for i in dialog.model.visible]
+                require(current==expected,'新品选品按实际供货仓过滤，旧关注记录不参与全商品档案判定')
+                for i in dialog.model.visible:
+                    row=dialog.rows[i]
+                    require(row['AU'] in dialog.model.default_sources[i],
+                            row['E']+' 未勾选时仍按归属仓推荐首铺量')
+            finally:dialog.reject();dialog.deleteLater()
+        def export_signed(saved,warehouse,expected_sku):
+            path=out/('签发单-'+warehouse+'.xlsx')
+            normal_exports.export(saved,path,warehouse=warehouse)
+            with closing(load_workbook(path)) as book:
+                require([ws.title for ws in book if ws.protection.sheet]==['本月新品'] and not book.security.lockStructure,
+                        warehouse+' 成品导出的签发单只保护本月新品，工作簿结构开放')
+                current=book['本月新品']
+                require(current['E2'].value==expected_sku and current['Q2'].protection.locked and current.protection.password,
+                        warehouse+' 本月新品商品与签发量保存在受保护的工作表中')
         def calculate(primary,secondary=None):
             win.navigate(0)
             win.load_btn.click()
@@ -108,6 +134,10 @@ def start_smoke(app,win,args):
                 require(win.work_repository.path.resolve()==out/'settings/workbench.sqlite3','实际 EXE 只使用隔离订单库')
                 win.job_day=day
                 win.show_section(1);win.navigate(0)
+                require(not win.focus_import_btn.isVisibleTo(win.import_page),'准备数据默认使用仓45天新品入口')
+                win.catalog_maintenance_toggle.setChecked(True)
+                require(win.focus_import_btn.isVisibleTo(win.import_page),'旧版关注仍可从兼容入口维护')
+                win.catalog_maintenance_toggle.setChecked(False)
                 hc=import_through_button(hb,data['hebei'])
                 sc=import_through_button(sd,data['shandong_synthetic'])
                 require((hc['source_rows'],len(hc['items']),len(hc['quarantined']))==(4525,4494,31),
@@ -134,6 +164,9 @@ def start_smoke(app,win,args):
                         '同一批实际归属山东的商品使用山东清单')
                 require(len(by)==len(data['sales_codes']) and list(by)==data['sales_codes'],
                         '始终只处理本店已有输入，逐商品顺序一致')
+                if local_sku:=data.get('local_sku'):
+                    require(by[local_sku]['_source']=='地采商品','同批保留零销量地采商品，签发校验按中心仓范围执行')
+                examine_selection(result,None,['@SD-new',sku])
                 frozen=win.snapshot()
                 planned=normal_delivery.prepare_batch(win.orders,frozen,[store])
                 win.orders.confirm(planned['payload'],[store],None,{store:None})
@@ -141,11 +174,17 @@ def start_smoke(app,win,args):
                 basis=next(r['_meta']['warehouse_newness'] for r in saved['payload']['result']['rows'] if r['E']==sku)
                 require(basis==row['_meta']['warehouse_newness'] and saved['revision']==1,
                         '无人工关注清单即可签发，保存判定日、仓、资料版本和原首入库日期')
+                export_signed(saved,hb,sku)
+                export_signed(saved,sd,'@SD-new')
                 before=projected(result); balances=allocated(result,{hb:hc,sd:sc})
                 swapped=calculate(sd,hb)
                 other=next(r for r in swapped['rows'] if r['E']==sku)
                 require(other['AU']==sd and not other['_meta']['warehouse_newness']['new'] and sem.order_quantity(other)==0,
                         '同店同码改属山东后是老品，未串用河北日期')
+                stale_focus=focus.empty('2026-11')
+                stale_focus['items']=[{'sku':sku,'name':'旧关注测试','focused':True}]
+                stale_focus['revision']=focus.revision(stale_focus)
+                examine_selection(swapped,stale_focus,['@SD-new'])
                 old=import_through_button(hb,data['hebei_ordinary'])
                 legacy=examine(hb)
                 require(legacy['summary']==recent.MISSING_COLUMN,'普通商品资料显示旧版未提供日期')

@@ -129,7 +129,11 @@ def target_quantity(row, strategy, target=None):
 
 
 def current_month(row):
-    return all(sem.numeric(row.get(k)) and not isinstance(row.get(k), bool) and row[k] == 0 for k in ('J','K'))
+    from warehouse_newness import for_row
+    if not all(sem.numeric(row.get(k)) and not isinstance(row.get(k), bool) and row[k] == 0 for k in ('J','K')):
+        return False
+    basis=for_row(row)
+    return basis is None or basis['new']
 
 
 def stock_scope(row):

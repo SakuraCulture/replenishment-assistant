@@ -75,7 +75,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.detail_new_btn=button('安排本店新品',lambda:self.choose_new_products(True));self.pages.widget(4).layout().insertWidget(1,self.detail_new_btn)
         self.mode.addItems(['动销补货','新品候选','新品推荐','缺货恢复及其他','在途衔接风险'])
         self.save_job_btn.setText('保存草稿');self.history_btn.setText('草稿记录');self.batch_export.setText('导出本批内部明细');self.export_all.setText('导出本店全量内部明细');self.export_filtered.setText('导出筛选内部明细')
-        focusrow=QHBoxLayout();self.focus_label=label("","muted");focusrow.addWidget(self.focus_label,1);self.focus_import_btn=button("导入新品关注清单",self.import_focus);focusrow.addWidget(self.focus_import_btn);self.focus_empty_btn=button("本月无关注新品",self.empty_focus);focusrow.addWidget(self.focus_empty_btn);self.import_page.layout().addLayout(focusrow)
+        focusrow=QHBoxLayout();self.focus_label=label("","muted");focusrow.addWidget(self.focus_label,1);self.focus_import_btn=button("导入旧版新品关注清单",self.import_focus);focusrow.addWidget(self.focus_import_btn);self.focus_empty_btn=button("本月无关注新品",self.empty_focus);focusrow.addWidget(self.focus_empty_btn);self.catalog_maintenance_layout.addLayout(focusrow)
         self.refresh_focus();self.update_controls();self.show_section(0)
         from usability import install
         install(self,hv)
@@ -151,8 +151,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         p=self.new_focus
         self.focus_empty_btn.setText('清空本月关注清单' if p and focus.members(p) else '确认本月暂无关注新品')
         self.focus_label.setText(
-            f"人工新品关注：{p['month']} · {p['name']} · {len(focus.members(p))} 款" if p
-            else '人工新品关注：未设置。全商品档案按归属仓45天新品判定，普通资料沿用人工入口。')
+            f"旧资料的人工新品关注 · {p['month']} · {p['name']} · {len(focus.members(p))} 款" if p
+            else '普通商品资料的旧版新品关注尚未设置。')
 
     def import_focus(self):
         if self.worker or self.readonly:return
@@ -177,7 +177,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if not confirm_focus(self,data,self.new_focus):return
         try:self.focus_repository.save(data)
         except Exception as exc:self.failed('关注清单未保存，原清单保留：'+str(exc));return
-        self.new_focus=copy.deepcopy(data);self.refresh_focus();self.invalidate(list(self.states));self.touch();self.status.setText('新品关注清单已保存；已有结果需重新计算，符合资格的本月新品将自动按归属仓首铺量参与预算。历史签发不变。')
+        self.new_focus=copy.deepcopy(data);self.refresh_focus();self.invalidate(list(self.states));self.touch();self.status.setText('旧版新品关注清单已保存。重新计算后，普通商品资料按该清单核对首铺；全商品档案继续按归属仓45天新品判定。')
 
     def selected_settings(self,store):
         return new_products.calculation_settings(super().selected_settings(store),self.new_focus,self.job_day)

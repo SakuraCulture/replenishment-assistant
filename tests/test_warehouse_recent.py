@@ -12,8 +12,10 @@ import engine
 import first_fill
 import new_product_focus as focus
 import new_products
+import preissue
 import restock_policy
 import result_semantics as sem
+import review_filters
 from table_records import bridge_table
 import warehouse_catalog as wc
 import warehouse_newness as recent
@@ -149,8 +151,13 @@ class ArchiveCatalog(unittest.TestCase):
         self.assertEqual((hb_row['AU'],sem.order_quantity(hb_row),hb_row['AS']),('河北仓',18,0))
         focus.require_for(None,DAY,[hb_run])
         self.assertEqual(next(sem.signed_rows(hb_run['rows'],None))[0],'本月新品')
+        self.assertEqual(review_filters.group(hb_row,known=False),'本月新品')
         sd_run=calculate(both,'山东仓',profile=monthly([CODE]))
-        self.assertEqual((sd_run['rows'][0]['AU'],sem.order_quantity(sd_run['rows'][0])),('山东仓',0))
+        sd_row=sd_run['rows'][0]
+        self.assertEqual((sd_row['AU'],sem.order_quantity(sd_row)),('山东仓',0))
+        self.assertEqual(review_filters.group(sd_row,{CODE}),'往期新品')
+        self.assertFalse(preissue.current_month(sd_row))
+        self.assertTrue(preissue.current_month(hb_row))
         for variant in (calculate(both,'河北仓',day='2026-11-23'),calculate(both,'河北仓',enabled=False),
                         calculate(both,'河北仓',sales=[sale(在途库存=6)])):
             self.assertEqual(len(variant['rows']),1)
@@ -193,6 +200,15 @@ class ArchiveCatalog(unittest.TestCase):
             day_results.append([sem.order_quantity(rows[code]) for code in ('A','B')])
             clock+=timedelta(days=1)
         self.assertEqual(day_results,[[18,0],[0,0]])
+
+    def test_local_purchase_candidate_does_not_require_legacy_focus_for_signing(self):
+        catalog=self.import_file('河北仓',[(CODE,'2026-10-08','启用',100,'',None,18)])
+        result=calculate({'河北仓':catalog},'河北仓',sales=[sale(),sale('@local-only')])
+        local=result['rows'][1]
+        self.assertEqual(local['_source'],'地采商品')
+        self.assertTrue(new_products.is_new(local))
+        focus.require_for(None,DAY,[result])
+        self.assertEqual([(name,row['E']) for name,row in sem.signed_rows(result['rows'],None)], [('本月新品',CODE)])
 
     def test_same_newness_set_preserves_quantities_and_order(self):
         codes=['@b',CODE,'@a']
