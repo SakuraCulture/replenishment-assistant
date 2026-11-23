@@ -122,36 +122,53 @@ def read_import(path,kind,progress=lambda _:None,cancel=None):
     from openpyxl import load_workbook
     from store_parameter_import import digest,code_value,checkpoint
     from import_templates import TEMPLATES
-    before=digest(path);wb=load_workbook(path,read_only=True,data_only=False);result=[];seen=set();required=set(TEMPLATES[kind][2])
+    from admission_overview import QUAL_HEADERS,QUAL_REPORT
+    _,sheet,columns,_=TEMPLATES[kind]
+    before=digest(path);wb=load_workbook(path,read_only=True,data_only=False);result=[];seen=set();required=set(columns)
+    qualification=kind=='store_qualification'
+    legacy_only=qualification and sheet not in wb.sheetnames;recognized=False
     try:
         for ws in wb:
-            ws.reset_dimensions();headers=None
+            ws.reset_dimensions();headers=None;legacy=False
             for rn,cells in enumerate(ws.iter_rows(),1):
                 checkpoint(cancel)
                 if headers is None:
                     if rn>20:break
                     h=[str(c.value or '').strip() for c in cells]
-                    if not required<=set(h):continue
+                    if not required<=set(h):
+                        if not (legacy_only and ws.title==QUAL_REPORT and set(QUAL_HEADERS)<=set(h)):continue
+                        legacy=True
                     if len([s for s in h if s])!=len(set(s for s in h if s)):raise ValueError('重复表头：'+ws.title)
-                    headers=h;continue
+                    headers=h;recognized=True;continue
                 if all(c.value in (None,'') for c in cells):continue
                 source=f'{Path(path).name} / {ws.title} / 第{rn}行'
                 try:
                     if any(c.data_type in ('f','e') for c in cells):raise ValueError('禁止公式或错误值')
                     raw={k:cells[i].value if i<len(cells) else None for i,k in enumerate(headers) if k}
-                    store=code_value(cells[headers.index('门店编码')]);sku=code_value(cells[headers.index('商品编码')]) if kind=='store_refusals' else None
+                    store=code_value(cells[headers.index('门店编码')]);sku=None
+                    if qualification:
+                        state=str(raw.get('登记状态' if legacy else '资质状态') or '').strip()
+                        if legacy and state=='未登记':state=''
+                        if not state:
+                            if any(str(raw.get(key) or '').strip() for key in ('核验人','核验日期','到期日','备注')):
+                                raise ValueError('已填写资质资料，请补填资质状态')
+                            continue
+                        value={'state':'已核验' if state=='有效' else state,'reviewer':str(raw.get('核验人') or '').strip(),
+                               'verified_on':service.date_value(raw.get('核验日期')),'expires':service.date_value(raw.get('到期日')),'note':str(raw.get('备注') or '')}
+                    else:
+                        sku=code_value(cells[headers.index('商品编码')])
+                        value={'name':str(raw.get('商品名称') or ''),'reason':str(raw.get('拒收原因') or '').strip(),
+                               'expires':service.date_value(raw.get('到期日')),'active':True}
                     key=(store,sku)
                     if key in seen:raise ValueError('重复业务键，请合并后导入')
                     seen.add(key)
-                    if sku:value={'name':str(raw.get('商品名称') or ''),'reason':str(raw.get('拒收原因') or '').strip(),'expires':service.date_value(raw.get('到期日')),'active':True}
-                    else:value={'state':str(raw.get('资质状态') or '').strip(),'reviewer':str(raw.get('核验人') or '').strip(),'verified_on':service.date_value(raw.get('核验日期')),'expires':service.date_value(raw.get('到期日')),'note':str(raw.get('备注') or '')}
                     value['source']={'file':Path(path).name,'sha256':before,'sheet':ws.title,'row':rn,'original':{k:(v.isoformat() if hasattr(v,'isoformat') else v) for k,v in raw.items()}}
                     service.validate({'refusals':{sku:value}} if sku else {'qualification':value})
                     result.append({'store':store,'sku':sku,'value':value,'source':source})
                 except Exception as exc:raise ValueError(source+'：'+str(exc)) from exc
     finally:wb.close()
     if before!=digest(path):raise ValueError('读取期间文件变化，请重新导入')
-    if not result:raise ValueError('没有找到可导入的记录，请使用本功能模板')
+    if not result and not (qualification and recognized):raise ValueError('没有找到可导入的记录，请使用本功能模板')
     return {'path':path,'sha':before,'rows':result}
 
 def import_records(parent,host,kind,*,show_saved=True):
@@ -162,17 +179,29 @@ def import_records(parent,host,kind,*,show_saved=True):
     if d.exec()!=QDialog.DialogCode.Accepted:return
     try:
         data=run(parent,read_import,(d.paths[0],kind),'读取门店准入');old={};new={};rows=[]
+        if not data['rows']:
+            QMessageBox.information(parent,'没有需要登记的资质','请在「门店资质」页填写相应门店的资质状态。')
+            return
         for item in data['rows']:
             s=item['store']
             if s not in old:old[s]=service.snapshot(host.work_repository.path,s)['record'];new[s]=copy.deepcopy(old[s])
-            if item['sku']:new[s].setdefault('refusals',{})[item['sku']]=item['value']
-            else:new[s]['qualification']=item['value']
+            value=item['value']
+            if item['sku']:
+                new[s].setdefault('refusals',{})[item['sku']]=value
+            else:
+                existing=old[s].get('qualification',{})
+                if any((existing.get(key) or None)!=(v or None) for key,v in value.items() if key!='source'):
+                    new[s]['qualification']=value
+        new={s:value for s,value in new.items() if value!=old[s]}
+        if not new:
+            QMessageBox.information(parent,'资料一致','表中记录与已保存资料一致，本次没有需要保存的变更。')
+            return
         for s in new:rows.extend([[s,*r] for r in changes(old[s],new[s])])
         if not review_rows(parent,'核对准入导入',['门店','项目','原值','新值'],rows,'缺行不解除；仅更新所列记录，历史订单不变。','保存门店准入'):return
         if digest(data['path'])!=data['sha']:raise ValueError('预览后文件变化，请重新导入')
         run(parent,save_records,(host.work_repository.path,new,old),'保存门店准入',cancellable=False);invalidate(host,list(new))
     except Exception as exc:QMessageBox.warning(parent,'未导入',str(exc));return
-    result={'stores':list(new),'keys':[(r['store'],r['sku']) for r in data['rows']]}
+    result={'stores':list(new),'keys':[(r['store'],r['sku']) for r in data['rows'] if r['store'] in new]}
     if show_saved:
         from admission_overview_ui import open_overview
         open_overview(parent,host,'qualification' if kind=='store_qualification' else 'refusals',set(result['keys']))

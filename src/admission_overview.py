@@ -7,6 +7,7 @@ from runtime_support import checkpoint
 
 QUAL_HEADERS=['门店编码','门店名称','当前有效状态','登记状态','核验人','核验日期','到期日','拒收中款数','备注']
 REF_HEADERS=['门店编码','门店名称','商品编码','商品名称','拒收原因','到期日','当前状态']
+QUAL_REPORT='二类医疗资质'
 
 
 def qualification_state(value,day):
@@ -97,14 +98,38 @@ def export(path,kind,rows,scope,progress=lambda _:None,cancel=None):
     """Export precisely the displayed snapshot, not a fresh query with different filters."""
     from openpyxl import Workbook
     from openpyxl.styles import Font,PatternFill
-    target=Path(path);title='二类医疗资质' if kind=='qualification' else '门店拒收清单'
-    headers=QUAL_HEADERS if kind=='qualification' else REF_HEADERS
-    wb=Workbook();ws=wb.active;ws.title=title;ws.append(headers);ws.freeze_panes='C2'
+    def append_text(sheet,row):
+        sheet.append(row)
+        for cell in sheet[sheet.max_row]:
+            if isinstance(cell.value,str):
+                cell.data_type='s'
+                cell.number_format='@'
+
+    target=Path(path)
+    qualification=kind=='qualification'
+    if qualification:
+        from import_templates import make_workbook
+        wb=make_workbook('store_qualification',blank_rows=0)
+        editable=wb.active
+        fields=[cell.value for cell in editable[1]]
+        ws=wb.create_sheet(QUAL_REPORT)
+    else:
+        wb=Workbook()
+        ws=wb.active
+        ws.title='门店拒收清单'
+    ws.append(QUAL_HEADERS if qualification else REF_HEADERS)
+    ws.freeze_panes='C2'
     for index,row in enumerate(rows,1):
-        checkpoint(cancel);ws.append(row)
-        for cell in ws[ws.max_row]:
-            if isinstance(cell.value,str):cell.data_type='s';cell.number_format='@'
+        checkpoint(cancel)
+        append_text(ws,row)
+        if qualification:
+            values=dict(zip(QUAL_HEADERS,row))
+            values['资质状态']=values['登记状态']
+            if values['登记状态']=='未登记':
+                values={key:values[key] for key in ('门店编码','门店名称')}
+            append_text(editable,[values.get(field) for field in fields])
         if index%200==0:progress(f'正在导出 {index}/{len(rows)} 条记录…')
+    if qualification:editable.auto_filter.ref=editable.dimensions
     for cell in ws[1]:
         cell.font=Font(bold=True,color='FFFFFF');cell.fill=PatternFill('solid',fgColor='126C63');ws.column_dimensions[cell.column_letter].width=22
     ws.auto_filter.ref=ws.dimensions
@@ -112,7 +137,8 @@ def export(path,kind,rows,scope,progress=lambda _:None,cancel=None):
     for k,v in scope.items():
         note.append([k,str(v)])
         for cell in note[note.max_row]:cell.data_type='s'
-    note.append(['说明','当前状态按查询日判断；到期当天仍有效。该文件用于核对现状，不是导入模板。'])
+    detail='修改门店资质页后可直接导回；二类医疗资质页记录本次查询现状。' if qualification else '该文件用于核对现状，不是导入模板。'
+    note.append(['说明','当前状态按查询日判断；到期当天仍有效。'+detail])
     note.column_dimensions['A'].width=22;note.column_dimensions['B'].width=90
     fd,tmp=tempfile.mkstemp(dir=target.parent,suffix='.xlsx');os.close(fd)
     try:progress(f'保存 {len(rows)} 条查询结果…');wb.save(tmp);checkpoint(cancel);os.replace(tmp,target)
