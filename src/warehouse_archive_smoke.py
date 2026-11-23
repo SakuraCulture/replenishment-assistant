@@ -37,6 +37,7 @@ def start_smoke(app,win,args):
     def run():
         from collections import Counter
         from contextlib import closing
+        from datetime import date
         from unittest.mock import patch
         import jst_allocation
         import new_product_focus as focus
@@ -59,6 +60,36 @@ def start_smoke(app,win,args):
                 win.catalog_buttons[wh].click()
                 idle()
             return win.catalogs[wh]
+        def check_new_detail(box,wh):
+            from warehouse_new_exports import HEADERS
+
+            rows=box.groups.get('新品',[])
+            require(box.export_button.isEnabled()==bool(rows),wh+'导出入口按合格新品启用')
+            if not rows:return
+            box.search.setText('不存在的测试商品')
+            require(box.table.rowCount()==0,wh+'测试导出前已缩小窗口搜索范围')
+            path=out/(wh+'-45天新品明细.xlsx')
+            with patch('export_locations.save_file',return_value=(str(path),'Excel')) as save, \
+                 patch.object(QMessageBox,'information',return_value=QMessageBox.StandardButton.Ok):
+                box.export_button.click()
+            require(save.call_args.args[2]==f'{wh}_45天新品_{day}.xlsx',wh+'默认文件名包含仓与判定日期')
+            with closing(load_workbook(path)) as book:
+                sheet=book['新品明细']
+                require(tuple(c.value for c in sheet[1])==HEADERS,wh+'新品明细表头准确')
+                expected=[(code,name,date.fromisoformat(first),age,status,stock,note or None,line,
+                           wh,date.fromisoformat(day),box.revision) for code,name,first,age,status,stock,note,line in rows]
+                contents=list(sheet.iter_rows(min_row=2))
+                require(all(cells[0].data_type=='s' and cells[2].is_date and cells[9].is_date for cells in contents),
+                        wh+'新品编码是文本，首入库日与判定日是 Excel 日期')
+                actual=[]
+                for cells in contents:
+                    values=[c.value for c in cells]
+                    values[2]=values[2].date();values[9]=values[9].date()
+                    actual.append(tuple(values))
+                require(actual==expected and sheet.auto_filter.ref==f'A1:K{len(rows)+1}',
+                        wh+'Excel 导出本仓完整合格新品，原行序、库存和资料依据一致')
+            box.search.clear()
+            return str(path)
         def examine(wh):
             returned={};errors=[];timer=QTimer(win)
             def read():
@@ -68,6 +99,8 @@ def start_smoke(app,win,args):
                     timer.stop()
                     returned['summary']=box.findChild(QLabel,'warehouseRecentCounts').text()
                     returned['groups']={k:list(v) for k,v in box.groups.items()}
+                    if data.get('verify_detail_export'):
+                        returned['export']=check_new_detail(box,wh)
                     box.grab().save(str(out/('新品窗口-'+wh+'-'+str(len(checks))+'.png')))
                 except Exception:errors.append(traceback.format_exc())
                 finally:box.accept()

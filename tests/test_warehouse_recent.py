@@ -1,4 +1,5 @@
 """Warehouse-anchored newness regressions using ordinary and archive source files."""
+from contextlib import closing
 from datetime import date,datetime,timedelta
 from hashlib import sha256
 from pathlib import Path
@@ -257,6 +258,29 @@ class ArchiveCatalog(unittest.TestCase):
         self.assertEqual(sem.order_quantity(result['rows'][0]),0)
         self.assertEqual(list(sem.signed_rows(result['rows'],profile)),[])
         focus.require_for(None,DAY,[result])
+
+    def test_new_warehouse_detail_export_preserves_rows_types_and_previous_file(self):
+        from warehouse_new_exports import HEADERS,export_detail
+
+        rows=[(CODE,'=原样商品名','2026-10-08',45,'备用',0,'',3),
+              ('@004','原样第二款',DAY,0,'启用',12.5,'仓内记录',8)]
+        dest=self.root/'新品明细'
+        path=export_detail(dest,rows,'河北仓',DAY,'0012345678abcdef')
+        self.assertEqual(path,dest.with_suffix('.xlsx'))
+        with closing(openpyxl.load_workbook(path)) as book:
+            sheet=book['新品明细']
+            self.assertEqual(tuple(c.value for c in sheet[1]),HEADERS)
+            self.assertEqual([[c.value for c in line] for line in sheet.iter_rows(min_row=2)], [
+                [CODE,'=原样商品名',datetime(2026,10,8),45,'备用',0,None,3,'河北仓',datetime(2026,11,22),'0012345678abcdef'],
+                ['@004','原样第二款',datetime(2026,11,22),0,'启用',12.5,'仓内记录',8,'河北仓',datetime(2026,11,22),'0012345678abcdef'],
+            ])
+            self.assertEqual((sheet['A2'].data_type,sheet['B2'].data_type,sheet['F2'].data_type),('s','s','n'))
+            self.assertEqual(sheet.auto_filter.ref,'A1:K3')
+            self.assertEqual(sheet.freeze_panes,'C2')
+        original=path.read_bytes()
+        with self.assertRaises(FileExistsError):
+            export_detail(dest,rows,'山东仓',DAY,'changed')
+        self.assertEqual(path.read_bytes(),original)
 
     def test_local_purchase_candidate_does_not_require_legacy_focus_for_signing(self):
         catalog=self.import_file('河北仓',[(CODE,'2026-10-08','启用',100,'',None,18)])
