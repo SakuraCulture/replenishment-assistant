@@ -85,7 +85,7 @@ def import_catalog(path,warehouse,progress=lambda s:None,cancel=None,*,evidence=
     archive=info['alternate']
     if evidence is not None and (not archive or newness.FIRST_INBOUND not in heads):
         raise ValueError('本次自动同步需要包含首次入库时间的全商品档案')
-    used=set(FIELDS)|{'商品标签','标准装箱数量'}
+    used=set(FIELDS)|{'商品标签','标准装箱数量',newness.VIRTUAL_CATEGORY}
     if archive:
         used.update(ARCHIVE_ALIASES.values());used.update(ARCHIVE_EXTRA)
         if any(k in heads and v in heads for k,v in ARCHIVE_ALIASES.items()):
@@ -115,6 +115,7 @@ def import_catalog(path,warehouse,progress=lambda s:None,cancel=None,*,evidence=
         if '标准装箱数量' in heads:row['标准装箱数量']=raw.get('标准装箱数量')
         items[sku]=row
         if '商品标签' in heads:row['商品标签']=raw.get('商品标签')
+        if newness.VIRTUAL_CATEGORY in heads:row[newness.VIRTUAL_CATEGORY]=newness.json_cell(raw.get(newness.VIRTUAL_CATEGORY))
         first_fill_fields=[f for f in FIRST_FILL_FIELDS if f in heads]
         if len(first_fill_fields)>1 or any(f in info['duplicate_unused_headers'] for f in first_fill_fields):
             row['_first_fill_issue']='“'+'／'.join(first_fill_fields)+'”表头重复或存在多个同义列，未自动择一'
@@ -407,6 +408,8 @@ def _prepare_catalogs(catalogs,load):
                 m.update(product_row=row['_row'],warehouse_available=engine.adapter.numeric(row.get('可用数')))
                 inbound=newness.source(catalog,row)
                 if inbound is not None:m['first_inbound_source']=inbound
+                elif reason:=newness.exclusion(row.get('商品状态'),row.get(newness.VIRTUAL_CATEGORY)):
+                    m['new_product_exclusion']=reason
                 if any('商品标签' in c['items'].get(d['E'],{}) for c in catalogs.values()):
                     from admission import catalog_meta
                     m.update(catalog_meta(catalogs,wh,d['E']))

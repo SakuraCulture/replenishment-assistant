@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (QAbstractItemView,QComboBox,QDialog,QHBoxLayout,
                                QLineEdit,QTableWidget,QTableWidgetItem,QVBoxLayout)
 from ui_controls import button,label
 from result_semantics import fmt
-from warehouse_newness import MISSING_COLUMN,view
+from warehouse_newness import AGE_LIMIT,MISSING_COLUMN,MISSING_VIRTUAL_CATEGORY,view
 
 
 class NewWarehouseProducts(QDialog):
@@ -20,10 +20,15 @@ class NewWarehouseProducts(QDialog):
         self.groups={}
         if entries is not None:
             self.groups['新品']=[self._row(item,basis) for item,basis in entries if basis['new']]
+            self.groups['已排除']=[self._row(item,basis) for item,basis in entries
+                                   if not basis['issue'] and basis['age']<=AGE_LIMIT and basis['excluded_reason']]
             self.groups['日期待核']=[self._row(item,basis) for item,basis in entries if basis['issue']]
             self.groups['日期早于建档']=[self._row(item,basis) for item,basis in entries if basis['warning']]
-            text=(f"仓新品 {len(self.groups['新品']):,} 款 · 日期待核 {len(self.groups['日期待核']):,} 款"
+            text=(f"仓新品 {len(self.groups['新品']):,} 款 · 45天内已排除 {len(self.groups['已排除']):,} 款"
+                  f" · 日期待核 {len(self.groups['日期待核']):,} 款"
                   f" · 日期早于建档 {len(self.groups['日期早于建档']):,} 款 · 档案记录待核 {len(pending):,} 行")
+            if any(basis['screening_issue'] for _,basis in entries):
+                text+='\n'+MISSING_VIRTUAL_CATEGORY
         else:
             text=('该仓尚未导入商品资料' if catalog is None else MISSING_COLUMN)
         status=label(text,'muted');status.setObjectName('warehouseRecentCounts');layout.addWidget(status)
@@ -45,7 +50,7 @@ class NewWarehouseProducts(QDialog):
     @staticmethod
     def _row(item,basis):
         message=item.get('reason','')
-        if basis:message='，'.join(x for x in (basis['issue'],basis['warning']) if x)
+        if basis:message='，'.join(basis[key] for key in ('excluded_reason','screening_issue','issue','warning') if basis[key])
         return (item['商品编码'],item.get('商品名称'),(basis or {}).get('first_date'),
                 (basis or {}).get('age'),item.get('商品状态'),item.get('可用数'),message,item.get('_row'))
 

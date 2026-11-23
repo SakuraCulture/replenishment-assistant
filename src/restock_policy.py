@@ -28,9 +28,12 @@ def summary(config):
     return ' · '.join(LABELS[k]+'：'+('开启' if v else '关闭') for k,v in values(config).items())
 
 def new_request(row, kind='manual'):
-    from new_products import is_new
-    return kind=='new' or is_new(row)
+    from new_products import zero_demand
+    return kind=='new' or zero_demand(row)
 
 def guard_new(result, row=None, kind='manual', quantity=1):
+    if quantity>0 and kind=='new' and row is not None:
+        from warehouse_newness import row_screening_reason
+        if reason:=row_screening_reason(row):raise ValueError(reason)
     if quantity>0 and not result_values(result)['new_stocking'] and (row is None or new_request(row,kind)):
         raise ValueError('本店新品铺设已关闭；请先在“调整补货策略”开启，再安排新品数量')

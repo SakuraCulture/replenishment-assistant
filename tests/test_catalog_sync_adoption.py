@@ -30,6 +30,21 @@ class Adoption(unittest.TestCase):
   folder=self.node/'downloads/next/item';folder.mkdir(parents=True);file=folder/'same.xlsx';shutil.copyfile(self.receipt['source'],file)
   self.item['receipt']=v.validate({'schema':1,'file':str(file),'warehouse':'山东仓','sha256':v.digest(file),'expected_rows':1,'candidate':str(folder/'candidate.json')})
   ack=self.ad.apply({'id':'next','purpose':'default_catalog'},self.item);self.assertTrue(ack['unchanged']);self.assertEqual(before,self.ad.catalogs.current_digest('山东仓'));self.assertEqual(data,self.ad.catalogs.catalogs()['山东仓'])
+ def test_same_original_can_preserve_a_newly_imported_virtual_category(self):
+  file=self.folder/'virtual.xlsx';book=openpyxl.Workbook()
+  book.active.append(wc.REQUIRED+['虚拟分类'])
+  book.active.append(['000123','快销',2,24,'启用',240,'标杆淘汰'])
+  book.save(file);book.close()
+  digest=v.digest(file)
+  receipt=v.validate({'schema':1,'file':str(file),'warehouse':'山东仓','sha256':digest,
+                      'expected_rows':1,'candidate':str(self.folder/'virtual.json')})
+  old=v.candidate(receipt);old['items']['000123'].pop('虚拟分类');old['revision']=wc.revision(old['items'])
+  self.ad.catalogs.save(old)
+  item={**self.item,'receipt':receipt,'native':{**self.item['native'],'sha256':digest},
+        'expected_catalog_digest':self.ad.catalogs.current_digest('山东仓')}
+  ack=self.ad.apply(self.batch,item)
+  self.assertNotIn('unchanged',ack)
+  self.assertEqual(self.ad.catalogs.catalogs()['山东仓']['items']['000123']['虚拟分类'],'标杆淘汰')
  def test_manual_update_during_download_rejected(self):
   changed=v.candidate(self.receipt);changed['imported_at']='newer';self.ad.catalogs.save(changed);digest=self.ad.catalogs.current_digest('山东仓')
   with self.assertRaises(wr.Conflict):self.ad.apply(self.batch,self.item)

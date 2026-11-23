@@ -165,14 +165,20 @@ def start_smoke(app,win,args):
                         '河北原件 4525 行，采用 4494，另有 31 行待核')
                 hv=examine(hb)
                 sv=examine(sd)
-                require('9 款' in hv['summary'] and len(hv['groups']['新品'])==9,'河北九款由实际工作台新品入口展示')
-                require(set(a[0] for a in hv['groups']['新品'])==set(data['hebei_expected']),'九个 SKU 和预期逐个相同')
-                require(Counter(a[4] for a in hv['groups']['新品'])=={'启用':4,'备用':5} and
+                expected_hebei=set(data['hebei_expected'])
+                require(f'仓新品 {len(expected_hebei):,} 款' in hv['summary'],'实际工作台显示河北仓新品数量')
+                require(set(a[0] for a in hv['groups']['新品'])==expected_hebei,'河北仓新品逐 SKU 与预期相同')
+                require(Counter(a[4] for a in hv['groups']['新品'])==data.get('hebei_expected_status',{'启用':4,'备用':5}) and
                         sum(a[5]==0 for a in hv['groups']['新品'])==2,'启用/备用/零库存数量与原件一致')
                 unknown=next(a for a in hv['groups']['日期待核'] if a[0]=='1717845590862065717')
                 require(unknown[5]==10 and unknown[6]==recent.UNKNOWN,'可用 10 的河北空日期留待核')
                 require({a[0] for a in sv['groups']['新品']}=={'@SD-new','@SD-boundary','@SD-today'},
                         '山东隔离档案使用自己的三款日期记录')
+                for warehouse,view in ((hb,hv),(sd,sv)):
+                    exclusions=data.get('excluded',{}).get(warehouse)
+                    if exclusions is not None:
+                        require({a[0]:a[6] for a in view['groups']['已排除']}==exclusions,
+                                warehouse+'仓新品入口逐款显示禁用及淘汰依据')
                 dayafter=recent.view(sc,'2026-11-23')
                 require('@SD-boundary' not in {a['商品编码'] for a,b in dayafter if b['new']},'翌日同一仓资料第 45 天商品退出')
                 win.sales.add_paths([data['sales']])
@@ -185,6 +191,10 @@ def start_smoke(app,win,args):
                         '同一批实际归属山东的商品使用山东清单')
                 require(len(by)==len(data['sales_codes']) and list(by)==data['sales_codes'],
                         '始终只处理本店已有输入，逐商品顺序一致')
+                for code in data.get('screened_sales',[]):
+                    excluded=by[code]
+                    require(bool(recent.row_screening_reason(excluded)) and not excluded.get('_new_requested')
+                            and sem.new_product_group(excluded) is None,code+'不参与新品选择、首铺和签发新品分组')
                 if local_sku:=data.get('local_sku'):
                     require(by[local_sku]['_source']=='地采商品','同批保留零销量地采商品，签发校验按中心仓范围执行')
                 examine_selection(result,None,['@SD-new',sku])
@@ -235,6 +245,17 @@ def start_smoke(app,win,args):
                     require(signed_workbook(path,wh,code,True)==originals[wh],
                             wh+' 原签发与可编辑补导的单元格值、类型、格式及顺序一致')
                 require(win.orders.head(day,store)['revision']==1,'应用导出设置后补导沿用 V001')
+                if legacy:=data.get('legacy_signed'):
+                    from business_presenter import warehouse_newness_rows
+                    legacy_work=wr.Repository.open_existing(legacy['db'],read_only=True)
+                    archived=type(win.orders).from_existing_work(legacy_work).get(day,store,1)
+                    old_result=archived['payload']['result']
+                    old=next(r for r in old_result['rows'] if r['E']==sku)
+                    require(recent.for_row(old)==legacy['basis'] and legacy['basis']['rule']==recent.LEGACY_RULE,
+                            '从旧交付数据库读回原 45 天判定依据')
+                    require(list(map(list,projected(old_result)))==legacy['rows'] and
+                            sem.new_product_group(old)=='本月新品' and warehouse_newness_rows(old)[-1][1]=='是',
+                            '旧签发沿用原新品分组、数量、金额及行序')
                 changes=[item for item in zip(projected(without),before) if item[0]!=item[1]]
                 out_data={'passed':True,'frozen_exe':bool(getattr(sys,'frozen',False)),'checks':checks,
                           'hebei':hv,'shandong_isolated':sv,'same_set':before,'allocation':balances,

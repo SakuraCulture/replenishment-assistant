@@ -178,13 +178,14 @@ def warehouse_newness_rows(row):
     from warehouse_newness import AGE_LIMIT,for_row
     basis=for_row(row)
     if basis is None:return []
+    criterion=basis.get('excluded_reason') or basis.get('screening_issue') or f'仓龄0～{AGE_LIMIT}天，含两端'
     return [
         ['仓新品判定日',basis['day'],'','北京时间，整批共用'],
         ['新品判定采用仓',basis['warehouse'],'','按商品归属仓'],
         ['仓资料版本',basis['catalog_revision'],'','本次作业采用的原版本'],
         ['首入库日期',basis['first_date'] or MISSING,'',basis['issue']],
         ['仓龄',value_text(basis['age'],missing=MISSING),'天',basis['warning']],
-        ['仓新品','是' if basis['new'] else '否','',f'仓龄0～{AGE_LIMIT}天，含两端'],
+        ['仓新品','是' if basis['new'] else '否','',criterion],
     ]
 
 def historical(repo,order,scope,sku,cancel=None):

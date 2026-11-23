@@ -85,14 +85,19 @@ def original(result):
     return out
 
 
-def is_new(row):
+def zero_demand(row):
     # User-confirmed 2026-10-30: blank original stockout days mean zero for
     # first-fill recognition. Preserve the raw N and all model intermediates.
     return all(sem.numeric(row.get(k)) and row[k] == 0 for k in ('J', 'K', 'L')) and (row.get('N') is None or row.get('N')=='' or sem.numeric(row.get('N')) and row['N']==0)
 
 
+def is_new(row):
+    return zero_demand(row) and not warehouse_newness.row_screening_reason(row)
+
+
 def blocked_reason(row):
-    if not is_new(row):return '四项有效零值条件不成立'
+    if reason:=warehouse_newness.row_screening_reason(row):return reason
+    if not zero_demand(row):return '四项有效零值条件不成立'
     if sem.exclusion_reason(row):return sem.exclusion_reason(row)
     if row.get('_source') != '资料匹配':return '商品资料未匹配，地采待核'
     if sem.issue_text(row):return sem.issue_text(row)

@@ -107,7 +107,8 @@ class Adoptions:
                     raise wr.Conflict('采集期间锁单、分配或库存已变化，未采用新资料；请重新获取')
             old=self.catalogs.snapshots((warehouse,))[0].get(warehouse)
             same_evidence=old and old.get('source_observation')==data.get('source_observation')
-            if old and not str(current).startswith('legacy:') and old.get('source_sha256')==data['source_sha256'] and same_evidence:
+            if (old and not str(current).startswith('legacy:') and old.get('source_sha256')==data['source_sha256']
+                    and old['revision']==data['revision'] and same_evidence):
                 # Keep existing source_path/imported_at and exact default bytes.
                 ack.update(revision=old['revision'],unchanged=True);new_digest=current
             if prior and prior['new_digest'] is not None and (prior['new_digest']!=new_digest or prior['old_digest']!=expected):
