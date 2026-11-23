@@ -128,7 +128,9 @@ from PySide6.QtCore import QTimer
 from single_instance import SingleInstance
 root=Path(sys.argv[1]);app=QApplication([]);s=SingleInstance('native-starting-test',folder=root/'locks')
 if not s.acquire():raise SystemExit(0)
-(root/'owner').write_text(str(os.getpid()))
+owner=root/'owner.tmp'
+owner.write_text(str(os.getpid()))
+owner.replace(root/'owner')
 def window():
  app.w=QWidget();s.bind(app.w);app.w.show()
 QTimer.singleShot(500,window)

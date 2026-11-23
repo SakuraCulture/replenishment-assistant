@@ -14,6 +14,18 @@ def idle(host):
     sessions=getattr(host,'catalog_sessions',None)
     if sessions and sessions.session.lease is not None:raise ValueError('请先关闭聚水潭采集窗口，等待原任务安全结束')
 
+def _handoff(dialog,host,plan,message):
+    from migration_status import waiting
+    from order_migration_progress import launch
+    run(dialog,require_closed,(host.repository.folder,),'复核本机迁移资料占用')
+    run(dialog,launch,(plan,),'打开订单迁入进度窗口',cancellable=False)
+    # Keep the accepted request while the normal asynchronous shutdown runs.
+    waiting(host,plan)
+    host._discard_close=True
+    dialog.accept()
+    host.setEnabled(False)
+    if not host.close():host.status.setText(message)
+
 def open_migration(parent,host):
     from data_maintenance_ui import guarded
     def show():
@@ -45,16 +57,9 @@ def open_migration(parent,host):
                 m=plan['manifest'];counts=m['counts']
                 text=(f'来源版本：{m["app_version"]}，导出时间：{m["created"]}\n订单父单 {counts.get("normal_orders",0)}，签发修订 {counts.get("normal_revisions",0)}，草稿 {counts.get("jobs",0)}，库内原件 {counts.get("source_files",0)}。\n'
                       f'将完整替换本机订单、草稿、关联平台记录及门店参数/清单，不与现有订单混合。\n本机完整备份：{plan["backup"]}\n'
-                      '本机浏览器连接、登录及独立分析资料保留。平台订单不会撤销；迁入作业和计划暂停，先核验原平台结果后逐项继续。\n未保存的界面内容不保存。确认后安全退出，迁入完成后重新打开软件。')
+                      '本机浏览器连接、登录及独立分析资料保留。平台订单不会撤销；迁入作业和计划暂停，先核验原平台结果后逐项继续。\n未保存的界面内容不保存。确认后关闭工作台，迁入进度窗口会显示最终结果。')
                 if QMessageBox.question(d,'核对完整恢复范围',text,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:discard(plan);return
-                run(d,require_closed,(host.repository.folder,),'复核本机迁移资料占用')
-                # False here also means a normal asynchronous safe shutdown.
-                # Keep the accepted request until app.exec() ends and app.py
-                # consumes it; do not mistake a pending close for cancellation.
-                from migration_status import waiting
-                waiting(host,plan);host._discard_close=True;d.accept()
-                host.setEnabled(False)
-                if not host.close():host.status.setText('迁入已确认，正在等待后台连接安全退出；退出后自动完成迁入，请勿重复操作。')
+                _handoff(d,host,plan,'迁入已确认，正在等待后台安全退出，请查看订单迁入进度窗口。')
             except Cancelled:
                 if plan:discard(plan)
             except Exception as exc:
@@ -74,10 +79,7 @@ def open_migration(parent,host):
             try:
                 idle(host);plan=run(d,prepare,(host.repository.folder,path),'校验订单及完整关联，核对新增、重复和冲突')
                 if not review(d,plan):discard(plan);return
-                run(d,require_closed,(host.repository.folder,),'复核本机迁移资料占用')
-                from migration_status import waiting
-                waiting(host,plan);host._discard_close=True;d.accept();host.setEnabled(False)
-                if not host.close():host.status.setText('订单合并已确认，正在等待后台安全退出；原资料保持，退出后完成合并。')
+                _handoff(d,host,plan,'订单合并已确认，正在等待后台安全退出，请查看订单迁入进度窗口。')
             except Cancelled:
                 if plan:discard(plan)
             except Exception as exc:
