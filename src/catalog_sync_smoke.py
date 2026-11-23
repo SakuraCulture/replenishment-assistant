@@ -66,13 +66,18 @@ def start_smoke(app,win,args):
    d=Dialog(win);d.show();require(owner.client.process.pid==pid,'重开默认资料窗口复用原进程');require(d.model.rows[0][2]=='已采用','重开读取已采用记录');d.resume_btn.click();wait(lambda:d.worker is None);require(len(d.adopted)==0,'再次继续不会重放成功仓');d.reject();require(component.running,'停止和重试后仍保留原连接');d.deleteLater();d=None
    d=Dialog(win,purpose='allocation_baseline');d.show();require(owner.client.process.pid==pid,'分配库存入口复用同一进程');require(not d.resume_btn.isEnabled(),'不同用途不能串用原下载任务');d.reject();d.deleteLater();d=None
    require(win.aoxiang_workflows.session.client is None,'聚水潭窗口没有启动或重置翱象连接')
-   from catalog_sync_ui import open_sync
-   def close_during_work():
-    current=win._large_io_dialog;current.resume_btn.click()
-    require(current.worker is not None,'窗口内再次继续启动后台任务')
+   if real:
+    # Both warehouse items have been adopted. Exercise idle shutdown;
+    # the interrupted-work case below uses an intentionally pending fixture.
     win._discard_close=True;win.close()
-    require(current.close_pending and not current._completed,'主软件关闭先请求停止，等待原作业安全返回')
-   QTimer.singleShot(150,close_during_work);open_sync(win)
+   else:
+    from catalog_sync_ui import open_sync
+    def close_during_work():
+     current=win._large_io_dialog;current.resume_btn.click()
+     require(current.worker is not None,'窗口内再次继续启动后台任务')
+     win._discard_close=True;win.close()
+     require(current.close_pending and not current._completed,'主软件关闭先请求停止，等待原作业安全返回')
+    QTimer.singleShot(150,close_during_work);open_sync(win)
    wait(lambda:owner.client is None and not component.running)
    require(not component.running,'退出主软件安全结束真实 Node 进程')
    report={'passed':True,'checks':checks,'screenshots':screens,'scope':'real downloaded files replayed through UI; no new browser/platform operation; actual Node and EXE validator' if real else 'synthetic saved platform task; no real browser or platform; real Node and no-Qt validator; frozen flag distinguishes EXE/source','heartbeat_count':len(ticks),'retained_component_pid':pid,'component_exited':not component.running,'version':diagnostic(),'frozen':bool(getattr(sys,'frozen',False))}
