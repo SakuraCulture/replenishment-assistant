@@ -36,7 +36,7 @@ def start_smoke(app,win,args):
     if mode in ('async','background_fail'):
         client=ClosingClient();win.catalog_sessions.session.client=client;win.catalog_sessions.session.ready=True
     if mode=='apply_failure':
-        import order_merge_migration as wrapper
+        import order_migration_browsers as wrapper
         from migration_paths import io_path
         original_copy=wrapper.shutil.copytree
         def fail_copy(source,destination,*a,**kw):
@@ -76,9 +76,14 @@ def start_smoke(app,win,args):
             if isinstance(box,QMessageBox):
                 emit('real_message',title=box.windowTitle(),text=box.text())
                 shot(box,'message-'+str(len(list(out.glob(mode+'-message-*.png')))))
+                if mode=='browser-busy':
+                    if '河北仓聚水潭专用浏览器仍占用' not in box.text() or 'WinError 32' in box.text():
+                        raise AssertionError('Expected a clear warehouse occupancy message before preparing the merge')
+                    state['browser_blocked']=True
                 target=box.button(QMessageBox.StandardButton.Ok) or box.button(QMessageBox.StandardButton.Yes) or box.button(QMessageBox.StandardButton.Close)
                 if target:target.click()
             elif isinstance(box,QDialog) and box.windowTitle()=='核对订单合并范围' and not state['preview']:
+                if mode=='browser-busy':raise AssertionError('The occupied merge reached the preview')
                 state['preview']=True
                 table=box.findChild(QTableWidget,'orderMergePreview')
                 if table is None:raise AssertionError('Real merge preview table missing')
@@ -101,7 +106,7 @@ def start_smoke(app,win,args):
                     state['chosen']=True
                     button=next(b for b in box.findChildren(QPushButton) if b.text()=='合并导入订单（保留本机）…')
                     QTimer.singleShot(0,box,button.click)
-                elif state['preview'] and mode in ('cancel','repeat','reexport','source-deleted'):
+                elif state.get('browser_blocked') or state['preview'] and mode in ('cancel','repeat','reexport','source-deleted'):
                     if getattr(win,'_order_import_request',None) is not None or not win.isEnabled():raise AssertionError('Cancelled/no-additions preview requested an exit')
                     emit('no_handoff',enabled=win.isEnabled(),pending=False)
                     box.reject();QTimer.singleShot(0,win,quit_normally)

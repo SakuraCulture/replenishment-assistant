@@ -10,6 +10,7 @@ from stockout_common import encoded,file_hash,atomic_json,now,resource_check
 from runtime_support import Cancelled,checkpoint
 from application_reset import validate_root
 from migration_paths import io_path
+from order_migration_browsers import copy_local_tree, require_closed
 
 FORMAT='replenishment-orders/1'
 ROOT_FILES={'workbench.sqlite3','workbench.json','must_sell.json','store_budgets.json','new_product_focus.json','store_supply.json'}
@@ -219,7 +220,8 @@ def manifest(path):
 
 def prepare(root,package,progress=lambda _:None,cancel=None,*,mode='replace'):
     if mode not in ('replace','merge'):raise ValueError('未知的订单导入方式')
-    root=validate_root(root);package=Path(package).resolve();before=file_hash(package);value=manifest(package)
+    root=validate_root(root);require_closed(root,progress,cancel)
+    package=Path(package).resolve();before=file_hash(package);value=manifest(package)
     resource_check(root.parent,sum(e['size'] for e in value['entries'])*2)
     nonce=uuid.uuid4().hex;stage=root.with_name('.'+root.name+'.order-import-'+nonce)
     stage_io=io_path(stage);stage_io.mkdir()
@@ -362,7 +364,8 @@ def _apply(plan):
     with _exclusive(root):
         from migration_status import record
         record(plan,'APPLYING',phase='WAITING_LOCKS')
-        _check_other_processes();resource_check(root.parent,sum(p.stat().st_size for p in root_io.rglob('*') if p.is_file()))
+        _check_other_processes();require_closed(root)
+        resource_check(root.parent,sum(p.stat().st_size for p in root_io.rglob('*') if p.is_file()))
         from catalog_migration import local_connections,restore as restore_catalog
         catalog_local=local_connections(root)
         connections=[]
@@ -385,7 +388,7 @@ def _apply(plan):
                 if p.is_file() and (owned(relative) or relative in DERIVED or relative in {db+suffix for db in DBS|DERIVED for suffix in ('-wal','-shm','-journal')}):ignored.append(name)
             return ignored
         record(plan,'APPLYING',phase='COPYING')
-        shutil.copytree(root_io,new_io,ignore=ignore)
+        copy_local_tree(root,new,ignore=ignore)
         try:
             for entry in plan['manifest']['entries']:
                 target=new_io/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(stage_io/entry['path'],target)

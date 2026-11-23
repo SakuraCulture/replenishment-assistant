@@ -37,10 +37,10 @@ class Client:
         if self.started:raise ComponentError('ALREADY_STARTED','该采集连接已启动，请查询原服务状态')
         self.started=True; jst,ax=map(Path,self.roots)
         node=ax/'runtime/node.exe'; entry=jst/'src/machine-entry.mjs'
-        if not node.is_file() or not entry.is_file():raise ComponentError('COMPONENT_MISSING','聚水潭采集组件缺失，请使用完整交付文件夹')
         if getattr(sys,'frozen',False):
             from catalog_sync_bundle import verify_component
             verify_component(jst,ax)
+        if not node.is_file() or not entry.is_file():raise ComponentError('COMPONENT_MISSING','聚水潭采集组件缺失，请使用完整交付文件夹')
         validator={'executable':sys.executable,'prefix':['--catalog-validate'] if getattr(sys,'frozen',False) else [str(Path(__file__).parent/'app.py'),'--catalog-validate']}
         ax_binding=self.folder.parent/'aoxiang/config/machine.binding.json'
         forbidden=list(self.forbidden_roots)

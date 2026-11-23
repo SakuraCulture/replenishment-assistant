@@ -4,13 +4,14 @@ The source package is already verified by order_migration.prepare. No live
 business file is edited here: a recoverable same-volume directory handoff
 publishes the fully verified copy and retains the complete old root.
 """
-import shutil,sqlite3
+import sqlite3
 from contextlib import ExitStack,closing,contextmanager
 from pathlib import Path
 from application_reset import _exclusive,_check_other_processes
 from stockout_common import atomic_json,now,resource_check
 import order_migration as migration
 from migration_paths import io_path
+from order_migration_browsers import copy_local_tree, require_closed
 
 
 def prepare(root,package,progress=lambda _:None,cancel=None):
@@ -38,7 +39,7 @@ def _clone(root,new,progress):
                 db.execute('BEGIN IMMEDIATE')
         except sqlite3.DatabaseError as exc:raise ValueError('本机订单或关联任务仍被写入，未合并；请安全结束原任务后重试') from exc
         progress('复制本机资料至独立合并副本；原目录保持')
-        shutil.copytree(root_io,io_path(new),ignore=ignore)
+        copy_local_tree(root,new,ignore=ignore)
         for name in databases:
             progress('备份并完整校验本机数据库：'+name)
             migration.db_copy(root/name,new/name,main=name=='workbench.sqlite3',progress=progress)
@@ -53,7 +54,7 @@ def apply(plan):
     from migration_status import record
     from order_merge import merge
     with _exclusive(root):
-        record(plan,'APPLYING',phase='WAITING_LOCKS');_check_other_processes()
+        record(plan,'APPLYING',phase='WAITING_LOCKS');_check_other_processes();require_closed(root)
         resource_check(root.parent,sum(p.stat().st_size for p in io_path(root).rglob('*') if p.is_file())+sum(e['size'] for e in plan['manifest']['entries']))
         record(plan,'APPLYING',phase='COPYING')
         with _clone(root,new,lambda message:record(plan,'APPLYING',phase='COPYING')) as locks:

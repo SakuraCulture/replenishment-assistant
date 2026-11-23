@@ -7,16 +7,29 @@ from business_ui import grid,run
 from ui_tasks import Worker
 from runtime_support import Cancelled
 from catalog_session_ui import manager
+from catalog_sync_bundle import ComponentIntegrityError
+from catalog_bundle_ui import show_result
 from catalog_sync import run_sync
 from interaction_ui import confirm
 from app_defaults import WAREHOUSES
 
 STAGES={'QUEUED':'待处理','WAIT_HOST':'准备查询依据','INTENT_RECORDED':'准备导出','SUBMITTING':'等待平台受理','SUBMISSION_UNKNOWN':'平台受理待核，不重提','ACCEPTED':'平台已受理','DOWNLOADED':'已下载','READY_TO_ADOPT':'已校验，待采用','APPLIED':'已采用','CANCELLED_BEFORE_SUBMIT':'提交前已停止','FAILED_CONFIRMED':'平台拒绝'}
 
-def connect(client,progress=lambda _:None,cancel=None):
+def connect(client,remember_error=None,progress=lambda _:None,cancel=None):
     progress('读取聚水潭共享连接；健康连接继续复用…')
-    if not client.started:client.start()
+    try:
+        if not client.started:client.start()
+    except ComponentIntegrityError as exc:
+        if remember_error is not None:remember_error(exc)
+        raise
     return client.request('sync.status')
+
+def read_connection(parent,client,title):
+    errors=[]
+    try:return run(parent,connect,(client,errors.append),title)
+    except RuntimeError:
+        if errors:raise errors[0] from None
+        raise
 
 def action(client,command,values,progress=lambda _:None,cancel=None):
     ack=client.request(command,**values)
@@ -83,7 +96,7 @@ class Dialog(QDialog):
                 widget.hide()
         self.clock=QTimer(self);self.clock.setInterval(500);self.clock.timeout.connect(self.tick)
         self.warehouse.currentIndexChanged.connect(self.select_account);self.records.currentIndexChanged.connect(self.show_record);self.profile.textChanged.connect(self.clear_probe);self.company.textChanged.connect(self.clear_probe);self.mapping.toggled.connect(self.controls)
-        try:self.state=run(self,connect,(self.client,),'读取聚水潭连接设置');self.refresh(self.state)
+        try:self.state=read_connection(self,self.client,'读取聚水潭连接设置');self.refresh(self.state)
         except Exception:
             run(self,shutdown,(self.client,),'安全关闭连接',cancellable=False);raise
     def choose(self):
@@ -142,7 +155,7 @@ class Dialog(QDialog):
     def invoke(self,command,**values):
         try:
             result=run(self,action,(self.client,command,values),'聚水潭账号设置')
-            self.state=run(self,connect,(self.client,),'读取连接状态');self.show_connection()
+            self.state=read_connection(self,self.client,'读取连接状态');self.show_connection()
             return result
         except Exception as exc:QMessageBox.warning(self,'操作未完成',str(exc));return None
     def probe_account(self):
@@ -168,7 +181,7 @@ class Dialog(QDialog):
             message=('本仓自动同步已启用，可继续原任务；原账号及文件保留。' if value else
                      '本仓自动同步已停用；原任务、文件和浏览器连接保留。运行中的任务需用“停止本次同步”安全停止，继续原任务前先启用本仓。')
             self.identity.setText(message);self.note.setText(message)
-    def reload(self):self.refresh(run(self,connect,(self.client,),'读取采集状态'))
+    def reload(self):self.refresh(read_connection(self,self.client,'读取采集状态'))
     def refresh(self,state):
         previous=self.records.currentData();self.state=state;self.records.blockSignals(True);self.records.clear()
         for b in state.get('batches',[]):self.records.addItem(b['createdAt'][:19].replace('T',' ')+' · '+{'default_catalog':'商品资料','allocation_baseline':'分配入口','scheduled_replenishment':'定时补货','stockout_analysis':'缺货率采集'}.get(b['purpose'],'未知用途')+' · '+'、'.join(i['account']['warehouse'] for i in b['items']),b['id'])
@@ -248,6 +261,8 @@ def open_sync(host,warehouses=None,purpose='default_catalog',parent=None,*,bindi
         d=Dialog(host,warehouses,purpose,parent,binding_repair=binding_repair);host._large_io_dialog=d
         if binding_repair:QTimer.singleShot(0,d,d.auto_configure)
         d.exec();return d.adopted
+    except ComponentIntegrityError as exc:
+        show_result(parent or host,'商品资料同步未打开',str(exc),exc.details);return []
     except Exception as exc:
         QMessageBox.warning(parent or host,'商品资料同步未打开',str(exc));return []
     finally:

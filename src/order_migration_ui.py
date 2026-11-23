@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QDialog,QVBoxLayout,QMessageBox,QFileDialog
 from ui_controls import label,button
 from business_ui import run
 from runtime_support import Cancelled
+from order_migration_browsers import require_closed
 
 def idle(host):
     for name in ('stockout','warehouse_stockout','jst_generator','scheduled','browser_startup','jst_fulfillment_runner'):
@@ -46,6 +47,7 @@ def open_migration(parent,host):
                       f'将完整替换本机订单、草稿、关联平台记录及门店参数/清单，不与现有订单混合。\n本机完整备份：{plan["backup"]}\n'
                       '本机浏览器连接、登录及独立分析资料保留。平台订单不会撤销；迁入作业和计划暂停，先核验原平台结果后逐项继续。\n未保存的界面内容不保存。确认后安全退出，迁入完成后重新打开软件。')
                 if QMessageBox.question(d,'核对完整恢复范围',text,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:discard(plan);return
+                run(d,require_closed,(host.repository.folder,),'复核本机迁移资料占用')
                 # False here also means a normal asynchronous safe shutdown.
                 # Keep the accepted request until app.exec() ends and app.py
                 # consumes it; do not mistake a pending close for cancellation.
@@ -72,6 +74,7 @@ def open_migration(parent,host):
             try:
                 idle(host);plan=run(d,prepare,(host.repository.folder,path),'校验订单及完整关联，核对新增、重复和冲突')
                 if not review(d,plan):discard(plan);return
+                run(d,require_closed,(host.repository.folder,),'复核本机迁移资料占用')
                 from migration_status import waiting
                 waiting(host,plan);host._discard_close=True;d.accept();host.setEnabled(False)
                 if not host.close():host.status.setText('订单合并已确认，正在等待后台安全退出；原资料保持，退出后完成合并。')

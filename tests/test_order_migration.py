@@ -1,7 +1,7 @@
 """Complete migration: synthetic only, backup retained, interrupted rename rollback."""
-import copy,json,shutil,sqlite3,tempfile,threading,unittest,zipfile
+import copy,json,os,shutil,sqlite3,tempfile,threading,unittest,zipfile
 from pathlib import Path
-from contextlib import closing
+from contextlib import closing,contextmanager
 from unittest.mock import patch
 import test_archive_orders as fixtures
 import order_migration as migration
@@ -10,6 +10,23 @@ import parameter_schema
 from stockout_common import file_hash,atomic_json
 
 def files(root):return {p.relative_to(root).as_posix():file_hash(p) for p in root.rglob('*') if p.is_file()}
+
+
+@contextmanager
+def exclusive_read(path):
+    """Reproduce the Windows sharing violation without a real browser."""
+    import ctypes
+    from ctypes import wintypes as w
+    from migration_paths import io_path
+    kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+    kernel.CreateFileW.argtypes=[w.LPCWSTR,w.DWORD,w.DWORD,ctypes.c_void_p,w.DWORD,w.DWORD,w.HANDLE]
+    kernel.CreateFileW.restype=w.HANDLE
+    kernel.CloseHandle.argtypes=[w.HANDLE]
+    handle=kernel.CreateFileW(str(io_path(path)),0x80000000,0,None,3,0,None)
+    if handle==ctypes.c_void_p(-1).value:raise ctypes.WinError(ctypes.get_last_error())
+    try:yield
+    finally:kernel.CloseHandle(handle)
+
 
 class MigrationTests(unittest.TestCase):
     def setUp(self):
@@ -50,7 +67,6 @@ class MigrationTests(unittest.TestCase):
 
     def test_deep_catalog_requests_survive_staging_and_both_import_modes(self):
         from order_merge_migration import apply as merge_apply
-        import os
 
         if os.name=='nt':
             cleanup_root=Path('\\\\?\\'+str(self.root.resolve()))
@@ -87,6 +103,76 @@ class MigrationTests(unittest.TestCase):
                 self.assertEqual(migration.info(target/'workbench.sqlite3')['normal_orders'],1)
                 self.assertFalse(stage.exists())
                 self.assertEqual(file_hash(self.package),package_digest)
+
+    @unittest.skipUnless(os.name=='nt','requires Windows file sharing semantics')
+    def test_busy_profiles_stop_before_staging_and_again_before_copy(self):
+        from order_migration_browsers import BrowserProfileBusy
+        self.export()
+        for mode, suffix, name, module in (
+            ('merge','hb','河北仓','order_merge_migration'),
+            ('replace','sd','山东仓','application_reset'),
+        ):
+            with self.subTest(mode=mode):
+                target=self.root/mode/'settings'
+                wr.Repository(target)
+                browser=target/f'jst_catalog_sync/browsers/{suffix}/User Data/Default/Network/Cookies'
+                browser.parent.mkdir(parents=True)
+                browser.write_bytes(b'synthetic browser bytes')
+                original=files(target)
+                with patch('data_relocation.browser_rows',return_value=[]),patch(module+'._check_other_processes'):
+                    with exclusive_read(browser),self.assertRaises(BrowserProfileBusy) as raised:
+                        migration.prepare(target,self.package,mode=mode)
+                    self.assertEqual(raised.exception.warehouses,(name,))
+                    self.assertFalse(list(target.parent.glob('.settings.order-import-*')))
+                    plan=migration.prepare(target,self.package,mode=mode)
+                    with exclusive_read(browser),self.assertRaises(BrowserProfileBusy):
+                        migration.apply(plan)
+                    self.assertFalse(Path(plan['new']).exists())
+                    self.assertFalse(Path(plan['backup']).exists())
+                    self.assertEqual(files(target),original)
+                    result=migration.apply(plan)
+                self.assertEqual(result['state'],'COMPLETED')
+                self.assertEqual(browser.read_bytes(),b'synthetic browser bytes')
+                self.assertEqual(files(Path(result['backup'])),original)
+
+    @unittest.skipUnless(os.name=='nt','requires Windows file sharing semantics')
+    def test_browser_opened_after_preflight_identifies_late_copy_failure(self):
+        from migration_status import latest
+        from order_migration_browsers import BrowserProfileBusy
+        self.export()
+        browser=self.target/'jst_catalog_sync/browsers/hb/User Data/Default/Sessions/Tabs_synthetic'
+        browser.parent.mkdir(parents=True)
+        browser.write_bytes(b'synthetic')
+        with patch('data_relocation.browser_rows',return_value=[]):
+            plan=migration.prepare(self.target,self.package,mode='merge')
+        original=files(self.target)
+        with exclusive_read(browser),patch('order_merge_migration.require_closed'),patch('order_merge_migration._check_other_processes'):
+            with self.assertRaises(BrowserProfileBusy) as raised:
+                migration.apply(plan)
+        self.assertEqual(raised.exception.warehouses,('河北仓',))
+        self.assertIn('[WinError 32]',str(raised.exception.__cause__))
+        self.assertEqual(latest(self.target)['phase'],'COPYING')
+        self.assertFalse(Path(plan['backup']).exists())
+        self.assertEqual(files(self.target),original)
+
+    @unittest.skipUnless(os.name=='nt','requires Windows process argument handling')
+    def test_only_local_profiles_with_warehouse_bindings_are_checked(self):
+        from order_migration_browsers import BrowserProfileBusy,require_closed
+        catalog=self.target/'jst_catalog_sync';catalog.mkdir()
+        local=self.target/'custom sd edge'/'Profile 1'
+        external=self.root/'daily edge'/'Default'
+        for profile in (local,external):profile.mkdir(parents=True)
+        atomic_json(catalog/'jobs.json',{'accounts':{
+            name:{'binding':{'userDataRoot':str(profile.parent),'actualProfilePath':str(profile)}}
+            for name,profile in (('山东仓',local),('河北仓',external))}})
+        rows=[{'CommandLine':None},{'CommandLine':f'edge.exe --user-data-dir="{external.parent}"'}]
+        with patch('data_relocation.browser_rows',return_value=rows):
+            require_closed(self.target)
+            rows.append({'CommandLine':f'edge.exe --user-data-dir "{local.parent}"'})
+            with self.assertRaises(BrowserProfileBusy) as raised:
+                require_closed(self.target)
+        self.assertEqual(raised.exception.warehouses,('山东仓',))
+
     def test_failed_rename_rolls_back_whole_target(self):
         plan=self.prepare();before=files(self.target);rename=Path.rename
         def fail_new(path,dest):
