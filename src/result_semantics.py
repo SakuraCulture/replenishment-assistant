@@ -131,8 +131,13 @@ def orderable(d):
 def new_product_group(row, focused=(), known=True):
     """Use the same saved grouping for selection, review and signed export."""
     from new_products import is_new
-    from warehouse_newness import for_row
-    if row.get('_preissue',{}).get('current_month'):return '本月新品'
+    from warehouse_newness import for_row, requires_inbound_date
+    if row.get('_preissue',{}).get('current_month'):
+        if not requires_inbound_date(row):
+            return '本月新品'
+        basis = for_row(row)
+        if basis and basis['new']:
+            return '本月新品'
     if not is_new(row):return None
     basis=for_row(row)
     if basis is not None:return '本月新品' if basis['new'] else '往期新品'

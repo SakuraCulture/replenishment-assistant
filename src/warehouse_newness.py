@@ -10,7 +10,8 @@ VIRTUAL_CATEGORY = '虚拟分类'
 AGE_LIMIT = 45
 LEGACY_RULE = 'warehouse-first-inbound-45d-v1'
 SCREENED_RULE = 'warehouse-first-inbound-45d-v2'
-RULE = 'warehouse-first-inbound-45d-v3'
+CONSUMABLES_RULE = 'warehouse-first-inbound-45d-v3'
+RULE = 'warehouse-first-inbound-45d-v4'
 MISSING_COLUMN = '该版本未提供首次入库日期'
 MISSING_VIRTUAL_CATEGORY = '仓资料未留存虚拟分类，请刷新或重新导入全商品档案'
 RETIRED = '仓资料虚拟分类为淘汰品'
@@ -19,6 +20,7 @@ STORE_CONSUMABLES = '仓商品分类为门店耗材'
 UNKNOWN = '首入库日期未知'
 INVALID = '首入库日期无效'
 FUTURE = '首入库日期晚于判定日'
+UNLINKED = '仓新品判定依据与归属仓或商品资料版本不一致'
 EARLY = '首次入库早于商品建档日期'
 
 
@@ -96,17 +98,27 @@ def decide(evidence, day):
 def for_row(row, day=None):
     meta = row.get('_meta', {})
     basis = meta.get('warehouse_newness')
-    if (basis and basis.get('rule') in (LEGACY_RULE, SCREENED_RULE, RULE) and row.get('_source') == '资料匹配'
+    if (basis and basis.get('rule') in (LEGACY_RULE, SCREENED_RULE, CONSUMABLES_RULE, RULE) and row.get('_source') == '资料匹配'
             and basis['warehouse'] == row.get('AU') and basis['catalog_revision'] == meta.get('product_revision')
             and (day is None or basis['day'] == day)):
         return basis
     return None
 
 
+def requires_inbound_date(row):
+    saved = row.get('_meta', {}).get('warehouse_newness') or {}
+    return saved.get('rule') == RULE
+
+
 def row_screening_reason(row):
     basis = for_row(row)
     if basis is not None:
-        return basis.get('excluded_reason') or basis.get('screening_issue', '')
+        reason = basis.get('excluded_reason') or basis.get('screening_issue', '')
+        if basis['rule'] == RULE:
+            return reason or basis['issue']
+        return reason
+    if requires_inbound_date(row):
+        return UNLINKED
     return row.get('_meta', {}).get('new_product_exclusion', '')
 
 

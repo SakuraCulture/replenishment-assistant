@@ -292,6 +292,37 @@ class ArchiveCatalog(unittest.TestCase):
         self.assertEqual(list(sem.signed_rows(result['rows'],profile)),[])
         focus.require_for(None,DAY,[result])
 
+    def test_unverified_first_inbound_dates_cannot_enter_signed_new_products(self):
+        import review_amounts
+
+        unverified={'@blank':(None,recent.UNKNOWN),'@invalid':('2026-02-30',recent.INVALID),
+                    '@future':('2026-11-23',recent.FUTURE)}
+        dates=[(sku,raw) for sku,(raw,_) in unverified.items()]+[('@current',DAY),('@previous','2026-10-07')]
+        catalog=self.import_file('河北仓',[(sku,raw,'启用',30,'',None,18) for sku,raw in dates])
+        profile=monthly(list(unverified))
+        result=calculate({'河北仓':catalog},'河北仓',profile=profile,sales=[sale(sku) for sku,_ in dates])
+        rows={row['E']:row for row in result['rows']}
+        for sku,(_,issue) in unverified.items():
+            row=rows[sku]
+            self.assertEqual(recent.for_row(row)['issue'],issue)
+            self.assertEqual(sem.order_quantity(row),0)
+            self.assertIsNone(sem.new_product_group(row,set(unverified)))
+            self.assertEqual(new_products.blocked_reason(row),issue)
+            carried={**row,'_preissue':{'kind':'new','current_month':True},'_execution_qty':6}
+            self.assertFalse(review_amounts.is_new(carried))
+            self.assertEqual(list(sem.signed_rows([carried],profile)),[('中心仓动销补货清单',carried)])
+
+        self.assertEqual([(group,row['E']) for group,row in sem.signed_rows(result['rows'],profile)],
+                         [('本月新品','@current'),('往期新品','@previous')])
+        self.assertFalse(preissue.current_month(rows['@blank']))
+        unlinked={**rows['@blank'],'AU':'山东仓','_preissue':{'current_month':True}}
+        self.assertIsNone(sem.new_product_group(unlinked,set(unverified)))
+        # Older signed snapshots retain the grouping rule stored with the row.
+        old=rows['@blank']
+        basis={**recent.for_row(old),'rule':'warehouse-first-inbound-45d-v3'}
+        old={**old,'_meta':{**old['_meta'],'warehouse_newness':basis}}
+        self.assertEqual(sem.new_product_group(old),'往期新品')
+
     def test_new_warehouse_detail_export_preserves_rows_types_and_previous_file(self):
         from warehouse_new_exports import HEADERS,export_detail
 
