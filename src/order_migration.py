@@ -9,6 +9,7 @@ from pathlib import Path,PurePosixPath
 from stockout_common import encoded,file_hash,atomic_json,now,resource_check
 from runtime_support import Cancelled,checkpoint
 from application_reset import validate_root
+from migration_paths import io_path
 
 FORMAT='replenishment-orders/1'
 ROOT_FILES={'workbench.sqlite3','workbench.json','must_sell.json','store_budgets.json','new_product_focus.json','store_supply.json'}
@@ -220,11 +221,12 @@ def prepare(root,package,progress=lambda _:None,cancel=None,*,mode='replace'):
     if mode not in ('replace','merge'):raise ValueError('未知的订单导入方式')
     root=validate_root(root);package=Path(package).resolve();before=file_hash(package);value=manifest(package)
     resource_check(root.parent,sum(e['size'] for e in value['entries'])*2)
-    nonce=uuid.uuid4().hex;stage=root.with_name('.'+root.name+'.order-import-'+nonce);stage.mkdir()
+    nonce=uuid.uuid4().hex;stage=root.with_name('.'+root.name+'.order-import-'+nonce)
+    stage_io=io_path(stage);stage_io.mkdir()
     try:
         with zipfile.ZipFile(package) as book:
             for entry in value['entries']:
-                checkpoint(cancel);target=stage/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);h=hashlib.sha256();progress('校验并准备：'+entry['path'])
+                checkpoint(cancel);target=stage_io/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);h=hashlib.sha256();progress('校验并准备：'+entry['path'])
                 with book.open(entry['path']) as source,target.open('xb') as dst:
                     while block:=source.read(512*1024):checkpoint(cancel);h.update(block);dst.write(block)
                     dst.flush();os.fsync(dst.fileno())
@@ -244,7 +246,7 @@ def prepare(root,package,progress=lambda _:None,cancel=None,*,mode='replace'):
             plan['mode']='merge';plan['merge_report']=inspect(stage,root,progress,cancel)
         from migration_status import record
         record(plan,'PREPARED');return plan
-    except BaseException:shutil.rmtree(stage);raise
+    except BaseException:shutil.rmtree(stage_io);raise
 
 def checked_plan(plan):
     root=validate_root(plan['root']);nonce=plan['nonce']
@@ -256,11 +258,22 @@ def checked_plan(plan):
     return root
 
 def discard(plan):
-    checked_plan(plan);stage=Path(plan['stage'])
+    checked_plan(plan);stage=io_path(plan['stage'])
     from migration_status import latest,record
     value=latest(plan['root'])
     if not value or value['nonce']!=plan['nonce'] or value['state']!='COMPLETED':record(plan,'CANCELLED')
     if stage.exists():shutil.rmtree(stage)
+
+
+def verify_stage(stage,entries):
+    directory=io_path(stage).resolve(strict=True)
+    for entry in entries:
+        name=entry['path']
+        path=directory/name
+        if not owned(name) or not path.resolve().is_relative_to(directory):
+            raise ValueError('准备的迁入路径无效，原资料保持：'+name)
+        if not path.is_file() or file_hash(path)!=entry['sha256']:
+            raise ValueError('准备的迁入文件缺失或变化，原资料保持：'+name)
 
 def pause_imported(root):
     """Pause dispatch, preserve original states/receipts in a migration audit."""
@@ -344,14 +357,12 @@ def _apply(plan):
     root=checked_plan(plan);stage=Path(plan['stage']);backup=Path(plan['backup']);new=Path(plan['new'])
     from application_reset import _exclusive,_check_other_processes
     if not stage.is_dir() or backup.exists() or new.exists():raise ValueError('导入准备或目标目录已变化，原资料未替换')
-    for entry in plan['manifest']['entries']:
-        if not owned(entry['path']):raise ValueError('准备的迁入路径无效')
-        if not (stage/entry['path']).resolve().is_relative_to(stage.resolve()):raise ValueError('准备的迁入文件越出临时目录')
-        if file_hash(stage/entry['path'])!=entry['sha256']:raise ValueError('准备的迁入文件已变化，未替换资料')
+    verify_stage(stage,plan['manifest']['entries'])
+    root_io,stage_io,new_io=map(io_path,(root,stage,new))
     with _exclusive(root):
         from migration_status import record
         record(plan,'APPLYING',phase='WAITING_LOCKS')
-        _check_other_processes();resource_check(root.parent,sum(p.stat().st_size for p in root.rglob('*') if p.is_file()))
+        _check_other_processes();resource_check(root.parent,sum(p.stat().st_size for p in root_io.rglob('*') if p.is_file()))
         from catalog_migration import local_connections,restore as restore_catalog
         catalog_local=local_connections(root)
         connections=[]
@@ -369,15 +380,15 @@ def _apply(plan):
         def ignore(folder,names):
             ignored=[]
             for name in names:
-                p=Path(folder)/name;relative=p.relative_to(root).as_posix()
+                p=Path(folder)/name;relative=p.relative_to(root_io).as_posix()
                 if p.is_symlink() or p.is_junction():raise ValueError('目标资料含链接，未迁入')
                 if p.is_file() and (owned(relative) or relative in DERIVED or relative in {db+suffix for db in DBS|DERIVED for suffix in ('-wal','-shm','-journal')}):ignored.append(name)
             return ignored
         record(plan,'APPLYING',phase='COPYING')
-        shutil.copytree(root,new,ignore=ignore)
+        shutil.copytree(root_io,new_io,ignore=ignore)
         try:
             for entry in plan['manifest']['entries']:
-                target=new/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(stage/entry['path'],target)
+                target=new_io/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(stage_io/entry['path'],target)
             shutil.copyfile(stage/'迁入原文件映射.json',new/'迁入原文件映射.json');pause_imported(new)
             restore_catalog(new,root,plan['manifest'],catalog_local)
             restore_export_receipts(new,root)

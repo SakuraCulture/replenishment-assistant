@@ -8,8 +8,9 @@ import shutil,sqlite3
 from contextlib import ExitStack,closing,contextmanager
 from pathlib import Path
 from application_reset import _exclusive,_check_other_processes
-from stockout_common import atomic_json,file_hash,now,resource_check
+from stockout_common import atomic_json,now,resource_check
 import order_migration as migration
+from migration_paths import io_path
 
 
 def prepare(root,package,progress=lambda _:None,cancel=None):
@@ -22,12 +23,13 @@ def _clone(root,new,progress):
     # A backup is required even if an otherwise clean source uses WAL mode.
     databases=[name for name in sorted(migration.DBS) if (root/name).is_file()]
     excluded=set(databases)|migration.DERIVED|{name+suffix for name in migration.DBS|migration.DERIVED for suffix in ('-wal','-shm','-journal')}
+    root_io=io_path(root)
     def ignore(folder,names):
         result=[]
         for name in names:
             path=Path(folder)/name
             if path.is_symlink() or path.is_junction():raise ValueError('本机资料含链接，未合并；原资料保持')
-            if path.relative_to(root).as_posix() in excluded:result.append(name)
+            if path.relative_to(root_io).as_posix() in excluded:result.append(name)
         return result
     with ExitStack() as locks:
         try:
@@ -36,7 +38,7 @@ def _clone(root,new,progress):
                 db.execute('BEGIN IMMEDIATE')
         except sqlite3.DatabaseError as exc:raise ValueError('本机订单或关联任务仍被写入，未合并；请安全结束原任务后重试') from exc
         progress('复制本机资料至独立合并副本；原目录保持')
-        shutil.copytree(root,new,ignore=ignore)
+        shutil.copytree(root_io,io_path(new),ignore=ignore)
         for name in databases:
             progress('备份并完整校验本机数据库：'+name)
             migration.db_copy(root/name,new/name,main=name=='workbench.sqlite3',progress=progress)
@@ -47,15 +49,12 @@ def apply(plan):
     root=migration.checked_plan(plan);stage=Path(plan['stage']);new=Path(plan['new']);backup=Path(plan['backup'])
     if plan.get('mode')!='merge' or not isinstance(plan.get('merge_report'),dict):raise ValueError('合并预览凭据缺失，未写入资料')
     if not stage.is_dir() or new.exists() or backup.exists():raise ValueError('合并工作目录已变化，原资料保持')
-    for entry in plan['manifest']['entries']:
-        path=stage/entry['path']
-        if not migration.owned(entry['path']) or not path.resolve().is_relative_to(stage.resolve()) or file_hash(path)!=entry['sha256']:
-            raise ValueError('迁入材料在预览后变化，原资料保持：'+entry['path'])
+    migration.verify_stage(stage,plan['manifest']['entries'])
     from migration_status import record
     from order_merge import merge
     with _exclusive(root):
         record(plan,'APPLYING',phase='WAITING_LOCKS');_check_other_processes()
-        resource_check(root.parent,sum(p.stat().st_size for p in root.rglob('*') if p.is_file())+sum(e['size'] for e in plan['manifest']['entries']))
+        resource_check(root.parent,sum(p.stat().st_size for p in io_path(root).rglob('*') if p.is_file())+sum(e['size'] for e in plan['manifest']['entries']))
         record(plan,'APPLYING',phase='COPYING')
         with _clone(root,new,lambda message:record(plan,'APPLYING',phase='COPYING')) as locks:
             record(plan,'APPLYING',phase='MERGING')

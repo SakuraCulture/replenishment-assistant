@@ -37,9 +37,10 @@ def start_smoke(app,win,args):
         client=ClosingClient();win.catalog_sessions.session.client=client;win.catalog_sessions.session.ready=True
     if mode=='apply_failure':
         import order_merge_migration as wrapper
+        from migration_paths import io_path
         original_copy=wrapper.shutil.copytree
         def fail_copy(source,destination,*a,**kw):
-            if Path(source).resolve()==out/'settings':raise OSError('SYNTHETIC-MERGE-APPLY-COPY-ERROR')
+            if io_path(source).resolve()==io_path(out/'settings'):raise OSError('SYNTHETIC-MERGE-APPLY-COPY-ERROR')
             return original_copy(source,destination,*a,**kw)
         wrapper.shutil.copytree=fail_copy
     if mode in ('interrupt-before','interrupt-after'):

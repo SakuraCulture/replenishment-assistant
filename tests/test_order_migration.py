@@ -47,6 +47,46 @@ class MigrationTests(unittest.TestCase):
         mapping=json.loads((self.target/'迁入原文件映射.json').read_text('utf-8'))
         for relative in mapping['paths'].values():self.assertTrue((self.target/relative).is_file())
         self.assertFalse(Path(plan['stage']).exists());self.assertIsNone(migration.recover(self.target))
+
+    def test_deep_catalog_requests_survive_staging_and_both_import_modes(self):
+        from order_merge_migration import apply as merge_apply
+        import os
+
+        if os.name=='nt':
+            cleanup_root=Path('\\\\?\\'+str(self.root.resolve()))
+            self.addCleanup(shutil.rmtree,cleanup_root)
+        member=Path('jst_catalog_sync/downloads')/('a'*36)/('b'*36)/('validate-'+'c'*36+'.request.json')
+        original=self.source/member
+        original.parent.mkdir(parents=True)
+        original.write_bytes(b'{"fixture":"source"}')
+        package_digest=self.export()['sha256']
+        for mode,apply in (('merge',merge_apply),('replace',migration.apply)):
+            with self.subTest(mode=mode):
+                target=self.root/('test-profile-'+mode)/'settings'
+                wr.Repository(target)
+                local=target/member
+                local.parent.mkdir(parents=True)
+                local.write_bytes(b'{"fixture":"local"}')
+                plan=migration.prepare(target,self.package,mode=mode)
+                stage=Path(plan['stage'])
+                if os.name=='nt':
+                    self.assertGreaterEqual(len(str(stage/member)),260)
+                    self.assertGreaterEqual(len(str(Path(plan['new'])/member)),260)
+                    prepared=Path('\\\\?\\'+str(stage/member))
+                    backup=Path('\\\\?\\'+str(Path(plan['backup'])/member))
+                else:
+                    prepared=stage/member
+                    backup=Path(plan['backup'])/member
+                self.assertEqual(prepared.read_bytes(),original.read_bytes())
+                self.assertEqual(local.read_bytes(),b'{"fixture":"local"}')
+                with patch('application_reset._check_other_processes'),patch('order_merge_migration._check_other_processes'):
+                    result=apply(plan)
+                self.assertEqual(result['state'],'COMPLETED')
+                self.assertEqual(local.read_bytes(),original.read_bytes() if mode=='replace' else b'{"fixture":"local"}')
+                self.assertEqual(backup.read_bytes(),b'{"fixture":"local"}')
+                self.assertEqual(migration.info(target/'workbench.sqlite3')['normal_orders'],1)
+                self.assertFalse(stage.exists())
+                self.assertEqual(file_hash(self.package),package_digest)
     def test_failed_rename_rolls_back_whole_target(self):
         plan=self.prepare();before=files(self.target);rename=Path.rename
         def fail_new(path,dest):
