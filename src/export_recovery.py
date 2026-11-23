@@ -107,7 +107,8 @@ def recover(database, review, selected, folder, progress=lambda _: None, cancel=
             # Each selected original file has a unique directory, even for names
             # that collide across stores/dates; never overwrite a user-edited file.
             target = root / f'{row["index"] + 1:03d}';target.mkdir()
-            paths = normal_delivery.export_signed(repo, order, target, [head['warehouse']], progress, cancel)
+            paths = normal_delivery.export_signed(repo, order, target, [head['warehouse']], progress, cancel,
+                                                  monthly_new_sheet_editable=receipt.get('monthly_new_sheet_editable') is True)
             item['recovered'] = {'path': paths[0], 'sha256': sha256(paths[0])}
             item['state'] = '已恢复';completed.extend(paths)
         else:

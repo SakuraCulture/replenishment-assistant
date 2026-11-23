@@ -59,6 +59,7 @@ def install(host):
     menu.addAction('导出任务与恢复',recovery)
     menu.addAction('轻量性能日志（近24小时）…',lambda:__import__('performance_log_ui').show(host))
     menu.addAction('恢复并继续原操作…',lambda:__import__('lifecycle_recovery_ui').show(host,host))
+    menu.addAction('核对聚水潭组件文件…',lambda:__import__('catalog_bundle_ui').inspect_installation(host))
     menu.addSeparator()
     menu.addAction('数据保存位置…',lambda:__import__('data_location_ui').show(host))
     from table_readability import fit_window

@@ -1,6 +1,7 @@
 """Merchant template: central-warehouse rows; audit detail stays in the archive."""
 import os,re,tempfile
 from pathlib import Path
+from secrets import token_hex
 from openpyxl import Workbook
 from openpyxl.styles import Font,Color
 from openpyxl.comments import Comment
@@ -76,7 +77,7 @@ class _ExportPressure(Exception):
     pass
 
 
-def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,streamed):
+def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,monthly_new_sheet_editable,streamed):
     from engine import checkpoint
     from xlsx_exports import stream_book
     owner=stream_book() if streamed else closing(Workbook())
@@ -85,13 +86,19 @@ def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,strea
     with owner as wb:
         styles={}
         if not streamed:wb.remove(wb.active)
-        wb.properties.title=order['number']+' '+rev;wb.properties.subject='内部签发建议，非实际采购订单';wb.properties.description='仅中心仓商品；Q列可供门店调整；完整签发建议与来源保存在应用历史归档。数量为库存单位，价格为基本售价。'
+        edit_note=('各业务表的Q列可供门店调整。' if monthly_new_sheet_editable
+                   else '「本月新品」供查看，其他业务表的Q列可供门店调整。')
+        wb.properties.title=order['number']+' '+rev;wb.properties.subject='内部签发建议，非实际采购订单'
+        wb.properties.description='仅中心仓商品。'+edit_note+'数量为库存单位，价格为基本售价。'
         for key,value in [('补货单号',order['number']),('修订',rev),('模板SHA256',TEMPLATE_SHA256),('版本状态','历史修订' if historical else '当前修订')]:wb.custom_doc_props.append(StringProperty(name=key,value=value))
         if warehouse:
             parent=order['parent_number']
             for key,value in [('门店正常单号',parent),('供货仓',warehouse)]:wb.custom_doc_props.append(StringProperty(name=key,value=value))
         for name,rows in grouped.items():
             ep.rows(progress,name,0,len(rows));ws=wb.create_sheet(name);ws.sheet_format.defaultColWidth=9;ws.sheet_format.defaultRowHeight=13.5
+            readonly_sheet=name=='本月新品' and not monthly_new_sheet_editable
+            if readonly_sheet:
+                ws.protection.set_password(token_hex(16))
             ws.oddHeader.center.text=order['number']+' '+rev+(' 历史修订' if historical else '')
             ws.column_dimensions['P'].width=12;ws.column_dimensions['R'].width=14;ws.column_dimensions['U'].width=14
             ws.print_options.horizontalCentered=False
@@ -115,7 +122,8 @@ def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,strea
                 if streamed:ws.append(cells)
             append(HEADERS+MERCHANT_AUDIT_HEADERS,1,{
                 1:order['number']+' '+rev+'；业务日期 '+order['day']+'；'+('历史修订' if historical else '当前修订'),
-                17:'签发执行数量（库存单位）；未选择或预算未安排的新品为0。门店可修改本列，原签发建议保存在应用历史归档。箱规品请填写箱规倍数。',
+                17:('签发执行数量（库存单位）。本页只读。未选择或预算未安排的新品为0。'
+                    if readonly_sheet else '签发执行数量（库存单位）；未选择或预算未安排的新品为0。门店可修改本列，原签发建议保存在应用历史归档。箱规品请填写箱规倍数。'),
                 16:'取商品资料基本售价；缺价保持空白或待核，不补造0。'})
             remaining-=len(HEADERS+MERCHANT_AUDIT_HEADERS)
             for rn,d in enumerate(rows,2):
@@ -138,7 +146,7 @@ def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,strea
     return identities
 
 
-def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None,resources=None):
+def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None,resources=None,monthly_new_sheet_editable=False):
     from engine import checkpoint
     path=Path(path);checkpoint(cancel);result=order['payload']['result'];profile=order['payload'].get('new_focus');focus.require_for(profile,order['day'],[result])
     if warehouse:
@@ -155,7 +163,7 @@ def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None,resour
         while True:
             progress('导出资源自适应：'+('逐行写入' if streamed else '内存写入')+'；'+resources.description())
             retry=False
-            try:identities=_write_workbook(order,grouped,temp,cancel,progress,warehouse,resources,streamed)
+            try:identities=_write_workbook(order,grouped,temp,cancel,progress,warehouse,resources,monthly_new_sheet_editable,streamed)
             except (_ExportPressure,MemoryError) as exc:
                 if streamed:raise
                 if isinstance(exc,MemoryError):resources.emergency()

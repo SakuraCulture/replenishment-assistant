@@ -1,6 +1,5 @@
 """Presentation-only predicates shared by final-list, detail and new selection."""
 import result_semantics as sem
-import new_products
 
 GROUPS=['全部工作商品','动销补货','本月新品','往期新品','其他工作商品','新品归期待核']
 KINDS={'manual':'人工改量','new':'新品补足','plan':'计划补足','promotion':'活动补足'}
@@ -12,9 +11,7 @@ def matches(text,needle):return all(word in text for word in needle.lower().spli
 
 def group(d,focused=(),known=True):
     if d.get('_source')!='资料匹配' or not sem.work_eligible(d):return '其他工作商品'
-    if d.get('_preissue',{}).get('current_month'):return '本月新品'
-    if new_products.is_new(d):return ('本月新品' if d['E'] in focused else '往期新品') if known else '新品归期待核'
-    return '动销补货' if sem.orderable(d) else '其他工作商品'
+    return sem.new_product_group(d,focused,known) or ('动销补货' if sem.orderable(d) else '其他工作商品')
 
 def budget_state(d):
     if not d.get('_budget_active'):return '未启用预算'

@@ -10,23 +10,20 @@ const REPORT_ROOT='/app/report/subject/itemskuanalysis/';
 const HISTORY='/app/common/export/export_log.aspx';
 const EXPORT=REPORT_ROOT+'allsku.aspx';
 const STATIC='https://jstzbstatic.erp321.com/export/**';
-const WAREHOUSE_LABELS={
-  '河北仓': ['优团河北石家庄仓','河北仓'],
-  '山东仓': ['优团山东临沂仓','山东仓'],
-};
+const ACCOUNT_DEFAULT='account_default';
 const ORDER_STATES='WAITCONFIRM,WAITFCONFIRM,WAITDELIVER,DELIVERING,SENT,QUESTION,WAITOUTERSENT,CANCELLED';
 const QUERY={sales:'unlimited',enabled:'all',excludeZero:false,excludeCancelledBeforeShipment:true};
 const tidy=value=>String(value??'').replace(/\s+/g,'');
 const scopeError=detail=>new CatalogError('REPORT_SCOPE',detail+'，未采用全商品档案');
 
-export function resolveReportWarehouse(entries,warehouse,company){
-  const aliases=WAREHOUSE_LABELS[warehouse];
-  if(!aliases)throw scopeError('未识别目标仓');
-  const hits=entries.filter(x=>/^mw_[1-9]\d*$/.test(x.id)&&aliases.includes(tidy(x.label)));
-  const exact=hits.filter(x=>tidy(x.label)===tidy(company));
-  if(exact.length===1)return exact[0];
-  if(hits.length===1)return hits[0];
-  throw scopeError('报表没有唯一的'+warehouse+'发货仓选项');
+function reportSelection(scope){
+  if(scope?.reportScope===ACCOUNT_DEFAULT&&!Object.hasOwn(scope,'reportWarehouse')&&!Object.hasOwn(scope,'reportWarehouseId'))
+    return {};
+  // Retain the exact selected warehouse for already-submitted tasks.
+  if(scope&& !Object.hasOwn(scope,'reportScope')&&typeof scope.reportWarehouse==='string'&&scope.reportWarehouse.trim()
+    &&typeof scope.reportWarehouseId==='string'&&/^[1-9]\d*$/.test(scope.reportWarehouseId))
+    return {label:scope.reportWarehouse,id:scope.reportWarehouseId};
+  return null;
 }
 
 export function archiveDownloadName(name){
@@ -35,10 +32,13 @@ export function archiveDownloadName(name){
   return {stamp:m[1],task:nativeTaskId(m[2])};
 }
 
-export function verifyArchiveConditions(text,warehouse){
+export function verifyArchiveConditions(text,scope){
+  const selected=reportSelection(scope);
+  if(!selected)return false;
   const parts=String(text).replace(/&nbsp;/g,' ').split(/[;；\n]/).map(x=>x.trim()).filter(Boolean);
   const conditions=parts.filter(x=>!['提示 !','关闭'].includes(x));
-  const expected=new Set(['订单状态@='+ORDER_STATES,'其他=排除发货前取消商品','仓库='+warehouse]);
+  const expected=new Set(['订单状态@='+ORDER_STATES,'其他=排除发货前取消商品']);
+  if(selected.label)expected.add('仓库='+selected.label);
   return conditions.length===expected.size&&conditions.every(x=>expected.delete(x))&&!expected.size;
 }
 
@@ -72,12 +72,15 @@ function nativeCallback(request,frame,pathname,method){
 
 export function validateArchiveRequest(args,scope){
   try{
-    if(args.length!==1)return false;
+    const selected=reportSelection(scope);
+    if(!selected||args.length!==1)return false;
     const data=JSON.parse(args[0]),filters=JSON.parse(data.search);
-    const expected=new Map([['A.status',ORDER_STATES],['C.sent_flag','1'],
-      ['A.wms_co_id',scope.reportWarehouseId]]);
-    return String(data.page_count)===String(scope.expectedRows)&&Boolean(data.rpt_config)
-      &&verifyArchiveConditions(data.export_remark,scope.reportWarehouse)
+    const expected=new Map([['A.status',ORDER_STATES],['C.sent_flag','1']]);
+    if(selected.id)expected.set('A.wms_co_id',selected.id);
+    const columns=JSON.parse(data.rpt_config);
+    return String(data.page_count)===String(scope.expectedRows)
+      &&Array.isArray(columns)&&columns.some(c=>c?.id==='first_io_date'&&c.text==='首次入库时间'&&c.visible===true)
+      &&verifyArchiveConditions(data.export_remark,scope)
       &&Array.isArray(filters)&&filters.length===expected.size
       &&filters.every(f=>f.c==='@='&&!f.t&&expected.get(f.k)===f.v&&expected.delete(f.k))
       &&!expected.size;
@@ -127,8 +130,7 @@ async function readFilters(filter){
     return {sales:selected('sale_qty'),enabled:selected('enabled'),sync:selected('stock_disabled'),
       excludeZero:val('is_filter_empty')?.checked,excludeCancelled:val('sent_flag')?.checked,
       excludeGifts:val('is_gift')?.checked,criteria:criteria.filter(key=>String(val(key)?.value||'').trim()),
-      warehouses:[...document.querySelectorAll('input[id^="mw_"]')].map(x=>({
-        id:x.id,label:Array.from(x.labels||[]).map(y=>y.innerText.trim()).join(''),checked:x.checked}))};
+      warehouses:[...document.querySelectorAll('input[id^="mw_"]')].map(x=>({id:x.id,checked:x.checked}))};
   });
 }
 
@@ -154,19 +156,18 @@ async function displayScopedArchive(page,account,signal){
   const filters=await reportFrame(page,'filter.aspx',report,signal);
   const initial=await reportFrame(page,'allsku.aspx',report,signal);
   await initial.getByText('点击左侧【生成报表】，查看报表数据!',{exact:true}).waitFor({timeout:20000});
+  await filters.waitForLoadState('load',{timeout:30000});
   await filters.locator('#sale_qty').selectOption({label:'无限制'});
   await filters.locator('#enabled').selectOption({label:'-全部-'});
   const all=await readFilters(filters);
-  const target=resolveReportWarehouse(all.warehouses,account.warehouse,account.expectedCompany);
   for(const entry of all.warehouses)
-    if(entry.checked!==(entry.id===target.id))await setFilterCheckbox(filters,entry.id,entry.id===target.id);
+    if(entry.checked)await setFilterCheckbox(filters,entry.id,false);
   if(all.excludeZero)await setFilterCheckbox(filters,'is_filter_empty',false);
   const state=await readFilters(filters);
-  const checked=state.warehouses.filter(x=>x.checked);
   if(state.sales!=='无限制'||state.enabled!=='-全部-'||state.sync!=='-全部-'
     ||state.excludeZero!==false||state.excludeCancelled!==true||state.excludeGifts!==false
-    ||state.criteria.length||checked.length!==1||checked[0].id!==target.id)
-    throw scopeError('全状态、无限销量、取消排零或目标仓筛选未生效');
+    ||state.criteria.length||state.warehouses.some(x=>x.checked))
+    throw scopeError('全状态、无限销量、取消排零或账号默认范围未生效');
   check(signal);
   const queriedAt=new Date().toISOString();
   await activateControl(filters.getByText('生成报表',{exact:true}));
@@ -177,10 +178,9 @@ async function displayScopedArchive(page,account,signal){
   const expectedRows=Number(await result.locator('#dataPageCount').inputValue());
   if(!Number.isSafeInteger(expectedRows)||expectedRows<1)throw scopeError('报表缺少可核对的全量数据条数');
   const conditions=await report.locator('#right_td').innerText();
-  const warehouses=[...conditions.matchAll(/(?:^|[;；\s])仓库=([^;；\r\n]+)/g)].map(x=>x[1].trim());
-  if(warehouses.length!==1||warehouses[0]!==target.label||/是否排除数据为0的商品=是/.test(conditions))
-    throw scopeError('生成结果未显示唯一目标仓或仍排除了零数据');
-  return {button,result,scope:{kind:ARCHIVE,warehouse:account.warehouse,reportWarehouse:target.label,reportWarehouseId:target.id.slice(3),
+  if(/(?:^|[;；\s])(?:发货)?仓库\s*=/.test(conditions)||/是否排除数据为0的商品\s*=\s*是/.test(conditions))
+    throw scopeError('生成结果仍有发货仓筛选或排除了零数据');
+  return {button,result,scope:{kind:ARCHIVE,warehouse:account.warehouse,reportScope:ACCOUNT_DEFAULT,
     company:account.expectedCompany,coid:account.expectedCoid,uid:account.expectedUid,query:{...QUERY},queriedAt,expectedRows}};
 }
 
@@ -203,7 +203,7 @@ async function archiveRecord(page,scope,recordId,signal,onProgress){
         await modal.waitFor({timeout:15000});
         const text=await modal.innerText();
         if(await close.isVisible())await activateControl(close);
-        if(!verifyArchiveConditions(text,scope.reportWarehouse))throw scopeError('原生回执的全量筛选或所属仓不同');
+        if(!verifyArchiveConditions(text,scope))throw scopeError('原生回执的全量筛选或所属仓不同');
         return {history,receipt,scope:{...scope,...receipt,taskId:recordId}};
       }
     }
@@ -241,7 +241,7 @@ export async function exportArchive(page,{output,onManifest,signal,onProgress=()
     if(signal?.aborted||!validateArchiveRequest(submitted,scope)){
       await route.abort('blockedbyclient');
       await save({stage:signal?.aborted?'CANCELLED_BEFORE_SUBMIT':'NOT_SUBMITTED_SCOPE_MISMATCH',submissions:0});
-      blocked.reject(scopeError('实际导出请求的条数、筛选或所属仓与已核验查询不同'));
+      blocked.reject(scopeError('实际导出请求的条数、筛选或库存范围不同，或报表设置缺少“首次入库时间”列'));
       return;
     }
     transmitted=true;
@@ -290,7 +290,7 @@ export async function exportArchive(page,{output,onManifest,signal,onProgress=()
 }
 
 export async function recoverArchive(page,{scope,recordId,expectedPath,output,signal,onProgress=()=>{}}){
-  if(scope?.kind!==ARCHIVE||!scope.reportWarehouse)throw scopeError('原任务缺少仓库与筛选证据');
+  if(scope?.kind!==ARCHIVE||!reportSelection(scope))throw scopeError('原任务缺少仓库与筛选证据');
   const record=await archiveRecord(page,scope,nativeTaskId(recordId),signal,onProgress);
   const received=await receiveKnownExport(page,{recordId,expectedRows:record.scope.expectedRows,
     expectedPath,output,signal,onProgress,type:TYPE,history:record.history,

@@ -1,6 +1,5 @@
 """Read-only Step 4 money projections; never stored in calculation/archive data."""
 from decimal import Decimal
-import new_products
 import result_semantics as sem
 
 NOTE = '人工改量与新品可能交叉，不能相加作为总额。新品口径与签发单的本月新品＋往期新品一致。'
@@ -17,7 +16,8 @@ def is_manual(d):
 def is_new(d):
     # The union of normal_exports.groups' two new-product sheets; focus only
     # moves a row between those sheets and cannot change this union.
-    return d.get('_source') == '资料匹配' and sem.work_eligible(d) and bool(d.get('_preissue', {}).get('current_month') or new_products.is_new(d))
+    return (d.get('_source') == '资料匹配' and sem.work_eligible(d)
+            and sem.new_product_group(d) in ('本月新品','往期新品'))
 
 
 def empty():

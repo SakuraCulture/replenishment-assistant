@@ -10,6 +10,7 @@ from pathlib import Path
 from contextlib import closing
 from dataclasses import dataclass,field
 from runtime_support import checkpoint,Cancelled
+from migration_paths import io_path
 
 DBS=('workbench.sqlite3','aoxiang/workflows.sqlite3','aoxiang/jobs.sqlite3','aoxiang/component-state/state.sqlite')
 EVENTS={'normal_events','lifecycle_events','jst_events','purchase_events','automation_events','jst_cancellation_reviews'}
@@ -255,6 +256,7 @@ class Graph:
         """
         expected={'merchant_feedback':'source_files','lifecycle_versions':'lifecycle_files','purchase_versions':'purchase_files','lifecycle_events':'lifecycle_files'}
         assets={(r.table,r.values.get('sha')):r for r in self.rows if r.table in ASSETS}
+        filesystem_root=io_path(self.root)
         for parent in list(self.rows):
             if not parent.owners or parent.table not in expected or parent.error:continue
             if parent.table=='lifecycle_events' and parent.values.get('action')!='业务未变化，留存新原件':continue
@@ -281,8 +283,8 @@ class Graph:
                     possible=list(self.contents.get(h,()))
                     if entry.get('path') in self.map:possible.insert(0,self.map[entry['path']])
                     for relative in dict.fromkeys(possible):
-                        p=(self.root/relative).resolve()
-                        if p.is_relative_to(self.root) and p.is_file() and file_hash(p)==h:candidate=p;break
+                        p=(filesystem_root/relative).resolve()
+                        if p.is_relative_to(filesystem_root) and p.is_file() and file_hash(p)==h:candidate=p;break
                 if candidate is None:
                     for oid in parent.owners:self.bad.setdefault(oid,[]).append('单据原件缺失：'+str(entry.get('name') or h)+'；库内及迁移包均未保留对应内容')
                     continue
@@ -300,7 +302,7 @@ class Graph:
                 if table=='source_files':values['saved']=parent.values.get('saved','')
                 values['content']={'blob':candidate.stat().st_size,'sha':h}
                 values={k:values[k] for k in self.columns[schema_key]}
-                row=Row(dbname,table,-len(self.rows)-1,values,('sha',),{h},owners=set(parent.owners),weak=True,blob={'content':candidate.stat().st_size},origin_file=candidate.relative_to(self.root).as_posix())
+                row=Row(dbname,table,-len(self.rows)-1,values,('sha',),{h},owners=set(parent.owners),weak=True,blob={'content':candidate.stat().st_size},origin_file=candidate.relative_to(filesystem_root).as_posix())
                 self.rows.append(row);assets[key]=row
                 for oid in row.owners:self.by_order[oid].append(row)
     def owner_hash(self,oid):
@@ -418,16 +420,18 @@ def _path_plan(src,dst,oid):
     for owners,refs,value in src.files.values():
         if oid in owners:references.update(refs)
     result={};reasons=[]
+    source_dir,target_dir=io_path(src.root),io_path(dst.root)
     for old in sorted(references&src.map.keys()):
-        rel=src.map[old];p=(src.root/rel).resolve()
-        if not p.is_relative_to(src.root) or not p.is_file():reasons.append('关联原件不存在：'+old);continue
+        rel=src.map[old];p=(source_dir/rel).resolve()
+        if not p.is_relative_to(source_dir) or not p.is_file():reasons.append('关联原件不存在：'+old);continue
         h=file_hash(p)
-        if _absolute(old) and Path(old).is_file() and file_hash(old)!=h:reasons.append('原文件路径在本机已有不同内容：'+old);continue
+        original=io_path(old)
+        if _absolute(old) and original.is_file() and file_hash(original)!=h:reasons.append('原文件路径在本机已有不同内容：'+old);continue
         existing=dst.map.get(old)
         if existing:
-            local=(dst.root/existing).resolve()
-            if not local.is_relative_to(dst.root) or not local.is_file() or file_hash(local)!=h:reasons.append('本机原件路径映射冲突：'+old);continue
-        elif old in dst.paths and not Path(old).is_file():reasons.append('原件路径被本机旧资料引用且来源不明：'+old);continue
+            local=(target_dir/existing).resolve()
+            if not local.is_relative_to(target_dir) or not local.is_file() or file_hash(local)!=h:reasons.append('本机原件路径映射冲突：'+old);continue
+        elif old in dst.paths and not original.is_file():reasons.append('原件路径被本机旧资料引用且来源不明：'+old);continue
         result[old]={'source':rel,'sha256':h,'target':'migration-assets/'+h+'/'+p.name}
     return result,reasons
 
@@ -558,6 +562,7 @@ def _pause_machine(row):
 
 def merge(source_root,private_target,expected_report=None,progress=lambda _:None,cancel=None,*,final_root=None):
     source=Path(source_root).resolve();target=Path(private_target).resolve()
+    source_io,target_io=io_path(source),io_path(target)
     if source==target or source in target.parents or target in source.parents:raise ValueError('合并必须使用两个独立目录')
     src=Graph(source,progress,cancel,file_fallback=True)
     try:
@@ -586,7 +591,7 @@ def merge(source_root,private_target,expected_report=None,progress=lambda _:None
                             changed=machines.get(values['id'])
                             if changed and changed[1] is not None:values.update(record=changed[0]['payload'],state=changed[0]['state'],sequence=changed[0]['sequence'])
                         for col in r.blob:
-                            raw=(source/r.origin_file).read_bytes() if r.origin_file else src.connections[name].execute('SELECT '+q(col)+' FROM '+q(r.table)+' WHERE rowid=?',(r.rid,)).fetchone()[0]
+                            raw=(source_io/r.origin_file).read_bytes() if r.origin_file else src.connections[name].execute('SELECT '+q(col)+' FROM '+q(r.table)+' WHERE rowid=?',(r.rid,)).fetchone()[0]
                             if r.table in ASSETS and hashlib.sha256(raw).hexdigest()!=r.values['sha']:raise ValueError('原件摘要校验失败：'+r.table)
                             if r.table=='snapshot_chunks':
                                 import zlib
@@ -617,10 +622,10 @@ def merge(source_root,private_target,expected_report=None,progress=lambda _:None
             if oldmap.is_file():contents=json.loads(oldmap.read_text('utf-8')).get('contents',{})
             for oid in chosen:
                 for old,entry in report['paths'].get(oid,{}).items():
-                    checkpoint(cancel);p=target/entry['target'];p.parent.mkdir(parents=True,exist_ok=True)
+                    checkpoint(cancel);p=target_io/entry['target'];p.parent.mkdir(parents=True,exist_ok=True)
                     if p.exists():
                         if file_hash(p)!=entry['sha256']:raise ValueError('迁入原件目标有不同内容，未覆盖')
-                    else:shutil.copyfile(source/entry['source'],p)
+                    else:shutil.copyfile(source_io/entry['source'],p)
                     if file_hash(p)!=entry['sha256']:raise ValueError('复制迁入原件校验失败')
                     paths[old]=entry['target'];contents.setdefault(entry['sha256'],[])
                     if entry['target'] not in contents[entry['sha256']]:contents[entry['sha256']].append(entry['target'])

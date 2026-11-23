@@ -1,4 +1,5 @@
 """Warehouse-anchored newness regressions using ordinary and archive source files."""
+from contextlib import closing
 from datetime import date,datetime,timedelta
 from hashlib import sha256
 from pathlib import Path
@@ -12,8 +13,10 @@ import engine
 import first_fill
 import new_product_focus as focus
 import new_products
+import preissue
 import restock_policy
 import result_semantics as sem
+import review_filters
 from table_records import bridge_table
 import warehouse_catalog as wc
 import warehouse_newness as recent
@@ -21,7 +24,7 @@ import warehouse_newness as recent
 
 DAY='2026-11-22'
 CODE='0000517821362000007'
-FIELDS=wc.ARCHIVE_REQUIRED+[recent.FIRST_INBOUND,'标准装箱数量','新店新品首铺数量','订单占有数']
+FIELDS=wc.ARCHIVE_REQUIRED+[recent.FIRST_INBOUND,'标准装箱数量','新店新品首铺数量','订单占有数','虚拟分类']
 
 
 def archive_rows(entries):
@@ -84,11 +87,14 @@ class ArchiveCatalog(unittest.TestCase):
         rows=archive_rows(entries)
         rows[0]['产品分类']='分类-未设置'
         rows.append({'商品编码':'@pending','启用':'备用','可用数':0})
+        rows.append({'商品编码':'@pending-stock','启用':'备用','可用数':10,'主仓实际库存':10})
         path=write(self.root/'商品主题分析_全商品档案_20261122223244_211511244_1.xlsx',FIELDS,rows)
         data=wc.import_catalog(path,'河北仓')
-        self.assertEqual(data['source_rows'],8)
+        self.assertEqual(data['source_rows'],9)
         self.assertEqual(data['quarantined'][0]['商品编码'],'@pending')
         self.assertEqual(data['quarantined'][0]['reason'],wc.ORPHAN_REASON)
+        pending=data['quarantined'][1]
+        self.assertEqual((pending['商品编码'],pending['可用数'],pending['reason']),('@pending-stock',10,wc.ORPHAN_STOCK_REASON))
         self.assertEqual(data['source_observation']['taskId'],'211511244')
         self.assertEqual(list(data['items']),[e[0] for e in entries])
         first=data['items'][CODE]
@@ -134,7 +140,13 @@ class ArchiveCatalog(unittest.TestCase):
         self.assertEqual((parsed['raw_rows'],parsed['rows'],parsed['quarantined']),(2,1,1))
         data=catalog_sync_validation.candidate(parsed)
         self.assertEqual(data['source_observation']['taskId'],'211511244')
-        for bad in ({**receipt,'warehouse':'山东仓'},{**receipt,'query':{**receipt['query'],'excludeZero':True}}):
+        default={**receipt,'reportScope':'account_default'};del default['reportWarehouse']
+        default_request={**request,'evidence':default,'candidate':str(self.root/'default.json')}
+        observed=catalog_sync_validation.candidate(catalog_sync_validation.validate(default_request))['source_observation']
+        self.assertEqual(observed['reportScope'],'account_default')
+        self.assertNotIn('reportWarehouse',observed)
+        for bad in ({**receipt,'warehouse':'山东仓'},{**receipt,'query':{**receipt['query'],'excludeZero':True}},
+                    {**receipt,'reportScope':'account_default'},{**default,'reportScope':'unknown'}):
             with self.assertRaisesRegex(ValueError,'未通过核验'):
                 catalog_sync_validation.validate({**request,'evidence':bad})
 
@@ -149,8 +161,13 @@ class ArchiveCatalog(unittest.TestCase):
         self.assertEqual((hb_row['AU'],sem.order_quantity(hb_row),hb_row['AS']),('河北仓',18,0))
         focus.require_for(None,DAY,[hb_run])
         self.assertEqual(next(sem.signed_rows(hb_run['rows'],None))[0],'本月新品')
+        self.assertEqual(review_filters.group(hb_row,known=False),'本月新品')
         sd_run=calculate(both,'山东仓',profile=monthly([CODE]))
-        self.assertEqual((sd_run['rows'][0]['AU'],sem.order_quantity(sd_run['rows'][0])),('山东仓',0))
+        sd_row=sd_run['rows'][0]
+        self.assertEqual((sd_row['AU'],sem.order_quantity(sd_row)),('山东仓',0))
+        self.assertEqual(review_filters.group(sd_row,{CODE}),'往期新品')
+        self.assertFalse(preissue.current_month(sd_row))
+        self.assertTrue(preissue.current_month(hb_row))
         for variant in (calculate(both,'河北仓',day='2026-11-23'),calculate(both,'河北仓',enabled=False),
                         calculate(both,'河北仓',sales=[sale(在途库存=6)])):
             self.assertEqual(len(variant['rows']),1)
@@ -193,6 +210,150 @@ class ArchiveCatalog(unittest.TestCase):
             day_results.append([sem.order_quantity(rows[code]) for code in ('A','B')])
             clock+=timedelta(days=1)
         self.assertEqual(day_results,[[18,0],[0,0]])
+
+    def test_screening_uses_the_supply_warehouse_for_lists_and_first_fill(self):
+        hb_rows=archive_rows([
+            (CODE,DAY,'启用',30,'',None,18),
+            ('@disabled',DAY,'禁用',30,'',None,18),
+            ('@standby-zero',DAY,'备用',0,'',None,18),
+            ('@other-category',DAY,'启用',30,'',None,18),
+        ])
+        hb_rows[0]['虚拟分类']='其他分类，标杆淘汰（切临沂仓发货）'
+        hb_rows[3]['虚拟分类']='普通关注'
+        hb=wc.import_catalog(write(self.root/'hb.xlsx',FIELDS,hb_rows),'河北仓')
+        sd=self.import_file('山东仓',[(CODE,DAY,'启用',30,'',None,24)])
+        both={'河北仓':hb,'山东仓':sd}
+        visible={item['商品编码'] for item,basis in recent.view(hb,DAY) if basis['new']}
+        self.assertEqual(visible,{'@standby-zero','@other-category'})
+        self.assertEqual(hb['items'][CODE]['虚拟分类'],hb_rows[0]['虚拟分类'])
+        sales=[sale(r['商品编码']) for r in hb_rows]
+        profile=monthly([CODE,'@disabled'])
+        result=calculate(both,'河北仓',profile=profile,sales=sales)
+        self.assertEqual([d['E'] for d in result['rows']],[r['商品编码'] for r in hb_rows])
+        retired,disabled,standby,ordinary=result['rows']
+        self.assertEqual(recent.for_row(retired)['excluded_reason'],recent.RETIRED)
+        self.assertEqual(recent.for_row(disabled)['excluded_reason'],recent.DISABLED)
+        self.assertNotIn('_new_requested',retired)
+        self.assertNotIn('_new_requested',disabled)
+        self.assertEqual([standby['_new_requested'],ordinary['_new_requested']],[18,18])
+        self.assertEqual([row['E'] for _,row in sem.signed_rows(result['rows'],profile)],
+                         ['@standby-zero','@other-category'])
+        self.assertFalse(preissue.current_month(retired))
+        with self.assertRaisesRegex(ValueError,'淘汰品'):
+            new_products.apply(new_products.original(result),{CODE:6})
+        with self.assertRaisesRegex(ValueError,'淘汰品'):
+            restock_policy.guard_new(result,retired,'new',6)
+        swapped=calculate(both,'山东仓','河北仓',profile=profile)['rows'][0]
+        self.assertEqual((swapped['AU'],swapped['_new_requested']),('山东仓',24))
+
+    def test_store_consumables_are_screened_by_the_supply_warehouse_category(self):
+        hb_rows=archive_rows([
+            (CODE,DAY,'启用',30,'',None,18),
+            ('@named-consumable',DAY,'启用',30,'门店耗材',None,18),
+        ])
+        hb_rows[0]['产品分类']=' 门店耗材 '
+        hb_rows[1]['商品名']='名称中有门店耗材的测试商品'
+        hb=wc.import_catalog(write(self.root/'hb_category.xlsx',FIELDS,hb_rows),'河北仓')
+        sd=self.import_file('山东仓',[(CODE,DAY,'启用',30,'',None,24)])
+        catalogs={'河北仓':hb,'山东仓':sd}
+        sales=[sale(r['商品编码']) for r in hb_rows]
+        profile=monthly([CODE])
+
+        basis={item['商品编码']:value for item,value in recent.view(hb,DAY)}
+        self.assertEqual({sku for sku,value in basis.items() if value['new']},{'@named-consumable'})
+        self.assertEqual(basis[CODE]['excluded_reason'],'仓商品分类为门店耗材')
+        self.assertIn(CODE,hb['items'])
+        result=calculate(catalogs,'河北仓','山东仓',sales=sales,profile=profile)
+        excluded,ordinary=result['rows']
+        self.assertEqual((excluded['AU'],sem.order_quantity(excluded)),('河北仓',0))
+        self.assertEqual(recent.for_row(excluded)['excluded_reason'],basis[CODE]['excluded_reason'])
+        self.assertEqual((ordinary['E'],ordinary['_new_requested']),('@named-consumable',18))
+        self.assertEqual([(group,row['E']) for group,row in sem.signed_rows(result['rows'],profile)],
+                         [('本月新品','@named-consumable')])
+
+        swapped=calculate(catalogs,'山东仓','河北仓',sales=sales,profile=profile)['rows'][0]
+        self.assertEqual((swapped['AU'],swapped['_new_requested']),('山东仓',24))
+        for previous_rule in ('warehouse-first-inbound-45d-v1','warehouse-first-inbound-45d-v2'):
+            saved={**recent.for_row(swapped),'rule':previous_rule}
+            row={**swapped,'_meta':{**swapped['_meta'],'warehouse_newness':saved}}
+            self.assertEqual(recent.for_row(row),saved)
+            self.assertEqual(sem.new_product_group(row),'本月新品')
+
+    def test_old_archive_without_virtual_category_waits_for_refresh(self):
+        unloaded=self.import_file('河北仓',[(CODE,DAY,'启用',30,'',None,18)],
+                                  [field for field in FIELDS if field!='虚拟分类'])
+        self.assertNotIn('虚拟分类',unloaded['items'][CODE])
+        basis=recent.view(unloaded,DAY)[0][1]
+        self.assertFalse(basis['new'])
+        self.assertEqual(basis['screening_issue'],recent.MISSING_VIRTUAL_CATEGORY)
+        profile=monthly([CODE])
+        result=calculate({'河北仓':unloaded},'河北仓',profile=profile)
+        self.assertEqual(sem.order_quantity(result['rows'][0]),0)
+        self.assertEqual(list(sem.signed_rows(result['rows'],profile)),[])
+        focus.require_for(None,DAY,[result])
+
+    def test_unverified_first_inbound_dates_cannot_enter_signed_new_products(self):
+        import review_amounts
+
+        unverified={'@blank':(None,recent.UNKNOWN),'@invalid':('2026-02-30',recent.INVALID),
+                    '@future':('2026-11-23',recent.FUTURE)}
+        dates=[(sku,raw) for sku,(raw,_) in unverified.items()]+[('@current',DAY),('@previous','2026-10-07')]
+        catalog=self.import_file('河北仓',[(sku,raw,'启用',30,'',None,18) for sku,raw in dates])
+        profile=monthly(list(unverified))
+        result=calculate({'河北仓':catalog},'河北仓',profile=profile,sales=[sale(sku) for sku,_ in dates])
+        rows={row['E']:row for row in result['rows']}
+        for sku,(_,issue) in unverified.items():
+            row=rows[sku]
+            self.assertEqual(recent.for_row(row)['issue'],issue)
+            self.assertEqual(sem.order_quantity(row),0)
+            self.assertIsNone(sem.new_product_group(row,set(unverified)))
+            self.assertEqual(new_products.blocked_reason(row),issue)
+            carried={**row,'_preissue':{'kind':'new','current_month':True},'_execution_qty':6}
+            self.assertFalse(review_amounts.is_new(carried))
+            self.assertEqual(list(sem.signed_rows([carried],profile)),[('中心仓动销补货清单',carried)])
+
+        self.assertEqual([(group,row['E']) for group,row in sem.signed_rows(result['rows'],profile)],
+                         [('本月新品','@current'),('往期新品','@previous')])
+        self.assertFalse(preissue.current_month(rows['@blank']))
+        unlinked={**rows['@blank'],'AU':'山东仓','_preissue':{'current_month':True}}
+        self.assertIsNone(sem.new_product_group(unlinked,set(unverified)))
+        # Older signed snapshots retain the grouping rule stored with the row.
+        old=rows['@blank']
+        basis={**recent.for_row(old),'rule':'warehouse-first-inbound-45d-v3'}
+        old={**old,'_meta':{**old['_meta'],'warehouse_newness':basis}}
+        self.assertEqual(sem.new_product_group(old),'往期新品')
+
+    def test_new_warehouse_detail_export_preserves_rows_types_and_previous_file(self):
+        from warehouse_new_exports import HEADERS,export_detail
+
+        rows=[(CODE,'=原样商品名','2026-10-08',45,'备用',0,'',3),
+              ('@004','原样第二款',DAY,0,'启用',12.5,'仓内记录',8)]
+        dest=self.root/'新品明细'
+        path=export_detail(dest,rows,'河北仓',DAY,'0012345678abcdef')
+        self.assertEqual(path,dest.with_suffix('.xlsx'))
+        with closing(openpyxl.load_workbook(path)) as book:
+            sheet=book['新品明细']
+            self.assertEqual(tuple(c.value for c in sheet[1]),HEADERS)
+            self.assertEqual([[c.value for c in line] for line in sheet.iter_rows(min_row=2)], [
+                [CODE,'=原样商品名',datetime(2026,10,8),45,'备用',0,None,3,'河北仓',datetime(2026,11,22),'0012345678abcdef'],
+                ['@004','原样第二款',datetime(2026,11,22),0,'启用',12.5,'仓内记录',8,'河北仓',datetime(2026,11,22),'0012345678abcdef'],
+            ])
+            self.assertEqual((sheet['A2'].data_type,sheet['B2'].data_type,sheet['F2'].data_type),('s','s','n'))
+            self.assertEqual(sheet.auto_filter.ref,'A1:K3')
+            self.assertEqual(sheet.freeze_panes,'C2')
+        original=path.read_bytes()
+        with self.assertRaises(FileExistsError):
+            export_detail(dest,rows,'山东仓',DAY,'changed')
+        self.assertEqual(path.read_bytes(),original)
+
+    def test_local_purchase_candidate_does_not_require_legacy_focus_for_signing(self):
+        catalog=self.import_file('河北仓',[(CODE,'2026-10-08','启用',100,'',None,18)])
+        result=calculate({'河北仓':catalog},'河北仓',sales=[sale(),sale('@local-only')])
+        local=result['rows'][1]
+        self.assertEqual(local['_source'],'地采商品')
+        self.assertTrue(new_products.is_new(local))
+        focus.require_for(None,DAY,[result])
+        self.assertEqual([(name,row['E']) for name,row in sem.signed_rows(result['rows'],None)], [('本月新品',CODE)])
 
     def test_same_newness_set_preserves_quantities_and_order(self):
         codes=['@b',CODE,'@a']

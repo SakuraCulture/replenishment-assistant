@@ -7,6 +7,7 @@ import normal_orders,normal_exports,new_product_focus as focus
 from runtime_support import checkpoint
 from io_stages import stage
 import export_receipts as receipts
+import export_settings
 from export_files import sha256,explain_error
 
 
@@ -195,7 +196,8 @@ def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=Non
     receipt=receipts.begin(repository.work.path,'merchant',[
         {'path':str(path.resolve()),'state':'未执行','stage':'准备','head':None,
          'day':payload['day'],'store':p['store'],'warehouse':f['warehouse']}
-        for (p,f),path in zip(files,paths)],signature='尚未新增签发' if signed else '归档版本未改变',signed=signed)
+        for (p,f),path in zip(files,paths)],signature='尚未新增签发' if signed else '归档版本未改变',signed=signed,
+        monthly_new_sheet_editable=export_settings.monthly_new_sheet_editable(repository.work.path))
     try:
         on_receipt(receipt['id'])
         if signed:
@@ -253,6 +255,7 @@ def _write_exports(repository,records,receipt,progress,cancel):
         failure_context.progress(value);notify(value)
     from archive_orders import require_active
     from warehouse_orders import child_number
+    monthly_new_sheet_editable=receipt.get('monthly_new_sheet_editable') is True
     done=[];current=None;loaded=None
     try:
         for i,(descriptor,item) in enumerate(records,1):
@@ -271,7 +274,8 @@ def _write_exports(repository,records,receipt,progress,cancel):
             with closing(repository.work.connect()) as db:require_active(db,order['oid'],warehouse)
             item.update(stage='写出文件',state='正在写出');receipts.update(repository.work.path,receipt)
             with stage(f'写出确认单 {i}/{len(records)} · {warehouse}',progress):
-                normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'文件 {i}/{len(records)} · {order["payload"]["result"]["store_name"]} · {warehouse}'),warehouse=warehouse)
+                normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'文件 {i}/{len(records)} · {order["payload"]["result"]["store_name"]} · {warehouse}'),
+                                      warehouse=warehouse,monthly_new_sheet_editable=monthly_new_sheet_editable)
             item.update(state='已生成',stage='核验文件摘要');done.append(str(path));receipts.update(repository.work.path,receipt)
             progress('核验导出文件摘要…');item['sha256']=sha256(path);item['stage']='记录导出日志';receipts.update(repository.work.path,receipt)
             repository.log(order,'带号导出',{'path':str(path),'sha256':item['sha256'],'warehouse':warehouse,'child_number':child_number(order['number'],warehouse),'export_task':receipt['id']})
@@ -295,7 +299,7 @@ def execute(repository,plan,path,progress=lambda s:None,cancel=None):
     return {**receipt,'path':receipt['paths'][0],'number':order['number'],'revision':order['revision']}
 
 
-def export_signed(repository,order,destination,warehouses,progress=lambda s:None,cancel=None):
+def export_signed(repository,order,destination,warehouses,progress=lambda s:None,cancel=None,*,monthly_new_sheet_editable=None):
     """Re-export this immutable revision, including historical revisions; no signing."""
     from warehouse_orders import partitions,child_number
     import export_progress as ep
@@ -305,6 +309,8 @@ def export_signed(repository,order,destination,warehouses,progress=lambda s:None
     paths=[dest/normal_exports.filename(order,w) for w in selected] if dest.is_dir() else [dest]
     if len(paths)!=len(selected):raise ValueError('多仓导出请选择文件夹')
     checkpoint(cancel)
+    if monthly_new_sheet_editable is None:
+        monthly_new_sheet_editable=export_settings.monthly_new_sheet_editable(repository.work.path)
     records=[]
     import warehouse_execution
     with closing(repository.work.connect()) as db:
@@ -317,5 +323,5 @@ def export_signed(repository,order,destination,warehouses,progress=lambda s:None
     receipt=receipts.begin(repository.work.path,'merchant',[
         {'path':str(path.resolve()),'state':'未执行','stage':'准备','head':warehouse_identity(descriptor,wh),
          'day':order['day'],'store':order['store'],'warehouse':wh} for descriptor,wh,path in zip(records,selected,paths)],
-        signature=f'原修订 V{order["revision"]:03d} 保留',signed=False)
+        signature=f'原修订 V{order["revision"]:03d} 保留',signed=False,monthly_new_sheet_editable=monthly_new_sheet_editable)
     return _write_exports(repository,list(zip(records,receipt['files'])),receipt,progress,cancel)

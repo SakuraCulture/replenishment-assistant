@@ -31,6 +31,18 @@ async function fixture(t){
   t.after(async()=>{await service.close();await fs.rm(root,{recursive:true,force:true});});return {service,counts,failure,root};
 }
 const request=(operation='operation_1',order=warehouses)=>({action:'sync.start',operation_id:operation,purpose:'default_catalog',items:order.map(warehouse=>({warehouse,expected_catalog_digest:null}))});
+test('shared enterprise with two operators cannot claim two default warehouse inventories',async t=>{
+  const {service:s,counts}=await fixture(t);
+  s.driver.exportArchive=s.driver.export;
+  await s.store.write(d=>{
+    d.accounts['河北仓'].expectedCoid=d.accounts['山东仓'].expectedCoid;
+    d.accounts['河北仓'].expectedUid='198';
+  });
+  const {batch_id}=await s.command(request('same_company_1'));
+  const batch=await finish(s,batch_id);
+  assert.deepEqual(counts.exports,[]);
+  assert.ok(batch.items.every(i=>i.error.code==='REPORT_SCOPE'&&!i.native&&!i.receipt));
+});
 test('scheduled catalogs have separate adoption scope and durable replay',async t=>{
   const {service:s,counts}=await fixture(t),r={...request('scheduled_1'),purpose:'scheduled_replenishment'};
   const x=await s.command(r);const b=await finish(s,x.batch_id);

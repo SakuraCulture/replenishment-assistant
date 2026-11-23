@@ -24,7 +24,7 @@ class WarehouseUi:
         v.addWidget(label('支持聚水潭全商品档案和普通商品资料。全商品档案按归属仓首入库日期生成45天新品。','muted'))
         from business_flow_ui import disclosure
         toggle,maintenance,mv=disclosure('恢复与旧版资料兼容',panel);v.addWidget(toggle);v.addWidget(maintenance)
-        self.catalog_maintenance_toggle=toggle
+        self.catalog_maintenance_toggle=toggle;self.catalog_maintenance_layout=mv
         mv.addWidget(button('恢复以前保存的仓资料',self.restore_catalog))
         self.master_legacy=QCheckBox('兼容0.4混合资料（不启用主从仓）');mv.addWidget(self.master_legacy)
         self.products=FileCard('旧版混合商品资料','仅用于兼容已有“仓归属”资料');self.products.hide();mv.addWidget(self.products)

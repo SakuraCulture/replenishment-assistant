@@ -32,7 +32,7 @@ class NewProductModel(QAbstractTableModel):
         self.quantities=[];self.quantity_sources=[]
         for d in rows:
             if d['E'] in selected:q,note=float(selected[d['E']]),'沿用本次已维护数量，不自动覆盖'
-            elif d['E'] in getattr(parent,'focused',set()):q,note=first_fill.suggestion(d)
+            elif filters.group(d,parent.focused,parent.focus_known)=='本月新品':q,note=first_fill.suggestion(d)
             else:q,note=float(d['BD'] if sem.numeric(d.get('BD')) and d['BD']>0 else 1),'往期/未归期新品沿用最小出库单位默认量'
             self.quantities.append(q);self.quantity_sources.append(note)
         self.default_sources=list(self.quantity_sources)
@@ -108,8 +108,8 @@ class NewProductDialog(QDialog):
         self.rows=[d for d in base['rows'] if np.is_new(d) and sem.work_eligible(d)];self.current=current
         self.cur={d['E']:d for d in current['rows']};self.needles=[filters.search_text(d) for d in self.rows]
         selected=current.get('new_products',{}).get('selection',{});v=QVBoxLayout(self)
-        v.addWidget(label('月销、可用、在途均为0，缺货天数为0或空白。空白按0识别并保留原值；本月符合资格的新品在计算时自动安排，可在此改量或取消。往期新品仍须手工选择。','muted'))
-        hint=label('本月新品使用归属仓“新店新品首铺数量”（兼容“新店新品首铺数”，库存单位）；缺失/无效用最小出库单位，有值向上对齐箱规。已有人工数量保留；本窗口的修改须预览应用后生效。','muted');hint.setWordWrap(True);v.addWidget(hint)
+        hint=label('全商品档案按实际供货仓的45天清单归为「本月新品」。符合门店首铺条件时自动安排，可在此改量或取消。旧资料沿用人工关注清单。','muted');hint.setWordWrap(True);v.addWidget(hint)
+        hint=label('首铺使用归属仓的「新店新品首铺数量」，有值时向上对齐箱规，缺失或无效时用最小出库单位。往期新品可手工选择。修改须预览应用后生效。','muted');hint.setWordWrap(True);v.addWidget(hint)
         tools=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('商品名称 / 编码 / 条码；空格分词');self.search.setClearButtonEnabled(True);tools.addWidget(self.search,1)
         self.scope=QComboBox();self.scope.addItems(['全部新品','可选','资料待核']);self.scope.setCurrentText('可选');tools.addWidget(self.scope)
         self.warehouse=QComboBox();self.warehouse.addItems(['全部仓']+sorted({str(d.get('AU','')) for d in self.rows}));tools.addWidget(self.warehouse)

@@ -25,6 +25,7 @@ ARCHIVE_REQUIRED=[ARCHIVE_ALIASES.get(key,key) for key in REQUIRED]+[
     '商品名','商品创建日期','商品标签','主仓实际库存']
 ARCHIVE_EXTRA=('主仓实际库存','标准装箱数量',newness.CREATED,newness.FIRST_INBOUND)
 ORPHAN_REASON='备用、可用数为0，商品名、基本售价、建档时间均缺失'
+ORPHAN_STOCK_REASON='备用商品有仓库存，商品名、基本售价、建档时间均缺失'
 
 def revision(items):return hashlib.sha256(json.dumps(items,ensure_ascii=False,sort_keys=True,allow_nan=False).encode()).hexdigest()[:16]
 
@@ -50,15 +51,20 @@ def validate(data):
 def archive_evidence(path,warehouse,source_rows,evidence):
     if evidence is not None:
         q=evidence.get('query',{})
+        default_scope=(evidence.get('reportScope')=='account_default'
+                       and 'reportWarehouse' not in evidence and 'reportWarehouseId' not in evidence)
+        selected_scope='reportScope' not in evidence and bool(evidence.get('reportWarehouse'))
         if (evidence.get('kind')!='jst_full_archive' or evidence.get('warehouse')!=warehouse
-                or evidence.get('expectedRows')!=source_rows or not evidence.get('reportWarehouse')
+                or evidence.get('expectedRows')!=source_rows or not (default_scope or selected_scope)
+                or not isinstance(evidence.get('company'),str) or not evidence['company'].strip()
                 or q.get('sales')!='unlimited' or q.get('enabled')!='all'
                 or q.get('excludeZero') is not False or q.get('excludeCancelledBeforeShipment') is not True
                 or not re.fullmatch(r'[1-9]\d*',str(evidence.get('taskId','')))
                 or not evidence.get('queriedAt') or not evidence.get('exportedAt')):
             raise ValueError('全商品档案的网页仓库、完整查询条件或原生导出回执未通过核验')
-        saved={key:evidence[key] for key in ('warehouse','reportWarehouse','company','query','queriedAt','exportedAt','taskId','expectedRows')}
-        if 'reportWarehouseId' in evidence:saved['reportWarehouseId']=evidence['reportWarehouseId']
+        saved={key:evidence[key] for key in ('warehouse','company','query','queriedAt','exportedAt','taskId','expectedRows')}
+        for key in ('reportScope','reportWarehouse','reportWarehouseId'):
+            if key in evidence:saved[key]=evidence[key]
         return saved
     observation={'warehouse':warehouse,'query':None,'expectedRows':source_rows,'scope':'manual'}
     name=re.fullmatch(r'商品主题分析_全商品档案_(\d{14})_([1-9]\d*)_1(?: \(\d+\))?',path.stem)
@@ -79,7 +85,7 @@ def import_catalog(path,warehouse,progress=lambda s:None,cancel=None,*,evidence=
     archive=info['alternate']
     if evidence is not None and (not archive or newness.FIRST_INBOUND not in heads):
         raise ValueError('本次自动同步需要包含首次入库时间的全商品档案')
-    used=set(FIELDS)|{'商品标签','标准装箱数量'}
+    used=set(FIELDS)|{'商品标签','标准装箱数量',newness.VIRTUAL_CATEGORY}
     if archive:
         used.update(ARCHIVE_ALIASES.values());used.update(ARCHIVE_EXTRA)
         if any(k in heads and v in heads for k,v in ARCHIVE_ALIASES.items()):
@@ -102,13 +108,14 @@ def import_catalog(path,warehouse,progress=lambda s:None,cancel=None,*,evidence=
             for name in ARCHIVE_EXTRA:
                 if name in heads:row[name]=newness.json_cell(raw.get(name))
             available=engine.adapter.numeric(row['可用数'])
-            if (row['商品状态']=='备用' and available==0 and newness.blank(raw.get('商品标签'))
+            if (row['商品状态']=='备用' and available is not None and available>=0 and newness.blank(raw.get('商品标签'))
                     and all(newness.blank(row.get(key)) for key in ('商品名称','基本售价',newness.CREATED))):
-                pending.append({**row,'reason':ORPHAN_REASON})
+                pending.append({**row,'reason':ORPHAN_REASON if available==0 else ORPHAN_STOCK_REASON})
                 continue
         if '标准装箱数量' in heads:row['标准装箱数量']=raw.get('标准装箱数量')
         items[sku]=row
         if '商品标签' in heads:row['商品标签']=raw.get('商品标签')
+        if newness.VIRTUAL_CATEGORY in heads:row[newness.VIRTUAL_CATEGORY]=newness.json_cell(raw.get(newness.VIRTUAL_CATEGORY))
         first_fill_fields=[f for f in FIRST_FILL_FIELDS if f in heads]
         if len(first_fill_fields)>1 or any(f in info['duplicate_unused_headers'] for f in first_fill_fields):
             row['_first_fill_issue']='“'+'／'.join(first_fill_fields)+'”表头重复或存在多个同义列，未自动择一'
@@ -401,6 +408,8 @@ def _prepare_catalogs(catalogs,load):
                 m.update(product_row=row['_row'],warehouse_available=engine.adapter.numeric(row.get('可用数')))
                 inbound=newness.source(catalog,row)
                 if inbound is not None:m['first_inbound_source']=inbound
+                elif reason:=newness.exclusion(row.get('商品状态'),row.get(newness.VIRTUAL_CATEGORY)):
+                    m['new_product_exclusion']=reason
                 if any('商品标签' in c['items'].get(d['E'],{}) for c in catalogs.values()):
                     from admission import catalog_meta
                     m.update(catalog_meta(catalogs,wh,d['E']))

@@ -160,11 +160,31 @@ def main():
         assert protocols['machineEvents'][-1]['kind']=='MIGRATION_PAUSED','Explicit pause audit event missing'
     for case in cases:
         folder=out/case;folder.mkdir();f=seed(folder,case)
-        code=run(folder,case,3);value=status.latest(folder/'settings')
+        if case=='browser-busy':
+            from test_order_migration import exclusive_read
+            lock=folder/'settings/jst_catalog_sync/browsers/hb/User Data/Default/Network/Cookies'
+            lock.parent.mkdir(parents=True)
+            lock.write_bytes(b'synthetic local browser file')
+            with exclusive_read(lock):
+                code=run(folder,case,3)
+        else:
+            code=run(folder,case,3)
+        value=status.latest(folder/'settings')
         initial_events=[json.loads(line) for line in (folder/(case+'-events.jsonl')).read_text('utf-8').splitlines()]
         harness=[e for e in initial_events if e['event'] in ('harness_exception','watchdog_safe_close')]
         assert not harness,('Native acceptance harness failed',harness)
-        if case in ('confirm','async'):
+        if case=='browser-busy':
+            assert code==0 and value is None,(case,code,value)
+            assert not list(folder.glob('.settings.order-*')) and not list(folder.glob('settings.订单导入备份-*'))
+            assert any(e['event']=='no_handoff' and e['enabled'] and not e['pending'] for e in initial_events)
+            assert_old(folder,f)
+            assert run(folder,'confirm',4)==0
+            assert_success(folder,f)
+            assert run(folder,'reopen-completed',4)==0
+            assert_success(folder,f)
+            backup=Path(status.latest(folder/'settings')['backup'])
+            assert (backup/lock.relative_to(folder/'settings')).read_bytes()==lock.read_bytes()==b'synthetic local browser file'
+        elif case in ('confirm','async'):
             assert code==0,(case,code,value);assert_success(folder,f)
             assert run(folder,'reopen-completed',4)==0;assert_success(folder,f)
             if case=='confirm':
@@ -212,8 +232,8 @@ def main():
         if case=='async':assert len([e for e in all_events if e['event']=='synthetic_shutdown_call'])>=2
         assert signed(f['source'].root)==f['source_before'],'Source order content changed'
         latest_state=status.latest(folder/'settings')['state']
-        primary_state='COMPLETED' if case in ('confirm','async','interrupt-after') else latest_state
-        results.append({'case':case,'passed':True,'exit_code':code,'state':primary_state,'initial_import_state':value['state'],'latest_followup_state':latest_state,'repeat_no_additions_cancelled_preview':case=='confirm','native_preview':True,'original_parents':3,'source_parents':3,'result_parents':len(signed(folder/'settings')),'screenshots':[p.name for p in folder.glob('*.png')]})
+        primary_state='COMPLETED' if case in ('confirm','async','interrupt-after','browser-busy') else latest_state
+        results.append({'case':case,'passed':True,'exit_code':code,'state':primary_state,'initial_import_state':value['state'] if value else 'BLOCKED_BEFORE_PREPARE','latest_followup_state':latest_state,'repeat_no_additions_cancelled_preview':case=='confirm','native_preview':True,'original_parents':3,'source_parents':3,'result_parents':len(signed(folder/'settings')),'screenshots':[p.name for p in folder.glob('*.png')]})
         write(out/'progress.json',results)
     report={'passed':True,'cases':results,'frozen_exe':bool(args.exe),'live_platform':False,'real_prepare_inspect_merge_apply':True,'dialogs_not_stubbed':True,'real_packaged_component_open_after_merge':bool(args.exe),'queued_machine_dispatch_count':0}
     if args.exe:report['exe_sha256']=hash_file(args.exe)
