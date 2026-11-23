@@ -6,6 +6,69 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication,QDialog,QFileDialog,QMessageBox,QPushButton
 
 
+def verify_migration_export(win,out,require):
+    import shutil
+    from unittest.mock import patch
+    from order_migration import manifest
+    from stockout_common import file_hash
+
+    win.show_section(2)
+    entry=next(b for b in win.findChildren(QPushButton)
+               if b.text().startswith('完整订单迁移／导入与参数导出'))
+    disk_usage=shutil.disk_usage
+    db=win.work_repository.path
+    before=file_hash(db)
+
+    def run_export(target,low_disk):
+        clicked=[]
+        notices=[]
+        errors=[]
+        timer=QTimer(win)
+        timer.setInterval(25)
+
+        def capture(parent,title,text,*_):
+            notices.append((title,text))
+            return QMessageBox.StandardButton.Ok
+
+        def click_export():
+            box=QApplication.activeModalWidget()
+            if not isinstance(box,QDialog) or box.windowTitle()!='完整订单迁移与参数导出':return
+            timer.stop()
+            try:
+                action=next(b for b in box.findChildren(QPushButton) if b.text()=='导出完整订单迁移包…')
+                clicked.append(True)
+                action.click()
+            except Exception:
+                errors.append(traceback.format_exc())
+            finally:box.reject()
+
+        def available(path):
+            capacity=disk_usage(path)
+            return capacity._replace(free=1) if low_disk and Path(path)==target.parent else capacity
+
+        timer.timeout.connect(click_export)
+        with patch.object(QFileDialog,'getSaveFileName',return_value=(str(target),'Zip (*.zip)')), \
+                patch.object(QMessageBox,'information',side_effect=capture), \
+                patch.object(QMessageBox,'warning',side_effect=capture),patch('shutil.disk_usage',side_effect=available):
+            timer.start()
+            try:entry.click()
+            finally:timer.stop()
+        require(clicked and not errors,'经订单跟踪按钮进入迁移并点击导出')
+        return notices
+
+    blocked=out/'磁盘不足.zip'
+    notices=run_export(blocked,True)
+    require(any(t=='迁移包未导出' and '磁盘余量不足' in m and str(out) in m for t,m in notices),
+            '磁盘不足在实际迁移界面展示原因和保存目录')
+    require(not blocked.exists() and not list(out.glob('.migration-*.zip')),'磁盘不足时未发布迁移包')
+    target=out/'完整订单迁移.zip'
+    notices=run_export(target,False)
+    require(target.is_file() and any(t=='迁移包已导出' and file_hash(target) in m for t,m in notices),
+            '正常导出发布独立ZIP并显示可核对的摘要')
+    require(manifest(target)['counts']['normal_orders']>0,'完整迁移清单含隔离样本订单')
+    require(file_hash(db)==before,'源订单库哈希一致')
+
+
 def start_smoke(app,win,args):
     out=Path(args[0]).resolve();phase=args[1]
     if not (out/'synthetic.json').is_file() or Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve()!=out/'settings':
@@ -33,6 +96,9 @@ def start_smoke(app,win,args):
         try:
             from catalog_session_ui import manager
             session=manager(win).session;lease=session.acquire();lease.start();require(lease.close(),'释放窗口操作权并保留真实组件连接')
+            if phase=='migration-export':
+                verify_migration_export(win,out,require)
+                report['passed']=True;finish();return
             if phase=='reopen':
                 data=session.client.request('sync.status');require([b['id'] for b in data['batches']]==['SOURCE-TASK'],'重开只显示迁入来源任务，未混入目标旧任务')
                 item=data['batches'][0]['items'][0];require(item['native']['nativeTaskRef']=='ORIGINAL-SOURCE-TASK' and item['native']['submissions']==1,'平台原任务号与一次提交事实保留')

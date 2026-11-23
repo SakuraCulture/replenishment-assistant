@@ -1,5 +1,5 @@
 """Complete migration: synthetic only, backup retained, interrupted rename rollback."""
-import copy,json,sqlite3,tempfile,threading,unittest,zipfile
+import copy,json,shutil,sqlite3,tempfile,threading,unittest,zipfile
 from pathlib import Path
 from contextlib import closing
 from unittest.mock import patch
@@ -82,6 +82,29 @@ class MigrationTests(unittest.TestCase):
         with closing(sqlite3.connect(self.work.path)) as db,db:db.execute("UPDATE source_files SET content=X'00'")
         with self.assertRaisesRegex(ValueError,'原件摘要'):self.export()
         self.assertFalse(self.package.exists())
+    def test_insufficient_disk_reports_failure_and_keeps_source(self):
+        before=files(self.source)
+        disk=shutil.disk_usage(self.root)._replace(free=1)
+        with patch('shutil.disk_usage',return_value=disk):
+            with self.assertRaisesRegex(ValueError,'磁盘余量不足') as failed:
+                self.export()
+        self.assertIn(str(self.package.parent),str(failed.exception))
+        self.assertFalse(self.package.exists())
+        self.assertEqual(files(self.source),before)
+    def test_zip_is_published_only_after_verification_and_cancellation_check(self):
+        from runtime_support import Cancelled
+        stages=[]
+        def progress(message):
+            stages.append(str(message))
+            if str(message).startswith('正在核验迁移包摘要'):
+                self.assertFalse(self.package.exists())
+                self.cancel.set()
+        with self.assertRaises(Cancelled):
+            migration.export(self.source,self.package,progress,cancel=self.cancel)
+        self.assertIn('正在从订单及快照查找原件引用…',stages)
+        self.assertTrue(any(stage.startswith('正在压缩') for stage in stages))
+        self.assertFalse(self.package.exists())
+        self.assertEqual(list(self.root.glob('.migration-*.zip')),[])
     def test_foreign_writer_blocks_export_no_partial_package(self):
         with closing(sqlite3.connect(self.work.path)) as db:
             db.execute('BEGIN IMMEDIATE')

@@ -7,7 +7,7 @@ import hashlib,json,os,re,shutil,sqlite3,tempfile,uuid,zipfile,zlib
 from contextlib import ExitStack,closing
 from pathlib import Path,PurePosixPath
 from stockout_common import encoded,file_hash,atomic_json,now,resource_check
-from runtime_support import checkpoint
+from runtime_support import Cancelled,checkpoint
 from application_reset import validate_root
 
 FORMAT='replenishment-orders/1'
@@ -118,17 +118,29 @@ def referenced_files(root,dbpath,cancel):
 
 def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=None):
     from version_info import VERSION,MODEL_VERSION
+    from export_progress import RowProgress
+    checkpoint(cancel)
+    progress('正在清点迁移资料并检查目标磁盘空间…')
     root=validate_root(root);target=Path(destination).resolve()
     if target.exists() or target.suffix.lower()!='.zip':raise ValueError('请选择尚不存在的.zip迁移包')
     if target.is_relative_to(root):raise ValueError('迁移包请保存到应用资料目录之外')
     sources=tree(root)
     if root/'workbench.sqlite3' not in sources:raise ValueError('没有完整订单库，不能生成空迁移包')
-    target.parent.mkdir(parents=True,exist_ok=True);resource_check(target.parent,sum(p.stat().st_size for p in sources)*2)
+    target.parent.mkdir(parents=True,exist_ok=True)
+    try:
+        resource_check(target.parent,sum(p.stat().st_size for p in sources)*2)
+    except Cancelled as exc:
+        # Capacity errors must reach the failure dialog. Only an explicit
+        # cancellation should close the export silently.
+        checkpoint(cancel)
+        raise ValueError(f'{exc}\n迁移包保存目录 {target.parent}') from exc
+    checkpoint(cancel)
     temp=target.with_name('.migration-'+uuid.uuid4().hex+'.zip')
     try:
         with tempfile.TemporaryDirectory(prefix='orders-',dir=target.parent) as working,ExitStack() as stack:
             work=Path(working);entries=[];external={};missing=[]
             from catalog_migration import freeze
+            progress('正在核对本地任务状态，准备复制订单库…')
             catalogs={name:freeze(root,stack,catalog_state if name=='jst_catalog_sync' else None,folder_name=name)
                       for name in ('jst_catalog_sync','jst_catalog')}
             # Freeze writers in every included SQLite file before the first copy.
@@ -152,6 +164,7 @@ def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=N
                 previous=json.loads(prior_map.read_text('utf-8'));included={e['path'] for e in entries}
                 for old,relative in previous.get('paths',{}).items():
                     if relative in included and owned(relative):external[old]=relative
+            progress('正在从订单及快照查找原件引用…')
             for value in sorted(referenced_files(work,work/'workbench.sqlite3',cancel)):
                 if value in external:continue
                 path=Path(value)
@@ -167,13 +180,21 @@ def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=N
                 'scope':'全部本地订单、全部修订、关联单据、原件、库存分配、平台关联与防重事实、草稿、参数及清单；不按当前页筛选',
                 'counts':info(work/'workbench.sqlite3'),'entries':entries,'external_map':external,'missing_external':missing,
                 'excluded':'浏览器登录、机器连接配置、凭据、AI密钥、独立缺货率分析、缓存及旧备份'}
+            progress('正在压缩迁移包…')
             with zipfile.ZipFile(temp,'x',compression=zipfile.ZIP_DEFLATED,compresslevel=3,allowZip64=True) as book:
                 book.writestr('manifest.json',encoded(manifest))
-                for entry in entries:checkpoint(cancel);book.write(work/entry['path'],entry['path'])
+                for index,entry in enumerate(entries):
+                    checkpoint(cancel)
+                    name=entry['path']
+                    progress(RowProgress('正在压缩 '+name,index,len(entries)))
+                    book.write(work/name,name)
+            checkpoint(cancel)
+            progress('正在核验迁移包摘要，随后保存…')
+            checksum=file_hash(temp)
             checkpoint(cancel)
             from export_files import publish_new
             publish_new(temp,target)
-        return {'path':str(target),'sha256':file_hash(target),'manifest':manifest}
+        return {'path':str(target),'sha256':checksum,'manifest':manifest}
     finally:temp.unlink(missing_ok=True)
 
 def manifest(path):

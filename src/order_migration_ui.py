@@ -20,13 +20,14 @@ def open_migration(parent,host):
         v.addWidget(label('合并导入保留本机；完整替换仅用于恢复','section'))
         text=label('导出全部本地订单，不受当前日期、筛选或勾选限制。合并导入只新增无冲突订单，完全重复跳过，冲突保留本机；本轮不补齐已有订单。\n浏览器登录、机器连接配置、AI密钥和两个独立缺货分析板块不随包迁移。');text.setWordWrap(True);v.addWidget(text)
         def save():
-            from order_migration import export
-            path,_=QFileDialog.getSaveFileName(d,'导出完整订单迁移包','补货助手_完整订单迁移.zip','Zip (*.zip)')
-            if not path:return
             try:
+                from order_migration import export
+                path,_=QFileDialog.getSaveFileName(d,'导出完整订单迁移包','补货助手_完整订单迁移.zip','Zip (*.zip)')
+                if not path:return
                 idle(host)
                 def export_with_snapshot(root,target,progress,cancel):
                     sessions=getattr(host,'catalog_sessions',None);client=sessions.session.client if sessions else None
+                    if client:progress('正在读取聚水潭本地任务快照…')
                     snapshot=client.request('sync.migration_snapshot') if client else None
                     return export(root,target,progress,cancel,catalog_state=snapshot)
                 result=run(d,export_with_snapshot,(host.repository.folder,path),'生成并校验完整订单迁移包')
