@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from PySide6.QtCore import QStandardPaths, QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QFileDialog, QMessageBox, QApplication
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QFileDialog, QMessageBox, QApplication, QCheckBox
 from ui_controls import button, label
 import export_settings as settings
 
@@ -42,13 +42,20 @@ class ExportSettingsDialog(QDialog):
         v=QVBoxLayout(self); v.addWidget(label('默认导出位置','section')); row=QHBoxLayout(); self.directory=QLineEdit(); self.directory.setPlaceholderText('未设置时使用系统文档目录'); row.addWidget(self.directory,1); row.addWidget(button('选择文件夹',self.browse)); v.addLayout(row)
         row=QHBoxLayout(); row.addWidget(button('使用系统文档目录',lambda:self.directory.setText(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)))); row.addStretch(); v.addLayout(row)
         v.addWidget(label('适用于确认单、内部明细、归档、生命周期、原件和模板。每次仍可临时改选；临时选择不会修改默认值。','muted'))
+        v.addWidget(label('加盟商签发单','section'))
+        self.monthly_new_sheet_editable=QCheckBox('允许编辑「本月新品」工作表')
+        v.addWidget(self.monthly_new_sheet_editable)
+        v.addWidget(label('默认只读。设置适用于之后导出的签发单，包括历史补导。','muted'))
         v.addWidget(label('配置文件存储位置（随本机资料保留，升级程序后继续使用）'))
         self.location=QLineEdit(str(self.path)); self.location.setReadOnly(True); v.addWidget(self.location)
         row=QHBoxLayout(); row.addWidget(button('复制配置文件位置',lambda:QApplication.clipboard().setText(str(self.path)))); row.addWidget(button('打开配置文件夹',self.open_config_folder)); row.addStretch(); v.addLayout(row)
         self.note=label('只保存导出偏好，不移动已有文件或修改计算参数。','muted'); v.addWidget(self.note)
-        try:self.directory.setText(settings.load(self.path))
+        try:
+            preferences=settings.load_preferences(self.path)
+            self.directory.setText(preferences.directory)
+            self.monthly_new_sheet_editable.setChecked(preferences.monthly_new_sheet_editable)
         except (OSError,ValueError) as exc:self.note.setText(str(exc)+'；修正后点击保存，取消则保留原配置。')
-        row=QHBoxLayout(); cancel=button('取消',self.reject); cancel.setDefault(True); row.addWidget(cancel); self.save_btn=button('保存默认导出位置',self.save,True); self.save_btn.setAutoDefault(False); row.addWidget(self.save_btn); v.addLayout(row)
+        row=QHBoxLayout(); cancel=button('取消',self.reject); cancel.setDefault(True); row.addWidget(cancel); self.save_btn=button('保存设置',self.save,True); self.save_btn.setAutoDefault(False); row.addWidget(self.save_btn); v.addLayout(row)
     def browse(self):
         initial=self.directory.text().strip()
         if not initial or not Path(initial).is_dir():initial=QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)
@@ -58,5 +65,7 @@ class ExportSettingsDialog(QDialog):
         if self.path.parent.is_dir():QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.path.parent)))
         else:QMessageBox.information(self,'配置文件夹尚未创建','保存设置后会创建：'+str(self.path.parent))
     def save(self):
-        try:settings.save(self.path,self.directory.text());self.accept()
+        try:
+            settings.save(self.path,self.directory.text(),monthly_new_sheet_editable=self.monthly_new_sheet_editable.isChecked())
+            self.accept()
         except (OSError,ValueError) as exc:QMessageBox.warning(self,'设置未保存',str(exc))

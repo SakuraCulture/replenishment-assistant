@@ -37,23 +37,27 @@ class Identity(unittest.TestCase):
         old=[c.value for c in s[2]];s.delete_rows(2);s.append(old);b.save(self.path);b.close()
         d=self.read()[0];self.assertEqual([r['sku'] for r in d['scan']['rows']],['EXTRA','0001'])
         p=batch.prepare(self.f.path,[d]);self.assertEqual(p['plans'][0]['payload']['extra'],['EXTRA'])
-    def test_only_current_new_products_is_protected_in_both_export_modes(self):
+    def test_only_current_new_products_can_be_protected_in_both_export_modes(self):
         order=self.f.repo.get(wr.today(),'T')
+        original_rows=None
         for in_memory in (True,False):
-            with self.subTest(in_memory=in_memory):
+            for editable in (False,True):
                 resources=Mock(mode='ample')
                 resources.export_fits.return_value=in_memory
                 resources.description.return_value='隔离验收'
-                ne.export(order,self.path,warehouse='河北仓',resources=resources)
-                with closing(openpyxl.load_workbook(self.path)) as book:
+                ne.export(order,self.path,warehouse='河北仓',resources=resources,monthly_new_sheet_editable=editable)
+                with self.subTest(in_memory=in_memory,editable=editable),closing(openpyxl.load_workbook(self.path)) as book:
                     self.assertFalse(book.security.lockStructure)
-                    self.assertEqual([ws.title for ws in book if ws.protection.sheet],['本月新品'])
+                    self.assertEqual([ws.title for ws in book if ws.protection.sheet],[] if editable else ['本月新品'])
                     current=book['本月新品']
-                    self.assertTrue(current.protection.password)
+                    self.assertEqual(bool(current.protection.password),not editable)
                     self.assertTrue(current['Q1'].protection.locked)
                     self.assertFalse(current.protection.selectLockedCells)
-                    self.assertIn('只读',current['Q1'].comment.text)
+                    self.assertIn('门店可修改' if editable else '只读',current['Q1'].comment.text)
                     self.assertIn('门店可修改',book[ne.SHEETS[-1]]['Q1'].comment.text)
+                    rows={ws.title:list(ws.values) for ws in book}
+                    if original_rows is None:original_rows=rows
+                    self.assertEqual(rows,original_rows)
     def test_old_hidden_reference_rejects_new_revision(self):
         self.export();self.f.second_revision()
         with self.assertRaisesRegex(wr.Conflict,'原签发已变化'):batch.prepare(self.f.path,self.read())

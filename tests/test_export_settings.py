@@ -12,8 +12,21 @@ class ExportSettingsTests(unittest.TestCase):
     def test_first_read_has_no_write(self):
         self.assertEqual(settings.load(self.config),'');self.assertFalse(self.config.parent.exists())
     def test_save_reload_unicode_and_clear(self):
-        settings.save(self.config,str(self.target));self.assertEqual(settings.load(self.config),str(self.target.resolve()));self.assertEqual(json.loads(self.config.read_text(encoding='utf-8')),{'schema':1,'default_export_directory':str(self.target.resolve())});self.assertEqual(list(self.target.iterdir()),[])
+        settings.save(self.config,str(self.target));self.assertEqual(settings.load(self.config),str(self.target.resolve()));self.assertEqual(json.loads(self.config.read_text(encoding='utf-8')),{'schema':1,'default_export_directory':str(self.target.resolve()),'monthly_new_sheet_editable':False});self.assertEqual(list(self.target.iterdir()),[])
         settings.save(self.config,'');self.assertEqual(settings.load(self.config),'');self.assertTrue(self.target.exists())
+    def test_editability_defaults_to_read_only_and_round_trips(self):
+        database=self.config.parent/'workbench.sqlite3'
+        self.assertFalse(settings.monthly_new_sheet_editable(database))
+        self.config.parent.mkdir()
+        old={'schema':1,'default_export_directory':str(self.target)}
+        self.config.write_text(json.dumps(old),encoding='utf-8')
+        self.assertEqual(settings.load_preferences(self.config),settings.Preferences(str(self.target),False))
+        self.config.write_text(json.dumps({**old,'monthly_new_sheet_editable':'true'}),encoding='utf-8')
+        self.assertFalse(settings.monthly_new_sheet_editable(database))
+        for editable in (True,False):
+            settings.save(self.config,str(self.target),monthly_new_sheet_editable=editable)
+            self.assertIs(settings.monthly_new_sheet_editable(database),editable)
+            self.assertEqual(settings.load(self.config),str(self.target.resolve()))
     def test_invalid_directory_keeps_previous(self):
         settings.save(self.config,str(self.target));before=self.config.read_bytes();file=self.root/'file';file.write_text('original')
         for path in ('relative',str(self.root/'missing'),str(file)):

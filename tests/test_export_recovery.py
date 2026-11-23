@@ -36,15 +36,26 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(self.f.repo.headers(),before);self.assertEqual(export_files.sha256(self.target),checksum)
         self.assertEqual(len([e for e in self.f.repo.events() if e['action']=='带号导出']),1)
     def test_changed_file_is_kept_and_recovery_uses_original_revision(self):
+        from contextlib import closing
+        import export_settings,openpyxl,order_identity
+        config=self.f.path.parent/export_settings.FILENAME
+        export_settings.save(config,'',monthly_new_sheet_editable=True)
         normal_delivery.export_signed(self.f.repo,self.order,self.target,['河北仓'])
         task=receipts.recent(self.f.path)[0];self.target.write_bytes(b'user edited original')
+        self.assertTrue(task['monthly_new_sheet_editable'])
+        export_settings.save(config,'',monthly_new_sheet_editable=False)
         self.f.second_revision()
         review=recovery.inspect(self.f.path,task['id']);self.assertEqual(review['items'][0]['action'],'export')
         result=recovery.recover(self.f.path,review,[0],self.f.root)
         self.assertEqual(self.target.read_bytes(),b'user edited original')
-        import openpyxl,order_identity
-        book=openpyxl.load_workbook(result['paths'][0],read_only=True)
-        self.assertEqual(order_identity.read(book)[0]['revision'],1);book.close()
+        with closing(openpyxl.load_workbook(result['paths'][0])) as book:
+            self.assertEqual(order_identity.read(book)[0]['revision'],1)
+            self.assertFalse(book['本月新品'].protection.sheet)
+        manual=self.f.root/'history.xlsx'
+        normal_delivery.export_signed(self.f.repo,self.order,manual,['河北仓'])
+        with closing(openpyxl.load_workbook(manual)) as book:
+            self.assertEqual(order_identity.read(book)[0]['revision'],1)
+            self.assertTrue(book['本月新品'].protection.sheet)
         self.assertEqual(self.f.repo.headers()[0]['revision'],2)
     def test_unknown_commit_does_not_guess_a_revision(self):
         task=receipts.begin(self.f.path,'merchant',[{'path':str(self.target),'state':'未执行','stage':'准备','head':None}],signature='签发结果待核')

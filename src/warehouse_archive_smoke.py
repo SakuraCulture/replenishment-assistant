@@ -103,15 +103,36 @@ def start_smoke(app,win,args):
                     require(row['AU'] in dialog.model.default_sources[i],
                             row['E']+' 未勾选时仍按归属仓推荐首铺量')
             finally:dialog.reject();dialog.deleteLater()
-        def export_signed(saved,warehouse,expected_sku):
-            path=out/('签发单-'+warehouse+'.xlsx')
-            normal_exports.export(saved,path,warehouse=warehouse)
+        def signed_workbook(path,warehouse,expected_sku,editable):
             with closing(load_workbook(path)) as book:
-                require([ws.title for ws in book if ws.protection.sheet]==['本月新品'] and not book.security.lockStructure,
-                        warehouse+' 成品导出的签发单只保护本月新品，工作簿结构开放')
+                require([ws.title for ws in book if ws.protection.sheet]==([] if editable else ['本月新品'])
+                        and not book.security.lockStructure,
+                        warehouse+(' 补导后本月新品可编辑' if editable else ' 签发时只保护本月新品')+'，可新增工作表')
                 current=book['本月新品']
-                require(current['E2'].value==expected_sku and current['Q2'].protection.locked and current.protection.password,
-                        warehouse+' 本月新品商品与签发量保存在受保护的工作表中')
+                require(current['E2'].value==expected_sku and current['Q2'].value>0
+                        and bool(current.protection.password)==(not editable),warehouse+' 本月新品与签发数量正确')
+                return [(ws.title,[[(cell.value,cell.data_type,cell.number_format) for cell in row]
+                                    for row in ws.iter_rows()]) for ws in book]
+        def allow_editing():
+            from export_locations import ExportSettingsDialog
+            errors=[]
+            def save():
+                box=QApplication.activeModalWidget()
+                try:
+                    require(isinstance(box,ExportSettingsDialog),'顶部导出设置打开实际选项窗口')
+                    require(not box.monthly_new_sheet_editable.isChecked(),'首次打开默认只读')
+                    box.monthly_new_sheet_editable.click()
+                    box.grab().save(str(out/'导出设置.png'))
+                    box.save_btn.click()
+                except Exception:
+                    errors.append(traceback.format_exc())
+                    if box:box.reject()
+            QTimer.singleShot(0,save)
+            next(b for b in win.findChildren(QPushButton) if b.text()=='导出设置').click()
+            if errors:raise AssertionError(errors[0])
+            reloaded=ExportSettingsDialog(win)
+            try:require(reloaded.monthly_new_sheet_editable.isChecked(),'关闭并重开设置后仍允许编辑')
+            finally:reloaded.deleteLater()
         def calculate(primary,secondary=None):
             win.navigate(0)
             win.load_btn.click()
@@ -169,13 +190,16 @@ def start_smoke(app,win,args):
                 examine_selection(result,None,['@SD-new',sku])
                 frozen=win.snapshot()
                 planned=normal_delivery.prepare_batch(win.orders,frozen,[store])
-                win.orders.confirm(planned['payload'],[store],None,{store:None})
+                protected_folder=out/'默认签发';protected_folder.mkdir()
+                delivery=normal_delivery.execute_batch(win.orders,planned,protected_folder)
+                require(delivery['signed'] and len(delivery['paths'])==2,'成品签发生成两仓文件')
                 saved=win.orders.get(day,store)
                 basis=next(r['_meta']['warehouse_newness'] for r in saved['payload']['result']['rows'] if r['E']==sku)
                 require(basis==row['_meta']['warehouse_newness'] and saved['revision']==1,
                         '无人工关注清单即可签发，保存判定日、仓、资料版本和原首入库日期')
-                export_signed(saved,hb,sku)
-                export_signed(saved,sd,'@SD-new')
+                expected={hb:sku,sd:'@SD-new'}
+                originals={wh:signed_workbook(protected_folder/normal_exports.filename(saved,wh),wh,code,False)
+                           for wh,code in expected.items()}
                 before=projected(result); balances=allocated(result,{hb:hc,sd:sc})
                 swapped=calculate(sd,hb)
                 other=next(r for r in swapped['rows'] if r['E']==sku)
@@ -200,6 +224,17 @@ def start_smoke(app,win,args):
                         next(r['_meta']['warehouse_newness'] for r in history['payload']['result']['rows'] if r['E']==sku)==basis,
                         '换回旧资料后历史签发仍读取原仓日期和数量')
                 examine_history(hb,basis)
+                allow_editing()
+                editable_folder=out/'可编辑补导';editable_folder.mkdir()
+                for wh,code in expected.items():
+                    path=editable_folder/normal_exports.filename(history,wh)
+                    with patch('export_locations.save_file',return_value=(str(path),'Excel')):
+                        win.export_loaded_order({**history,'selected_warehouse':wh})
+                        wait_for(path.is_file,'等待原签发补导')
+                        idle()
+                    require(signed_workbook(path,wh,code,True)==originals[wh],
+                            wh+' 原签发与可编辑补导的单元格值、类型、格式及顺序一致')
+                require(win.orders.head(day,store)['revision']==1,'应用导出设置后补导沿用 V001')
                 changes=[item for item in zip(projected(without),before) if item[0]!=item[1]]
                 out_data={'passed':True,'frozen_exe':bool(getattr(sys,'frozen',False)),'checks':checks,
                           'hebei':hv,'shandong_isolated':sv,'same_set':before,'allocation':balances,

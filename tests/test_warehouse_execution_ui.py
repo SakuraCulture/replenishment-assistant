@@ -105,6 +105,9 @@ class WarehouseExecutionDelivery(unittest.TestCase):
 
     def test_actual_work_process_delivery_carries_the_same_selected_warehouse(self):
         from ui_work_io import Session
+        import export_settings
+        from openpyxl import load_workbook
+        export_settings.save(self.path.parent/export_settings.FILENAME,'',monthly_new_sheet_editable=True)
         before=copy.deepcopy(self.payload['results'])
         with Session(self.path) as session:
             slim=delivery.probe_payload(self.payload,['S1'])
@@ -114,6 +117,9 @@ class WarehouseExecutionDelivery(unittest.TestCase):
             session.call('delivery_expand',[tail,['S1']],lambda _:None)
             receipt=session.call('delivery_execute',str(self.output),lambda _:None)
         self.assertEqual(len(receipt['paths']),1)
+        with closing(load_workbook(receipt['paths'][0])) as book:
+            self.assertFalse(book['本月新品'].protection.sheet)
+            self.assertFalse(book.security.lockStructure)
         self.assertEqual([h['warehouse'] for h in self.child_heads()],['山东仓'])
         self.assertEqual(self.fixture.work.get_job(wr.today())['payload']['results'],before)
 
