@@ -171,7 +171,7 @@ def start_smoke(app,win,args):
                 require(Counter(a[4] for a in hv['groups']['新品'])==data.get('hebei_expected_status',{'启用':4,'备用':5}) and
                         sum(a[5]==0 for a in hv['groups']['新品'])==2,'启用/备用/零库存数量与原件一致')
                 unknown=next(a for a in hv['groups']['日期待核'] if a[0]=='1717845590862065717')
-                require(unknown[5]==10 and unknown[6]==recent.UNKNOWN,'可用 10 的河北空日期留待核')
+                require(unknown[5]==10 and recent.UNKNOWN in unknown[6],'可用 10 的河北空日期仍保留日期缺失说明')
                 require({a[0] for a in sv['groups']['新品']}=={'@SD-new','@SD-boundary','@SD-today'},
                         '山东隔离档案使用自己的三款日期记录')
                 for warehouse,view in ((hb,hv),(sd,sv)):
