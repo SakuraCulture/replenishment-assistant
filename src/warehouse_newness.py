@@ -9,11 +9,13 @@ CREATED = '商品创建日期'
 VIRTUAL_CATEGORY = '虚拟分类'
 AGE_LIMIT = 45
 LEGACY_RULE = 'warehouse-first-inbound-45d-v1'
-RULE = 'warehouse-first-inbound-45d-v2'
+SCREENED_RULE = 'warehouse-first-inbound-45d-v2'
+RULE = 'warehouse-first-inbound-45d-v3'
 MISSING_COLUMN = '该版本未提供首次入库日期'
 MISSING_VIRTUAL_CATEGORY = '仓资料未留存虚拟分类，请刷新或重新导入全商品档案'
 RETIRED = '仓资料虚拟分类为淘汰品'
 DISABLED = '仓商品资料禁用'
+STORE_CONSUMABLES = '仓商品分类为门店耗材'
 UNKNOWN = '首入库日期未知'
 INVALID = '首入库日期无效'
 FUTURE = '首入库日期晚于判定日'
@@ -55,12 +57,14 @@ def available(catalog):
     return catalog.get('kind') == 'jst_full_archive' and catalog.get('first_inbound_column') is True
 
 
-def exclusion(status, virtual_category):
+def exclusion(status, virtual_category, *, category=None):
     reasons = []
     if str(status or '').strip() == '禁用':
         reasons.append(DISABLED)
-    if any('淘汰' in category for category in tags(virtual_category)):
+    if any('淘汰' in tag for tag in tags(virtual_category)):
         reasons.append(RETIRED)
+    if str(category or '').strip() == '门店耗材':
+        reasons.append(STORE_CONSUMABLES)
     return '，'.join(reasons)
 
 
@@ -69,7 +73,7 @@ def source(catalog, item):
         return None
     return {'warehouse': catalog['warehouse'], 'catalog_revision': catalog['revision'],
             'raw': item.get(FIRST_INBOUND), 'created': item.get(CREATED),
-            'status': item.get('商品状态'),
+            'status': item.get('商品状态'), 'category': item.get('分类'),
             **({'virtual_category': item[VIRTUAL_CATEGORY]} if VIRTUAL_CATEGORY in item else {})}
 
 
@@ -81,7 +85,7 @@ def decide(evidence, day):
     warning = EARLY if first and created and first < created else ''
     issue = (UNKNOWN if blank(evidence['raw']) else INVALID if first is None else
              FUTURE if age < 0 else '')
-    excluded_reason = exclusion(evidence.get('status'), evidence.get('virtual_category'))
+    excluded_reason = exclusion(evidence.get('status'), evidence.get('virtual_category'), category=evidence.get('category'))
     screening_issue = MISSING_VIRTUAL_CATEGORY if 'virtual_category' not in evidence else ''
     return {**evidence, 'rule': RULE, 'day': day.isoformat(), 'first_date': first.isoformat() if first else None,
             'age': age, 'new': not (issue or excluded_reason or screening_issue) and age <= AGE_LIMIT,
@@ -92,7 +96,7 @@ def decide(evidence, day):
 def for_row(row, day=None):
     meta = row.get('_meta', {})
     basis = meta.get('warehouse_newness')
-    if (basis and basis.get('rule') in (LEGACY_RULE, RULE) and row.get('_source') == '资料匹配'
+    if (basis and basis.get('rule') in (LEGACY_RULE, SCREENED_RULE, RULE) and row.get('_source') == '资料匹配'
             and basis['warehouse'] == row.get('AU') and basis['catalog_revision'] == meta.get('product_revision')
             and (day is None or basis['day'] == day)):
         return basis

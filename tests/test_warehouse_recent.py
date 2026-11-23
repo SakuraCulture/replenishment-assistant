@@ -246,6 +246,39 @@ class ArchiveCatalog(unittest.TestCase):
         swapped=calculate(both,'山东仓','河北仓',profile=profile)['rows'][0]
         self.assertEqual((swapped['AU'],swapped['_new_requested']),('山东仓',24))
 
+    def test_store_consumables_are_screened_by_the_supply_warehouse_category(self):
+        hb_rows=archive_rows([
+            (CODE,DAY,'启用',30,'',None,18),
+            ('@named-consumable',DAY,'启用',30,'门店耗材',None,18),
+        ])
+        hb_rows[0]['产品分类']=' 门店耗材 '
+        hb_rows[1]['商品名']='名称中有门店耗材的测试商品'
+        hb=wc.import_catalog(write(self.root/'hb_category.xlsx',FIELDS,hb_rows),'河北仓')
+        sd=self.import_file('山东仓',[(CODE,DAY,'启用',30,'',None,24)])
+        catalogs={'河北仓':hb,'山东仓':sd}
+        sales=[sale(r['商品编码']) for r in hb_rows]
+        profile=monthly([CODE])
+
+        basis={item['商品编码']:value for item,value in recent.view(hb,DAY)}
+        self.assertEqual({sku for sku,value in basis.items() if value['new']},{'@named-consumable'})
+        self.assertEqual(basis[CODE]['excluded_reason'],'仓商品分类为门店耗材')
+        self.assertIn(CODE,hb['items'])
+        result=calculate(catalogs,'河北仓','山东仓',sales=sales,profile=profile)
+        excluded,ordinary=result['rows']
+        self.assertEqual((excluded['AU'],sem.order_quantity(excluded)),('河北仓',0))
+        self.assertEqual(recent.for_row(excluded)['excluded_reason'],basis[CODE]['excluded_reason'])
+        self.assertEqual((ordinary['E'],ordinary['_new_requested']),('@named-consumable',18))
+        self.assertEqual([(group,row['E']) for group,row in sem.signed_rows(result['rows'],profile)],
+                         [('本月新品','@named-consumable')])
+
+        swapped=calculate(catalogs,'山东仓','河北仓',sales=sales,profile=profile)['rows'][0]
+        self.assertEqual((swapped['AU'],swapped['_new_requested']),('山东仓',24))
+        for previous_rule in ('warehouse-first-inbound-45d-v1','warehouse-first-inbound-45d-v2'):
+            saved={**recent.for_row(swapped),'rule':previous_rule}
+            row={**swapped,'_meta':{**swapped['_meta'],'warehouse_newness':saved}}
+            self.assertEqual(recent.for_row(row),saved)
+            self.assertEqual(sem.new_product_group(row),'本月新品')
+
     def test_old_archive_without_virtual_category_waits_for_refresh(self):
         unloaded=self.import_file('河北仓',[(CODE,DAY,'启用',30,'',None,18)],
                                   [field for field in FIELDS if field!='虚拟分类'])
