@@ -86,11 +86,14 @@ class ArchiveCatalog(unittest.TestCase):
         rows=archive_rows(entries)
         rows[0]['产品分类']='分类-未设置'
         rows.append({'商品编码':'@pending','启用':'备用','可用数':0})
+        rows.append({'商品编码':'@pending-stock','启用':'备用','可用数':10,'主仓实际库存':10})
         path=write(self.root/'商品主题分析_全商品档案_20261122223244_211511244_1.xlsx',FIELDS,rows)
         data=wc.import_catalog(path,'河北仓')
-        self.assertEqual(data['source_rows'],8)
+        self.assertEqual(data['source_rows'],9)
         self.assertEqual(data['quarantined'][0]['商品编码'],'@pending')
         self.assertEqual(data['quarantined'][0]['reason'],wc.ORPHAN_REASON)
+        pending=data['quarantined'][1]
+        self.assertEqual((pending['商品编码'],pending['可用数'],pending['reason']),('@pending-stock',10,wc.ORPHAN_STOCK_REASON))
         self.assertEqual(data['source_observation']['taskId'],'211511244')
         self.assertEqual(list(data['items']),[e[0] for e in entries])
         first=data['items'][CODE]
@@ -136,7 +139,13 @@ class ArchiveCatalog(unittest.TestCase):
         self.assertEqual((parsed['raw_rows'],parsed['rows'],parsed['quarantined']),(2,1,1))
         data=catalog_sync_validation.candidate(parsed)
         self.assertEqual(data['source_observation']['taskId'],'211511244')
-        for bad in ({**receipt,'warehouse':'山东仓'},{**receipt,'query':{**receipt['query'],'excludeZero':True}}):
+        default={**receipt,'reportScope':'account_default'};del default['reportWarehouse']
+        default_request={**request,'evidence':default,'candidate':str(self.root/'default.json')}
+        observed=catalog_sync_validation.candidate(catalog_sync_validation.validate(default_request))['source_observation']
+        self.assertEqual(observed['reportScope'],'account_default')
+        self.assertNotIn('reportWarehouse',observed)
+        for bad in ({**receipt,'warehouse':'山东仓'},{**receipt,'query':{**receipt['query'],'excludeZero':True}},
+                    {**receipt,'reportScope':'account_default'},{**default,'reportScope':'unknown'}):
             with self.assertRaisesRegex(ValueError,'未通过核验'):
                 catalog_sync_validation.validate({**request,'evidence':bad})
 

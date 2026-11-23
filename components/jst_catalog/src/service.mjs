@@ -280,9 +280,13 @@ export class CatalogService {
       const archive=item.sourceFormat===ARCHIVE;
       const phase=async(stage,message)=>{this.active.phase={phase:stage,message,warehouse:a.warehouse,at:now()};};
       try{
-        const latest=this.store.read().accounts?.[a.warehouse];
+        const accounts=this.store.read().accounts||{};
+        const latest=accounts[a.warehouse];
         if(!latest||canonical(businessAccount(latest))!==canonical(a))throw new CatalogError('CONFIG_CHANGED','原任务账号配置已变化，未使用新账号执行');
         if(!latest.enabled)throw new CatalogError('ACCOUNT_DISABLED','本仓自动同步已停用；请先启用本仓再继续原任务，原任务和文件已保留');
+        if(archive&&(!item.native?.nativeTaskRef||item.native.scope?.reportScope==='account_default')
+          &&Object.values(accounts).some(other=>other.warehouse!==a.warehouse&&other.expectedCoid===a.expectedCoid))
+          throw new CatalogError('REPORT_SCOPE','两仓绑定同一聚水潭企业，无法区分默认库存归属，请核验分仓账号');
         if(['SUBMITTING','SUBMISSION_UNKNOWN'].includes(item.native?.stage))throw new CatalogError('SUBMISSION_UNKNOWN','原导出受理不明，请核对原任务，不自动重提');
         let validFile=false;
         if(item.native?.file)validFile=await fs.readFile(item.native.file).then(b=>sha(b)===item.native.sha256,()=>false);
