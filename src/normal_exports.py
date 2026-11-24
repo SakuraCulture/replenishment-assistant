@@ -96,8 +96,11 @@ def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,month
         if warehouse:
             parent=order['parent_number']
             for key,value in [('门店正常单号',parent),('供货仓',warehouse)]:wb.custom_doc_props.append(StringProperty(name=key,value=value))
+        detail_sheet = next((name for name, rows in grouped.items() if rows), None)
         for name,rows in grouped.items():
             ep.rows(progress,name,0,len(rows));ws=wb.create_sheet(name);ws.sheet_format.defaultColWidth=9;ws.sheet_format.defaultRowHeight=13.5
+            if name == detail_sheet:
+                wb.active = ws
             readonly_sheet=name=='本月新品' and not monthly_new_sheet_editable
             if readonly_sheet:
                 ws.protection.set_password(token_hex(16))

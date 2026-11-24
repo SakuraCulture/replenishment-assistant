@@ -85,6 +85,7 @@ class OrderExportPaths(unittest.TestCase):
                 outputs.append(lifecycle_batch.export_signed(f.path, [h], folder)[0])
         def saved(file):
             with closing(openpyxl.load_workbook(file)) as workbook:
+                self.assertEqual(workbook.active.title, normal_exports.SHEETS[-1])
                 return [(r[4], r[15], r[16]) for r in product_rows(workbook)], order_identity.read(workbook)[0]['revision']
         self.assertEqual(saved(outputs[1]), saved(legacy_file))
         self.assertEqual(saved(outputs[0]), ([('0001',7.99,48)], 2))

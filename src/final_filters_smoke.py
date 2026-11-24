@@ -92,9 +92,18 @@ def start_smoke(app,win,args):
             exports=out/'exports';exports.mkdir();batch=normal_delivery.prepare_batch(repository,payload,['QA1','QA2']);done=normal_delivery.execute_batch(repository,batch,exports)
             require(len(done['paths'])==2 and all(Path(p).is_file() for p in done['paths']),'Reviewed batch signs and exports both isolated stores')
             import openpyxl
-            for path in done['paths']:
+            from lifecycle_batch import export_signed
+            from normal_exports import SHEETS
+            originals=out/'original-signed';originals.mkdir()
+            selected=[head for order in done['orders'] for head in order['warehouse_heads']]
+            reexports=export_signed(win.work_repository.path,selected,originals)
+            require(len(reexports)==2,'Export of the two original signed revisions succeeds')
+            for path in [*done['paths'], *reexports]:
                 book=openpyxl.load_workbook(path,read_only=True)
-                try:require(bool(order_identity.read(book)),'Export retains hidden signed identity')
+                try:
+                    require(bool(order_identity.read(book)),'Export retains hidden signed identity')
+                    require(book.active.title==SHEETS[-1] and next(book.active.iter_rows(min_row=2, values_only=True),None),
+                            'Signed workbook opens on a sheet with product details')
                 finally:book.close()
             report={'passed':True,**diagnostic(),'checks':checks,'synthetic':True,'live_platform':False}
         except Exception:report={'passed':False,'checks':checks,'error':traceback.format_exc()}
