@@ -103,7 +103,7 @@ class Library(QDialog):
             if updated:
                 note += '引用了更新计划的定时补货需重新检查运行条件。'
             if not review_rows(self, '核对补货计划导入', ['计划', '变更', '原顺序', '新顺序', '门店', '参数或备注'],
-                               prepared['rows'], note, '确认保存计划'):
+                               prepared['rows'], note, '确认保存计划', widths=(165, 90, 90, 110, 280, 290)):
                 return
             run(self, tables.save, (self.repo.path, data, prepared, snapshot), '保存补货计划', cancellable=False)
             self.refresh()

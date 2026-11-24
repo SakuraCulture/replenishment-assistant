@@ -14,9 +14,11 @@ def show_rows(parent,title,headers,rows,note=''):
     table,model=grid(d,headers,rows);v.addWidget(table,1);v.addWidget(button('关闭',d.reject));d.exec()
 
 
-def review_rows(parent,title,headers,rows,note,accept_text):
+def review_rows(parent,title,headers,rows,note,accept_text,*,widths=()):
     d=QDialog(parent);d.setObjectName('interactionReview');d.setWindowTitle(title);d.resize(1100,700);v=QVBoxLayout(d);v.addWidget(label(note))
-    table,model=grid(d,headers,rows);v.addWidget(table,1);actions=QHBoxLayout();cancel=button('取消',d.reject);cancel.setDefault(True);actions.addWidget(cancel);actions.addWidget(button(accept_text,d.accept,True));v.addLayout(actions)
+    table,model=grid(d,headers,rows)
+    for index,width in enumerate(widths):table.setColumnWidth(index,width)
+    v.addWidget(table,1);actions=QHBoxLayout();cancel=button('取消',d.reject);cancel.setDefault(True);actions.addWidget(cancel);actions.addWidget(button(accept_text,d.accept,True));v.addLayout(actions)
     return d.exec()==QDialog.DialogCode.Accepted
 
 

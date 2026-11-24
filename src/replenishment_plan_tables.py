@@ -139,7 +139,7 @@ def prepare(data, snapshot, names):
     by_name, choices = defaultdict(list), defaultdict(list)
     active = presets.visible(snapshot)
     for value in snapshot['plans']:
-        by_name[value['name']].append(value)
+        by_name[_text(value['name'])].append(value)
     for item in active.values():
         choices[item['name']].append(item['id'])
 
@@ -178,7 +178,11 @@ def prepare(data, snapshot, names):
             previous = _choice_label(old_store, active)
             if old_store and previous != params:
                 params = f'{previous} → {params}'
-            action = '加入' if not old_store else '调整' if old_index != index or old_store != store else '保留'
+            action = '保留'
+            if not old_store:
+                action = '加入'
+            elif old_index != index or old_store != store:
+                action = '调整'
             review.append([name, action, old_index, index,
                            f"{store['name']} · {store['code']}",
                            params if base.get('parameter_mode') == presets.MODE else '沿用旧计划参数'])
@@ -208,9 +212,9 @@ def export(path, snapshot, progress=lambda _: None, cancel=None):
     for plan in snapshot['plans']:
         checkpoint(cancel)
         name = plan['name']
-        if name in plan_names:
+        if _text(name) in plan_names:
             raise ValueError(f'存在同名补货计划「{name}」，请更名后再导出可回导的计划表')
-        plan_names.add(name)
+        plan_names.add(_text(name))
         for order, store in enumerate(plan['stores'], 1):
             choice = ''
             if plan.get('parameter_mode') == presets.MODE:
