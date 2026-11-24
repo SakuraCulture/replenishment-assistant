@@ -66,7 +66,7 @@ def main():
     before, all_orders = orders(local.root), orders(source.root)
     selected = {oid: all_orders[oid] for oid in (source.oid, peer['oid'])}
     marker = {'synthetic': True, 'live_platform': False, 'selected_number': source.number,
-              'business_day': peer['day'], 'expected': {source.number: True, peer['number'] if 'number' in peer else all_orders[peer['oid']]['number']: False}}
+              'business_day': peer['day'], 'expected': {source.number: True, all_orders[peer['oid']]['number']: False}}
     results = []
     for mode in ('checked', 'by-date', 'full'):
         inputs = marker if mode != 'by-date' else {**marker, 'expected': {key: not value for key, value in marker['expected'].items()}}

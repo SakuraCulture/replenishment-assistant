@@ -9,7 +9,7 @@ import zipfile
 import order_migration
 import order_selection
 import order_merge_migration
-from merge_fixture import Order, file_hashes, second_order, shared_purchase
+from merge_fixture import Order, file_hashes, second_order, shared_batch, shared_purchase
 
 
 class OrderSelectionTests(unittest.TestCase):
@@ -81,3 +81,29 @@ class OrderSelectionTests(unittest.TestCase):
             db.execute('UPDATE purchase_files SET content=?', (b'damaged attachment',))
         with self.assertRaisesRegex(ValueError, '原件内容与SHA不一致'):
             order_selection.preview(self.source.root, (self.source.oid,), '')
+
+    def test_shared_allocation_and_purchase_expand_transitively(self):
+        unrelated = second_order(self.source, 'UNRELATED', day='2026-11-17')
+        shared_batch(self.source, self.outside)
+        scope = order_selection.preview(self.source.root, (self.other['oid'],), '')
+        self.assertEqual(set(scope['business']), {self.source.oid, self.other['oid'], self.outside['oid']})
+        self.assertNotIn(unrelated['oid'], scope['business'])
+        target = self.root / 'allocation.zip'
+        result = order_selection.export(self.source.root, target, scope)
+        self.assertEqual(result['manifest']['counts']['jst_generations'], 2)
+        plan = order_merge_migration.prepare(self.target.root, target)
+        self.assertEqual(plan['merge_report']['counts']['added'], 3)
+
+    def test_scoped_package_copies_export_receipt_as_original_bytes(self):
+        from export_receipts import begin, identity
+        signed = self.source.signed()
+        link = str(self.source.folder / '河北仓.xlsx')
+        begin(self.source.path, 'merchant', [{'path': link, 'state': '已生成', 'stage': '完成',
+                                             'head': identity(signed, '河北仓')}], signature='历史导出')
+        receipt = next((self.source.root / 'export_receipts').glob('*.json'))
+        expected = receipt.read_bytes()
+        scope = order_selection.preview(self.source.root, (self.source.oid,), '')
+        package = self.root / 'with-receipt.zip'
+        order_selection.export(self.source.root, package, scope)
+        with zipfile.ZipFile(package) as book:
+            self.assertEqual(book.read('export_receipts/' + receipt.name), expected)

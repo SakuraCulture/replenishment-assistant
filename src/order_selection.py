@@ -94,13 +94,6 @@ def _copy_originals(graph, stage, rows, included, cancel):
     references = set()
     for row in rows:
         references.update(row.refs)
-    for relative, (owners, refs, value) in graph.files.items():
-        if owners & included:
-            references.update(refs)
-            if not order_migration.owned(relative):
-                raise ValueError('导出恢复记录路径无效')
-            atomic_json(target / relative, value)
-
     def copy_file(relative):
         checkpoint(cancel)
         old, new = root / relative, target / relative
@@ -113,6 +106,13 @@ def _copy_originals(graph, stage, rows, included, cancel):
         if order_migration.file_hash(new) != digest or order_migration.file_hash(old) != digest:
             raise ValueError('关联原件在导出期间变化：' + relative)
         return digest
+
+    for relative, (owners, refs, _) in graph.files.items():
+        if owners & included:
+            references.update(refs)
+            if not order_migration.owned(relative):
+                raise ValueError('导出恢复记录路径无效')
+            copy_file(relative)
 
     paths, contents = {}, {}
     for old in sorted(references & graph.map.keys()):
