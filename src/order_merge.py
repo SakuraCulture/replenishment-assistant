@@ -496,6 +496,7 @@ def inspect(source_root,target_root,progress=lambda _:None,cancel=None):
 
 def _ensure_schema(src,dst,name,db,needed):
     needed=set(needed)
+    existing=dst.sql if dst is not None else {}
     if name==DBS[0]:
         # Readers test a family head table, then expect its companion tables.
         # Import empty schema companions too, without their global/local rows.
@@ -503,7 +504,7 @@ def _ensure_schema(src,dst,name,db,needed):
         prefixes={prefix for prefix in families if any(t.startswith(prefix) for t in needed)}
         needed.update(t for n,t in src.sql if n==name and any(t.startswith(prefix) for prefix in prefixes))
     for table in needed:
-        if (name,table) in dst.sql:continue
+        if (name,table) in existing:continue
         db.execute(src.sql[name,table])
         for typ,n,sql in src.connections[name].execute("SELECT type,name,sql FROM sqlite_master WHERE tbl_name=? AND type='index' AND sql IS NOT NULL",(table,)):
             db.execute(sql)
@@ -511,7 +512,7 @@ def _ensure_schema(src,dst,name,db,needed):
     if name in DBS[1:]:
         for table in src.columns:
             n,t=table
-            if n!=name or t in needed or (n,t) in dst.sql:continue
+            if n!=name or t in needed or (n,t) in existing:continue
             db.execute(src.sql[n,t])
             for _,sql in src.connections[n].execute("SELECT name,sql FROM sqlite_master WHERE tbl_name=? AND type='index' AND sql IS NOT NULL",(t,)):db.execute(sql)
         if name in DBS[1:3]:
@@ -536,6 +537,19 @@ def _ensure_schema(src,dst,name,db,needed):
             if local and [tuple(v) for v in local]!=[tuple(v) for v in versions]:raise ValueError('组件命令协议版本不兼容，未合并')
             if not local:
                 for v in versions:db.execute('INSERT INTO machine_protocol VALUES(?)',(v[0],))
+
+
+def checked_blobs(source,row):
+    values={}
+    for col in row.blob:
+        raw=(io_path(source.root)/row.origin_file).read_bytes() if row.origin_file else source.connections[row.db].execute('SELECT '+q(col)+' FROM '+q(row.table)+' WHERE rowid=?',(row.rid,)).fetchone()[0]
+        if row.table in ASSETS and hashlib.sha256(raw).hexdigest()!=row.values['sha']:raise ValueError('原件摘要校验失败：'+row.table)
+        if row.table=='snapshot_chunks':
+            import zlib
+            plain=zlib.decompress(raw)
+            if hashlib.sha256(plain).hexdigest()!=row.values['hash'] or len(plain)!=row.values['size']:raise ValueError('快照内容块校验失败')
+        values[col]=raw
+    return values
 
 def _pause(row):
     out=dict(row.values)
@@ -592,14 +606,7 @@ def merge(source_root,private_target,expected_report=None,progress=lambda _:None
                             if values.get('state') in ACTIVE|{'PREPARED'}:values['state']='PAUSED'
                             changed=machines.get(values['id'])
                             if changed and changed[1] is not None:values.update(record=changed[0]['payload'],state=changed[0]['state'],sequence=changed[0]['sequence'])
-                        for col in r.blob:
-                            raw=(source_io/r.origin_file).read_bytes() if r.origin_file else src.connections[name].execute('SELECT '+q(col)+' FROM '+q(r.table)+' WHERE rowid=?',(r.rid,)).fetchone()[0]
-                            if r.table in ASSETS and hashlib.sha256(raw).hexdigest()!=r.values['sha']:raise ValueError('原件摘要校验失败：'+r.table)
-                            if r.table=='snapshot_chunks':
-                                import zlib
-                                plain=zlib.decompress(raw)
-                                if hashlib.sha256(plain).hexdigest()!=r.values['hash'] or len(plain)!=r.values['size']:raise ValueError('快照内容块校验失败')
-                            values[col]=raw
+                        values.update(checked_blobs(src,r))
                         if r.table in EVENTS:values.pop('id',None)
                         # A duplicate dependency is skipped only after explicit
                         # preflight equality, never a wildcard OR IGNORE.

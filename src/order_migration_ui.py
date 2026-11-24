@@ -73,7 +73,7 @@ def open_migration(parent,host):
             from order_merge_migration import prepare
             from order_migration import discard
             from order_merge_ui import review
-            path,_=QFileDialog.getOpenFileName(d,'选择要合并的完整订单迁移包','','Zip (*.zip)')
+            path,_=QFileDialog.getOpenFileName(d,'选择要合并的订单迁移包','','Zip (*.zip)')
             if not path:return
             plan=None
             try:
@@ -101,5 +101,16 @@ def open_migration(parent,host):
             value=latest(host.repository.folder)
             QMessageBox.information(d,'上次迁入结果',('尚无新的迁入状态记录。旧的临时目录不代表迁入完成。' if value is None else f"状态：{value['state']} / {value['phase']}\n"+value.get('error',{}).get('message','')+f"\n迁入材料：{value['stage']}\n完整备份：{value['backup']}")+f'\n诊断：{folder(host.repository.folder)}\n失败后可重新校验原迁移包；不会自动重放。')
         v.addWidget(button('合并导入订单（保留本机）…',merge_orders,True))
+        def selected():
+            from order_selection_ui import open_selection
+            try:
+                idle(host)
+                checked={row['oid'] for row in getattr(parent,'checked',{}).values() if 'oid' in row}
+                open_selection(d,host,checked)
+            except Cancelled:return
+            except Exception as exc:QMessageBox.warning(d,'所选订单迁移未打开',str(exc))
+        selection_button=button('按业务日或勾选订单导出迁移包…',selected)
+        selection_button.setObjectName('exportOrderSelection')
+        v.addWidget(selection_button)
         v.addWidget(button('导出完整订单迁移包…',save));v.addWidget(button('校验并导入完整订单迁移包…',restore));v.addWidget(label('上方“校验并导入完整订单迁移包”是完整替换恢复，会替换订单及参数；日常汇入请使用“合并导入”。','muted'));v.addWidget(button('查看上次迁入结果与原始错误',previous));v.addWidget(button('导出全部门店参数与预案…',parameters));v.addWidget(button('关闭',d.reject));d.exec()
     return guarded(parent,host,show)

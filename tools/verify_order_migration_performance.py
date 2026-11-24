@@ -54,15 +54,11 @@ def orders(root):
         return result
 
 
-def create_fixture(root, count, row_count):
+def add_load(source, count, row_count):
     import normal_orders
-    import order_migration
     import result_semantics
     from work_repository import now
 
-    root.mkdir(parents=True, exist_ok=False)
-    seeded = seed(root)
-    source = seeded['source']
     with closing(sqlite3.connect(source.path)) as db, db:
         for index in range(count):
             code = f'LOAD{index:03}'
@@ -81,6 +77,15 @@ def create_fixture(root, count, row_count):
                        (source.day, code, 'normal_model', oid, f'BH-20261113-{code}-ZC', 1))
             db.execute('INSERT INTO normal_revisions VALUES(?,?,?,?,?)',
                        (oid, 1, normal_orders.fingerprint_owned(result), now(), normal_orders.encode(payload, db)))
+
+
+def create_fixture(root, count, row_count):
+    import order_migration
+
+    root.mkdir(parents=True, exist_ok=False)
+    seeded = seed(root)
+    source = seeded['source']
+    add_load(source, count, row_count)
     package = root / 'comparison.zip'
     exported = order_migration.export(source.root, package)
     source_orders, target_orders = orders(source.root), orders(root / 'settings')
