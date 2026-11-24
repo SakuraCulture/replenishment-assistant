@@ -134,7 +134,7 @@ class WorkbenchPresets(unittest.TestCase):
 class ScheduledPresets(unittest.TestCase):
     def test_scheduler_uses_per_store_configs_and_detects_later_change(self):
         from test_scheduled_replenishment import fixture
-        import scheduled_execution as se,batch_service
+        import scheduled_execution as se,batch_service,priority_list
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);work,s,oldbasis,catalogs,manifest=fixture(root)
             oldbasis=se.freeze(root,s,'2026-11-05')
@@ -146,9 +146,11 @@ class ScheduledPresets(unittest.TestCase):
             self.assertEqual(basis['jobs']['B']['parameter_config']['warehouses']['山东仓'],[3,2])
             self.assertEqual(basis['jobs']['A']['parameter_config'],oldbasis['jobs']['A']['parameter_config'])
             loaded=batch_service.load([i['file'] for i in manifest['files']],catalogs)
-            got=batch_service.calculate_store(loaded,'B',basis['jobs']['B'],basis['profile'])
+            # Execution rebuilds the must-sell profile after the warehouse catalogs arrive.
+            profile=priority_list.catalog_profile(catalogs)
+            got=batch_service.calculate_store(loaded,'B',basis['jobs']['B'],profile)
             expected_settings=copy.deepcopy(oldbasis['jobs']['B']);expected_settings['parameter_config']=c;expected_settings['warehouses']=c['warehouses'];expected_settings['parameter_signature']=schema.signature(c)
-            expected=batch_service.calculate_store(loaded,'B',expected_settings,basis['profile'])
+            expected=batch_service.calculate_store(loaded,'B',expected_settings,profile)
             self.assertEqual(got['rows'],expected['rows']);self.assertEqual(got['summary'],expected['summary'])
             before=se.check_signature(basis);c['warehouses']['山东仓']=[12,5];pp.save(work,'长周期',c,p['id'])
             self.assertNotEqual(before,se.check_signature(se.freeze(root,s,'2026-11-05')))

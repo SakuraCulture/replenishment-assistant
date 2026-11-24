@@ -65,6 +65,8 @@ def start_smoke(app,win,args):
                         if d.icon()==QMessageBox.Icon.Warning:errors.append(d.text())
                         d.accept()
                     elif d.objectName()=='interactionReview':
+                        if d.windowTitle()=='核对补货计划导入' and not cancel:
+                            require(d.grab().save(str(out/'04-批量导入预览.png')),'Plan preview screenshot failed')
                         if cancel:d.reject()
                         else:d.accept()
                 except Exception:errors.append(traceback.format_exc());d.reject()
@@ -115,6 +117,37 @@ def start_smoke(app,win,args):
             require(win.config_for('A')['warehouses']['山东仓'][0]==5,'Plan not applied')
             require(win.config_for('B')['parameters']['probability']==.8,'Plan overrode unrelated common value')
             checks.append('预案保存、重新读取并采用，仅应用勾选字段')
+            import parameter_presets as presets
+            import replenishment_plan_tables as plan_tables
+            from unittest.mock import patch
+            bulk=out/'补货计划批量导入.xlsx'
+            named=win.work_repository.save_preset('合成参数预案',win.config_for('B'))
+            book=import_templates.make_workbook(plan_tables.KIND,blank_rows=0)
+            sheet=book[plan_tables.SHEET]
+            sheet.append(['河北线','A','测试A',20])
+            sheet.append(['山东线','A','测试A'])
+            sheet.append(['河北线','B','测试B',10,named['name']])
+            import_templates.save_workbook(book,bulk)
+            maintenance=Library(win);dialogs.append(maintenance)
+            active_before=copy.deepcopy(win.active_plan)
+            defaults_before=win.work_repository.stores()
+            plans_before=maintenance.repo.list()
+            drive(lambda:click(maintenance,'批量导入补货计划'),cancel=True,paths=[str(bulk)])
+            require(maintenance.repo.list()==plans_before,'Cancelled plan import wrote plans')
+            drive(lambda:click(maintenance,'批量导入补货计划'),paths=[str(bulk)])
+            imported={p['name']:p for p in maintenance.repo.list()}
+            require(set(imported)=={'测试预案','河北线','山东线'},'Unexpected plan names')
+            require([(r['code'],r['preset_id']) for r in imported['河北线']['stores']]==[('B',named['id']),('A',None)],
+                    'Imported plan order or parameter selection differs')
+            require(win.work_repository.stores()==defaults_before and win.active_plan==active_before,
+                    'Plan import changed current job or store defaults')
+            checks.append('计划库批量导入两份计划，预览取消后无写入，确认后保留逐店顺序和参数选择')
+            exported=out/'补货计划回导.xlsx'
+            with patch('export_locations.save_file',return_value=(str(exported),'')):
+                drive(lambda:click(maintenance,'导出补货计划表'))
+            prepared=plan_tables.prepare(plan_tables.read([exported]),presets.snapshot(win.work_repository),plans.available(win))
+            require(prepared['unchanged']==3 and not prepared['edits'],'Exported plan did not round trip')
+            checks.append('同一软件入口导出的三份新旧计划可回导，重复导入无变化')
             frozen=copy.deepcopy(win.snapshot());before=copy.deepcopy(win.config_for('A'))
             snap=pm.mapping_snapshot(win.work_repository.path);pm.save_mapping(win.work_repository.path,{'休闲食品':'快销'},snap)
             win.restore_job({'day':today(),'saved':now(),'payload':frozen});require(win.config_for('A')==before,'Restored snapshot changed')
@@ -122,6 +155,9 @@ def start_smoke(app,win,args):
             require(win.config_for('A')['warehouses']['河北仓'][0]==7,'New job missed imported default')
             checks.append('恢复旧作业保留快照；新建重新检查带入新映射和已保存门店默认')
             for kind in ('classified_parameters','common_parameters','global_category_mapping'):import_templates.write(kind,out/(kind+'.xlsx'))
+            from priority_list import catalog_profile
+            win.profile=catalog_profile({'山东仓':{'warehouse':'山东仓','revision':'synthetic',
+                                                   'items':{'1001':{'商品标签':''}}}})
             win.concurrency.setValue(2);win.start_calculation(['A','B'])
             require(win.worker is not None,'Calculation did not start')
             wait(lambda:win.worker is None,45)

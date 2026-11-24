@@ -40,24 +40,43 @@ class Repository:
             if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='replenishment_plans'").fetchone():return []
             return [validate(json.loads(row[0])) for row in db.execute('SELECT payload FROM replenishment_plans ORDER BY created,id')]
     def save(self,value,expected=None):
+        return self.save_batch([(value, expected)])[0]
+    def save_batch(self, edits, *, expected_snapshot=None):
+        """Save reviewed plans and their audit events together."""
         from storage_chunks import backup_before_write
-        value=copy.deepcopy(value);value['config']=complete(value['config']);validate(value)
-        value.pop('_resolved_presets',None)
-        value=json.loads(dumps(value))  # Same JSON containers as subsequent reloads.
-        stamp=now();value.update(id=expected['id'] if expected else uuid.uuid4().hex,revision=expected['revision']+1 if expected else 1,
-                                updated=stamp,created=expected['created'] if expected else stamp,standard_version=system_standard.VERSION)
+        from parameter_presets import MODE, check, read, resolve
+        stamp = now()
+        prepared = []
+        for value, expected in edits:
+            value = copy.deepcopy(value)
+            value['config'] = complete(value['config'])
+            validate(value)
+            value.pop('_resolved_presets', None)
+            value = json.loads(dumps(value))  # Same JSON containers as subsequent reloads.
+            value.update(id=expected['id'] if expected else uuid.uuid4().hex,
+                         revision=expected['revision']+1 if expected else 1,
+                         updated=stamp, created=expected['created'] if expected else stamp,
+                         standard_version=system_standard.VERSION)
+            prepared.append((value, expected))
+        if not prepared:
+            return []
         backup_before_write(self.path,lambda _:None)
         with closing(sqlite3.connect(self.path,timeout=10)) as db,db:
             db.execute('BEGIN IMMEDIATE');self.schema(db)
-            if value.get('parameter_mode')=='per_store_presets':
-                from parameter_presets import read,resolve
-                data=read(db)
-                for item in value['stores']:
-                    if item.get('preset_id'):resolve(data,item['preset_id'])
-            if expected is not None:self.check(db,expected)
-            db.execute('INSERT INTO replenishment_plans VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload',(value['id'],value['created'],dumps(value)))
-            self.event(db,'保存',expected,value)
-        return copy.deepcopy(value)
+            data = read(db) if expected_snapshot is not None or any(v.get('parameter_mode') == MODE for v, _ in prepared) else None
+            check(data, expected_snapshot)
+            for value, expected in prepared:
+                if value.get('parameter_mode') == MODE:
+                    for item in value['stores']:
+                        if item.get('preset_id'):
+                            resolve(data, item['preset_id'])
+                if expected is not None:
+                    self.check(db, expected)
+            for value, expected in prepared:
+                db.execute('INSERT INTO replenishment_plans VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload',
+                           (value['id'], value['created'], dumps(value)))
+                self.event(db, '保存' if expected_snapshot is None else '批量导入', expected, value)
+        return [value for value, _ in prepared]
     def delete(self,expected):
         from storage_chunks import backup_before_write
         backup_before_write(self.path,lambda _:None)

@@ -67,7 +67,7 @@ class Library(QDialog):
         v=QVBoxLayout(self);v.addWidget(label('补货预案保存门店名单及各店的参数选择。采用后冻结本次配置，不自动取数、计算或签发。','section'))
         self.table=QTableWidget(0,4);self.table.setHorizontalHeaderLabels(['计划','门店数','更新时间','周期摘要']);self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows);self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.setColumnWidth(0,210);self.table.setColumnWidth(2,180);self.table.horizontalHeader().setStretchLastSection(True);v.addWidget(self.table,1)
         row=QHBoxLayout();row.addWidget(button('新建补货计划',lambda:self.edit(new=True)));row.addWidget(button('编辑选中计划',self.edit));row.addWidget(button('复制选中计划',lambda:self.edit(copying=True)));row.addWidget(button('删除选中计划',self.remove));v.addLayout(row)
-        v.addWidget(button('将旧预案改为逐店选择参数',self.convert))
+        row=QHBoxLayout();row.addWidget(button('批量导入补货计划',self.import_table));row.addWidget(button('导出补货计划表',self.export_table));row.addWidget(button('将旧预案改为逐店选择参数',self.convert));v.addLayout(row)
         row=QHBoxLayout();row.addWidget(button('关闭',self.reject))
         if select:row.addWidget(button('采用到本次作业',self.adopt,True))
         v.addLayout(row);self.refresh()
@@ -79,6 +79,64 @@ class Library(QDialog):
         if self.values:self.table.selectRow(0)
     def current(self):
         r=self.table.currentRow();return self.values[r] if 0<=r<len(self.values) else None
+    def import_table(self):
+        from business_ui import run
+        from import_ui import choose
+        import parameter_presets as presets
+        import replenishment_plan_tables as tables
+        from runtime_support import Cancelled
+
+        paths = choose(self, tables.KIND, title='批量导入补货计划', multiple=True)
+        if not paths:
+            return
+        try:
+            data = run(self, tables.read, (paths,), '读取并校验补货计划')
+            snapshot = presets.snapshot(self.host.work_repository)
+            prepared = tables.prepare(data, snapshot, plans.available(self.host))
+            if not prepared['edits']:
+                QMessageBox.information(self, '补货计划无变化', f'表中的 {prepared["unchanged"]} 份计划与已保存的计划一致。')
+                return
+            created = sum(old is None for _, old in prepared['edits'])
+            updated = len(prepared['edits']) - created
+            note = (f'新建 {created} 份、更新 {updated} 份、无变化 {prepared["unchanged"]} 份。\n'
+                    '同名计划按表中完整名单和顺序保存。')
+            if updated:
+                note += '引用了更新计划的定时补货需重新检查运行条件。'
+            if not review_rows(self, '核对补货计划导入', ['计划', '变更', '原顺序', '新顺序', '门店', '参数或备注'],
+                               prepared['rows'], note, '确认保存计划'):
+                return
+            run(self, tables.save, (self.repo.path, data, prepared, snapshot), '保存补货计划', cancellable=False)
+            self.refresh()
+            QMessageBox.information(self, '补货计划已导入', f'已新建 {created} 份、更新 {updated} 份。')
+        except Cancelled:
+            return
+        except Exception as exc:
+            QMessageBox.warning(self, '补货计划未导入', str(exc))
+
+    def export_table(self):
+        from business_ui import run
+        import export_locations
+        import parameter_presets as presets
+        import replenishment_plan_tables as tables
+        from runtime_support import Cancelled
+
+        if not self.values:
+            QMessageBox.information(self, '暂无计划', '请先新建或导入补货计划。')
+            return
+        path, _ = export_locations.save_file(self, '导出可回导的补货计划', '补货计划.xlsx', 'Excel (*.xlsx)')
+        if not path:
+            return
+        try:
+            if not path.lower().endswith('.xlsx'):
+                path += '.xlsx'
+            snapshot = presets.snapshot(self.host.work_repository)
+            saved = run(self, tables.export, (path, snapshot), '导出补货计划表')
+            QMessageBox.information(self, '补货计划已导出', saved)
+        except Cancelled:
+            return
+        except Exception as exc:
+            QMessageBox.warning(self, '补货计划未导出', str(exc))
+
     def edit(self,*,new=False,copying=False):
         value=None if new else self.current()
         if not new and value is None:return
