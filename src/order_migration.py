@@ -18,7 +18,7 @@ FORMAT='replenishment-orders/1'
 SELECTION_FORMAT='replenishment-order-selection/1'
 ROOT_FILES={'workbench.sqlite3','workbench.json','must_sell.json','store_budgets.json','new_product_focus.json','store_supply.json'}
 DERIVED={'archive_index.sqlite3','lifecycle_index.sqlite3'}
-DBS={'workbench.sqlite3','aoxiang/workflows.sqlite3','aoxiang/jobs.sqlite3','aoxiang/component-state/state.sqlite'}
+DBS={'workbench.sqlite3','timed_reports.sqlite3','aoxiang/workflows.sqlite3','aoxiang/jobs.sqlite3','aoxiang/component-state/state.sqlite'}
 STATE_FILES={'state.sqlite','state.guard.json'}
 STATE_DIRS={'command-files','downloads','assets','reports','purchase-files','purchase-creates','purchase-receipts','exports','evidence','receipts'}
 JST_FILES={'jobs.json','store.guard.json'}
@@ -401,6 +401,18 @@ def pause_imported(root):
             for ident,raw in db.execute('SELECT id,payload FROM scheduled_arrangements').fetchall():
                 value=json.loads(raw)
                 if value.get('enabled'):audit.append({'table':'scheduled_arrangements','id':ident,'enabled':True});value.update(enabled=False,next_at=None);db.execute('UPDATE scheduled_arrangements SET payload=? WHERE id=?',(encoded(value),ident))
+    timed=Path(root)/'timed_reports.sqlite3'
+    if timed.is_file():
+        with closing(sqlite3.connect(timed)) as db,db:
+            pause(db,'timed_runs','id',active=('QUEUED','RUNNING','WAITING'))
+            if not db.execute("SELECT 1 FROM sqlite_master WHERE name='timed_plans'").fetchone():
+                raise ValueError('定时导出计划资料结构不完整')
+            for ident,raw in db.execute('SELECT id,payload FROM timed_plans').fetchall():
+                value=json.loads(raw)
+                if value.get('enabled'):
+                    audit.append({'table':'timed_plans','id':ident,'enabled':True})
+                    value.update(enabled=False,next_at=None)
+                    db.execute('UPDATE timed_plans SET next_at=NULL,payload=? WHERE id=?',(encoded(value),ident))
     workflows=Path(root)/'aoxiang'/'workflows.sqlite3'
     if workflows.exists():
         with closing(sqlite3.connect(workflows)) as db,db:

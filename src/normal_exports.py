@@ -20,6 +20,13 @@ AUDIT_HEADERS=['补货单号','决策理由']
 MERCHANT_AUDIT_HEADERS=['决策理由']
 SHEETS=list(sem.SIGNED_GROUPS)
 TEMPLATE_SHA256='1cc7a8e9f99fec764d17286c6b0a028a7ea79416add7178a64e91512f311f7c6'
+FORMAT_VERSION='merchant-signing-1'
+
+
+def output_profile(order, editable):
+    return {'format_version': FORMAT_VERSION, 'template_sha256': TEMPLATE_SHA256,
+            'monthly_new_sheet_editable': bool(editable),
+            'revision_state': '历史修订' if order['revision'] != order['current_revision'] else '当前修订'}
 
 
 def filename(order,warehouse=None,*,store_name=None):
@@ -79,7 +86,8 @@ class _ExportPressure(Exception):
     pass
 
 
-def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,monthly_new_sheet_editable,streamed):
+def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,monthly_new_sheet_editable,streamed,
+                    *, return_book=False):
     from engine import checkpoint
     from xlsx_exports import stream_book
     owner=stream_book() if streamed else closing(Workbook())
@@ -93,6 +101,8 @@ def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,month
         wb.properties.title=order['number']+' '+rev;wb.properties.subject='内部签发建议，非实际采购订单'
         wb.properties.description='仅中心仓商品。'+edit_note+'数量为库存单位，价格为基本售价。'
         for key,value in [('补货单号',order['number']),('修订',rev),('模板SHA256',TEMPLATE_SHA256),('版本状态','历史修订' if historical else '当前修订')]:wb.custom_doc_props.append(StringProperty(name=key,value=value))
+        for key,value in [('签发输出格式',FORMAT_VERSION),('本月新品可编辑','是' if monthly_new_sheet_editable else '否')]:
+            wb.custom_doc_props.append(StringProperty(name=key,value=value))
         if warehouse:
             parent=order['parent_number']
             for key,value in [('门店正常单号',parent),('供货仓',warehouse)]:wb.custom_doc_props.append(StringProperty(name=key,value=value))
@@ -146,9 +156,31 @@ def _write_workbook(order,grouped,path,cancel,progress,warehouse,resources,month
         import order_identity
         identities=[order_identity.entry(order,warehouse,name) for name in grouped]
         order_identity.write(wb,identities)
+        if return_book:
+            return wb
         progress('数据行写入完成，正在压缩保存确认单；此阶段暂不能中断…')
         with stage('压缩保存 Excel（完成后响应取消）',progress):wb.save(path)
     return identities
+
+
+def returned_template(order, warehouse, progress, cancel):
+    """Reuse the signed layout in memory when one warehouse workbook fits."""
+    from warehouse_orders import child_number, partitions
+    result, profile = order['payload']['result'], order['payload'].get('new_focus')
+    focus.require_for(profile, order['day'], [result])
+    grouped = partitions(result, profile).get(warehouse)
+    if grouped is None:
+        raise ValueError('该修订没有可导出的' + warehouse + '商品')
+    resources = Budget()
+    cells = sum(len(rows) + 1 for rows in grouped.values()) * len(HEADERS + MERCHANT_AUDIT_HEADERS)
+    if not resources.export_fits(cells):
+        return None
+    child = {**order, 'parent_number': order['number'], 'number': child_number(order['number'], warehouse)}
+    try:
+        return _write_workbook(child, grouped, None, cancel, progress, warehouse, resources,
+                               False, False, return_book=True)
+    except (_ExportPressure, MemoryError):
+        return None
 
 
 def export(order,path,cancel=None,progress=lambda s:None,*,warehouse=None,resources=None,monthly_new_sheet_editable=False):

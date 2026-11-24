@@ -118,6 +118,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.browser_status=BrowserStatus(self)
         from scheduled_ui import Manager as ScheduledManager
         self.scheduled=ScheduledManager(self,hv)
+        from timed_workbench_ui import Manager as TimedWorkbench
+        self.timed_workbench=TimedWorkbench(self,nav)
         hv.addStretch(1)
         self.home_tasks.refresh_timer.start(0)
 
@@ -278,6 +280,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         if analytics and not analytics.prepare_close():event.ignore();return
         scheduled=getattr(self,'scheduled',None)
         if scheduled and not scheduled.prepare_close():event.ignore();return
+        timed=getattr(self,'timed_workbench',None)
+        if timed and not timed.prepare_close():event.ignore();return
         indicator=getattr(self,'browser_status',None)
         if indicator and not indicator.prepare_close():event.ignore();return
         fulfillment=getattr(self,'jst_fulfillment_runner',None)
@@ -320,6 +324,7 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             if stockout:stockout.resume_after_cancelled_close()
             if warehouse_stockout:warehouse_stockout.resume_after_cancelled_close()
             if scheduled:scheduled.resume_after_cancelled_close()
+            if timed:timed.resume_after_cancelled_close()
             axmanager.resume_after_cancelled_close()
             if indicator:indicator.resume()
             if fulfillment:fulfillment.resume_after_cancelled_close()

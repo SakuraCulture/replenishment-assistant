@@ -17,7 +17,7 @@ class PrefixBook:
         return self.book.create_sheet(title=name,**kwargs)
 
 
-def export(root,args,cancel,progress):
+def export(root,args,cancel,progress,*,stores=None,warehouses=None):
     mode=args['mode']
     if mode not in ('store','warehouse','both'):raise ValueError('导出范围无效')
     target=Path(args['destination']).resolve()
@@ -31,14 +31,14 @@ def export(root,args,cancel,progress):
                 from stockout_exports import _write
                 from stockout_metrics import validate
                 from stockout_views import combinations
-                repo=Repository(root)
+                repo=stores or Repository(root)
                 if not repo.path.exists():raise ValueError('尚无门店分析资料；可单独选择大仓导出')
                 combos=[] if args.get('include_detail') and args['store_combinations']==[] else combinations(args['store_combinations'])
                 _write(PrefixBook(book,'门店_'),repo,validate(args['store_query']),args.get('include_detail',False),combos,cancel,progress)
             if mode!='store':
                 from warehouse_stockout import Repository
                 from warehouse_stockout_exports import write_report
-                repo=Repository(root)
+                repo=warehouses or Repository(root)
                 if not repo.path.exists():raise ValueError('尚无大仓分析资料；可单独选择门店导出')
                 write_report(PrefixBook(book,'大仓_'),repo,args['warehouse_query'],args['warehouse_combinations'],include_detail=args.get('include_detail',False),cancel=cancel,progress=progress)
             checkpoint(cancel);progress('正在保存统一缺货率报表');book.save(temp);checkpoint(cancel);publish_new(temp,target)

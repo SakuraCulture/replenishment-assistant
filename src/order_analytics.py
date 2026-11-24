@@ -281,6 +281,13 @@ def build_facts(order, head, view, evidence, cancel=None, *, spec=None, mode='fu
         if ordered:
             row['payment_valid']=bool(view['health']['payment'] and (
                 paid_rows.get(sku,{}).get('base_quantity') is not None or payment['payload'].get('schema')==lifecycle.SCHEMA))
+        if mode=='business_daily':
+            row['order_values']={}
+            for stage in ('return','payment'):
+                if not row['valid'][stage]:
+                    continue
+                value=num(maps[stage].get(sku,{}).get('amount'))
+                row['order_values'][stage]=Decimal(0) if value is None and quantities[stage]==0 else value
         if mode=='analysis_detail':
             set_operations(row,view,maps.get('operations',{}).get(sku,{}))
             if not retain_detail_row(row):continue

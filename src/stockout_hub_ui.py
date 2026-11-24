@@ -26,7 +26,10 @@ class Page(QWidget):
             except (ValueError,OSError,AttributeError,TypeError):self.preference_error='上次范围偏好未读取，请重新选择；分析结果未变。'
         self.collect=button('按所选范围采集',self.start_collect,True);row.addWidget(self.collect)
         self.stop=button('安全暂停',lambda:entry.pause());row.addWidget(self.stop)
-        self.background=QCheckBox('离开后继续');self.background.toggled.connect(self.background_changed);row.addWidget(self.background)
+        self.background=QCheckBox('离开后继续')
+        active = entry.worker and entry.worker.operation == 'hub_collect'
+        self.background.setChecked(entry.background if active else entry.manual_background)
+        self.background.toggled.connect(self.background_changed);row.addWidget(self.background)
         row.addWidget(button('每日计划',self.schedule));v.addLayout(row)
         row=QHBoxLayout();self.scope=label('门店范围沿用下方已采用设置；仓勾选为大仓输出范围','muted');row.addWidget(self.scope)
         self.runs=QComboBox();self.runs.setMinimumWidth(200);row.addWidget(self.runs,1)
@@ -34,13 +37,21 @@ class Page(QWidget):
         self.end=button('结束本地准备',self.end_run);row.addWidget(self.end)
         self.reuse=button('原仓资料补算大仓',self.reuse_run);row.addWidget(self.reuse)
         self.export_btn=button('统一导出',self.export);row.addWidget(self.export_btn);v.addLayout(row)
+        daily=QHBoxLayout()
+        daily.addWidget(button('门店缺货率日报（经营版）', self.operating_report))
+        daily.addStretch()
+        v.addLayout(daily)
         self.tabs=QTabBar();self.tabs.addTab('门店缺货');self.tabs.addTab('大仓缺货');v.addWidget(self.tabs)
         self.body=QVBoxLayout();v.addLayout(self.body,1);self.note=label('按需加载；固定剔除虚拟分类淘便考核','muted');v.addWidget(self.note)
         self.tabs.setCurrentIndex(1 if getattr(entry,'initial_kind','store')=='warehouse' else 0)
         self.tabs.currentChanged.connect(self.show_child);self.show_child(self.tabs.currentIndex())
         self.runs.currentIndexChanged.connect(self.show_run_state)
     def background_changed(self,value):
-        if self.entry.worker:self.entry.background=value
+        self.entry.set_manual_background(value)
+
+    def operating_report(self):
+        date = self.queries.get('store', {}).get('end', today())
+        self.host.timed_workbench.edit('business_daily', dates=[date, date], manual=True)
     def show_child(self,index):
         kind='store' if index==0 else 'warehouse'
         if self.current==kind:return
@@ -76,7 +87,7 @@ class Page(QWidget):
         self.resume.setEnabled(not busy and self.runs.currentData() is not None);self.end.setEnabled(not busy and self.runs.currentData() is not None);self.reuse.setEnabled(not busy and self.runs.currentData() is not None)
     def refresh_metadata(self):self.entry.start('hub_open',{},self.metadata)
     def metadata(self,value):
-        self.metadata_value=value;prior=self.runs.currentData();self.runs.blockSignals(True);self.runs.clear()
+        self.metadata_value=value;prior=self.runs.currentData() or self.entry.selected_run;self.runs.blockSignals(True);self.runs.clear()
         for r in value['runs']:
             state={'PREPARED':'待开始','RUNNING':'进行中','COMPLETE':'全部完成','PARTIAL':'部分完成','PAUSED':'已暂停','REVIEW':'需继续核对','ENDED':'已结束'}.get(r['state'],r['state'])
             self.runs.addItem(r['created'][5:16]+' · '+state+' · '+str(len(r['stores']))+'店 / '+str(len(r['warehouses']))+'仓',r['id'])
@@ -86,7 +97,9 @@ class Page(QWidget):
         self.controls()
     def show_run_state(self,*_):
         row=next((r for r in self.metadata_value.get('runs',[]) if r['id']==self.runs.currentData()),None)
-        if row:self.completed(row)
+        if row:
+            self.entry.selected_run=row['id']
+            self.completed(row)
         elif self.preference_error:self.note.setText(self.preference_error)
     def selected(self):return [w for w,b in self.warehouses.items() if b.isChecked()]
     def start_collect(self):

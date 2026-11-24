@@ -109,6 +109,8 @@ WINDOW_SMOKES = {
     '--lifecycle-preflight-smoke': 'lifecycle_preflight_smoke',
     '--return-save-smoke': 'return_save_smoke',
     '--lifecycle-performance-smoke': 'lifecycle_perf_smoke',
+    '--joint-export-smoke': 'joint_export_smoke',
+    '--joint-reports-smoke': 'joint_reports_smoke',
     '--lifecycle-followup-smoke': 'lifecycle_followup_smoke',
     '--lifecycle-recovery-smoke': 'lifecycle_recovery_smoke',
     '--jst-batch-recovery-smoke': 'jst_batch_recovery_smoke',

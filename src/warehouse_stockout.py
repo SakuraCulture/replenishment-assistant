@@ -210,7 +210,12 @@ def query(repo,options):
     clause,values=where(options)
     with repo.connect() as db:
         totals=metric(db.execute('SELECT '+SUMS+LINK+'WHERE '+clause,values).fetchone())
-        totals['coverage']=[dict(r) for r in db.execute('SELECT s.day,s.warehouse,s.observed,s.rows FROM current c JOIN snapshots s ON c.snapshot=s.id WHERE s.day BETWEEN ? AND ? ORDER BY s.day,s.warehouse',(options['start'],options['end']))]
+        coverage='s.day BETWEEN ? AND ?';scope=[options['start'],options['end']]
+        for key in ('warehouse','day'):
+            selected=options.get('filters',{}).get(key)
+            if selected:
+                coverage+=f" AND s.{key} IN ({','.join('?' for _ in selected)})";scope.extend(selected)
+        totals['coverage']=[dict(r) for r in db.execute('SELECT s.day,s.warehouse,s.observed,s.rows FROM current c JOIN snapshots s ON c.snapshot=s.id WHERE '+coverage+' ORDER BY s.day,s.warehouse',scope)]
     return totals
 
 

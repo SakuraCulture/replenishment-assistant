@@ -41,9 +41,23 @@ class Child(BaseEntry):
 class Entry(BaseEntry):
     nav_text='缺货率'
     def __init__(self,host):
+        from stockout_common import read_json
+        self.preferences=host.repository.folder/'analysis'/'stockout-background.json'
+        self.manual_background=False
+        self.selected_run=None
+        if self.preferences.is_file():
+            try:self.manual_background=read_json(self.preferences,8192).get('continue_after_leaving') is True
+            except (ValueError,OSError,AttributeError):pass
         self.children={};super().__init__(host)
         self.children={'store':Child(host,self,'store'),'warehouse':Child(host,self,'warehouse')}
         host.stockout=self.children['store'];host.warehouse_stockout=self.children['warehouse']
+    def set_manual_background(self,value):
+        from stockout_common import atomic_json
+        self.manual_background=value
+        if self.worker and self.worker.operation=='hub_collect':
+            self.background=value
+        try:atomic_json(self.preferences,{'continue_after_leaving':value})
+        except OSError as exc:self.status(str(exc))
     def make_page(self):
         from stockout_hub_ui import Page
         return Page(self.host,self)

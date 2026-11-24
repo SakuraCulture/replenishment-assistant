@@ -72,6 +72,11 @@ def collect_catalogs(repo,rid,rpc,cancel,progress,*,warehouses=None,loader=load_
         del validated
         from catalog_binding_guard import adoption_guard
         with adoption_guard(root,batch,item,cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+            from stockout_common import digest
+            verified=repo.run(rid)['external'];sources=verified.setdefault('catalog_sources',{})
+            sources[wh]={'source_sha256':receipt['source_sha256'],'batch':bid,'item':item['id'],
+                         'account':digest([account['expectedCoid'],account['expectedUid']])}
+            repo.change(rid,external=verified)
             sha=loader(repo,receipt['source'],wh,expected=receipt['source_sha256'],expected_rows=receipt['rows'],cancel=cancel,progress=progress)
         if 'current_catalog_digest' in (item.get('observation') or {}) and not item.get('adoption'):
             publication=rpc('publish_current_catalog',batch_id=bid,item_id=item['id'])

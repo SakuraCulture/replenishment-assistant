@@ -221,7 +221,7 @@ class LifecycleWidget(QWidget):
         heads=list(self.checked.values())
         if not heads:QMessageBox.information(self,'请选择订单','先勾选要导出的订单。');return
         folder=export_locations.initial_directory(self)
-        if not confirm(self,'导出签发单','每店每仓一份原签发文件，同名文件直接覆盖，不重新签发。\n'+'\n'.join(h['number'] for h in heads)+'\n导出位置：'+folder):return
+        if not confirm(self,'导出签发单','按所选仓单及原修订导出。符合条件的原件直接复用，遇同名业务文件另存。\n'+'\n'.join(h['number'] for h in heads)+'\n导出位置：'+folder):return
         try:
             files=run(self,lifecycle_batch.export_signed,(self.host.work_repository.path,heads,folder),'导出签发单')
             from readable_ui import file_results
