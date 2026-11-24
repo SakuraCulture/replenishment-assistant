@@ -12,6 +12,7 @@ from stockout_common import atomic_json,now,resource_check
 import order_migration as migration
 from migration_paths import io_path
 from order_migration_browsers import copy_local_tree, require_closed
+from io_stages import stage as measure
 
 
 def prepare(root,package,progress=lambda _:None,cancel=None):
@@ -39,10 +40,11 @@ def _clone(root,new,progress):
                 db.execute('BEGIN IMMEDIATE')
         except sqlite3.DatabaseError as exc:raise ValueError('本机订单或关联任务仍被写入，未合并；请安全结束原任务后重试') from exc
         progress('复制本机资料至独立合并副本；原目录保持')
-        copy_local_tree(root,new,ignore=ignore)
-        for name in databases:
-            progress('备份并完整校验本机数据库：'+name)
-            migration.db_copy(root/name,new/name,main=name=='workbench.sqlite3',progress=progress)
+        with measure('migration.apply.copy_local'):
+            copy_local_tree(root,new,ignore=ignore)
+            for name in databases:
+                progress('备份并完整校验本机数据库：'+name)
+                migration.db_copy(root/name,new/name,main=name=='workbench.sqlite3',progress=progress)
         yield locks
 
 
@@ -50,7 +52,7 @@ def apply(plan):
     root=migration.checked_plan(plan);stage=Path(plan['stage']);new=Path(plan['new']);backup=Path(plan['backup'])
     if plan.get('mode')!='merge' or not isinstance(plan.get('merge_report'),dict):raise ValueError('合并预览凭据缺失，未写入资料')
     if not stage.is_dir() or new.exists() or backup.exists():raise ValueError('合并工作目录已变化，原资料保持')
-    migration.verify_stage(stage,plan['manifest']['entries'])
+    with measure('migration.apply.revalidate'):migration.verify_stage(stage,plan['manifest']['entries'])
     from migration_status import record
     from order_merge import merge
     with _exclusive(root):
@@ -59,15 +61,16 @@ def apply(plan):
         record(plan,'APPLYING',phase='COPYING')
         with _clone(root,new,lambda message:record(plan,'APPLYING',phase='COPYING')) as locks:
             record(plan,'APPLYING',phase='MERGING')
-            result=merge(stage,new,expected_report=plan['merge_report'],final_root=root)
+            with measure('migration.apply.write'):result=merge(stage,new,expected_report=plan['merge_report'],final_root=root)
             # A second complete check is independent of graph insertion logic.
-            verified=new/'workbench.sqlite3.merge-verified'
-            migration.db_copy(new/'workbench.sqlite3',verified,main=True);verified.unlink()
-            for name in migration.DBS-{'workbench.sqlite3'}:
-                path=new/name
-                if path.is_file():
-                    with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as db:
-                        if db.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise ValueError('合并副本数据库校验失败：'+name)
+            with measure('migration.apply.final_check'):
+                verified=new/'workbench.sqlite3.merge-verified'
+                migration.db_copy(new/'workbench.sqlite3',verified,main=True);verified.unlink()
+                for name in migration.DBS-{'workbench.sqlite3'}:
+                    path=new/name
+                    if path.is_file():
+                        with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as db:
+                            if db.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise ValueError('合并副本数据库校验失败：'+name)
             reports=new/'order-merge-reports';reports.mkdir(exist_ok=True)
             receipt={'nonce':plan['nonce'],'at':now(),'mode':'merge','package_sha256':plan['package_sha256'],'backup':str(backup),'scope':'只新增无冲突订单；完全重复跳过，冲突保留本机；不补齐、不覆写','report':result}
             atomic_json(reports/(plan['nonce']+'.json'),receipt)
@@ -76,7 +79,8 @@ def apply(plan):
             # instance lease remains exclusive until publication completes.
             locks.close()
             record(plan,'APPLYING',phase='REPLACING');atomic_json(migration.journal(root),plan)
-            try:root.rename(backup);new.rename(root)
+            try:
+                with measure('migration.apply.switch'):root.rename(backup);new.rename(root)
             except BaseException:
                 if migration.journal(root).exists():migration._recover(root)
                 raise

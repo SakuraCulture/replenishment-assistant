@@ -11,6 +11,7 @@ from runtime_support import Cancelled,checkpoint
 from application_reset import validate_root
 from migration_paths import io_path
 from order_migration_browsers import copy_local_tree, require_closed
+from io_stages import stage as measure
 
 FORMAT='replenishment-orders/1'
 ROOT_FILES={'workbench.sqlite3','workbench.json','must_sell.json','store_budgets.json','new_product_focus.json','store_supply.json'}
@@ -57,10 +58,13 @@ def db_copy(source,target,*,main=False,cancel=None,progress=lambda _:None):
     target.parent.mkdir(parents=True,exist_ok=True)
     if main:
         from storage_maintenance import backup
-        value=backup(source,target,progress,cancel);verify_originals(target,cancel);return value
+        value=backup(source,target,progress,cancel)
+        with measure('migration.verify.originals'):verify_originals(target,cancel)
+        return value
     with closing(sqlite3.connect(Path(source).resolve().as_uri()+'?mode=ro',uri=True)) as src,closing(sqlite3.connect(target)) as dst:
-        src.backup(dst,pages=1024,progress=lambda *_:checkpoint(cancel))
-        if dst.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise ValueError('数据库完整性校验失败：'+Path(source).name)
+        with measure('migration.sqlite.copy'):src.backup(dst,pages=1024,progress=lambda *_:checkpoint(cancel))
+        with measure('migration.verify.sqlite'):
+            if dst.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise ValueError('数据库完整性校验失败：'+Path(source).name)
     return {}
 
 def verify_originals(path,cancel=None):
@@ -81,6 +85,7 @@ def info(path):
             if table in tables:counts[table]=db.execute('SELECT count(*) FROM '+table).fetchone()[0]
     return counts
 
+@measure('migration.export.references')
 def referenced_files(root,dbpath,cancel):
     """Inspect bounded content blocks; originals inside source_files stay in DB."""
     result=set()
@@ -118,6 +123,7 @@ def referenced_files(root,dbpath,cancel):
                         if isinstance(raw,str):scan(json.loads(raw))
     return result
 
+@measure('migration.export.total')
 def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=None):
     from version_info import VERSION,MODEL_VERSION
     from export_progress import RowProgress
@@ -183,7 +189,7 @@ def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=N
                 'counts':info(work/'workbench.sqlite3'),'entries':entries,'external_map':external,'missing_external':missing,
                 'excluded':'浏览器登录、机器连接配置、凭据、AI密钥、独立缺货率分析、缓存及旧备份'}
             progress('正在压缩迁移包…')
-            with zipfile.ZipFile(temp,'x',compression=zipfile.ZIP_DEFLATED,compresslevel=3,allowZip64=True) as book:
+            with measure('migration.export.pack'),zipfile.ZipFile(temp,'x',compression=zipfile.ZIP_DEFLATED,compresslevel=3,allowZip64=True) as book:
                 book.writestr('manifest.json',encoded(manifest))
                 for index,entry in enumerate(entries):
                     checkpoint(cancel)
@@ -218,26 +224,30 @@ def manifest(path):
             if not Path(old).is_absolute() or new not in paths or not owned(new):raise ValueError('原文件迁移映射无效')
     return value
 
+@measure('migration.prepare.total')
 def prepare(root,package,progress=lambda _:None,cancel=None,*,mode='replace'):
     if mode not in ('replace','merge'):raise ValueError('未知的订单导入方式')
     root=validate_root(root);require_closed(root,progress,cancel)
-    package=Path(package).resolve();before=file_hash(package);value=manifest(package)
+    package=Path(package).resolve()
+    with measure('migration.prepare.package'):before=file_hash(package);value=manifest(package)
     resource_check(root.parent,sum(e['size'] for e in value['entries'])*2)
     nonce=uuid.uuid4().hex;stage=root.with_name('.'+root.name+'.order-import-'+nonce)
     stage_io=io_path(stage);stage_io.mkdir()
     try:
-        with zipfile.ZipFile(package) as book:
+        with measure('migration.prepare.unpack'),zipfile.ZipFile(package) as book:
             for entry in value['entries']:
                 checkpoint(cancel);target=stage_io/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);h=hashlib.sha256();progress('校验并准备：'+entry['path'])
                 with book.open(entry['path']) as source,target.open('xb') as dst:
                     while block:=source.read(512*1024):checkpoint(cancel);h.update(block);dst.write(block)
                     dst.flush();os.fsync(dst.fileno())
                 if h.hexdigest()!=entry['sha256']:raise ValueError('迁移包内容校验失败：'+entry['path'])
-        for entry in value['entries']:
-            if entry['path'] in DBS:
-                db=stage/entry['path'];verified=db.with_name(db.name+'.verified')
-                db_copy(db,verified,main=entry['path']=='workbench.sqlite3',cancel=cancel,progress=progress);verified.unlink()
-        if file_hash(package)!=before:raise ValueError('迁移包在读取期间变化，未准备导入')
+        with measure('migration.prepare.databases'):
+            for entry in value['entries']:
+                if entry['path'] in DBS:
+                    db=stage/entry['path'];verified=db.with_name(db.name+'.verified')
+                    db_copy(db,verified,main=entry['path']=='workbench.sqlite3',cancel=cancel,progress=progress);verified.unlink()
+        with measure('migration.prepare.package'):
+            if file_hash(package)!=before:raise ValueError('迁移包在读取期间变化，未准备导入')
         contents={}
         for entry in value['entries']:contents.setdefault(entry['sha256'],[]).append(entry['path'])
         atomic_json(stage/'迁入原文件映射.json',{'version':1,'paths':value.get('external_map',{}),'contents':contents})
@@ -245,7 +255,8 @@ def prepare(root,package,progress=lambda _:None,cancel=None,*,mode='replace'):
                 'new':str(root.with_name('.'+root.name+'.order-new-'+nonce)),'nonce':nonce,'package':str(package),'package_sha256':before,'manifest':value}
         if mode=='merge':
             from order_merge import inspect
-            plan['mode']='merge';plan['merge_report']=inspect(stage,root,progress,cancel)
+            plan['mode']='merge'
+            with measure('migration.prepare.compare'):plan['merge_report']=inspect(stage,root,progress,cancel)
         from migration_status import record
         record(plan,'PREPARED');return plan
     except BaseException:shutil.rmtree(stage_io);raise
@@ -359,7 +370,7 @@ def _apply(plan):
     root=checked_plan(plan);stage=Path(plan['stage']);backup=Path(plan['backup']);new=Path(plan['new'])
     from application_reset import _exclusive,_check_other_processes
     if not stage.is_dir() or backup.exists() or new.exists():raise ValueError('导入准备或目标目录已变化，原资料未替换')
-    verify_stage(stage,plan['manifest']['entries'])
+    with measure('migration.apply.revalidate'):verify_stage(stage,plan['manifest']['entries'])
     root_io,stage_io,new_io=map(io_path,(root,stage,new))
     with _exclusive(root):
         from migration_status import record
@@ -388,16 +399,17 @@ def _apply(plan):
                 if p.is_file() and (owned(relative) or relative in DERIVED or relative in {db+suffix for db in DBS|DERIVED for suffix in ('-wal','-shm','-journal')}):ignored.append(name)
             return ignored
         record(plan,'APPLYING',phase='COPYING')
-        copy_local_tree(root,new,ignore=ignore)
+        with measure('migration.apply.copy_local'):copy_local_tree(root,new,ignore=ignore)
         try:
-            for entry in plan['manifest']['entries']:
-                target=new_io/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(stage_io/entry['path'],target)
-            shutil.copyfile(stage/'迁入原文件映射.json',new/'迁入原文件映射.json');pause_imported(new)
-            restore_catalog(new,root,plan['manifest'],catalog_local)
-            restore_export_receipts(new,root)
+            with measure('migration.apply.write'):
+                for entry in plan['manifest']['entries']:
+                    target=new_io/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(stage_io/entry['path'],target)
+                shutil.copyfile(stage/'迁入原文件映射.json',new/'迁入原文件映射.json');pause_imported(new)
+                restore_catalog(new,root,plan['manifest'],catalog_local)
+                restore_export_receipts(new,root)
             atomic_json(new/'订单迁入完成.json',{'nonce':plan['nonce'],'at':now(),'package_sha256':plan['package_sha256'],'backup':str(backup),'scope':plan['manifest']['scope']})
             record(plan,'APPLYING',phase='REPLACING');atomic_json(journal(root),plan)
-            root.rename(backup);new.rename(root)
+            with measure('migration.apply.switch'):root.rename(backup);new.rename(root)
         except BaseException:
             if journal(root).exists():_recover(root)
             raise
@@ -408,11 +420,12 @@ def apply(plan):
     from migration_status import record,latest
     checked_plan(plan);record(plan,'APPLYING',phase='VALIDATING')
     try:
-        if plan.get('mode')=='merge':
-            from order_merge_migration import apply as merge_apply
-            return merge_apply(plan)
-        if plan.get('mode','replace')!='replace':raise ValueError('未知的订单导入方式')
-        return _apply(plan)
+        with measure('migration.apply.total'):
+            if plan.get('mode')=='merge':
+                from order_merge_migration import apply as merge_apply
+                return merge_apply(plan)
+            if plan.get('mode','replace')!='replace':raise ValueError('未知的订单导入方式')
+            return _apply(plan)
     except BaseException as exc:
         value=latest(plan['root'])
         if value and value['nonce']==plan['nonce'] and value['state']=='COMPLETED':
