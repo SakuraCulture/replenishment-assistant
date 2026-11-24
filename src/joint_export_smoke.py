@@ -59,7 +59,6 @@ def start_smoke(app, win, args):
         worker_results = []
         errors = []
         handled = set()
-        stages = []
 
         def start(value):
             nonlocal began
@@ -71,6 +70,15 @@ def start_smoke(app, win, args):
             start('confirmed-actual-qt-scope-and-output-directory')
             return destination
 
+        def stage_export(dialog):
+            try:
+                assert len(dialog.panel.checked) == count
+                press(dialog, '导出门店回传单' if mode=='return' else '导出运营签发单')
+            except Exception:
+                errors.append(traceback.format_exc())
+            finally:
+                dialog.reject()
+
         def tick():
             nonlocal recorded
             try:
@@ -80,10 +88,9 @@ def start_smoke(app, win, args):
                 title = active.windowTitle()
                 if isinstance(active, StageDialog) and active.panel.table.isEnabled():
                     handled.add(active)
-                    assert len(active.panel.checked) == count
-                    stages.append(active)
-                    press(active, '导出门店回传单' if mode=='return' else '导出运营签发单')
-                    active.reject()
+                    # Start outside this timer's handler so its next tick can
+                    # drive the actual nested export dialogs.
+                    QTimer.singleShot(0, active, lambda dialog=active:stage_export(dialog))
                 elif isinstance(active, QInputDialog):
                     handled.add(active)
                     assert title=='选择导出方式'
