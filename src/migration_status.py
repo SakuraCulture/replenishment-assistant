@@ -1,10 +1,10 @@
 """A sibling handoff record survives UI destruction and directory replacement."""
-import json,traceback
+import json,time,traceback
 from pathlib import Path
 from stockout_common import atomic_json,now
 
 def folder(root):return Path(root).resolve().parent/('.'+Path(root).name+'.order-migrations')
-def record(plan,state,*,phase=None,error=None,result=None):
+def record(plan,state,*,phase=None,error=None,result=None,progress=None):
     from order_migration import checked_plan
     root=checked_plan(plan);dest=folder(root);dest.mkdir(parents=True,exist_ok=True);name=plan['nonce']
     original=dest/(name+'.plan.json')
@@ -13,8 +13,31 @@ def record(plan,state,*,phase=None,error=None,result=None):
     value={'nonce':name,'state':state,'phase':phase or state,'at':now(),'root':str(root),'stage':plan['stage'],'backup':plan['backup'],'plan_file':str(original)}
     if error is not None:value['error']={'type':type(error).__name__,'message':str(error),'traceback':''.join(traceback.format_exception(type(error),error,error.__traceback__))}
     if result is not None:value['result']=result
-    value['history']=[*previous.get('history',[]),{k:value[k] for k in ('state','phase','at')}][-80:]
-    atomic_json(file,value);atomic_json(dest/'latest.json',{'nonce':name});return value
+    if progress is not None:value['progress']=progress
+    history=previous.get('history',[])
+    if (previous.get('state'),previous.get('phase'))!=(state,value['phase']):
+        history=[*history,{k:value[k] for k in ('state','phase','at')}][-80:]
+    value['history']=history
+    atomic_json(file,value)
+    pointer=dest/'latest.json'
+    try:latest_nonce=json.loads(pointer.read_text('utf-8')).get('nonce')
+    except (OSError,ValueError,AttributeError):latest_nonce=None
+    if latest_nonce!=name:atomic_json(pointer,{'nonce':name})
+    return value
+
+
+def reporter(plan,phase):
+    """Persist running activity at most once a second; transitions bypass this."""
+    from export_progress import RowProgress
+    last=None
+    def report(message):
+        nonlocal last
+        at=time.monotonic()
+        if last is not None and at-last<1:return
+        detail={'label':str(message)}
+        if isinstance(message,RowProgress):detail.update(current=message.current,total=message.total)
+        record(plan,'APPLYING',phase=phase,progress=detail);last=at
+    return report
 def latest(root):
     dest=folder(root);pointer=dest/'latest.json'
     if not pointer.is_file():return None

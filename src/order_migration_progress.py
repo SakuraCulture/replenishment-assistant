@@ -25,6 +25,7 @@ PHASES = {
     'WAITING_LOCKS': '核对资料占用',
     'COPYING': '复制本机资料',
     'MERGING': '合并订单并校验',
+    'FINAL_CHECK': '校验写入后的独立副本',
     'REPLACING': '切换正式订单库',
     'CLEANUP_PENDING': '已写入，临时资料待清理',
 }
@@ -188,6 +189,11 @@ def dialog(root, operation, writer_state):
                 elapsed = str(timedelta(seconds=int(time.monotonic() - self.started)))
                 activity = ('后台进程运行中' if live == 'RUNNING' else '后台进程状态待核对')
                 activity += ' · 已用时 ' + elapsed
+                current = self.value.get('progress', {})
+                if current.get('label'):
+                    activity += '\n' + current['label']
+                    if 'current' in current:
+                        activity += f" · {current['current']:,} / {current['total']:,}"
             if stale:
                 detail = '\n'.join(filter(None, (detail, '暂未读取到最新迁入记录。', read_error)))
             self.activity.setText(activity)

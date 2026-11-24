@@ -54,12 +54,30 @@ def tree(root):
             if owned(path.relative_to(root).as_posix()):result.append(path)
     return sorted(result)
 
-def db_copy(source,target,*,main=False,cancel=None,progress=lambda _:None):
+def _readonly(path,*,standalone=False):
+    path=Path(path).resolve()
+    sidecar=any(io_path(str(path)+suffix).exists() for suffix in ('-wal','-shm','-journal'))
+    if sidecar and standalone:raise ValueError('暂存数据库带有未列入包的日志文件：'+path.name)
+    return sqlite3.connect(path.as_uri()+'?mode=ro'+('' if sidecar else '&immutable=1'),uri=True)
+
+
+def verify_database(path,*,main=False,cancel=None,progress=lambda _:None,standalone=False):
+    from storage_maintenance import verify,verify_integrity
+    checkpoint(cancel)
+    with closing(_readonly(path,standalone=standalone)) as db:
+        db.execute('BEGIN')
+        if main:
+            verify(db,progress,cancel)
+            verify_originals(db,cancel)
+        else:verify_integrity(db,'数据库完整性校验失败：'+Path(path).name)
+
+
+def db_copy(source,target,*,main=False,cancel=None,progress=lambda _:None,observe_block=None):
     target.parent.mkdir(parents=True,exist_ok=True)
     if main:
         from storage_maintenance import backup
-        value=backup(source,target,progress,cancel)
-        with measure('migration.verify.originals'):verify_originals(target,cancel)
+        value=backup(source,target,progress,cancel,observe_block=observe_block)
+        with closing(_readonly(target)) as db:verify_originals(db,cancel)
         return value
     with closing(sqlite3.connect(Path(source).resolve().as_uri()+'?mode=ro',uri=True)) as src,closing(sqlite3.connect(target)) as dst:
         with measure('migration.sqlite.copy'):src.backup(dst,pages=1024,progress=lambda *_:checkpoint(cancel))
@@ -67,8 +85,8 @@ def db_copy(source,target,*,main=False,cancel=None,progress=lambda _:None):
             if dst.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise ValueError('数据库完整性校验失败：'+Path(source).name)
     return {}
 
-def verify_originals(path,cancel=None):
-    with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
+def verify_originals(db,cancel=None):
+    with measure('migration.verify.originals'):
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         for table in ('source_files','purchase_files'):
             if table not in tables:continue
@@ -85,16 +103,19 @@ def info(path):
             if table in tables:counts[table]=db.execute('SELECT count(*) FROM '+table).fetchone()[0]
     return counts
 
+def _add_file_references(value,result):
+    if isinstance(value,dict):
+        for v in value.values():_add_file_references(v,result)
+    elif isinstance(value,list):
+        for v in value:_add_file_references(v,result)
+    elif isinstance(value,str) and len(value)<32768 and Path(value).is_absolute() and Path(value).suffix.lower() in SUFFIXES:result.add(value)
+
+
 @measure('migration.export.references')
-def referenced_files(root,dbpath,cancel):
-    """Inspect bounded content blocks; originals inside source_files stay in DB."""
-    result=set()
-    def scan(value):
-        if isinstance(value,dict):
-            for v in value.values():scan(v)
-        elif isinstance(value,list):
-            for v in value:scan(v)
-        elif isinstance(value,str) and len(value)<32768 and Path(value).is_absolute() and Path(value).suffix.lower() in SUFFIXES:result.add(value)
+def referenced_files(root,dbpath,cancel,*,checked_blocks=(),references=()):
+    """Inspect all original reference locations, including unreferenced chunks."""
+    result=set(references)
+    def scan(value):_add_file_references(value,result)
     for path in tree(root):
         checkpoint(cancel)
         if path.suffix=='.json' and path.stat().st_size<32*1024**2:
@@ -103,8 +124,11 @@ def referenced_files(root,dbpath,cancel):
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         if 'snapshot_chunks' in tables:
             import work_repository as wr
-            for raw, in db.execute('SELECT data FROM snapshot_chunks'):
-                checkpoint(cancel);scan(wr.loads(zlib.decompress(raw)))
+            for key, in db.execute('SELECT hash FROM snapshot_chunks'):
+                checkpoint(cancel)
+                if key not in checked_blocks:
+                    raw=db.execute('SELECT data FROM snapshot_chunks WHERE hash=?',(key,)).fetchone()[0]
+                    scan(wr.loads(zlib.decompress(raw)))
         for table in ('purchase_versions','lifecycle_versions'):
             if table in tables:
                 for raw, in db.execute('SELECT payload FROM '+table):
@@ -146,7 +170,11 @@ def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=N
     temp=target.with_name('.migration-'+uuid.uuid4().hex+'.zip')
     try:
         with tempfile.TemporaryDirectory(prefix='orders-',dir=target.parent) as working,ExitStack() as stack:
-            work=Path(working);entries=[];external={};missing=[]
+            work=Path(working);entries=[];external={};missing=[];checked_blocks=set();references=set()
+            def observe_block(key,raw):
+                if key not in checked_blocks:
+                    from snapshot_json import loads
+                    _add_file_references(loads(raw),references);checked_blocks.add(key)
             from catalog_migration import freeze
             progress('正在核对本地任务状态，准备复制订单库…')
             catalogs={name:freeze(root,stack,catalog_state if name=='jst_catalog_sync' else None,folder_name=name)
@@ -162,7 +190,7 @@ def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=N
                 catalog=catalogs.get(path.relative_to(root).parts[0])
                 if catalog is not None and path.name=='jobs.json' and len(path.relative_to(root).parts)==2:atomic_json(dest,catalog)
                 elif catalog is not None and path.name=='store.guard.json' and len(path.relative_to(root).parts)==2:atomic_json(dest,{'schemaVersion':1,'storeId':catalog['storeId']})
-                elif name in DBS:db_copy(path,dest,main=name=='workbench.sqlite3',cancel=cancel,progress=progress)
+                elif name in DBS:db_copy(path,dest,main=name=='workbench.sqlite3',cancel=cancel,progress=progress,observe_block=observe_block)
                 else:
                     before=file_hash(path);shutil.copyfile(path,dest)
                     if file_hash(dest)!=before or file_hash(path)!=before:raise ValueError('文件在导出期间变化，请安全停止原任务后重试：'+name)
@@ -173,7 +201,7 @@ def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=N
                 for old,relative in previous.get('paths',{}).items():
                     if relative in included and owned(relative):external[old]=relative
             progress('正在从订单及快照查找原件引用…')
-            for value in sorted(referenced_files(work,work/'workbench.sqlite3',cancel)):
+            for value in sorted(referenced_files(work,work/'workbench.sqlite3',cancel,checked_blocks=checked_blocks,references=references)):
                 if value in external:continue
                 path=Path(value)
                 if path.is_relative_to(root) and path in sources:continue
@@ -236,16 +264,15 @@ def prepare(root,package,progress=lambda _:None,cancel=None,*,mode='replace'):
     try:
         with measure('migration.prepare.unpack'),zipfile.ZipFile(package) as book:
             for entry in value['entries']:
-                checkpoint(cancel);target=stage_io/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);h=hashlib.sha256();progress('校验并准备：'+entry['path'])
+                checkpoint(cancel);target=stage_io/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);h=hashlib.sha256();size=0;progress('校验并准备：'+entry['path'])
                 with book.open(entry['path']) as source,target.open('xb') as dst:
-                    while block:=source.read(512*1024):checkpoint(cancel);h.update(block);dst.write(block)
+                    while block:=source.read(512*1024):checkpoint(cancel);h.update(block);size+=dst.write(block)
                     dst.flush();os.fsync(dst.fileno())
-                if h.hexdigest()!=entry['sha256']:raise ValueError('迁移包内容校验失败：'+entry['path'])
+                if size!=entry['size'] or h.hexdigest()!=entry['sha256']:raise ValueError('迁移包内容校验失败：'+entry['path'])
         with measure('migration.prepare.databases'):
             for entry in value['entries']:
                 if entry['path'] in DBS:
-                    db=stage/entry['path'];verified=db.with_name(db.name+'.verified')
-                    db_copy(db,verified,main=entry['path']=='workbench.sqlite3',cancel=cancel,progress=progress);verified.unlink()
+                    verify_database(stage/entry['path'],main=entry['path']=='workbench.sqlite3',cancel=cancel,progress=progress,standalone=True)
         with measure('migration.prepare.package'):
             if file_hash(package)!=before:raise ValueError('迁移包在读取期间变化，未准备导入')
         contents={}
@@ -287,6 +314,8 @@ def verify_stage(stage,entries):
             raise ValueError('准备的迁入路径无效，原资料保持：'+name)
         if not path.is_file() or file_hash(path)!=entry['sha256']:
             raise ValueError('准备的迁入文件缺失或变化，原资料保持：'+name)
+        if name in DBS and any(Path(str(path)+suffix).exists() for suffix in ('-wal','-shm','-journal')):
+            raise ValueError('暂存数据库出现未列入包的日志文件，原资料保持：'+name)
 
 def pause_imported(root):
     """Pause dispatch, preserve original states/receipts in a migration audit."""
@@ -373,7 +402,7 @@ def _apply(plan):
     with measure('migration.apply.revalidate'):verify_stage(stage,plan['manifest']['entries'])
     root_io,stage_io,new_io=map(io_path,(root,stage,new))
     with _exclusive(root):
-        from migration_status import record
+        from migration_status import record,reporter
         record(plan,'APPLYING',phase='WAITING_LOCKS')
         _check_other_processes();require_closed(root)
         resource_check(root.parent,sum(p.stat().st_size for p in root_io.rglob('*') if p.is_file()))
@@ -399,10 +428,14 @@ def _apply(plan):
                 if p.is_file() and (owned(relative) or relative in DERIVED or relative in {db+suffix for db in DBS|DERIVED for suffix in ('-wal','-shm','-journal')}):ignored.append(name)
             return ignored
         record(plan,'APPLYING',phase='COPYING')
+        from export_progress import RowProgress
+        copy_progress=reporter(plan,'COPYING')
         with measure('migration.apply.copy_local'):copy_local_tree(root,new,ignore=ignore)
         try:
             with measure('migration.apply.write'):
-                for entry in plan['manifest']['entries']:
+                entries=plan['manifest']['entries']
+                for index,entry in enumerate(entries):
+                    copy_progress(RowProgress('放入已校验的迁入文件',index,len(entries)))
                     target=new_io/entry['path'];target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(stage_io/entry['path'],target)
                 shutil.copyfile(stage/'迁入原文件映射.json',new/'迁入原文件映射.json');pause_imported(new)
                 restore_catalog(new,root,plan['manifest'],catalog_local)

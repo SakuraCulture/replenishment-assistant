@@ -42,6 +42,35 @@ class MigrationTests(unittest.TestCase):
         self.cancel=threading.Event();self.package=self.root/'orders.zip'
     def export(self):return migration.export(self.source,self.package,cancel=self.cancel)
     def prepare(self):self.export();return migration.prepare(self.target,self.package,cancel=self.cancel)
+    def test_readonly_preflight_does_not_create_a_verification_copy(self):
+        self.export();before=files(self.target)
+        with patch('order_migration.db_copy',side_effect=AssertionError('Unexpected staging copy')):
+            plan=migration.prepare(self.target,self.package)
+        self.assertEqual(files(self.target),before)
+        self.assertFalse(any(Path(plan['stage']).rglob('*.verified')))
+        # A sidecar appearing after preview is outside the frozen ZIP members.
+        (Path(plan['stage'])/'workbench.sqlite3-journal').touch()
+        with self.assertRaisesRegex(ValueError,'未列入包的日志文件'):migration.apply(plan)
+        self.assertEqual(files(self.target),before)
+
+    def test_snapshot_validation_reads_projected_children_once_and_hashes_other_fields(self):
+        from maintenance_storage import Editor
+        import storage_chunks as chunks
+        with closing(sqlite3.connect(self.work.path)) as db,closing(sqlite3.connect(':memory:')) as scratch:
+            payload=copy.deepcopy(self.payload)
+            payload['extra']='验证整个快照'
+            manifest=chunks.require_manifest(fixtures.no.encode(payload,db))
+            editor=Editor(db,scratch)
+            with patch.object(editor,'raw',wraps=editor.raw) as checksum_reads:
+                editor.checksum(manifest['tree'])
+            with patch.object(editor,'raw',wraps=editor.raw) as raw:
+                actual=editor.checked_fields(manifest,('result','new_focus'))
+            self.assertEqual(actual,{key:payload[key] for key in ('result','new_focus')})
+            self.assertEqual(raw.call_args_list,checksum_reads.call_args_list)
+            extra=next(v for k,v in manifest['tree'][1] if k=='extra')
+            db.execute('DELETE FROM snapshot_chunks WHERE hash=?',(extra[1],))
+            with self.assertRaisesRegex(ValueError,'内容块缺失'):
+                Editor(db,scratch).checked_fields(manifest,('result','new_focus'))
     def test_full_archive_readonly_source_and_secret_exclusion(self):
         before=files(self.source);result=self.export();self.assertEqual(files(self.source),before);manifest=migration.manifest(self.package)
         with closing(sqlite3.connect(self.work.path)) as db:original_count=len(db.execute('SELECT sha FROM source_files').fetchall())

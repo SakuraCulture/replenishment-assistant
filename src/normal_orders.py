@@ -24,10 +24,15 @@ def fingerprint(result,new_focus=None):
     return hashlib.sha256(wr.dumps(business).encode()).hexdigest()
 
 
-def fingerprint_owned(result,new_focus=None):
+def fingerprint_owned(result,new_focus=None,*,verified_size=None):
     """Same canonical digest; caller exclusively owns the decoded, unmodified tree."""
     business={k:v for k,v in result.items() if k not in RESULT_DIGEST_EXCLUSIONS}
     if new_focus is not None:business={'result':business,'new_focus':focus.validate(new_focus)['revision']}
+    # A fully checked, bounded on-disk snapshot permits the same canonical
+    # encoder as fingerprint() without copying the decoded result tree.
+    if verified_size is not None and verified_size<=8*1024*1024:
+        try:return hashlib.sha256(wr.dumps(business).encode()).hexdigest()
+        except MemoryError:pass
     from encoding_store import digest
     return digest(business)
 

@@ -53,24 +53,23 @@ def apply(plan):
     if plan.get('mode')!='merge' or not isinstance(plan.get('merge_report'),dict):raise ValueError('合并预览凭据缺失，未写入资料')
     if not stage.is_dir() or new.exists() or backup.exists():raise ValueError('合并工作目录已变化，原资料保持')
     with measure('migration.apply.revalidate'):migration.verify_stage(stage,plan['manifest']['entries'])
-    from migration_status import record
+    from migration_status import record,reporter
     from order_merge import merge
     with _exclusive(root):
         record(plan,'APPLYING',phase='WAITING_LOCKS');_check_other_processes();require_closed(root)
         resource_check(root.parent,sum(p.stat().st_size for p in io_path(root).rglob('*') if p.is_file())+sum(e['size'] for e in plan['manifest']['entries']))
         record(plan,'APPLYING',phase='COPYING')
-        with _clone(root,new,lambda message:record(plan,'APPLYING',phase='COPYING')) as locks:
+        with _clone(root,new,reporter(plan,'COPYING')) as locks:
             record(plan,'APPLYING',phase='MERGING')
-            with measure('migration.apply.write'):result=merge(stage,new,expected_report=plan['merge_report'],final_root=root)
+            with measure('migration.apply.write'):result=merge(stage,new,expected_report=plan['merge_report'],final_root=root,progress=reporter(plan,'MERGING'))
             # A second complete check is independent of graph insertion logic.
+            record(plan,'APPLYING',phase='FINAL_CHECK')
+            check_progress=reporter(plan,'FINAL_CHECK')
             with measure('migration.apply.final_check'):
-                verified=new/'workbench.sqlite3.merge-verified'
-                migration.db_copy(new/'workbench.sqlite3',verified,main=True);verified.unlink()
-                for name in migration.DBS-{'workbench.sqlite3'}:
+                for name in sorted(migration.DBS):
                     path=new/name
                     if path.is_file():
-                        with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as db:
-                            if db.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise ValueError('合并副本数据库校验失败：'+name)
+                        migration.verify_database(path,main=name=='workbench.sqlite3',progress=check_progress)
             reports=new/'order-merge-reports';reports.mkdir(exist_ok=True)
             receipt={'nonce':plan['nonce'],'at':now(),'mode':'merge','package_sha256':plan['package_sha256'],'backup':str(backup),'scope':'只新增无冲突订单；完全重复跳过，冲突保留本机；不补齐、不覆写','report':result}
             atomic_json(reports/(plan['nonce']+'.json'),receipt)

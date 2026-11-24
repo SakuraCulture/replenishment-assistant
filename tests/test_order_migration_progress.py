@@ -11,6 +11,14 @@ from stockout_common import atomic_json
 
 
 class MigrationProgress(unittest.TestCase):
+    def test_copy_progress_throttles_updates_without_deferring_terminal_state(self):
+        from export_progress import RowProgress
+        from migration_status import reporter
+        with patch('migration_status.record') as record,patch('migration_status.time.monotonic',side_effect=[0,.2,1.01]):
+            report=reporter({'nonce':'a'*32},'COPYING')
+            for index in range(3):report(RowProgress('复制数据库',index,10))
+        self.assertEqual([call.kwargs['progress']['current'] for call in record.call_args_list],[0,2])
+        self.assertEqual(record.call_args.kwargs['progress']['total'],10)
     def test_writer_exit_distinct_from_a_failure_receipt(self):
         receipt = {'state': 'APPLYING', 'phase': 'REPLACING'}
         active = progress.presentation(receipt, 'RUNNING')

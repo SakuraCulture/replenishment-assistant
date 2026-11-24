@@ -47,6 +47,7 @@ def typed(v):
 @dataclass
 class Row:
     db:str;table:str;rid:int;values:dict;pk:tuple;refs:set;owners:set=field(default_factory=set);weak:bool=False;error:str='';blob:dict=field(default_factory=dict);origin_file:str|None=None
+    work_revision:str|None=None
     @property
     def key(self):return self.db,self.table,self.rid
     def business(self):
@@ -112,7 +113,7 @@ class Graph:
             asset=table in ASSETS or table=='snapshot_chunks';omit={'content','data'} if asset else set()
             select=','.join(q(c['name']) for c in cols if c['name'] not in omit)
             for raw in db.execute('SELECT rowid AS _merge_rid,'+select+' FROM '+q(table)+' ORDER BY rowid'):
-                checkpoint(self.cancel);values=dict(raw);rid=values.pop('_merge_rid');refs=set();error='';blobs={}
+                checkpoint(self.cancel);values=dict(raw);rid=values.pop('_merge_rid');refs=set();error='';blobs={};work_revision=None
                 for c in cols:
                     if c['name'] in omit:
                         length=db.execute('SELECT length('+q(c['name'])+') FROM '+q(table)+' WHERE rowid=?',(rid,)).fetchone()[0]
@@ -125,13 +126,15 @@ class Graph:
                             m=chunks.require_manifest(v);decoded=chunks.load(v,db,binding=binding)
                             if table=='normal_revisions':
                                 import normal_orders
-                                if normal_orders.fingerprint_owned(decoded['result'],decoded.get('new_focus'))!=values['digest']:raise ValueError('归档业务摘要不一致')
+                                if normal_orders.fingerprint_owned(decoded['result'],decoded.get('new_focus'),verified_size=m['size'])!=values['digest']:raise ValueError('归档业务摘要不一致')
+                                work_revision=decoded.get('work_revision')
                                 self.revision_names[values['oid'],values['revision']]=decoded['result'].get('store_name')
                                 import warehouse_execution
                                 self.legacy_warehouses.setdefault(values['oid'],set()).update(warehouse_execution.warehouses(decoded))
                             if table=='warehouse_execution_revisions':
                                 import normal_orders
-                                if normal_orders.fingerprint_owned(decoded['result'],decoded.get('new_focus'))!=values['snapshot_digest']:raise ValueError('分仓签发业务摘要不一致')
+                                if normal_orders.fingerprint_owned(decoded['result'],decoded.get('new_focus'),verified_size=m['size'])!=values['snapshot_digest']:raise ValueError('分仓签发业务摘要不一致')
+                                work_revision=decoded.get('work_revision')
                             refs.update(strings(decoded));refs.update(_chunk_refs(m['tree']))
                         elif isinstance(v,str):
                             refs.add(v)
@@ -140,7 +143,7 @@ class Graph:
                 except Cancelled:raise
                 except Exception as exc:error=str(exc)
                 weak=table in WEAK
-                row=Row(name,table,rid,values,pk,refs,weak=weak,error=error,blob=blobs);self.rows.append(row)
+                row=Row(name,table,rid,values,pk,refs,weak=weak,error=error,blob=blobs,work_revision=work_revision);self.rows.append(row)
                 self.paths.update(x for x in refs if _absolute(x))
                 if table=='normal_orders':self.order[values['oid']]=values
     def _validate(self,table,values):
@@ -225,14 +228,10 @@ class Graph:
             if not row.owners:continue
             issue=None
             if row.table=='normal_revisions' and not row.error:
-                import storage_chunks
-                decoded=storage_chunks.load(row.values['payload'],self.connections[row.db],binding=row.values['digest'])
-                if decoded.get('work_revision') not in works:issue='签发引用的原工作修订缺失'
+                if row.work_revision not in works:issue='签发引用的原工作修订缺失'
             elif row.table=='warehouse_execution_heads' and row.values['state']=='active' and (row.values['oid'],row.values['warehouse'],row.values['source_revision']) not in child_revisions:issue='分仓当前签发快照缺失'
             elif row.table=='warehouse_execution_revisions' and not row.error:
-                import storage_chunks
-                decoded=storage_chunks.load(row.values['payload'],self.connections[row.db],binding=row.values['snapshot_digest'])
-                if decoded.get('work_revision') not in works:issue='分仓签发引用的原工作修订缺失'
+                if row.work_revision not in works:issue='分仓签发引用的原工作修订缺失'
             elif row.table in ('jst_active','jst_locks','jst_generation_batches','jst_auto_orders','jst_auto_order_history','jst_cancellations','jst_cancellation_holds') and row.values['gid'] not in generations:issue='原库存分配生成记录缺失'
             elif row.table=='jst_generation_batches' and row.values['batch_id'] not in batches:issue='原库存分配批次缺失'
             elif row.table=='jst_batch_stock' and row.values['bid'] not in bases:issue='原库存分配基线缺失'
@@ -437,6 +436,9 @@ def _path_plan(src,dst,oid):
 
 def _inspect(src,dst):
     results=[];paths={};hashes={};groups=src.groups
+    numbers={h['number'] for h in dst.order.values()}
+    matches={(h['day'],h['store'],h['kind']) for h in dst.order.values()}
+    stores={(day,store) for day,store,_ in matches}
     for oid,head in src.order.items():
         checkpoint(src.cancel);sh=src.owner_hash(oid);hashes[oid]=sh;reasons=list(src.bad.get(oid,()))
         reasons.extend(issue for row in src.by_order[oid] if (issue:=_contract_issue(src,dst,row)))
@@ -446,10 +448,10 @@ def _inspect(src,dst):
         incoming=src.active_warehouses.get(oid,src.legacy_warehouses.get(oid,set()))
         retired={warehouse for owner,warehouse in dst.deleted_warehouses if owner==oid}
         if incoming & {warehouse for owner,warehouse in src.deleted_warehouses if owner==oid}:reasons.append('来源包同一仓单同时有效与退役，不能自动迁入')
-        if oid in dst.deleted or incoming & retired or (head['day'],head['store']) in dst.deleted_business and not any(h['day']==head['day'] and h['store']==head['store'] for h in dst.order.values()):
+        if oid in dst.deleted or incoming & retired or (head['day'],head['store']) in dst.deleted_business and (head['day'],head['store']) not in stores:
             state='DELETED';reasons.append('本机已删除此订单，旧迁移包不恢复')
         else:
-            collisions=[o for o,h in dst.order.items() if o==oid or (h['day'],h['store'],h['kind'])==(head['day'],head['store'],head['kind']) or h['number']==head['number']]
+            collisions=oid in dst.order or (head['day'],head['store'],head['kind']) in matches or head['number'] in numbers
             if collisions:
                 receipt=dst.receipts.get(oid);same=oid in dst.order and typed(head)==typed(dst.order[oid])
                 target_hash=dst.owner_hash(oid) if oid in dst.order else None
