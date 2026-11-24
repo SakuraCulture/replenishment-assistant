@@ -142,12 +142,6 @@ def record_operation(folder):
     return {}
 
 
-def temporary_bytes(folder):
-    return sum(path.stat().st_size for directory in folder.glob('.settings.order-*')
-               if directory.is_dir() and directory.name.startswith(('.settings.order-new-', '.settings.order-import-'))
-               for path in directory.rglob('*') if path.is_file())
-
-
 def run_one(exe, folder, fixture, mode):
     from migration_status import folder as status_folder
 
@@ -168,8 +162,6 @@ def run_one(exe, folder, fixture, mode):
     flag = '--order-merge-smoke' if mode == 'merge' else '--migration-shutdown-smoke'
     status_root = status_folder(folder / 'settings')
     confirmed = None
-    temp_peak = 0
-    next_sample = 0
     with (folder / 'process.log').open('wb') as log:
         started = time.perf_counter()
         process = subprocess.Popen([str(exe), flag, str(folder), 'confirm'], env=environment, cwd=ROOT,
@@ -177,12 +169,6 @@ def run_one(exe, folder, fixture, mode):
         while process.poll() is None:
             if time.perf_counter() - started > 150:
                 raise TimeoutError(f'Native migration timed out in isolated directory {folder}')
-            if time.perf_counter() >= next_sample:
-                try:
-                    temp_peak = max(temp_peak, temporary_bytes(folder))
-                except FileNotFoundError:
-                    pass
-                next_sample = time.perf_counter() + .25
             if confirmed is None and (folder / 'confirm-events.jsonl').is_file():
                 # The test posts confirmation immediately after this event. An
                 # append-only log avoids opening rc36's live atomic status file.
@@ -230,7 +216,7 @@ def run_one(exe, folder, fixture, mode):
     result = {'exe': str(exe), 'mode': mode, 'package_sha256': details['package_sha256'],
               'orders_verified': len(actual), 'prepared_seconds': preflight, 'confirm_to_terminal_seconds': apply_ui,
               'launch_to_exit_seconds': finished, 'phases': dict(elapsed),
-              'peak_rss_bytes': peak_rss, 'sampled_temporary_peak_bytes': temp_peak,
+              'peak_rss_bytes': peak_rss, 'sampled_temporary_peak_bytes': None,
               'stage_receipt': receipt['state'], 'nonce': nonce, 'native_prepare_log': native}
     write(folder / 'timing.json', result)
     return result
@@ -245,6 +231,7 @@ def main():
     parser.add_argument('--out', type=Path)
     parser.add_argument('--exe', action='append', default=[])
     parser.add_argument('--rounds', type=int, default=3)
+    parser.add_argument('--resume', action='store_true')
     args = parser.parse_args()
     fixture = args.fixture.resolve()
     if args.seed:
@@ -253,14 +240,24 @@ def main():
     if not args.out or not args.exe or os.name != 'nt':
         parser.error('Supply an output directory and --exe name=path on Windows')
     out = args.out.resolve()
-    out.mkdir(parents=True, exist_ok=False)
+    out.mkdir(parents=True, exist_ok=args.resume)
     builds = {key: Path(value).resolve(strict=True) for key, _, value in (item.partition('=') for item in args.exe)}
-    results = []
+    results = read(out / 'runs.json') if args.resume else []
+    expected_hash = read(fixture / 'fixture.json')['package_sha256']
+    for row in results:
+        if (row['package_sha256'] != expected_hash or Path(row['exe']) != builds.get(row['build'])
+                or row['stage_receipt'] != 'COMPLETED'):
+            raise ValueError('Existing evidence does not match the requested inputs')
+    completed = {(row['round'], row['mode'], row['build']) for row in results}
     for index in range(1, args.rounds + 1):
         for mode in ('replace', 'merge'):
             for label, exe in (list(builds.items()) if index % 2 else reversed(list(builds.items()))):
+                if (index, mode, label) in completed:
+                    continue
                 print(index, mode, label, flush=True)
                 run_name = f'{index}-{mode}-{label}'
+                if (out / run_name).exists():
+                    run_name += '-resumed'
                 try:
                     result = run_one(exe, out / run_name, fixture, mode)
                 except BaselineStatusWriteBlocked as failure:
