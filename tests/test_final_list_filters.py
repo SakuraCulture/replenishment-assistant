@@ -24,6 +24,21 @@ class RuleTests(unittest.TestCase):
     def test_missing_category_is_explicit(self):
         self.assertTrue(f.accepts(row(),24,{'categories':[None]}))
         self.assertFalse(f.accepts(dict(row(),_category='饮料'),24,{'categories':[None]}))
+    def test_unit_price_range_combines_with_monthly_sales_and_available_stock(self):
+        spec = f.validate({'numbers': {
+            'price': {'op': 'between', 'low': '2.25', 'high': '5.50'},
+            'month': {'op': 'ge', 'low': '30'},
+            'available': {'op': 'le', 'low': '5'},
+        }})
+        product = dict(row(), V=2.25, BV=54, J=30, K=5)
+        self.assertTrue(f.accepts(product, 24, spec))
+        self.assertTrue(f.accepts(dict(product, V=5.5), 48, spec))
+        for difference in ({'V': 2.24}, {'V': 5.51}, {'V': None}, {'J': 29}, {'K': 6}):
+            with self.subTest(difference=difference):
+                self.assertFalse(f.accepts({**product, **difference}, 24, spec))
+        missing_price = {'numbers': {'price': {'op': 'missing'}}}
+        self.assertTrue(f.accepts(dict(product, V=None), 24, missing_price))
+        self.assertFalse(f.accepts(dict(product, V=0), 24, missing_price))
     def test_bad_intervals_and_non_finite_rejected(self):
         for low,high in [('3','2'),('','2'),('NaN','3'),('1','inf')]:
             with self.assertRaises(ValueError):f.validate({'numbers':{'month':{'op':'between','low':low,'high':high}}})

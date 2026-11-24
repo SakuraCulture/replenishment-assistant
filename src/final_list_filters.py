@@ -3,7 +3,9 @@ from decimal import Decimal
 import result_semantics as sem
 import preissue
 
-FIELDS = {'week':'周销', 'month':'月销', 'available':'可用库存', 'inbound':'在途库存', 'held':'拟签发后持有量'}
+FILTER_TITLE = '类目 / 销量 / 库存 / 单价筛选'
+FIELDS = {'week':'周销', 'month':'月销', 'available':'可用库存', 'inbound':'在途库存',
+          'held':'拟签发后持有量', 'price':'基本售价（元）'}
 OPS = {'any':'不限', 'ge':'大于等于', 'gt':'大于', 'le':'小于等于', 'lt':'小于', 'eq':'等于', 'between':'区间（含端点）', 'missing':'资料缺失'}
 
 
@@ -14,7 +16,7 @@ def category(row, model=False):
 
 def value(row, key, quantity):
     if key != 'held':
-        return row.get({'week':'I', 'month':'J', 'available':'K', 'inbound':'L'}[key])
+        return row.get({'week':'I', 'month':'J', 'available':'K', 'inbound':'L', 'price':'V'}[key])
     if preissue.blocked(row) or not sem.numeric(quantity): return None
     return preissue.scalar(preissue.holding(row) + preissue.decimal(quantity))
 
@@ -57,7 +59,7 @@ def description(spec):
         text = FIELDS[key]+OPS[r['op']]
         if r['op'] != 'missing': text += str(r['low']) + ('～'+str(r['high']) if r['op']=='between' else '')
         parts.append(text)
-    return '；'.join(parts) or '类目、销量、库存：不限'
+    return '；'.join(parts) or '类目、销量、库存和单价均不限'
 
 
 def adjusted_quantity(row, current, mode, amount):

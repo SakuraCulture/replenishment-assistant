@@ -188,7 +188,7 @@ class FinalListDialog(AsyncDialog):
         control_scroll=QScrollArea();control_scroll.setWidgetResizable(True);control_scroll.setWidget(controls);control_scroll.setMaximumHeight(210)
         toggle=QCheckBox('展开筛选与批量操作（收起后筛选和勾选继续有效）');toggle.toggled.connect(control_scroll.setVisible);control_scroll.hide()
         outer.addWidget(toggle);outer.addWidget(control_scroll)
-        numeric_row=QHBoxLayout();self.business_btn=button('类目 / 销量 / 库存筛选',self.edit_business_filters);numeric_row.addWidget(self.business_btn)
+        numeric_row=QHBoxLayout();self.business_btn=button(business_filters.FILTER_TITLE,self.edit_business_filters);numeric_row.addWidget(self.business_btn)
         self.business_summary=label(business_filters.description({}),'muted');self.business_summary.setWordWrap(True);numeric_row.addWidget(self.business_summary,1);outer.addLayout(numeric_row)
         top=QHBoxLayout();self.search=QLineEdit();self.search.setPlaceholderText('商品名称 / 编码 / 条码 / 门店；空格分词');self.search.setClearButtonEnabled(True);top.addWidget(self.search,1)
         self.stores=QComboBox();self.stores.addItem('全部所选门店','')
