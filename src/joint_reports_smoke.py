@@ -88,8 +88,9 @@ def start_smoke(app, win, args):
         def configure(dialog, kind, timed=False):
             dialog.kind.setCurrentIndex(dialog.kind.findData(kind))
             dialog.rule.setCurrentIndex(dialog.rule.findData('fixed'))
+            selected_day = settings.get('sku_day', day) if kind=='sku_completion' else day
             for field in (dialog.start, dialog.end):
-                field.setDate(QDate.fromString(day,'yyyy-MM-dd'))
+                field.setDate(QDate.fromString(selected_day,'yyyy-MM-dd'))
             dialog.partial.setChecked(kind in ('business_daily','stockout'))
             dialog.folder.setText(str(root/'export'))
             dialog.clock.setTime(QTime(9,1))

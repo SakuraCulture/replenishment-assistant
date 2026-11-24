@@ -20,6 +20,7 @@ def prepare(out, source, reference, business_day, blacklist, must_sell, owners, 
     root = out/'settings'
     source = source.resolve(strict=True)
     with closing(sqlite3.connect((source/'workbench.sqlite3').as_uri()+'?mode=ro',uri=True)) as original:
+        sku_day = original.execute('SELECT max(day) FROM normal_orders').fetchone()[0]
         root.mkdir()
         with closing(sqlite3.connect(root/'workbench.sqlite3')) as backup:
             original.backup(backup)
@@ -55,7 +56,7 @@ def prepare(out, source, reference, business_day, blacklist, must_sell, owners, 
     save_profile(root,saved)
     (out/'synthetic.json').write_text(json.dumps({'synthetic':True,'isolated':True,'live_platform':False,
                                                   'data':'read-only backups of published records'},ensure_ascii=False),'utf-8')
-    (out/'fixture.json').write_text(json.dumps({'day':business_day,'clock':'2026-11-25T09:00:00+08:00',
+    (out/'fixture.json').write_text(json.dumps({'day':business_day,'sku_day':sku_day or business_day,'clock':'2026-11-25T09:00:00+08:00',
         'weeks':str(weeks.resolve()), 'roster_reference':str(reference.resolve()),'this_is_reference_scope':True,
         'links':{role:{'path':str(path.resolve()),'sha256':sha256(path)} for role,path in {**refs,'weeks':weeks}.items()},
         'db_sha256':{str(p.relative_to(root)):sha256(p) for p in root.rglob('*.sqlite3')}},ensure_ascii=False,indent=2),'utf-8')
