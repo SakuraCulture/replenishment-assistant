@@ -98,8 +98,14 @@ def selection(records, chosen):
     if not result:
         raise Check('请勾选要制表的仓单')
     for r in result:
-        if not r['gid'] or r['state']!='ready':
-            raise Check(show_name(r['head'])+'：需要当前有效的已保存生成单')
+        if not r['gid'] or r['state'] != 'ready':
+            message = show_name(r['head']) + '：需要当前有效的已保存生成单'
+            if r.get('reason'):
+                message += '\n' + r['reason']
+            if r['state'] == 'pending' and not r['gid']:
+                message += ('\n已有聚水潭原单，请先在「自动下单任务」核对。'
+                            '已有分配批次时继续原批。首次分配可点「准备新分配批次」。')
+            raise Check(message)
     return [{'gid':r['gid'],'head':r['head']} for r in result]
 
 
