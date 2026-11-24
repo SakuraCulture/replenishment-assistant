@@ -30,9 +30,10 @@ def start_smoke(app,win,args):
         win.destroyed.connect(fail_destroyed)
     if case=='apply_failure':
         import order_migration as m
+        from migration_paths import io_path
         original_copy=m.shutil.copytree
         def fail_copy(source,destination,*a,**kw):
-            if Path(source).resolve()==out/'settings':raise OSError('ORIGINAL-APPLY-COPY-ERROR')
+            if io_path(source).resolve()==io_path(out/'settings').resolve():raise OSError('ORIGINAL-APPLY-COPY-ERROR')
             return original_copy(source,destination,*a,**kw)
         m.shutil.copytree=fail_copy
     if case=='interrupt':

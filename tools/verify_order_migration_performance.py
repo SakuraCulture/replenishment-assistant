@@ -165,6 +165,7 @@ def run_one(exe, folder, fixture, mode):
     status_root = status_folder(folder / 'settings')
     phase_times = {}
     temp_peak = 0
+    next_sample = 0
     with (folder / 'process.log').open('wb') as log:
         started = time.perf_counter()
         process = subprocess.Popen([str(exe), flag, str(folder), 'confirm'], env=environment, cwd=ROOT,
@@ -172,11 +173,16 @@ def run_one(exe, folder, fixture, mode):
         while process.poll() is None:
             if time.perf_counter() - started > 150:
                 raise TimeoutError(f'Native migration timed out in isolated directory {folder}')
+            if time.perf_counter() >= next_sample:
+                try:
+                    temp_peak = max(temp_peak, temporary_bytes(folder))
+                except FileNotFoundError:
+                    pass
+                next_sample = time.perf_counter() + .25
             try:
                 nonce = read_status(status_root / 'latest.json')['nonce']
                 observed = read_status(status_root / (nonce + '.status.json'))
                 phase_times.setdefault(observed['phase'], time.perf_counter() - started)
-                temp_peak = max(temp_peak, temporary_bytes(folder))
             except FileNotFoundError:
                 pass
             time.sleep(.05)
@@ -196,10 +202,14 @@ def run_one(exe, folder, fixture, mode):
     write(folder / 'order-comparison.json', {'passed': True, 'orders': actual})
     elapsed = defaultdict(float)
     for file in trace.glob('*.jsonl'):
-        for line in file.read_text('utf-8').splitlines():
-            row = json.loads(line)
+        rows = [json.loads(line) for line in file.read_text('utf-8').splitlines()]
+        scope = 'prepare' if any(row['stage'] == 'migration.prepare.total' for row in rows) else 'apply'
+        for row in rows:
             if row['stage'].startswith('migration.') and row['ok']:
-                elapsed[row['stage']] += row['seconds']
+                phase = row['stage']
+                if phase.startswith(('migration.verify.', 'migration.sqlite.')):
+                    phase = scope + '.' + phase
+                elapsed[phase] += row['seconds']
     native = record_operation(folder)
     preflight = native.get('seconds', elapsed.get('migration.prepare.total'))
     terminal = phase_times.get('COMPLETED', finished)
