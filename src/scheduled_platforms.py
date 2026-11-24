@@ -48,42 +48,45 @@ class Platforms:
                 progress('等待商品资料当前动作安全结束，保留原任务编号');time.sleep(.5)
             self.jst=None
 
-    def preflight(self,basis,progress):
-        """Read-only platform checks; refresh observed login, never export or change store mappings."""
+    def check_warehouse_bindings(self, warehouses):
+        checkpoint(self.cancel)
+        state = self.catalog_owner.read_status()
+        accounts = {account['warehouse']: account for account in state.get('accounts', [])}
+        for warehouse in warehouses:
+            account = accounts.get(warehouse, {})
+            has_identity = all(account.get(key) for key in ('expectedCompany', 'expectedCoid', 'expectedUid'))
+            if state.get('rebind_required', {}).get(warehouse) or account.get('mappingVerified') is not True or not has_identity:
+                raise ValueError(warehouse + '尚无有效的账号核验，请在「连接检查 / 修复」打开本仓配置')
+            if not account.get('enabled'):
+                raise ValueError(warehouse + '自动同步已停用，请在本仓配置中启用')
+
+    def check_saved(self, basis, progress):
+        """Use the shared components' saved bindings without borrowing either browser."""
+        checkpoint(self.cancel)
+        progress('读取已核验的翱象门店映射和聚水潭仓账号…')
+        client = self.ax_manager.session.lease(cancelled=self.stopped, control_only=True)
         try:
-            ax=self.ax_client();progress('正在核验翱象登录与预案门店；如需授权，请在浏览器允许')
-            from aoxiang_current_login import current_configuration
-            current_configuration(ax,progress,self.cancel)
-            job=ax.request('setup.verify_saved',codes=[i['code'] for i in basis['plan']['stores']])
-            ident=job['id'];deadline=time.monotonic()+600
-            try:
-                while job['state']=='RUNNING' or job.get('cleanup_pending'):
-                    if self.stopped() or time.monotonic()>deadline:raise Cancelled('连接核验已停止或超时；未创建平台导出')
-                    progress(job['stage']);time.sleep(.5);job=ax.request('setup.status',setup_id=ident)
-                if job['state']!='VERIFIED' or any(i['state']!='VERIFIED' for i in job['targets']):raise ValueError(str(job.get('error') or '翱象门店未全部通过核验'))
-            finally:ax.request('setup.cancel',setup_id=ident)
-            self.release_ax(progress)
-            client=self.jst_client()
-            for wh in basis['warehouses']:
-                checkpoint(self.cancel);progress('核验'+wh+'专用浏览器登录与账号')
-                op=client.request('accounts.verify',warehouse=wh)['operation_id'];deadline=time.monotonic()+240
-                while True:
-                    if self.cancel.is_set() or time.monotonic()>deadline:
-                        client.request('sync.stop');raise Cancelled('仓账号核验已停止或超时')
-                    state=client.request('sync.status');item=state['operations'][op]
-                    if item['state']!='RUNNING' and not state['running']:break
-                    time.sleep(.5)
-                if item['state']!='SUCCEEDED':raise ValueError(wh+'：'+str(item.get('error') or item['state']))
-            return {'checked':True,'message':'翱象门店、两仓所需账号已通过只读核验；不会保证未来登录不失效'}
-        finally:self.release(progress)
+            client.start()
+            configuration = client.request('configuration')
+        finally:
+            client.close()
+        if not configuration.get('configured') or not configuration.get('enabled'):
+            raise ValueError('请在「连接检查 / 修复」核验并保存翱象连接与门店')
+        verified = {target['buyerWarehouseCode'] for target in configuration['targets'] if target.get('mappingVerifiedAt')}
+        missing = [f"{item['name']}（{item['code']}）" for item in basis['plan']['stores'] if item['code'] not in verified]
+        if missing:
+            raise ValueError('请在「翱象配置」核验这些门店：' + '、'.join(missing))
+        self.check_warehouse_bindings(basis['warehouses'])
 
     def sales(self,runner,basis):
         repo=runner.repo;rid=runner.rid;run=repo.get(rid);external=dict(run['external'])
         jobs=Jobs(self.folder/'aoxiang'/'jobs.sqlite3')
         checkpoint(self.cancel)
+        cid=external.get('ax')
+        if cid is None:
+            self.check_warehouse_bindings(basis['warehouses'])
         self.ax=self.ax_manager.session.lease(cancelled=self.stopped,control_only=True)
         self.ax.start();client=self.ax
-        cid=external.get('ax')
         if cid is None:
             config=configuration_for_new(client,lambda message:runner.update('获取补货建议',message),self.cancel)
             job=prepare(jobs,config,[i['code'] for i in basis['plan']['stores']],'refresh',day=run['day'])

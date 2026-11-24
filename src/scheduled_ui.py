@@ -8,8 +8,9 @@ from PySide6.QtWidgets import (QDialog,QWidget,QVBoxLayout,QHBoxLayout,QFormLayo
 from ui_controls import label,button
 from aoxiang_ui_common import Call
 import scheduled_replenishment as sr
-from scheduled_execution import freeze,check_signature,Runner,workbench_record,publish_catalogs
+from scheduled_execution import freeze,require_arranged_stores,Runner,workbench_record,publish_catalogs
 from scheduled_platforms import Platforms
+from runtime_support import checkpoint
 
 
 def table(headers):
@@ -131,7 +132,7 @@ class Manager(QObject):
             if not ask(self.host,'退出前安全暂停','定时任务正在执行。暂停后退出？正在计算的门店会完成并保存；平台提交不会被强制中断。'):return False
         self.closing=True;self.timer.stop()
         if self.dialog and self.dialog.editor and self.dialog.editor.worker:
-            self.dialog.editor.cancel.set();self.status.setText('等待连接核验安全结束后退出');QTimer.singleShot(500,self.host.close);return False
+            self.dialog.editor.cancel.set();self.status.setText('等待定时安排保存结束后退出');QTimer.singleShot(500,self.host.close);return False
         if self.worker:
             if self.running_id:self.pause(self.running_id)
             self.status.setText('正在安全暂停定时任务，保留成功结果');return False
@@ -151,11 +152,15 @@ class Manager(QObject):
 
 class Editor(QDialog):
     def __init__(self,parent,manager,existing=None):
-        super().__init__(parent);self.m=manager;self.existing=existing;self.worker=None;self.cancel=threading.Event();self.verified=None
+        super().__init__(parent);self.m=manager;self.existing=existing;self.worker=None;self.cancel=threading.Event()
         self.setWindowTitle('设置定时补货');self.resize(720,600);v=QVBoxLayout(self)
         v.addWidget(label('选预案、定时间，上班后直接核对签发','title'))
         v.addWidget(label('电脑需开机且不休眠，软件保持打开；浏览器登录或授权失效时会停在“需处理”。','muted'))
-        form=QFormLayout();v.addLayout(form);self.name=QLineEdit();form.addRow('安排名称',self.name)
+        self.fields = QWidget()
+        form = QFormLayout(self.fields)
+        form.setContentsMargins(0, 0, 0, 0)
+        v.addWidget(self.fields)
+        self.name=QLineEdit();form.addRow('安排名称',self.name)
         import replenishment_plans
         self.plans=replenishment_plans.Repository(manager.repo.path).list();self.plan=QComboBox()
         for p in self.plans:self.plan.addItem(p['name']+' · '+str(len(p['stores']))+'家',p['id'])
@@ -167,10 +172,9 @@ class Editor(QDialog):
             c=QCheckBox('周'+n);c.setChecked(i<5);days.addWidget(c);self.days.append(c)
         form.addRow('执行星期',days);self.date=QDateEdit();self.date.setCalendarPopup(True);self.date.setDate(self.date.date().currentDate());form.addRow('指定日期',self.date)
         self.workers=QSpinBox();self.workers.setRange(1,4);self.workers.setValue(2);form.addRow('同时计算门店数',self.workers)
-        self.note=label('只获取、检查、计算和保存任务结果；不签发、不采购。','muted');v.addWidget(self.note)
+        self.note=label('保存并启用时复用已核验的翱象门店和聚水潭仓账号。计算完成后进入人工核对。','muted');self.note.setWordWrap(True);v.addWidget(self.note)
         self.progress=QProgressBar();self.progress.hide();v.addWidget(self.progress)
-        self.check=button('检查运行条件',self.verify,True);v.addWidget(self.check)
-        self.stop=button('停止本次核验',self.cancel.set);self.stop.setEnabled(False);v.addWidget(self.stop)
+        self.stop=button('取消本次保存',self.reject);self.stop.hide();v.addWidget(self.stop)
         row=QHBoxLayout();self.enable=button('保存并启用',lambda:self.save(True),True);self.save_only=button('仅保存，不启用',lambda:self.save(False));row.addWidget(self.save_only);row.addWidget(self.enable);v.addLayout(row)
         if existing:
             self.name.setText(existing['name']);self.plan.setCurrentIndex(self.plan.findData(existing['plan_id']));self.clock.setTime(self.clock.time().fromString(existing['time'],'HH:mm'));self.kind.setCurrentIndex(self.kind.findData(existing['kind']))
@@ -189,37 +193,62 @@ class Editor(QDialog):
             'time':self.clock.time().toString('HH:mm'),'kind':self.kind.currentData(),'date':self.date.date().toString('yyyy-MM-dd'),
             'weekdays':[i for i,c in enumerate(self.days) if c.isChecked()],'workers':self.workers.value(),'enabled':False})
 
-    def verify(self):
-        if self.worker:return
-        try:value=self.value()
-        except Exception as e:QMessageBox.warning(self,'无法核验',str(e));return
-        self.cancel=threading.Event();self.verified=None;self.progress.setRange(0,0);self.progress.show();self.stop.setEnabled(True)
-        for b in (self.check,self.enable,self.save_only):b.setEnabled(False)
-        def action(p):
-            basis=freeze(self.m.folder,value,sr.stamp().date().isoformat());sig=check_signature(basis)
-            result=self.m.platform(self.cancel).preflight(basis,p)
-            if check_signature(freeze(self.m.folder,value,basis['day']))!=sig:raise ValueError('核验期间参数已变化，请重新检查')
-            return sig,result['message']
-        task=Call(action,self);self.worker=task;task.progress.connect(self.note.setText)
-        task.succeeded.connect(lambda result:self.verified_ok(value,result));task.failed.connect(self.note.setText)
-        def finish():
-            self.worker=None;task.deleteLater();self.progress.setRange(0,1);self.progress.setValue(1);self.stop.setEnabled(False)
-            for b in (self.check,self.enable,self.save_only):b.setEnabled(True)
-        task.finished.connect(finish);task.start()
-
-    def verified_ok(self,value,result):self.verified=(value,result[0]);self.note.setText(result[1])
-
     def save(self,enabled):
+        if self.worker:
+            return
         try:
-            value=self.value();value['enabled']=enabled
+            value = self.value()
+        except ValueError as exc:
+            self.note.setText(str(exc))
+            return
+        value['enabled'] = enabled
+        self.cancel = threading.Event()
+        self.note.setText('正在检查门店和运行设置…' if enabled else '正在保存安排…')
+        self.progress.setRange(0, 0)
+        self.progress.show()
+        self.stop.show()
+        for control in (self.fields, self.enable, self.save_only):
+            control.setEnabled(False)
+
+        def action(progress):
             if enabled:
-                if not self.verified or {**value,'enabled':False}!=self.verified[0]:raise ValueError('设置变化，请先检查运行条件；也可以仅保存')
-                value['check_signature']=self.verified[1]
-            self.m.repo.save_schedule(value,self.existing);self.accept();self.m.poll()
-        except Exception as e:QMessageBox.warning(self,'未保存',str(e))
+                basis = freeze(self.m.folder, value, sr.stamp().date().isoformat())
+                require_arranged_stores(basis, value)
+                self.m.platform(self.cancel).check_saved(basis, progress)
+                value['reuse_verified_bindings'] = True
+            checkpoint(self.cancel)
+            return self.m.repo.save_schedule(value, self.existing)
+
+        saved = []
+        task = Call(action, self)
+        self.worker = task
+        task.progress.connect(self.note.setText)
+        task.succeeded.connect(saved.append)
+        task.failed.connect(self.note.setText)
+
+        def finish():
+            self.worker = None
+            task.deleteLater()
+            self.progress.hide()
+            self.stop.hide()
+            for control in (self.fields, self.enable, self.save_only):
+                control.setEnabled(True)
+            if saved:
+                self.accept()
+                self.m.poll()
+
+        task.finished.connect(finish)
+        task.start()
+
+    def reject(self):
+        if self.worker:
+            self.cancel.set()
+            self.note.setText('正在结束本次保存…')
+            return
+        super().reject()
 
     def closeEvent(self,e):
-        if self.worker:self.cancel.set();self.note.setText('正在安全停止核验，请等待');e.ignore()
+        if self.worker:self.reject();e.ignore()
         else:super().closeEvent(e)
 
 
@@ -232,7 +261,7 @@ class Window(QDialog):
         av=QVBoxLayout(a);actions=QHBoxLayout();av.addLayout(actions)
         for text,fn in [('新增安排',lambda:self.edit()),('编辑所选安排',self.edit_selected),('暂停未来执行',self.disable),('今天立即执行一次',self.manual),('删除执行安排',self.delete_schedule)]:actions.addWidget(button(text,fn))
         self.arrangements=table(['安排','补货预案','重复 / 开始时间','下次执行','状态']);av.addWidget(self.arrangements)
-        av.addWidget(label('预案门店和默认参数在每次任务开始时冻结；修改后需重新检查运行条件。关闭此窗口不停止任务。','muted'))
+        av.addWidget(label('每次运行采用最新保存的参数。预案门店范围变化后，在这里确认并保存安排。关闭窗口后任务继续运行。','muted'))
         bv=QVBoxLayout(b);filters=QHBoxLayout();bv.addLayout(filters);self.query=QLineEdit();self.query.setPlaceholderText('搜索安排或门店');filters.addWidget(self.query)
         self.group=QComboBox()
         for text,data in [('全部记录','all'),('运行 / 暂停','active'),('需处理 / 错过','review'),('有可核对结果','ready'),('已结束','ended')]:self.group.addItem(text,data)
@@ -321,7 +350,7 @@ class Window(QDialog):
     def manual(self):
         def act():
             s=self.schedule()
-            if not s.get('check_signature'):raise ValueError('请编辑安排并检查运行条件，再执行')
+            if not sr.has_verified_bindings(s):raise ValueError('请编辑安排并保存启用，再执行一次')
             if ask(self,'今天执行一次','按该预案获取新文件并计算；不签发、不覆盖当前工作台。继续？'):
                 self.m.repo.manual(s);self.tabs.setCurrentIndex(1);self.refresh();self.m.poll()
         self.guard(act)

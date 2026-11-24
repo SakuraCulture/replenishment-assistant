@@ -61,7 +61,7 @@ def freeze(folder, schedule, day):
 
 
 def check_signature(frozen):
-    # Dates are occurrence-specific. Catalog files are deliberately refreshed on each run.
+    # Legacy seal for arrangements that did not retain their store scope.
     value=copy.deepcopy(frozen)
     for k in ('day','catalog_digests','app_version'):value.pop(k,None)
     for job in value['jobs'].values():
@@ -81,6 +81,13 @@ def matches_check_signature(frozen, expected, folder):
     except (OSError, ValueError):
         return False
     return check_signature({**frozen,'profile':previous})==expected
+
+
+def require_arranged_stores(frozen, schedule):
+    current = {item['code'] for item in frozen['plan']['stores']}
+    approved = {item['code'] for item in schedule.get('stores', [])}
+    if current != approved:
+        raise ValueError('补货预案的门店范围已变化，请编辑安排，确认门店后保存')
 
 
 def check_signed(repo,run,codes):
@@ -109,9 +116,14 @@ class Runner:
         try:
             frozen=self.repo.value(rid,'basis')
             if frozen is None:
-                frozen=freeze(self.folder,run['schedule'],run['day'])
-                if not matches_check_signature(frozen,run['schedule'].get('check_signature'),self.folder):
-                    raise ValueError('预案、默认参数或准入依据已变化，请重新检查运行条件后新建任务')
+                schedule = run['schedule']
+                if not sr.has_verified_bindings(schedule):
+                    raise ValueError('该安排尚未核验门店和仓账号，请从执行安排保存并启用')
+                frozen=freeze(self.folder,schedule,run['day'])
+                if schedule.get('stores'):
+                    require_arranged_stores(frozen, schedule)
+                elif not matches_check_signature(frozen, schedule.get('check_signature'), self.folder):
+                    raise ValueError('旧安排的门店范围无法核对，请编辑安排，确认门店后保存')
                 codes=[i['code'] for i in frozen['plan']['stores']];check_signed(self.repo,run,codes)
                 self.repo.change(rid,epoch=self.epoch,stores=[{**i,'state':'PENDING','message':'等待处理'} for i in frozen['plan']['stores']])
                 self.repo.save_value(rid,'basis',frozen,self.epoch)

@@ -119,9 +119,57 @@ class ExecutionTests(unittest.TestCase):
             # Exact full trees, except documented process/timing diagnostics.
             result.pop('task');expected.pop('task');result.pop('created');expected.pop('created');self.assertEqual(result,expected)
         self.assertEqual(self.work.list_jobs(),[])
-    def test_saved_defaults_change_requires_review(self):
-        d=self.work.stores()['A'];d['preset']['config']['warehouses']['河北仓']=[10,2];self.work.save_stores({'A':d})
-        r=self.run_one();self.assertEqual(r['state'],'REVIEW');self.assertEqual(self.backend.calls,['release'])
+    def test_verified_legacy_arrangement_uses_new_saved_defaults_on_schedule(self):
+        now = datetime(2026, 11, 4, 6, 29, tzinfo=sr.TZ)
+        self.repo.clock = lambda: now
+        self.repo.save_schedule({**self.s, 'enabled': True})
+        record = self.work.stores()['A']
+        record['preset']['config']['warehouses']['河北仓'] = [10, 2]
+        self.work.save_stores({'A': record})
+        now += timedelta(minutes=1)
+        run, = self.repo.due()
+        se.Runner(self.repo, self.backend, self.root).execute(run['id'])
+        current = self.repo.get(run['id'])
+        self.assertEqual(current['state'], 'COMPLETE', current['message'])
+        self.assertEqual(self.repo.value(run['id'], 'basis')['jobs']['A']['warehouses']['河北仓'], [10, 2])
+        self.assertEqual(self.backend.calls, ['acquire', 'sales', 'catalogs', 'release'])
+        self.assertEqual(self.repo.due(), [])
+
+    def test_continue_legacy_attempt_stopped_before_any_platform_work(self):
+        created = self.repo.manual(self.s)
+        claimed = self.repo.claim(created['id'])
+        self.repo.change(created['id'], epoch=claimed['epoch'], state='REVIEW',
+                         message='预案、默认参数或准入依据已变化，请重新检查运行条件后新建任务')
+        record = self.work.stores()['A']
+        record['preset']['config']['warehouses']['河北仓'] = [10, 2]
+        self.work.save_stores({'A': record})
+
+        reopened = sr.Repository(self.work.path, self.repo.clock)
+        original = reopened.get(created['id'])
+        self.assertEqual(original['external'], {})
+        self.assertIsNone(reopened.value(created['id'], 'basis'))
+        reopened.resume(created['id'], original['revision'])
+        se.Runner(reopened, self.backend, self.root).execute(created['id'])
+        current = reopened.get(created['id'])
+        self.assertEqual(current['state'], 'COMPLETE', current['message'])
+        self.assertEqual(current['trigger_key'], created['trigger_key'])
+        self.assertEqual(reopened.list()['total'], 1)
+        self.assertEqual(self.backend.calls, ['acquire', 'sales', 'catalogs', 'release'])
+
+    def test_changed_plan_scope_requires_saving_the_arrangement_again(self):
+        plans_repo = plans.Repository(self.work.path)
+        old = plans_repo.list()[0]
+        plans_repo.save({**old, 'stores': old['stores'][:1]}, old)
+        run = self.run_one()
+        self.assertEqual(run['state'], 'REVIEW')
+        self.assertIn('门店范围已变化', run['message'])
+        self.assertEqual(self.backend.calls, ['release'])
+
+    def test_arrangement_without_verification_still_stops_before_platform_work(self):
+        self.s.pop('check_signature')
+        run = self.run_one()
+        self.assertEqual(run['state'], 'REVIEW')
+        self.assertEqual(self.backend.calls, ['release'])
     def test_warehouse_failure_blocks_dependents_and_success_not_recalculated(self):
         self.backend.data={'山东仓':self.catalogs['山东仓']}
         r=self.run_one();self.assertEqual(r['state'],'REVIEW');self.assertEqual([s['state'] for s in r['stores']],['FAILED','READY'])

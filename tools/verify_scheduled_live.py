@@ -41,7 +41,7 @@ def main():
     from aoxiang_client import ProcessClient
     from catalog_sync_session import SessionOwner as CatalogOwner
     from scheduled_platforms import Platforms
-    from scheduled_execution import freeze,check_signature,Runner
+    from scheduled_execution import freeze,Runner
     import scheduled_replenishment as sr,replenishment_plans,work_repository as wr
     path=wr.Repository(settings).path;repo=sr.Repository(path)
     ax=NS(gate=SessionGate(),store=NS(folder=settings/'aoxiang'))
@@ -69,7 +69,9 @@ def main():
                     progress(check['stage']);time.sleep(.5);check=client.request('setup.status',setup_id=check['id'])
                 if check['state']!='READY' or any(i['state']!='VERIFIED' for i in check['targets']):raise ValueError(str(check.get('error') or check['targets']))
                 client.request('setup.commit',setup_id=check['id']);progress('预案6家门店已核验，仅保存到隔离连接配置')
-            backend.preflight(basis,progress);s['check_signature']=check_signature(basis)
+            backend.release_ax(progress)
+            backend.check_saved(basis, progress)
+            s['reuse_verified_bindings'] = True
             rid=repo.manual(s)['id'];(out/'run-id.txt').write_text(rid,'utf-8')
         started=time.perf_counter();Runner(repo,backend,settings,cancel,progress).execute(rid)
         r=repo.get(rid);report.update(passed=r['state']=='COMPLETE',run=r,elapsed_seconds=time.perf_counter()-started)
