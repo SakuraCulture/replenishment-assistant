@@ -53,6 +53,24 @@ class MigrationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'未列入包的日志文件'):migration.apply(plan)
         self.assertEqual(files(self.target),before)
 
+    @unittest.skipUnless(os.name=='nt','Windows status file sharing')
+    def test_transient_windows_status_sharing_error_retries_only_the_status(self):
+        import ctypes
+        import data_location_status
+        from migration_status import record,latest
+        plan=self.prepare();before=files(self.target);blocked=[]
+        original=data_location_status.atomic_json
+        def publish(path,value):
+            if Path(path).name.endswith('.status.json') and not blocked:
+                blocked.append(path)
+                raise ctypes.WinError(5)
+            return original(path,value)
+        with patch('data_location_status.atomic_json',side_effect=publish):
+            record(plan,'APPLYING',phase='COPYING')
+        self.assertEqual(len(blocked),1)
+        self.assertEqual(latest(self.target)['phase'],'COPYING')
+        self.assertEqual(files(self.target),before)
+
     def test_snapshot_validation_reads_projected_children_once_and_hashes_other_fields(self):
         from maintenance_storage import Editor
         import storage_chunks as chunks
@@ -65,7 +83,7 @@ class MigrationTests(unittest.TestCase):
                 editor.checksum(manifest['tree'])
             with patch.object(editor,'raw',wraps=editor.raw) as raw:
                 actual=editor.checked_fields(manifest,('result','new_focus'))
-            self.assertEqual(actual,{key:payload[key] for key in ('result','new_focus')})
+            self.assertEqual(actual,{key:editor.get(manifest['tree'],(key,)) for key in ('result','new_focus')})
             self.assertEqual(raw.call_args_list,checksum_reads.call_args_list)
             extra=next(v for k,v in manifest['tree'][1] if k=='extra')
             db.execute('DELETE FROM snapshot_chunks WHERE hash=?',(extra[1],))

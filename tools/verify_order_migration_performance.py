@@ -21,6 +21,10 @@ from verify_order_merge import hash_file, read, seed, write
 from data_location_status import read as read_status
 
 
+class BaselineStatusWriteBlocked(RuntimeError):
+    pass
+
+
 def orders(root):
     """Read every saved revision and independently hash ordered rows per warehouse."""
     import snapshot_json as codec
@@ -163,7 +167,7 @@ def run_one(exe, folder, fixture, mode):
         environment.pop(key, None)
     flag = '--order-merge-smoke' if mode == 'merge' else '--migration-shutdown-smoke'
     status_root = status_folder(folder / 'settings')
-    phase_times = {}
+    confirmed = None
     temp_peak = 0
     next_sample = 0
     with (folder / 'process.log').open('wb') as log:
@@ -179,18 +183,26 @@ def run_one(exe, folder, fixture, mode):
                 except FileNotFoundError:
                     pass
                 next_sample = time.perf_counter() + .25
-            try:
-                nonce = read_status(status_root / 'latest.json')['nonce']
-                observed = read_status(status_root / (nonce + '.status.json'))
-                phase_times.setdefault(observed['phase'], time.perf_counter() - started)
-            except FileNotFoundError:
-                pass
+            if confirmed is None and (folder / 'confirm-events.jsonl').is_file():
+                # The test posts confirmation immediately after this event. An
+                # append-only log avoids opening rc36's live atomic status file.
+                events = (folder / 'confirm-events.jsonl').read_text('utf-8', errors='replace')
+                marker = 'preview_verified' if mode == 'merge' else '核对完整恢复范围'
+                if marker in events:
+                    confirmed = time.perf_counter() - started
             time.sleep(.05)
         finished = time.perf_counter() - started
         peak_rss = memory_peak(process)
     nonce = read_status(status_root / 'latest.json')['nonce']
     receipt = read_status(status_root / (nonce + '.status.json'))
     if process.returncode or receipt['state'] != 'COMPLETED':
+        close_progress(process.pid)
+        error = receipt.get('error', {}).get('message', '')
+        if (receipt['state'] == 'FAILED' and receipt['phase'] == 'COPYING' and '[WinError 5]' in error
+                and '.status.json' in error and not Path(receipt['backup']).exists()
+                and not (folder / '.settings.order-import.json').exists()
+                and orders(folder / 'settings') == details['target']):
+            raise BaselineStatusWriteBlocked(str(folder))
         raise AssertionError((folder, process.returncode, receipt))
     close_progress(process.pid)
     if orders(Path(receipt['backup'])) != details['target']:
@@ -210,13 +222,14 @@ def run_one(exe, folder, fixture, mode):
                 if phase.startswith(('migration.verify.', 'migration.sqlite.')):
                     phase = scope + '.' + phase
                 elapsed[phase] += row['seconds']
+            if row['stage'] == 'migration.prepare.total':
+                scope = 'apply'
     native = record_operation(folder)
     preflight = native.get('seconds', elapsed.get('migration.prepare.total'))
-    terminal = phase_times.get('COMPLETED', finished)
-    apply_ui = terminal - phase_times['PREPARED'] if 'PREPARED' in phase_times else None
+    apply_ui = finished - confirmed if confirmed is not None else None
     result = {'exe': str(exe), 'mode': mode, 'package_sha256': details['package_sha256'],
               'orders_verified': len(actual), 'prepared_seconds': preflight, 'confirm_to_terminal_seconds': apply_ui,
-              'launch_to_exit_seconds': finished, 'phases': dict(elapsed), 'observed_phases': phase_times,
+              'launch_to_exit_seconds': finished, 'phases': dict(elapsed),
               'peak_rss_bytes': peak_rss, 'sampled_temporary_peak_bytes': temp_peak,
               'stage_receipt': receipt['state'], 'nonce': nonce, 'native_prepare_log': native}
     write(folder / 'timing.json', result)
@@ -247,7 +260,15 @@ def main():
         for mode in ('replace', 'merge'):
             for label, exe in (list(builds.items()) if index % 2 else reversed(list(builds.items()))):
                 print(index, mode, label, flush=True)
-                result = run_one(exe, out / f'{index}-{mode}-{label}', fixture, mode)
+                run_name = f'{index}-{mode}-{label}'
+                try:
+                    result = run_one(exe, out / run_name, fixture, mode)
+                except BaselineStatusWriteBlocked as failure:
+                    if not label.startswith('rc36'):
+                        raise
+                    print('Legacy status publication blocked, original target verified:', failure, flush=True)
+                    result = run_one(exe, out / (run_name + '-retry'), fixture, mode)
+                    result['earlier_failed_attempt'] = str(failure)
                 results.append({'round': index, 'build': label, **result})
                 write(out / 'runs.json', results)
     summaries = {}
