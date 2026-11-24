@@ -23,13 +23,14 @@ def start_smoke(app,win,args):
             from final_list_filter_ui import FilterDialog
             from final_list_bulk_ui import BulkDialog
             from readable_ui import failure_message
-            def row(store,sku,step,qty,cat,week,month):
-                return dict(B=store,E=sku,D='合成商品'+sku,AU='山东仓',G='包',BD=step,V=2,S='启用',H=1,I=week,J=month,K=0,L=0,N=0,
-                    U='快销',_category=cat,AN=2,AM=1,BH=10,BN=10,AS=qty,BV=qty*2,_source='资料匹配',_meta={'blocking':[],'notes':[]},_audit={},
-                    _preview=False,_candidate_qty=qty,_candidate_amount=qty*2,_must_sell=False)
+            def row(store,sku,step,qty,cat,week,month,price=2):
+                return dict(B=store,E=sku,D='合成商品'+sku,AU='山东仓',G='包',BD=step,V=price,S='启用',H=1,I=week,J=month,K=0,L=0,N=0,
+                    U='快销',_category=cat,AN=2,AM=1,BH=10,BN=10,AS=qty,BV=qty*price,_source='资料匹配',_meta={'blocking':[],'notes':[]},_audit={},
+                    _preview=False,_candidate_qty=qty,_candidate_amount=qty*price,_must_sell=False)
             win.results={}
             for s in ['QA1','QA2']:
-                rows=[row(s,'drink',24,24,'饮料',10,30),row(s,'food',12,12,'食品',1,5),row(s,'missing',1,0,None,0,None)]
+                rows=[row(s,'drink',24,24,'饮料',10,30,price=2.25),row(s,'premium',24,24,'饮料',10,30,price=5.51),
+                      row(s,'food',12,12,'食品',1,5),row(s,'missing',1,0,None,0,None)]
                 win.results[s]={'rows':rows,'store':s,'store_name':'隔离门店'+s,'config':{'parameters':{'cap_days':21}},'budget':{'enabled':False},'summary':sem.summarize(rows),'sources':{'fixture':'synthetic'}}
             win.states={s:{'state':'已完成','name':r['store_name']} for s,r in win.results.items()};win.preissue_drafts={};win.input_dirty=False
             before=copy.deepcopy(win.results);d=FinalListDialog(win,list(win.results));dialogs.append(d);d.show();QTest.qWait(100)
@@ -43,11 +44,13 @@ def start_smoke(app,win,args):
                     for i in range(w.count()):w.item(i).setCheckState(Qt.CheckState.Checked if w.item(i).text()=='饮料' else Qt.CheckState.Unchecked)
                     op,low,high=f.numbers['month'];op.setCurrentIndex(op.findData('ge'));low.setText('30')
                     op,low,high=f.numbers['available'];op.setCurrentIndex(op.findData('le'));low.setText('0')
+                    op,low,high=f.numbers['price'];op.setCurrentIndex(op.findData('between'));low.setText('2.25');high.setText('5.50')
                     f.grab().save(str(out/'01-filter-editor.png'));f.accept()
                 except Exception:modal_errors.append(traceback.format_exc());f.reject()
-            QTimer.singleShot(20,configure_filters);d.edit_business_filters()
-            require(not modal_errors and d.proxy.rowCount()==2,'Actual category/month-sales/stock filter matches two stores; missing sales excluded')
-            require(len(d.model.checked)==6 and len(d.chosen())==2 and '筛选外4款' in d.metrics.text(),'Hidden checked products preserved and default batch scope excludes them')
+            QTimer.singleShot(20,configure_filters);d.business_btn.click()
+            matched=[d.proxy.index(i,3).data() for i in range(d.proxy.rowCount())]
+            require(not modal_errors and matched==['drink','drink'],'Actual decimal unit-price, category, monthly-sales and stock conditions select the two matching rows')
+            require(len(d.model.checked)==8 and len(d.chosen())==2 and '筛选外6款' in d.metrics.text(),'Hidden checked products preserved and default batch scope excludes them')
             d.grab().save(str(out/'02-filtered-final-list.png'))
             def configure_bulk(cancel=False):
                 b=app.activeModalWidget()
@@ -89,9 +92,18 @@ def start_smoke(app,win,args):
             exports=out/'exports';exports.mkdir();batch=normal_delivery.prepare_batch(repository,payload,['QA1','QA2']);done=normal_delivery.execute_batch(repository,batch,exports)
             require(len(done['paths'])==2 and all(Path(p).is_file() for p in done['paths']),'Reviewed batch signs and exports both isolated stores')
             import openpyxl
-            for path in done['paths']:
+            from lifecycle_batch import export_signed
+            from normal_exports import SHEETS
+            originals=out/'original-signed';originals.mkdir()
+            selected=[head for order in done['orders'] for head in order['warehouse_heads']]
+            reexports=export_signed(win.work_repository.path,selected,originals)
+            require(len(reexports)==2,'Export of the two original signed revisions succeeds')
+            for path in [*done['paths'], *reexports]:
                 book=openpyxl.load_workbook(path,read_only=True)
-                try:require(bool(order_identity.read(book)),'Export retains hidden signed identity')
+                try:
+                    require(bool(order_identity.read(book)),'Export retains hidden signed identity')
+                    require(book.active.title==SHEETS[-1] and next(book.active.iter_rows(min_row=2, values_only=True),None),
+                            'Signed workbook opens on a sheet with product details')
                 finally:book.close()
             report={'passed':True,**diagnostic(),'checks':checks,'synthetic':True,'live_platform':False}
         except Exception:report={'passed':False,'checks':checks,'error':traceback.format_exc()}

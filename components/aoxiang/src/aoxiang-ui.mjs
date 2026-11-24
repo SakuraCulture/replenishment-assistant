@@ -93,7 +93,10 @@ export class AoxiangUI {
     const identity=sent.then(async request=>{
       const response=await bounded(request.response(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份查询没有取得响应');
       if(!response)fail('IDENTITY_RESPONSE_TIMEOUT','本次身份查询失败');
-      return identityFrom(parseResponse(await bounded(response.text(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份响应未读取完成')));
+      const identity=identityFrom(parseResponse(await bounded(response.text(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','本次身份响应未读取完成')));
+      const url=request.method?.()==='GET'?new URL(request.url()):null;
+      this.loginReadUrl=url&&!url.search?url.href:null;
+      return identity;
     }).catch(error=>{
       if(error.code==='IDENTITY_RESPONSE_TIMEOUT'&&!error.details)
         fail(error.code,error.message,identityDetails(error,'读取身份响应',this.timeoutMs));

@@ -10,6 +10,7 @@ import time
 import jst_auto_order_store as store
 import jst_auto_order_template as template
 import jst_order_confirmation as confirmation
+import jst_order_payment as order_payment
 import jst_order_store as allocations
 import lifecycle_store
 import payment_shop_names
@@ -98,8 +99,14 @@ def selection(records, chosen):
     if not result:
         raise Check('请勾选要制表的仓单')
     for r in result:
-        if not r['gid'] or r['state']!='ready':
-            raise Check(show_name(r['head'])+'：需要当前有效的已保存生成单')
+        if not r['gid'] or r['state'] != 'ready':
+            message = show_name(r['head']) + '：需要当前有效的已保存生成单'
+            if r.get('reason'):
+                message += '\n' + r['reason']
+            if r['state'] == 'pending' and not r['gid']:
+                message += ('\n已有聚水潭原单，请先在「自动下单任务」核对。'
+                            '已有分配批次时继续原批。首次分配可点「准备新分配批次」。')
+            raise Check(message)
     return [{'gid':r['gid'],'head':r['head']} for r in result]
 
 
@@ -333,12 +340,7 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
     proof=order['proof']
     if result.get('binding')!=proof['binding'] or result.get('online')!=order['online']:
         raise Check('回查的企业、店铺或线上单号与原任务不同')
-    if identity_only:
-        buyer_problem=confirmation.buyer_issue(result)
-        if buyer_problem:
-            detail=result.get('detail_error')
-            raise Check(buyer_problem+(' · '+detail if detail and result.get('buyer_check')=='unavailable' else ''))
-    else:
+    if not identity_only:
         _preview_evidence(order, {**result,'exists':False,'issues':[]})
     internal=result.get('internal')
     if not isinstance(internal,str) or not re.fullmatch(r'[0-9]{1,40}',internal) or order['internal'] not in (None,internal):
@@ -347,6 +349,14 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
     native_status=result.get('native_status')
     if identity_only and native_status not in confirmation.PAYMENT_STATES | confirmation.REVERSED:
         raise Check('已查到原单，平台状态仍待核')
+    matched_preview = False
+    if identity_only:
+        buyer_problem = confirmation.buyer_issue(result)
+        if buyer_problem:
+            if result.get('buyer_check') != 'unavailable' or native_status not in confirmation.PAYMENT_STATES:
+                raise Check(buyer_problem)
+            order_payment.verify_details({**order, 'internal': internal}, result, cancel)
+            matched_preview = True
     state='review' if native_status == CANCELLED else reported_state
     confirmed=identity_only and native_status in confirmation.PAYMENT_STATES
     if confirmed:
@@ -386,6 +396,8 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             reason+=' · '+issues
     if confirmed and stage in ('IMPORTED','AUDITED'):
         reason=f'已核对原单，聚水潭当前为“{native_status}”'
+    if matched_preview:
+        reason=f'已按原平台预览及逐项明细核对原单，聚水潭当前为“{native_status}”'
     if native_status == CANCELLED:
         stage, state = 'CANCELLED', 'cancelled'
         reason = PAYMENT_REVIEW+'；可沿原仓单重做'
@@ -401,6 +413,12 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             return latest
         if allocations.active(db,h)!=order['gid']:
             raise wr.Conflict('外部原单已查到，本机原生成版本已变化，请核对关联')
+        if matched_preview:
+            from warehouse_execution import validate_visibility
+            validate_visibility(db, h)
+            generation, digest = allocations.read_generation(db, order['gid'])
+            if digest != order['payload']['generation']['digest'] or any(generation['head'].get(k) != h[k] for k in HEAD_KEYS):
+                raise wr.Conflict('原仓单签发修订或生成单摘要已变化，请核对原关联')
         current=store.update(db,order,stage,internal=internal,status=state,reason=reason)
         lock=allocations.locked(db,h)
         if lock and lock!=order['gid']:
@@ -417,6 +435,8 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             lifecycle_store.save_mapping(db,'payment',ref,{'head':{k:h[k] for k in HEAD_KEYS},'number':internal,
                                                           'saved':wr.now(),'source':'聚水潭自动下单'})
         detail={'internal':internal,'stage':stage}
+        if matched_preview:
+            detail['identity_basis']='original_preview_and_item_details'
         if native_status in (ORDINARY_AUDIT_DONE,'已付款待审核',*SHIPPING_PLATFORM_STATES,*REVIEW_PLATFORM_STATES):
             detail['native_status']=native_status
         if (stage=='AUDITED' and not identity_only) or native_status in confirmation.REVERSED:

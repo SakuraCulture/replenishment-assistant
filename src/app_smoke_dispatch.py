@@ -15,6 +15,7 @@ WINDOW_SMOKES = {
     '--memory-load-smoke': 'memory_load_smoke',
     '--migration-shutdown-smoke': 'migration_shutdown_smoke',
     '--order-merge-smoke': 'order_merge_smoke',
+    '--order-selection-smoke': 'order_selection_smoke',
     '--operations-lifecycle-smoke': 'operations_lifecycle_smoke',
     '--jst-carton-smoke': 'jst_carton_smoke',
     '--stockout-hub-smoke': 'stockout_hub_smoke',

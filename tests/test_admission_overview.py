@@ -66,6 +66,57 @@ class OverviewTests(Fixture,unittest.TestCase):
         target=self.root/'out.xlsx';view.export(target,'refusals',rows[:1],{'搜索条件':'=test','条数':1});wb=load_workbook(target)
         self.assertEqual(wb.sheetnames,['门店拒收清单','查询范围']);ws=wb.worksheets[0]
         self.assertEqual(list(ws.values),[tuple(view.REF_HEADERS),tuple(rows[0])]);self.assertEqual(ws['E2'].data_type,'s');self.assertEqual(ws['C2'].data_type,'s');self.assertEqual(ws.freeze_panes,'C2');wb.close()
+    def test_qualification_export_uses_the_import_template_and_keeps_query_values(self):
+        from openpyxl import load_workbook
+        from admission_ui import read_import
+        from import_templates import write
+        data=self.load(known={'000000123456789012345':'未登记店'})
+        rows=data['qualification'];target=self.root/'export.xlsx';blank=self.root/'template.xlsx'
+        view.export(target,'qualification',rows,{'查询日期':data['day']})
+        write('store_qualification',blank)
+        exported=load_workbook(target);template=load_workbook(blank)
+        try:
+            self.assertEqual(exported.sheetnames[:2],template.sheetnames)
+            self.assertEqual([c.value for c in exported.active[1]],[c.value for c in template.active[1]])
+            self.assertEqual(list(exported[view.QUAL_REPORT].values),[tuple(view.QUAL_HEADERS),*(tuple(None if value=='' else value for value in row) for row in rows)])
+            self.assertEqual(exported.active['A2'].value,'000000123456789012345')
+            self.assertEqual(exported.active['A2'].data_type,'s')
+            self.assertIsNone(exported.active['B2'].value)
+        finally:exported.close();template.close()
+        imported={row['store']:row['value'] for row in read_import(target,'store_qualification')['rows']}
+        self.assertNotIn('000000123456789012345',imported)
+        self.assertEqual(imported['A']['state'],'已核验')
+        self.assertEqual(imported['EXPIRED']['state'],'已核验')
+        self.assertEqual(imported['EXPIRED']['expires'],'2026-11-04')
+        self.assertEqual(view.qualification_state(imported['EXPIRED'],data['day']),'已到期')
+        self.assertEqual(imported['ORPHAN']['state'],'无资质')
+
+    def test_old_qualification_report_can_reimport_registration_values(self):
+        from openpyxl import Workbook
+        from admission_ui import read_import
+        target=self.root/'rc35-export.xlsx';wb=Workbook();sheet=wb.active;sheet.title=view.QUAL_REPORT
+        sheet.append(view.QUAL_HEADERS)
+        for row in self.load(known={'NEW':'未登记店'})['qualification']:sheet.append(row)
+        wb.save(target);wb.close()
+        imported={row['store']:row['value'] for row in read_import(target,'store_qualification')['rows']}
+        self.assertNotIn('NEW',imported)
+        self.assertEqual(imported['EXPIRED']['state'],'已核验')
+        self.assertEqual(imported['EXPIRED']['source']['original']['当前有效状态'],'已到期')
+
+    def test_qualification_import_requires_status_and_verification_evidence(self):
+        from openpyxl import Workbook
+        from admission_ui import read_import
+        p=self.root/'status.xlsx';wb=Workbook();ws=wb.active;ws.title='门店资质'
+        ws.append(['门店编码','资质状态','核验人','核验日期'])
+        ws.append(['0001',None,None,None]);wb.save(p)
+        self.assertEqual(read_import(p,'store_qualification')['rows'],[])
+        ws['C2']='合成核验员';wb.save(p)
+        with self.assertRaisesRegex(ValueError,'补填资质状态'):read_import(p,'store_qualification')
+        ws['B2']='有效';wb.save(p)
+        with self.assertRaisesRegex(ValueError,'核验人和核验日期'):read_import(p,'store_qualification')
+        ws['D2']='2026-11-05';wb.save(p);wb.close()
+        self.assertEqual(read_import(p,'store_qualification')['rows'][0]['value']['state'],'已核验')
+
     def test_cancel_after_write_preserves_existing_target(self):
         target=self.root/'out.xlsx';target.write_bytes(b'original');cancel=Event()
         def progress(_):cancel.set()
@@ -111,6 +162,35 @@ class OverviewUITests(Fixture,unittest.TestCase):
         with patch('export_locations.save_file',return_value=(str(self.root/'out.xlsx'),'Excel')),patch('admission_overview_ui.run') as run:
             d.export_filtered();self.assertEqual([r[2] for r in run.call_args.args[2][2]],['003'])
         d.close()
+    def test_qualification_import_only_writes_edited_store(self):
+        from admission_ui import import_records
+        from openpyxl import load_workbook
+        from PySide6.QtWidgets import QDialog
+        file=self.root/'reimport.xlsx'
+        book=self.load(known={'NEW':'未登记店'})
+        view.export(file,'qualification',book['qualification'],{'查询日期':book['day']})
+        selector=Mock(paths=[str(file)]);selector.exec.return_value=QDialog.DialogCode.Accepted
+        with patch('import_ui.ImportDialog',return_value=selector), \
+                patch('admission_ui.run',side_effect=lambda parent,fn,args,*a,**kw:fn(*args)), \
+                patch('admission_ui.review_rows',return_value=True) as review, \
+                patch('admission_ui.QMessageBox.information'),patch('admission_ui.QMessageBox.warning') as warning, \
+                patch('admission_ui.invalidate') as invalidate:
+            before=self.path.read_bytes()
+            self.assertIsNone(import_records(None,self.host,'store_qualification',show_saved=False))
+            self.assertEqual(self.path.read_bytes(),before)
+            review.assert_not_called();invalidate.assert_not_called()
+            wb=load_workbook(file)
+            row=next(row[0].row for row in wb.active.iter_rows(min_row=2) if row[0].value=='A')
+            wb.active.cell(row,7,'核对后更新备注');wb.save(file);wb.close()
+            result=import_records(None,self.host,'store_qualification',show_saved=False)
+            self.assertEqual(result,{'stores':['A'],'keys':[('A',None)]})
+            invalidate.assert_called_once_with(self.host,['A'])
+            warning.assert_not_called()
+        updated=self.load()['records']
+        self.assertEqual(updated['A']['qualification']['note'],'核对后更新备注')
+        self.assertEqual(updated['A']['refusals'],self.values['A']['refusals'])
+        self.assertEqual(updated['EXPIRED'],self.values['EXPIRED'])
+        self.assertNotIn('NEW',updated)
     def test_readonly_view_allows_query_but_blocks_maintenance(self):
         from admission_overview_ui import Overview
         self.host.readonly=True;d=Overview(None,self.host);d.update_controls();self.assertFalse(d.edit_btn.isEnabled());self.assertFalse(d.import_btn.isEnabled());d.close()

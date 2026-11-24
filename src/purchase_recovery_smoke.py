@@ -44,13 +44,11 @@ def start_smoke(app,win,args):
                 if action=='configuration':return {'purchase_pipeline':True}
                 id=kw.get('purchase_id');r=records[id]
                 if action=='purchase.status':return copy.deepcopy(r)
-                if action!='purchase.start':raise AssertionError(action)
+                if action!='purchase.verify':raise AssertionError(action)
                 # This test permits only continuation of already accepted tasks.
                 if not r['uploadAttempted'] or not r.get('taskId'):raise AssertionError('Unexpected upload dispatch')
                 starts.append(id);polls[id]=polls.get(id,0)+1
-                if id=='synthetic-0' and polls[id]==1:
-                    r.update(state='ACCEPTED',error={'code':'TASK_PENDING','message':'原导入任务尚未完成'})
-                else:r.update(state='BOUND',binding={'orderId':'PO-'+id,'status':'待提交'},error=None)
+                r.update(state='BOUND',binding={'orderId':'PO-'+id,'status':'待入库'},error=None)
                 return copy.deepcopy(r)
         def batch(ids,states):
             heads=[{'oid':'OID-'+str(n),'day':'2026-11-07','store':'TEST-'+str(n),'name':'合成门店'+str(n),
@@ -74,6 +72,10 @@ def start_smoke(app,win,args):
                     'result':{'binding':copy.deepcopy(records['synthetic-'+str(ids[pos])]['binding'])} if state=='BOUND' else {}})
             return manager.store.update(j['id'],state='COMPLETED_WITH_ERRORS')
         try:
+            # Both the source-identity/HASH reader and native per-SKU proof run in
+            # focused tests. This UI fixture substitutes only the platform basis.
+            original_units=patch('aoxiang_upload_pipeline.original_units',return_value={'0001':'件'})
+            original_units.start()
             build=Path(getattr(sys,'_MEIPASS',Path(__file__).parent))/'build_info.json'
             report['source_commit']=json.loads(build.read_text('utf-8'))['source_commit'] if build.exists() else 'source'
             win.auto_check.stop();win.jst_generator.stopped=True;win.jst_generator.timer.stop()
@@ -103,10 +105,19 @@ def start_smoke(app,win,args):
             assert all(a==b for n,(a,b) in enumerate(zip(one['items'],job['items'])) if n!=1)
             checks.append('D16缺回执显示专门提示，实际单项按钮只派发原单核对，同批其他项保留')
             dialog.refresh()
+            with manager.maintenance():
+                dialog.table.cellWidget(2,8).click()
+                dialog.table.cellWidget(3,8).click()
+                queued=manager.store.get(job['id'])
+                assert queued['verification_queue']==[queued['items'][i]['item_id'] for i in (2,3)]
+            manager.tick()
+            wait(lambda:manager.worker is None and manager.store.get(job['id'])['items'][3]['state']=='BOUND')
+            checks.append('连续点击两行分别持久入队，沿各自受理任务完成查询')
+            dialog.refresh()
             dialog.retry_btn.click();wait(lambda:manager.worker is None and manager.store.get(job['id'])['state']=='COMPLETED')
             dialog.refresh();after=manager.store.get(job['id'])
             assert all(i['state']=='BOUND' for i in after['items']) and after['items'][5]==successful
-            assert set(starts)=={'synthetic-'+str(n) for n in range(5)} and polls['synthetic-0']==2
+            assert set(starts)=={'synthetic-'+str(n) for n in range(5)} and polls['synthetic-0']==1
             assert all(a['package']==b['package'] for a,b in zip(job['items'],after['items']))
             dialog.grab().save(str(out/'02-原任务全部核验关联.png'));checks.append('已受理任务先等待再关联，原任务身份不变，已成功第六单不重复执行')
             checks.append('采购创建动作零次；组件边界只接收已有任务的结果核验')
@@ -122,12 +133,17 @@ def start_smoke(app,win,args):
             dialog.retry_btn.click();wait(lambda:manager.worker is None and manager.store.get(unknown['id'])['state']=='COMPLETED_WITH_ERRORS')
             dialog.refresh();assert len(starts)==before
             dialog.table.selectRow(0)
-            box_action(dialog.reason_btn.click,['可能已建单','结束所选任务并重建预览','新预览仍需确认上传'],'04-无回执处理方法.png')
+            box_action(dialog.reason_btn.click,['可能已建单','单据详情'],'04-无回执处理方法.png')
             checks.append('真正没有回执时保持保护，弹框说明可能已建单及核对路径')
             dialog.accept();dialogs.remove(dialog);dialog.deleteLater()
             reopened=QueueDialog(host,manager,job['id']);dialogs.append(reopened);reopened.show();app.processEvents()
             assert all(reopened.table.item(n,4).text()=='已关联采购单' for n in range(6))
-            assert not reopened.retry_btn.isEnabled();checks.append('关闭重开保留六笔关联状态，完成项不再提供重试')
+            assert not reopened.retry_btn.isEnabled()
+            reopened.table.cellWidget(1,8).click()
+            wait(lambda:manager.worker is None and manager.store.get(job['id'])['items'][1]['state']=='BOUND')
+            repeated=manager.store.get(job['id'])['items'][1]['result']['binding']
+            assert repeated=={'orderId':'PO-synthetic-1','status':'待入库'}
+            checks.append('关闭重开保留六笔关联；重复核对仍关联同一个原采购单号及待入库状态')
             reopened.accept();dialogs.remove(reopened);reopened.deleteLater()
             from retry_profile_smoke import install
             from stock_diagnosis_ui import DiagnosisDialog
@@ -151,6 +167,7 @@ def start_smoke(app,win,args):
             report.update(passed=True,original_task_checks=starts,synthetic_uploads=0)
         except Exception:report['error']=traceback.format_exc()
         finally:
+            if 'original_units' in locals():original_units.stop()
             for dialog in dialogs:dialog.close();dialog.deleteLater()
             if manager:
                 manager.prepare_close()

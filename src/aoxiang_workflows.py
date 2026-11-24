@@ -304,7 +304,7 @@ class Workflows:
             if job['state'] not in ('PAUSED', 'YIELDED', 'FAILED'):
                 raise ValueError('此批次不需要继续')
             scope=job.get('dispatch_keys')
-            if scope is not None and not any(i['key'] in scope and i['state'] not in DONE_ITEM for i in job['items']):
+            if not job.get('verification_queue') and scope is not None and not any(i['key'] in scope and i['state'] not in DONE_ITEM for i in job['items']):
                 raise ValueError('上次勾选范围已经完成；请勾选其他未处理订单，再点“仅执行勾选项”')
             job['state'] = 'QUEUED'
             return self._save(db, job, 'RESUMED_ORIGINAL')
@@ -450,7 +450,64 @@ class Workflows:
             for row in db.execute("SELECT payload FROM ax_workflows WHERE state='RUNNING'").fetchall():
                 job = json.loads(row[0])
                 job.update(state='YIELDED' if job.get('automatic') else 'PAUSED', message='上次中断；保留确切采购及下载任务，继续前读取原状态')
+                if job.get('verification_queue'):
+                    job.update(state='QUEUED', verification_only=True, next_poll_at=0)
                 self._save(db, job, 'RECOVERED_WITHOUT_REPLAY')
+
+    def queue_verification(self, id, item_ids):
+        """Accept original-order lookups by stable item identity, including while busy."""
+        with self.db(True) as db:
+            job = self._get(db, id)
+            items = {i['item_id']: i for i in job['items']}
+            if job['kind'] != 'upload' or job['state'] == 'CANCELLED' or job.get('successor'):
+                raise ValueError('请打开可核对的原采购批次')
+            if not item_ids or any(k not in items or items[k].get('source_deleted') or items[k].get('rebuild_to')
+                                   or not _purchase_id(items[k]) or items[k]['state'] not in ('ACCEPTED','FAILED','REVIEW','BOUND')
+                                   for k in item_ids):
+                raise ValueError('原仓单或采购任务已变化，请刷新后核对')
+            queue = list(dict.fromkeys([*job.get('verification_queue', []), *item_ids]))
+            job['verification_queue'] = queue
+            if job['state'] not in ('RUNNING', 'QUEUED', 'YIELDED') or job.get('verification_only'):
+                if job['state'] != 'RUNNING':
+                    job.update(state='QUEUED', verification_only=True, next_poll_at=0)
+            job['message'] = f'已排入原单核对 {len(queue)} 单'
+            return self._save(db, job, 'ORIGINAL_VERIFICATION_QUEUED')
+
+    def settle_verification(self, id, item_id, execution_token, changes):
+        with self.db(True) as db:
+            job = self._get(db, id)
+            if job.get('execution_token') != execution_token:
+                from deletion_barrier import SourceDeleted
+                raise SourceDeleted('原核对任务已变化')
+            for item in job['items']:
+                if item['item_id'] == item_id:
+                    item.update(changes)
+                    break
+            job['verification_queue'] = [k for k in job.get('verification_queue', []) if k != item_id]
+            return self._save(db, job, 'ORIGINAL_VERIFICATION_RESULT', item_id=item_id)
+
+    def finish_upload(self, id, execution_token, state, *, next_poll_at=0, message=None, verification=False):
+        from aoxiang_workflow_state import reconcile, summary
+        with self.db(True) as db:
+            job = self._get(db, id)
+            if job.get('execution_token') != execution_token:
+                from deletion_barrier import SourceDeleted
+                raise SourceDeleted('原采购执行已变化')
+            if job.get('verification_queue'):
+                if not verification and state == 'QUEUED':
+                    job['verification_resume_at'] = next_poll_at
+                job.update(state='QUEUED', verification_only=True, next_poll_at=0,
+                           message=f'已排入原单核对 {len(job["verification_queue"])} 单')
+            elif verification:
+                job.pop('verification_only', None)
+                resume_at = job.pop('verification_resume_at', None)
+                job.update(state='COMPLETED', next_poll_at=0)
+                job = reconcile(job)
+                if resume_at is not None:
+                    job.update(state='QUEUED', next_poll_at=resume_at, message=summary(job))
+            else:
+                job.update(state=state, next_poll_at=next_poll_at, message=message or summary({**job, 'state': state}))
+            return self._save(db, job, 'UPLOAD_PASS_FINISHED')
 
     def retry_items(self, id, positions, expected_sequence):
         """Re-arm original items; keep package IDs and successful siblings intact."""

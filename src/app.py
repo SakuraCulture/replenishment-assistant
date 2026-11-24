@@ -124,6 +124,9 @@ if __name__=="__main__":
     if '--data-location-progress' in sys.argv:
         from data_location_progress import main as progress_main
         sys.exit(progress_main(sys.argv[sys.argv.index('--data-location-progress')+1:]))
+    if '--order-migration-progress' in sys.argv:
+        from order_migration_progress import main as migration_progress_main
+        sys.exit(migration_progress_main(sys.argv[sys.argv.index('--order-migration-progress')+1:]))
     smokes.run_catalog_helper(sys.argv)
     if '--catalog-validate' in sys.argv:
         from catalog_sync_validation import cli

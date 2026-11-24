@@ -10,6 +10,7 @@ from version_info import diagnostic
 
 def start_smoke(app,win,args):
     fixture,out=map(Path,args[:2]);out.mkdir(parents=True,exist_ok=True);state={'step':0,'start':time.monotonic(),'checks':[],'moved':[]};timer=QTimer(win)
+    overwrite_only='--draft-overwrite-only' in args[2:]
     def snap(name):win.repaint();assert win.grab().save(str(out/(name+'.png')))
     def finish(error=None):
         timer.stop()
@@ -23,7 +24,10 @@ def start_smoke(app,win,args):
                 box=QApplication.activeModalWidget()
                 if not (box is not None and box.objectName()=='dailyOverwrite'):
                     QTimer.singleShot(50,click);return
-                assert box.defaultButton().text()=='取消';assert '原已完成现失效' in box.detailedText();assert box.grab().save(str(out/(name+'.png')))
+                assert box.defaultButton().text()=='取消'
+                assert '完成变失效：' in box.information.text()
+                assert any('原已完成现失效' in row[0] for row in box.business_model.rows)
+                assert box.grab().save(str(out/(name+'.png')))
                 QTest.mouseClick(next(b for b in box.buttons() if b.text()==choice),Qt.MouseButton.LeftButton)
             except Exception:finish(traceback.format_exc())
         QTimer.singleShot(100,click)
@@ -33,7 +37,10 @@ def start_smoke(app,win,args):
             if QApplication.activeModalWidget() is not None:return
             step=state['step']
             if step==0:
-                for w in wc.WAREHOUSES:win.catalog_imported(wc.import_catalog(fixture/(w+'.xlsx'),w))
+                for w in wc.WAREHOUSES:
+                    catalog=wc.import_catalog(fixture/(w+'.xlsx'),w)
+                    win.catalog_repository.save(catalog)
+                    win.current_warehouse_adopted(catalog)
                 win.sales.add_paths([str(fixture/'sales.xlsx')]);win.start_load();state['step']=1
             elif step==1 and win.worker is None:
                 assert win.loaded
@@ -45,6 +52,8 @@ def start_smoke(app,win,args):
                 for s,w in win.store_widgets.items():
                     w['mode'].setCurrentIndex(1);w['primary'].setCurrentIndex(w['primary'].findData('河北仓'));w['secondary'].setCurrentIndex(w['secondary'].findData('山东仓'))
                 win.navigate(1);state['step']=10
+                if overwrite_only:
+                    win.start_calculation();state['step']=2;return
                 def edit():
                     try:
                         dialog=QApplication.activeModalWidget();assert hasattr(dialog,'param_table');dialog.param_table.cellWidget(list(ps.HELP).index('probability'),1).setValue(.5);assert dialog.grab().save(str(out/'01_完整超参.png'))
@@ -63,7 +72,13 @@ def start_smoke(app,win,args):
                 w=win.store_widgets['QA_A'];w['mode'].setCurrentIndex(2);w['amount'].setText('0');assert win.states['QA_A']['state']=='待重算';assert win.states['QA_B']['state']=='已完成'
                 state['step']=20;overwrite('取消','03_取消覆盖');assert not win.save_current();assert win.work_repository.get_job(win.job_day)['revision']==state['original']['revision']
                 overwrite('覆盖当天记录','04_确认覆盖');assert win.save_current();record=win.work_repository.get_job(win.job_day);assert record['revision']!=state['original']['revision'] and len(win.work_repository.list_jobs())==1
-                assert record['summary']['completed']==1 and win.work_repository.stores()['QA_A']['ui']['mode']==1
+                assert record['summary']['completed']==1
+                if overwrite_only:
+                    assert record['summary']['stores']['QA_A']['state']=='待重算'
+                    assert record['summary']['stores']['QA_B']['state']=='已完成'
+                    state['checks'].append('daily overwrite shows invalidated store; cancel retains original revision; confirm persists the changed draft exactly once')
+                    return finish()
+                assert win.work_repository.stores()['QA_A']['ui']['mode']==1
                 state['checks'].append('first save; same-day modal defaults to cancel; cancellation preserves original; explicit replace retains one record and flags stale store; saving job never alters store defaults')
                 # Re-checking the same inputs restores saved full defaults, rather than resetting parameters.
                 from workbench import Workbench

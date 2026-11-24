@@ -34,6 +34,25 @@ class DeliveryProfiles(unittest.TestCase):
     def data(self):
         return delivery.directory(self.path,{})
 
+    def test_recipient_paste_padding_is_trimmed_and_embedded_lines_are_rejected(self):
+        before = self.data()['records']
+        key = '00017', '河北仓'
+        name = '合成收货人（河北店）'
+        saved = delivery.save_profile(self.path, *key, {**self.contact, 'recipient': '\t'+name+'\r\n'}, before[key]['version'])
+        self.assertEqual(saved['values'], {**self.contact, 'recipient': name})
+        after = self.data()['records']
+        self.assertEqual(after['00017','山东仓'], before['00017','山东仓'])
+        with self.assertRaisesRegex(ValueError, '收货人姓名.*换行'):
+            delivery.save_profile(self.path, *key, {**self.contact, 'recipient': name+'\n另一位'}, saved['version'])
+        self.assertEqual(self.data()['records'], after)
+
+    def test_bulk_recipient_uses_the_same_paste_cleanup(self):
+        name = '合成批量收货人（河北店）'
+        path = self.workbook('clipboard', [(2, '收货人姓名', name+'\r\n')])
+        changes = xlsx.plan(path, self.data())
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0]['after']['recipient'], name)
+
     def workbook(self, name, changes=()):
         path=self.root/(name+'.xlsx')
         xlsx.export(path,self.data())

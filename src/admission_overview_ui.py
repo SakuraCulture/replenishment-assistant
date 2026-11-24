@@ -63,7 +63,9 @@ class Overview(QDialog):
         if kind=='refusals':
             self.add_btn=button('选择门店添加拒收',self.add);row.addWidget(self.add_btn)
         self.import_btn=button('导入'+self.title,self.import_file);row.addWidget(self.import_btn)
-        row.addWidget(button('下载导入模板',self.template));row.addWidget(button('导出当前筛选',self.export_filtered));row.addWidget(button('关闭',self.reject));v.addLayout(row)
+        row.addWidget(button('下载导入模板',self.template))
+        row.addWidget(button('导出资质维护表' if kind=='qualification' else '导出当前筛选',self.export_filtered))
+        row.addWidget(button('关闭',self.reject));v.addLayout(row)
         self.debounce=QTimer(self);self.debounce.setSingleShot(True);self.debounce.setInterval(150);self.debounce.timeout.connect(self.filter)
         self.search.textChanged.connect(lambda _:self.debounce.start());self.state.currentIndexChanged.connect(self.filter)
         self._filter_signature=None
@@ -160,8 +162,10 @@ class Overview(QDialog):
         if not path.lower().endswith('.xlsx'):path+='.xlsx'
         scope={'查询日期':self.data['day'],'状态筛选':self.state.currentText(),'搜索条件':self.search.text(),'记录范围':'本次导入涉及记录' if self.focus is not None else '全部记录','条数':len(self.filtered)}
         try:
-            run(self,overview.export,(path,self.kind,[r[:] for r in self.filtered],scope),'导出准入查询结果')
-            self.scope_note.setText(f'已导出当前筛选 {len(self.filtered)} 条；查询日 {self.data["day"]}。')
+            qualification=self.kind=='qualification'
+            run(self,overview.export,(path,self.kind,[r[:] for r in self.filtered],scope),'导出资质维护表' if qualification else '导出准入查询结果')
+            message=f'已导出当前筛选 {len(self.filtered)} 条。'
+            self.scope_note.setText(message+('可修改「门店资质」页后直接导回。' if qualification else f'查询日 {self.data["day"]}。'))
         except Exception as exc:QMessageBox.warning(self,'未完成导出',str(exc))
 
 

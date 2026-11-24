@@ -1,6 +1,6 @@
 import {CatalogError, check} from './common.mjs';
 import {activateControl} from './product-export.mjs';
-import {buyerEvidence,canReadPayment,checkBuyer,fullOrder,nativeStatus} from './order-facts.mjs';
+import {buyerEvidence,canReadPayment,checkBuyer,combinedBuyerCheck,fullOrder,nativeStatus} from './order-facts.mjs';
 
 export const LIST_PATH = '/app/order/order/list.aspx';
 const digits = /^[1-9]\d*$/;
@@ -148,16 +148,18 @@ export async function readImportResult(page,frame,spec,signal){
   const [status]=Object.values(statuses).find(([,label])=>label===native_status);
   const result={found:true,internal,online,shop,shop_id:native.shop_id,status,native_status};
   const buyer=checkBuyer(native.buyer,spec.contact?.buyer);
-  if (buyer!=='unavailable') return {...result,...buyerEvidence(buyer)};
+  if (buyer==='verified'||buyer==='mismatch') return {...result,...buyerEvidence(buyer)};
   try {
-    // Read the exact order's native detail with its verified internal ID. The
-    // obscured list text cannot establish a buyer match or a mismatch.
-    const facts=await fullOrder(frame,{...spec,internal},{coid:native.coid,shop_id:native.shop_id,count:Number(native.count)},signal);
+    // The host may corroborate a masked order using its frozen preview and full payment detail.
+    const payment=canReadPayment(native_status);
+    const facts=await fullOrder(frame,{...spec,internal},{coid:native.coid,shop_id:native.shop_id,
+      count:Number(native.count),payment},signal);
     if (facts.native_status!==native_status) fail('原单状态已变化，请继续核对原单');
-    return {...result,...buyerEvidence(facts.buyer_check)};
+    const combined=combinedBuyerCheck(buyer,facts.buyer_check);
+    return {...(payment&&combined==='unavailable'?facts:{}),...result,...buyerEvidence(combined)};
   } catch (error) {
     check(signal);
-    return {...result,...buyerEvidence('unavailable'),
+    return {...result,...buyerEvidence(buyer),
       detail_error:error.code==='ORDER_PAGE_CHANGED'?error.message:'暂未取得可核验的原单明细'};
   }
 }
@@ -177,9 +179,7 @@ export async function readNativeOrder(page,frame,spec,{payment=false}={},signal)
       if (!facts.contact_ok) fail('原单状态或买家身份已变化');
       return {...observed,...facts};
     }
-    // List and detail refer to the same verified native order. A complete
-    // conflicting account overrides a match from the other response.
-    const buyer=(facts.buyer_check==='mismatch'||listBuyer==='unavailable')?facts.buyer_check:listBuyer;
+    const buyer=combinedBuyerCheck(listBuyer,facts.buyer_check);
     return {...result,...facts,...buyerEvidence(buyer)};
   } catch(error) {
     check(signal);

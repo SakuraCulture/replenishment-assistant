@@ -6,7 +6,7 @@ PAYMENT_PREPARATION_CODES = frozenset({'PAYMENT_MISSING', 'PAYMENT_PENDING', 'PA
 
 def observation(record):
     return {k: record.get(k) for k in ('state', 'taskId', 'uploadAttempted', 'additionalTaskIds')} | {
-        'orderId': (record.get('binding') or {}).get('orderId')} | ({'uploadWarning': record['uploadWarning']} if record.get('uploadWarning') else {})
+        'orderId': (record.get('binding') or {}).get('orderId'), 'candidateOrderId': record.get('candidateOrderId')} | ({'uploadWarning': record['uploadWarning']} if record.get('uploadWarning') else {})
 
 
 def waiting(item, kind):
@@ -39,13 +39,15 @@ def explain(error, known=None):
         'LOGIN_REQUIRED': '翱象登录已失效。请在原浏览器重新登录并核验连接，再继续核对原任务。',
         'WRONG_IDENTITY': '当前Edge登录已变化，与这笔原采购的身份不同；连接无需重新配置。原采购不会自动改绑或重传，请核对原采购归属和当前登录权限后继续原任务。',
         'PURCHASE_SUPERSEDED': '旧采购任务已结束并重建；请打开后继任务。旧平台单未自动撤销，原回执仍保留。',
-        'PURCHASE_STATUS_UNSUPPORTED': '原采购单已找到，但目前状态不属于待提交或已作废，暂不自动关联。请在平台查看该单当前状态，并在技术详情核对原始状态；不要重新导入。',
+        'PURCHASE_STATUS_UNSUPPORTED': '原采购单已找到，但当前状态不在自动核对范围。请在技术详情查看原始状态，继续核对原单。',
         'PURCHASE_STATUS_CHANGED': '平台查询状态与核对文件不同，暂不关联。请稍后继续核对采购结果，保留原任务和已导出文件；不要重新导入。',
     }
     if code in PAYMENT_PREPARATION_CODES:
         # Keep the order/stage/version explanation supplied by local validation.
         return error.get('message') or messages[code]
     details = error.get('details') or {}
+    if details.get('stage') and code in ('TASK_NOT_FOUND','PURCHASE_VERIFY_TIMEOUT'):
+        return error.get('message') or details['stage']+'未完成，保留原任务。'
     source = details.get('sourceId')
     if known.get('taskId') and source in ('D16', 'D17') and code in ('SUBMISSION_UNKNOWN', 'PURCHASE_VERIFY_EXPORT_UNKNOWN'):
         if source == 'D16' and not details.get('taskId') and details.get('canRecoverMain', True) and not known.get('additionalTaskIds'):
@@ -57,7 +59,7 @@ def explain(error, known=None):
         if known.get('taskId'):
             return '已找到原受理任务号。点击“继续核对采购结果”，只读取原采购任务并核对已有采购单。'
         if known.get('uploadAttempted'):
-            return '上传已发起，原结果待核。请从单据详情或原批次继续核对原采购。'
+            return '上传已发起，可能已建单。请从单据详情或原批次继续核对原采购。'
         return '此记录尚未完成上传结果核对。请先点击“继续核对采购结果”重新读取原任务；若仍缺少回执，再到单据详情核对已有采购单。'
     if code == 'BROWSER_OPERATION_FAILED' and ('next-tree-node-label' in str(error.get('message')) or 'storeCodeList' in str(error.get('message'))):
         return messages['PURCHASE_STORE_NOT_FOUND']
@@ -75,6 +77,8 @@ def item_message(item, kind):
             return explain(item['error'])
         return (item.get('error') or {}).get('message', '')
     if item['state'] == 'BOUND':
+        if item.get('error'):
+            return '已有关联保留。本次核对未完成，'+explain(item['error'], item.get('purchase_observation'))
         if voided(item):
             return '已核实原采购单及全部商品明细，平台状态为已作废。可返回删除页重新核对完整范围；本次没有重传或操作平台作废。'
         warning=(item.get('purchase_observation') or {}).get('uploadWarning') or (item.get('result') or {}).get('uploadWarning')

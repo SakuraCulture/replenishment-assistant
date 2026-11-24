@@ -50,6 +50,7 @@ def start_smoke(app, win, args):
     port.stock = {wh: row['stock'] for wh, row in expected.items()}
     result_rows = {}
     checks = []
+    allocation_warnings = []
 
     def button(widget, label, *, direct=False):
         return next(b for b in widget.findChildren(QPushButton)
@@ -66,12 +67,49 @@ def start_smoke(app, win, args):
         raise TimeoutError('软件入口读取超时')
 
     def allocate_page(page):
+        from jst_auto_order_ui import Profiles
+
         wait(lambda: page.data is not None and not page.reading)
         assert not page.one_click_btn.isEnabled()
         assert {r['head']['number'] for r in page.records} == {r['number'] for r in expected.values()}
         assert all(r['gid'] is None for r in page.records)
         button(page, '勾选筛选结果').click()
         assert page.one_click_btn.isEnabled() and '2单' in page.one_click_btn.text()
+        page.auto_prepare_btn.click()
+        assert len(allocation_warnings) == 1 and not port.calls
+        checks.append('无已保存生成单时提示首次分配、续原批及核对原单入口')
+
+        head = next(r['head'] for r in page.records if r['head']['warehouse'] == '河北仓')
+        key = head['store'], head['warehouse']
+        saved = []
+        profile_timer = QTimer(page)
+
+        def save_pasted_name():
+            dialog = app.activeModalWidget()
+            if not isinstance(dialog, Profiles):
+                return
+            profile_timer.stop()
+            try:
+                dialog.scope.setCurrentIndex(dialog.keys.index(key))
+                field = dialog.fields['recipient']
+                name = field.text()
+                assert name
+                field.setText(name + '\r\n')
+                assert field.text() == name + '\r\n'
+                button(dialog, '保存本仓收货资料').click()
+                saved.append('已保存' in dialog.status.text() and field.text() == name)
+            finally:
+                dialog.reject()
+
+        profile_timer.timeout.connect(save_pasted_name)
+        profile_timer.start(25)
+        try:
+            page.auto_profiles_btn.click()
+        finally:
+            profile_timer.stop()
+        assert saved == [True] and not port.calls
+        checks.append('从买家和收货资料保存带末尾换行的姓名，重读为单行')
+        wait(lambda: page.data is not None and not page.reading)
         page.one_click_btn.click()
         assert set(result_rows) == expected.keys()
 
@@ -104,7 +142,13 @@ def start_smoke(app, win, args):
             dialog = app.activeModalWidget()
             try:
                 if isinstance(dialog, QMessageBox):
-                    errors.append(dialog.text())
+                    message = dialog.text()
+                    if stage == 'jst' and '需要当前有效的已保存生成单' in message and not allocation_warnings:
+                        assert all(action in message for action in ('准备新分配批次', '继续原批', '自动下单任务'))
+                        allocation_warnings.append(message)
+                        snapshot(dialog, '等待生成提示')
+                    else:
+                        errors.append(message)
                     dialog.reject()
                 elif isinstance(dialog, StageDialog) and not entered:
                     assert dialog.stage == stage

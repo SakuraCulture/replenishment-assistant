@@ -34,7 +34,7 @@ def review(parent,plan):
     layout.addWidget(table,1);layout.addWidget(detail)
     layout.addWidget(label('来源文件：'+plan['package']))
     layout.addWidget(label('原资料完整备份：'+plan['backup']))
-    layout.addWidget(label('确认后软件安全退出，在独立副本完成合并和校验后切换；重新打开可查看结果。' if counts['added'] else '没有可新增订单，本机不会改变，无需退出或重复导入。'))
+    layout.addWidget(label('确认后关闭工作台，在独立副本完成合并和校验后切换。迁入进度窗口会显示最终结果。' if counts['added'] else '没有可新增订单，本机不会改变，无需退出或重复导入。'))
     actions=QHBoxLayout();layout.addLayout(actions)
     cancel=button('返回，不修改本机',dialog.reject);cancel.setObjectName('cancelOrderMerge');actions.addWidget(cancel)
     confirm=button('确认新增 '+str(counts['added'])+' 单，保留本机其他数据',dialog.accept,True)

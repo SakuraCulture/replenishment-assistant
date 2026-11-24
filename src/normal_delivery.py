@@ -268,7 +268,8 @@ def _write_exports(repository,records,receipt,progress,cancel):
                     progress('读取并校验原签发修订：'+descriptor['store'])
                     import warehouse_execution
                     loaded=warehouse_execution.get_order(repository,descriptor,progress=progress,export_io=True)
-                    if not loaded or any(loaded[k]!=descriptor[k] for k in ('oid','revision','digest')):
+                    if (not loaded or any(loaded[k]!=descriptor[k] for k in ('oid','revision','digest')) or
+                            descriptor.get('snapshot_digest',loaded.get('snapshot_digest')) != loaded.get('snapshot_digest')):
                         raise ValueError('原签发修订身份变化，未导出替代版本：'+descriptor['store'])
                 order=loaded
             with closing(repository.work.connect()) as db:require_active(db,order['oid'],warehouse)
@@ -301,25 +302,32 @@ def execute(repository,plan,path,progress=lambda s:None,cancel=None):
 
 def export_signed(repository,order,destination,warehouses,progress=lambda s:None,cancel=None,*,monthly_new_sheet_editable=None):
     """Re-export this immutable revision, including historical revisions; no signing."""
-    from warehouse_orders import partitions,child_number
-    import export_progress as ep
-    available=partitions(order['payload']['result'],order['payload'].get('new_focus'))
-    if not warehouses or len(warehouses)!=len(set(warehouses)) or any(w not in available for w in warehouses):raise ValueError('请选择有效仓库')
-    selected=[w for w in available if w in warehouses];dest=Path(destination)
-    paths=[dest/normal_exports.filename(order,w) for w in selected] if dest.is_dir() else [dest]
-    if len(paths)!=len(selected):raise ValueError('多仓导出请选择文件夹')
+    from warehouse_orders import partitions
     checkpoint(cancel)
     if monthly_new_sheet_editable is None:
         monthly_new_sheet_editable=export_settings.monthly_new_sheet_editable(repository.work.path)
-    records=[]
-    import warehouse_execution
-    with closing(repository.work.connect()) as db:
-        children=warehouse_execution.heads(db,parent_headers=[order],history=True)
-        managed=warehouse_execution.has_parent(db,order['oid'])
-    for warehouse in selected:
-        matches=[h for h in children if h['warehouse']==warehouse and h['revision']==order['revision'] and h['digest']==order['digest']]
-        if managed and len(matches)!=1:raise wr.Conflict('该仓未签发此来源版本或已删除，请选择实际仓单原版本导出：'+warehouse)
-        records.append(matches[0] if managed else order)
+    dest=Path(destination)
+    if 'payload' not in order:
+        # The batch caller resolved the selected warehouse directly from its
+        # original revision. _write_exports reads and verifies the full payload.
+        if warehouses!=[order['warehouse']] or dest.is_dir() or not order.get('snapshot_digest'):
+            raise ValueError('仓单补导需要准确的签发快照和目标文件')
+        selected, paths, records = warehouses, [dest], [order]
+    else:
+        available=partitions(order['payload']['result'],order['payload'].get('new_focus'))
+        if not warehouses or len(warehouses)!=len(set(warehouses)) or any(w not in available for w in warehouses):raise ValueError('请选择有效仓库')
+        selected=[w for w in available if w in warehouses]
+        paths=[dest/normal_exports.filename(order,w) for w in selected] if dest.is_dir() else [dest]
+        if len(paths)!=len(selected):raise ValueError('多仓导出请选择文件夹')
+        records=[]
+        import warehouse_execution
+        with closing(repository.work.connect()) as db:
+            managed=warehouse_execution.has_parent(db,order['oid'])
+            children=warehouse_execution.heads(db,parent_headers=[order],history=True) if managed else []
+        for warehouse in selected:
+            matches=[h for h in children if h['warehouse']==warehouse and h['revision']==order['revision'] and h['digest']==order['digest']]
+            if managed and len(matches)!=1:raise wr.Conflict('该仓未签发此来源版本或已删除，请选择实际仓单原版本导出：'+warehouse)
+            records.append(matches[0] if managed else order)
     receipt=receipts.begin(repository.work.path,'merchant',[
         {'path':str(path.resolve()),'state':'未执行','stage':'准备','head':warehouse_identity(descriptor,wh),
          'day':order['day'],'store':order['store'],'warehouse':wh} for descriptor,wh,path in zip(records,selected,paths)],

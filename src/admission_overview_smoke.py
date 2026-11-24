@@ -79,7 +79,16 @@ def start_smoke(app,win,args):
                 drive(dialog.import_file,imported);require(len(dialog.filtered)==1 and dialog.filtered[0][0]=='NEW','导入后只定位本次涉及记录：'+kind);require(dialog.state.currentText()=='全部','已到期导入记录也可立即看到：'+kind);dialog.grab().save(str(out/('06-'+kind+'.png')))
                 export=out/(kind+'-查询.xlsx')
                 with patch('export_locations.save_file',return_value=(str(export),'Excel')):dialog.export_filtered()
-                wb=load_workbook(export);require(wb.worksheets[0].max_row==2 and wb.worksheets[0]['A2'].value=='NEW','实际导出仅包含当前筛选：'+kind);wb.close();dialog.show_all();require(len(dialog.filtered)>1,'清除导入范围可回到全部：'+kind);dialog.hide()
+                wb=load_workbook(export);require(wb.worksheets[0].max_row==2 and wb.worksheets[0]['A2'].value=='NEW','实际导出仅包含当前筛选：'+kind)
+                if kind=='store_qualification':
+                    _,sheet,required,optional=import_templates.TEMPLATES[kind]
+                    require(wb.active.title==sheet and [c.value for c in wb.active[1]]==required+optional,'资质导出与导入模板的表名和表头一致')
+                    wb.active.cell(2,(required+optional).index('备注')+1,'合成维护表回导测试')
+                    wb.save(export);wb.close();path=export
+                    drive(dialog.import_file,imported)
+                    adopted=admission.snapshot(win.work_repository.path,'NEW')['record']['qualification']
+                    require(adopted['note']=='合成维护表回导测试' and adopted['state']=='已核验','从同一入口回导已编辑的资质维护表')
+                wb.close();dialog.show_all();require(len(dialog.filtered)>1,'清除导入范围可回到全部：'+kind);dialog.hide()
             require(admission.snapshot(win.work_repository.path,'ORPHAN')['record']==before['ORPHAN'],'未选门店准入不变')
             require(win.work_repository.stores()=={},'查看和准入维护不复活已删除门店参数配置')
             if '--bulk' in args:

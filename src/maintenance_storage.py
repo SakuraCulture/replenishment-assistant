@@ -5,6 +5,7 @@ on disk until CAS succeeds; no full workday object is materialized for v2 data.
 """
 import codecs,hashlib,re,sqlite3,zlib
 from collections import OrderedDict
+from io import BytesIO
 import storage_chunks as chunks
 import work_repository as wr
 from runtime_support import checkpoint
@@ -81,10 +82,11 @@ def references_for(db,h,size,data,cancel=None,*,cache_source=None):
     return refs
 
 class Editor:
-    def __init__(self,source,scratch,progress=lambda _:None,cancel=None):
+    def __init__(self,source,scratch,progress=lambda _:None,cancel=None,*,observe_block=None):
         self.source=source;self.scratch=scratch;self.progress=progress;self.cancel=cancel
         chunks.schema(scratch);cache_schema(scratch)
         self.cache=OrderedDict();self.cache_size=0;self.reads=0;self.scratch_hashes=chunks.known(scratch)
+        self.observe_block=observe_block
     def raw(self,node):
         checkpoint(self.cancel);h=node[1]
         if h in self.cache:
@@ -99,6 +101,7 @@ class Editor:
         if row is None:raise ValueError('快照内容块缺失：'+h)
         raw=zlib.decompress(row[1]);checkpoint(self.cancel)
         if len(raw)!=row[0] or len(raw)!=node[2] or hashlib.sha256(raw).hexdigest()!=h:raise ValueError('快照内容块校验失败：'+h)
+        if self.observe_block is not None:self.observe_block(h,raw)
         self.reads+=1
         if self.reads%32==0:self.progress(f'逐块核对作业：已读取 {self.reads:,} 块')
         if len(raw)<=8*1024*1024:
@@ -123,6 +126,35 @@ class Editor:
             nonlocal size
             sha.update(raw);size+=len(raw)
         self.emit(node,feed);return sha.hexdigest(),size
+    def checked_fields(self,manifest,fields):
+        """Hash the complete canonical stream and capture only required fields."""
+        tree=manifest['tree'];sha=hashlib.sha256();size=0;buffers={}
+        def feed(raw):
+            nonlocal size
+            sha.update(raw);size+=len(raw)
+        if tree[0]=='dict':
+            feed(b'{')
+            for index,(key,child) in enumerate(tree[1]):
+                if index:feed(b', ')
+                feed(wr.dumps(key).encode()+b': ')
+                if key in fields and key not in buffers:
+                    buffer=buffers[key]=BytesIO()
+                    def capture(raw):
+                        feed(raw)
+                        buffer.write(raw)
+                    self.emit(child,capture)
+                else:self.emit(child,feed)
+            feed(b'}')
+        else:
+            whole=BytesIO()
+            def capture_all(raw):
+                feed(raw)
+                whole.write(raw)
+            self.emit(tree,capture_all)
+        if (sha.hexdigest(),size)!=(manifest['digest'],manifest['size']):raise ValueError('备份快照校验失败')
+        if tree[0]=='dict':return {key:wr.loads(buffer.getvalue()) for key,buffer in buffers.items()}
+        value=wr.loads(whole.getvalue())
+        return {key:value.get(key) for key in fields} if isinstance(value,dict) else {}
     def value(self,node):
         parts=[];self.emit(node,parts.append);return wr.loads(b''.join(parts))
     def encode(self,value):

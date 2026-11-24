@@ -295,6 +295,7 @@ test('masked, missing and conflicting buyers on the exact original order',
     ['masked list with complete original detail', {listBuyer:listMask,large},'verified','verified',2],
     ['empty list with complete original detail', {listBuyer:null},'verified','verified',2],
     ['masked list and empty detail', {listBuyer:listMask,detailBuyer:''},'unavailable','unavailable',2],
+    ['masked detail has conflicting visible digits', {listBuyer:listMask,detailBuyer:'9***0'},'masked_conflict','masked_conflict',2],
     ['masked list and different full detail account', {listBuyer:listMask,detailBuyer:swappedBuyer},'mismatch','mismatch',2],
     ['different full list account', {listBuyer:swappedBuyer},'mismatch','mismatch',0],
     ['complete list account can verify its masked detail', {detailBuyer:listMask},'verified','verified',1],
@@ -315,6 +316,12 @@ test('masked, missing and conflicting buyers on the exact original order',
       const payment=await flow.run('payment_detail',{spec:{...bound,internal:found.internal}},account);
       assert.equal(payment.buyer_check,paymentBuyer);
       assert.equal(payment.contact_ok,paymentBuyer==='verified');
+      if (lookupBuyer==='unavailable'&&!options.detailOverrides) {
+        assert.equal(found.detail_count,1);
+        assert.deepEqual(found.items,payment.items);
+        assert.equal(found.amount,'20.00');
+        assert.equal(found.buyer,undefined);
+      }
       assert.equal(detailReads.length,reads);
       assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[0,0,0]);
       if (options.large) {

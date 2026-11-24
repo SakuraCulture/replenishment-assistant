@@ -26,7 +26,8 @@ def money(value, label):
     return value
 
 
-def prepare(order, receipt, cancel=None):
+def verify_details(order, receipt, cancel=None):
+    """Check complete payment facts and corroborate the original when the buyer is hidden."""
     payload = order['payload']
     binding = (order['proof'] or {}).get('binding')
     if (receipt.get('found') is not True or not binding
@@ -34,8 +35,34 @@ def prepare(order, receipt, cancel=None):
             or receipt.get('online') != order['online'] or receipt.get('internal') != order['internal']):
         raise ValueError('聚水潭原单的企业、仓、店铺或单号尚未核实')
     buyer_problem = buyer_issue(receipt)
-    if buyer_problem:
+    if buyer_problem and receipt.get('buyer_check') != 'unavailable':
         raise ValueError(buyer_problem)
+    try:
+        if receipt.get('detail_error'):
+            raise ValueError(receipt['detail_error'])
+        expected, verified, totals = _verified_amounts(payload, receipt, cancel)
+        if buyer_problem:
+            _verify_frozen_preview(order, expected, verified, totals, cancel)
+    except (ValueError, TypeError, ArithmeticError) as exc:
+        if buyer_problem:
+            raise ValueError(f'{buyer_problem} · {exc}') from None
+        raise
+    return expected, verified, totals
+
+
+def _verify_frozen_preview(order, expected, verified, totals, cancel):
+    proof = order['proof']
+    if not order.get('file_sha') or proof.get('file_sha') != order['file_sha'] or proof.get('amount') is None:
+        raise ValueError('缺少原导入文件或平台预览金额的凭据')
+    if Decimal(totals['payable']) != money(proof['amount'], '原平台预览金额'):
+        raise ValueError('平台应付金额与原导入预览不同')
+    for sku, (quantity, price) in expected.items():
+        checkpoint(cancel)
+        if verified[sku][:2] != (Decimal(quantity), Decimal(price)):
+            raise ValueError(f'商品 {sku} 的逐项数量或单价与原生成单不同')
+
+
+def _verified_amounts(payload, receipt, cancel):
     if receipt.get('currency') not in CURRENCIES:
         raise ValueError('聚水潭成交币种不是已核验的人民币')
     expected = {sku: (qty, price) for sku, qty, price in payload['lines']}
@@ -70,6 +97,15 @@ def prepare(order, receipt, cancel=None):
     if difference:
         raise ValueError(f'应付 {total:.2f} 元，商品 {merchandise:.2f} 元，运费 {freight:.2f} 元，'
                          f'优惠或其他金额差异 {difference:+.2f} 元待核')
+    totals = {'goods': f'{merchandise:.2f}', 'freight': f'{freight:.2f}',
+              'payable': f'{total:.2f}', 'unexplained': f'{difference:.2f}'}
+    return expected, verified, totals
+
+
+def prepare(order, receipt, cancel=None):
+    expected, verified, totals = verify_details(order, receipt, cancel)
+    payload = order['payload']
+    binding = order['proof']['binding']
     headers = ['商品编码', '平台数量', '成交单价', '商品金额', '币种', '数量单位']
     rows = []
     for line, (sku, (ordered, original_price)) in enumerate(expected.items(), 1):
@@ -79,8 +115,6 @@ def prepare(order, receipt, cancel=None):
                      'price': values[2], 'amount': values[3], 'currency': 'CNY',
                      'allocated_amount': decimal_text(Decimal(ordered) * Decimal(original_price)),
                      'sheet': LABEL, 'row': line, 'headers': headers, 'values': values})
-    totals = {'goods': f'{merchandise:.2f}', 'freight': f'{freight:.2f}',
-              'payable': f'{total:.2f}', 'unexplained': f'{difference:.2f}'}
     # Keep evidence stable across repeat reads and changes in the platform's row order.
     raw = dumps({'kind': KIND, 'binding': binding, 'online': order['online'], 'internal': order['internal'],
                  'totals': totals, 'headers': headers,

@@ -184,6 +184,9 @@ class Runner:
     def run(self, id):
         job = self.store.claim(id)
         self.execution_token=job['execution_token']
+        if job['kind']=='upload' and job.get('verification_only'):
+            from aoxiang_upload_pipeline import run_verification
+            return run_verification(self,job)
         if job['kind']=='upload' and self.client.request('configuration').get('purchase_pipeline'):
             from aoxiang_upload_pipeline import run_upload
             return run_upload(self,job)

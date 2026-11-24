@@ -6,6 +6,7 @@ records and divergent shared dependencies isolate the whole affected component.
 """
 from __future__ import annotations
 import hashlib,json,os,re,sqlite3,shutil,copy,tempfile
+from collections import deque
 from pathlib import Path
 from contextlib import closing
 from dataclasses import dataclass,field
@@ -47,6 +48,7 @@ def typed(v):
 @dataclass
 class Row:
     db:str;table:str;rid:int;values:dict;pk:tuple;refs:set;owners:set=field(default_factory=set);weak:bool=False;error:str='';blob:dict=field(default_factory=dict);origin_file:str|None=None
+    work_revision:str|None=None
     @property
     def key(self):return self.db,self.table,self.rid
     def business(self):
@@ -112,7 +114,7 @@ class Graph:
             asset=table in ASSETS or table=='snapshot_chunks';omit={'content','data'} if asset else set()
             select=','.join(q(c['name']) for c in cols if c['name'] not in omit)
             for raw in db.execute('SELECT rowid AS _merge_rid,'+select+' FROM '+q(table)+' ORDER BY rowid'):
-                checkpoint(self.cancel);values=dict(raw);rid=values.pop('_merge_rid');refs=set();error='';blobs={}
+                checkpoint(self.cancel);values=dict(raw);rid=values.pop('_merge_rid');refs=set();error='';blobs={};work_revision=None
                 for c in cols:
                     if c['name'] in omit:
                         length=db.execute('SELECT length('+q(c['name'])+') FROM '+q(table)+' WHERE rowid=?',(rid,)).fetchone()[0]
@@ -125,13 +127,15 @@ class Graph:
                             m=chunks.require_manifest(v);decoded=chunks.load(v,db,binding=binding)
                             if table=='normal_revisions':
                                 import normal_orders
-                                if normal_orders.fingerprint_owned(decoded['result'],decoded.get('new_focus'))!=values['digest']:raise ValueError('归档业务摘要不一致')
+                                if normal_orders.fingerprint_owned(decoded['result'],decoded.get('new_focus'),verified_size=m['size'])!=values['digest']:raise ValueError('归档业务摘要不一致')
+                                work_revision=decoded.get('work_revision')
                                 self.revision_names[values['oid'],values['revision']]=decoded['result'].get('store_name')
                                 import warehouse_execution
                                 self.legacy_warehouses.setdefault(values['oid'],set()).update(warehouse_execution.warehouses(decoded))
                             if table=='warehouse_execution_revisions':
                                 import normal_orders
-                                if normal_orders.fingerprint_owned(decoded['result'],decoded.get('new_focus'))!=values['snapshot_digest']:raise ValueError('分仓签发业务摘要不一致')
+                                if normal_orders.fingerprint_owned(decoded['result'],decoded.get('new_focus'),verified_size=m['size'])!=values['snapshot_digest']:raise ValueError('分仓签发业务摘要不一致')
+                                work_revision=decoded.get('work_revision')
                             refs.update(strings(decoded));refs.update(_chunk_refs(m['tree']))
                         elif isinstance(v,str):
                             refs.add(v)
@@ -140,7 +144,7 @@ class Graph:
                 except Cancelled:raise
                 except Exception as exc:error=str(exc)
                 weak=table in WEAK
-                row=Row(name,table,rid,values,pk,refs,weak=weak,error=error,blob=blobs);self.rows.append(row)
+                row=Row(name,table,rid,values,pk,refs,weak=weak,error=error,blob=blobs,work_revision=work_revision);self.rows.append(row)
                 self.paths.update(x for x in refs if _absolute(x))
                 if table=='normal_orders':self.order[values['oid']]=values
     def _validate(self,table,values):
@@ -225,14 +229,10 @@ class Graph:
             if not row.owners:continue
             issue=None
             if row.table=='normal_revisions' and not row.error:
-                import storage_chunks
-                decoded=storage_chunks.load(row.values['payload'],self.connections[row.db],binding=row.values['digest'])
-                if decoded.get('work_revision') not in works:issue='签发引用的原工作修订缺失'
+                if row.work_revision not in works:issue='签发引用的原工作修订缺失'
             elif row.table=='warehouse_execution_heads' and row.values['state']=='active' and (row.values['oid'],row.values['warehouse'],row.values['source_revision']) not in child_revisions:issue='分仓当前签发快照缺失'
             elif row.table=='warehouse_execution_revisions' and not row.error:
-                import storage_chunks
-                decoded=storage_chunks.load(row.values['payload'],self.connections[row.db],binding=row.values['snapshot_digest'])
-                if decoded.get('work_revision') not in works:issue='分仓签发引用的原工作修订缺失'
+                if row.work_revision not in works:issue='分仓签发引用的原工作修订缺失'
             elif row.table in ('jst_active','jst_locks','jst_generation_batches','jst_auto_orders','jst_auto_order_history','jst_cancellations','jst_cancellation_holds') and row.values['gid'] not in generations:issue='原库存分配生成记录缺失'
             elif row.table=='jst_generation_batches' and row.values['batch_id'] not in batches:issue='原库存分配批次缺失'
             elif row.table=='jst_batch_stock' and row.values['bid'] not in bases:issue='原库存分配基线缺失'
@@ -416,12 +416,17 @@ def _compatible(src,dst,row):
     return None
 
 def _path_plan(src,dst,oid):
+    from order_migration import SUFFIXES,component_artifact
     references=set().union(*(r.refs for r in src.by_order[oid]))
     for owners,refs,value in src.files.values():
         if oid in owners:references.update(refs)
     result={};reasons=[]
     source_dir,target_dir=io_path(src.root),io_path(dst.root)
-    for old in sorted(references&src.map.keys()):
+    pending=deque(sorted(references&src.map.keys()));seen=set()
+    while pending:
+        old=pending.popleft()
+        if old in seen:continue
+        seen.add(old)
         rel=src.map[old];p=(source_dir/rel).resolve()
         if not p.is_relative_to(source_dir) or not p.is_file():reasons.append('关联原件不存在：'+old);continue
         h=file_hash(p)
@@ -432,11 +437,19 @@ def _path_plan(src,dst,oid):
             local=(target_dir/existing).resolve()
             if not local.is_relative_to(target_dir) or not local.is_file() or file_hash(local)!=h:reasons.append('本机原件路径映射冲突：'+old);continue
         elif old in dst.paths and not original.is_file():reasons.append('原件路径被本机旧资料引用且来源不明：'+old);continue
-        result[old]={'source':rel,'sha256':h,'target':'migration-assets/'+h+'/'+p.name}
+        component=component_artifact(rel)
+        directory='aoxiang/component-state/assets/migration-originals' if component and p.suffix.lower() not in SUFFIXES else 'migration-assets'
+        result[old]={'source':rel,'sha256':h,'target':directory+'/'+h+'/'+p.name}
+        if component and p.suffix.lower()=='.json' and p.stat().st_size<32*1024**2:
+            nested=strings(json.loads(p.read_text('utf-8-sig')))
+            pending.extend(ref for ref in nested if ref in src.map and ref not in seen)
     return result,reasons
 
 def _inspect(src,dst):
     results=[];paths={};hashes={};groups=src.groups
+    numbers={h['number'] for h in dst.order.values()}
+    matches={(h['day'],h['store'],h['kind']) for h in dst.order.values()}
+    stores={(day,store) for day,store,_ in matches}
     for oid,head in src.order.items():
         checkpoint(src.cancel);sh=src.owner_hash(oid);hashes[oid]=sh;reasons=list(src.bad.get(oid,()))
         reasons.extend(issue for row in src.by_order[oid] if (issue:=_contract_issue(src,dst,row)))
@@ -446,10 +459,10 @@ def _inspect(src,dst):
         incoming=src.active_warehouses.get(oid,src.legacy_warehouses.get(oid,set()))
         retired={warehouse for owner,warehouse in dst.deleted_warehouses if owner==oid}
         if incoming & {warehouse for owner,warehouse in src.deleted_warehouses if owner==oid}:reasons.append('来源包同一仓单同时有效与退役，不能自动迁入')
-        if oid in dst.deleted or incoming & retired or (head['day'],head['store']) in dst.deleted_business and not any(h['day']==head['day'] and h['store']==head['store'] for h in dst.order.values()):
+        if oid in dst.deleted or incoming & retired or (head['day'],head['store']) in dst.deleted_business and (head['day'],head['store']) not in stores:
             state='DELETED';reasons.append('本机已删除此订单，旧迁移包不恢复')
         else:
-            collisions=[o for o,h in dst.order.items() if o==oid or (h['day'],h['store'],h['kind'])==(head['day'],head['store'],head['kind']) or h['number']==head['number']]
+            collisions=oid in dst.order or (head['day'],head['store'],head['kind']) in matches or head['number'] in numbers
             if collisions:
                 receipt=dst.receipts.get(oid);same=oid in dst.order and typed(head)==typed(dst.order[oid])
                 target_hash=dst.owner_hash(oid) if oid in dst.order else None
@@ -494,6 +507,7 @@ def inspect(source_root,target_root,progress=lambda _:None,cancel=None):
 
 def _ensure_schema(src,dst,name,db,needed):
     needed=set(needed)
+    existing=dst.sql if dst is not None else {}
     if name==DBS[0]:
         # Readers test a family head table, then expect its companion tables.
         # Import empty schema companions too, without their global/local rows.
@@ -501,7 +515,7 @@ def _ensure_schema(src,dst,name,db,needed):
         prefixes={prefix for prefix in families if any(t.startswith(prefix) for t in needed)}
         needed.update(t for n,t in src.sql if n==name and any(t.startswith(prefix) for prefix in prefixes))
     for table in needed:
-        if (name,table) in dst.sql:continue
+        if (name,table) in existing:continue
         db.execute(src.sql[name,table])
         for typ,n,sql in src.connections[name].execute("SELECT type,name,sql FROM sqlite_master WHERE tbl_name=? AND type='index' AND sql IS NOT NULL",(table,)):
             db.execute(sql)
@@ -509,7 +523,7 @@ def _ensure_schema(src,dst,name,db,needed):
     if name in DBS[1:]:
         for table in src.columns:
             n,t=table
-            if n!=name or t in needed or (n,t) in dst.sql:continue
+            if n!=name or t in needed or (n,t) in existing:continue
             db.execute(src.sql[n,t])
             for _,sql in src.connections[n].execute("SELECT name,sql FROM sqlite_master WHERE tbl_name=? AND type='index' AND sql IS NOT NULL",(t,)):db.execute(sql)
         if name in DBS[1:3]:
@@ -534,6 +548,19 @@ def _ensure_schema(src,dst,name,db,needed):
             if local and [tuple(v) for v in local]!=[tuple(v) for v in versions]:raise ValueError('组件命令协议版本不兼容，未合并')
             if not local:
                 for v in versions:db.execute('INSERT INTO machine_protocol VALUES(?)',(v[0],))
+
+
+def checked_blobs(source,row):
+    values={}
+    for col in row.blob:
+        raw=(io_path(source.root)/row.origin_file).read_bytes() if row.origin_file else source.connections[row.db].execute('SELECT '+q(col)+' FROM '+q(row.table)+' WHERE rowid=?',(row.rid,)).fetchone()[0]
+        if row.table in ASSETS and hashlib.sha256(raw).hexdigest()!=row.values['sha']:raise ValueError('原件摘要校验失败：'+row.table)
+        if row.table=='snapshot_chunks':
+            import zlib
+            plain=zlib.decompress(raw)
+            if hashlib.sha256(plain).hexdigest()!=row.values['hash'] or len(plain)!=row.values['size']:raise ValueError('快照内容块校验失败')
+        values[col]=raw
+    return values
 
 def _pause(row):
     out=dict(row.values)
@@ -590,14 +617,7 @@ def merge(source_root,private_target,expected_report=None,progress=lambda _:None
                             if values.get('state') in ACTIVE|{'PREPARED'}:values['state']='PAUSED'
                             changed=machines.get(values['id'])
                             if changed and changed[1] is not None:values.update(record=changed[0]['payload'],state=changed[0]['state'],sequence=changed[0]['sequence'])
-                        for col in r.blob:
-                            raw=(source_io/r.origin_file).read_bytes() if r.origin_file else src.connections[name].execute('SELECT '+q(col)+' FROM '+q(r.table)+' WHERE rowid=?',(r.rid,)).fetchone()[0]
-                            if r.table in ASSETS and hashlib.sha256(raw).hexdigest()!=r.values['sha']:raise ValueError('原件摘要校验失败：'+r.table)
-                            if r.table=='snapshot_chunks':
-                                import zlib
-                                plain=zlib.decompress(raw)
-                                if hashlib.sha256(plain).hexdigest()!=r.values['hash'] or len(plain)!=r.values['size']:raise ValueError('快照内容块校验失败')
-                            values[col]=raw
+                        values.update(checked_blobs(src,r))
                         if r.table in EVENTS:values.pop('id',None)
                         # A duplicate dependency is skipped only after explicit
                         # preflight equality, never a wildcard OR IGNORE.

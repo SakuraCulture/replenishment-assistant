@@ -68,32 +68,40 @@ export function checkImportReceipt(p,r){
 }
 // Evidence is supplied by the exact known-task query and validated native D16/D17 files.
 // A marker or a similar amount alone is never sufficient to bind a platform order.
-export function checkCreatedPurchase(p,receipt,e){
+export function checkCreatedPurchase(p,receipt,e,{originalUnits}={}){
   checkImportReceipt(p,receipt);
   if(!e||canonical(e.identity)!==canonical(p.identity)||e.task?.taskId!==receipt.taskId||e.task?.code!==IMPORT_CODE||e.task?.status!=='FINISHED'||countValue(e.task.failCount)!==0||countValue(e.task.successCount)!==p.rows.length)fail('PURCHASE_TASK_NOT_COMPLETE','原导入任务尚未核实全量成功，不绑定采购单');
   const status=e.main?.status;
-  if(!['待提交','已作废'].includes(status))fail('PURCHASE_STATUS_UNSUPPORTED','原采购单当前状态不在自动关联范围，请核对平台原单',{status});
+  if(!['待提交','待入库','已作废'].includes(status))fail('PURCHASE_STATUS_UNSUPPORTED','原采购单当前状态不在自动关联范围，请核对平台原单',{status});
   // A void is a verified historical association, never a successful new purchase
   // or a released reservation. The native main AND every SKU must prove it.
   if(e.listingStatus!==undefined&&((status==='待提交')!==(e.listingStatus==='0')))fail('PURCHASE_STATUS_CHANGED','采购查询状态与原生核对文件状态不同，请继续核对原单',{listingStatus:e.listingStatus,nativeStatus:status});
-  checkNativePurchase(p,e,{status,requireNote:true});
+  checkNativePurchase(p,e,{status,requireNote:true,originalUnits});
   return {orderId:e.candidates[0],status,taskId:receipt.taskId,files:e.files,verifiedAt:e.observedAt,method:'known_import_task_and_exact_native_rows'};
 }
 
 // Both automatic and operator-confirmed associations share the same per-SKU checks.
-export function checkNativePurchase(p,e,{status,requireNote}){
+export function checkNativePurchase(p,e,{status,requireNote,originalUnits}){
   if(!e||canonical(e.identity)!==canonical(p.identity)||!text(status))fail('PURCHASE_CREATED_MISMATCH','采购单身份或状态缺失');
   if(!Array.isArray(e.candidates)||e.candidates.length!==1)fail('PURCHASE_NOT_UNIQUE','未唯一定位新采购单；意外多单或缺单只待核，不重传');
   const m=e.main,id=e.candidates[0];
-  if(!text(id)||!m||m.orderId!==id||m.store!==p.basis.store||m.supplier!==p.supplierCode||m.status!==status||m.externalOrderId!=='')fail('PURCHASE_CREATED_MISMATCH','采购单身份、状态或外部订单不符合核对范围');
-  if((requireNote&&m.marker!==p.note)||decimal(m.quantity)!==decimal(p.totalQuantity)||decimal(m.amount)!==decimal(p.totalAmount)||purchaseSkuCount(m.skuCount)!==p.rows.length)fail('PURCHASE_CREATED_MISMATCH','采购主单来源、数量或金额与付款依据不符');
-  if(!Array.isArray(e.rows)||e.rows.length!==p.rows.length)fail('PURCHASE_DETAIL_MISMATCH','采购商品明细覆盖不完整');
+  if(!text(id)||!m||m.orderId!==id||m.store!==p.basis.store||m.supplier!==p.supplierCode||m.status!==status||m.externalOrderId!=='')fail('PURCHASE_CREATED_MISMATCH','采购单号、门店、供货仓供应商、状态或外部订单不符',{
+    orderId:id,store:m?.store,expectedStore:p.basis.store,warehouse:p.basis.warehouse,supplier:m?.supplier,expectedSupplier:p.supplierCode,status:m?.status});
+  if((requireNote&&m.marker!==p.note)||decimal(m.quantity)!==decimal(p.totalQuantity)||decimal(m.amount)!==decimal(p.totalAmount)||purchaseSkuCount(m.skuCount)!==p.rows.length)fail('PURCHASE_CREATED_MISMATCH','采购主单来源、数量或金额与付款依据不符',{
+    orderId:id,sourceMatched:m.marker===p.note,quantity:m.quantity,expectedQuantity:p.totalQuantity,amount:m.amount,expectedAmount:p.totalAmount,skuCount:m.skuCount,expectedSkuCount:p.rows.length});
+  if(!Array.isArray(e.rows))fail('PURCHASE_DETAIL_MISMATCH','采购商品明细缺失');
   const expected=new Map(p.rows.map(r=>[r.sku,r])),seen=new Set();
   for(const r of e.rows){
     const old=expected.get(r.sku);
-    if(!old||seen.has(r.sku)||r.orderId!==id||r.store!==p.basis.store||r.supplier!==p.supplierCode||r.status!==status||(requireNote&&r.note!==p.note)||decimal(r.quantity)!==decimal(old.quantity)||decimal(r.amount)!==decimal(old.amount))fail('PURCHASE_DETAIL_MISMATCH','采购商品编码、数量、金额或来源不符，不能只比汇总');
+    if(!old||seen.has(r.sku))fail('PURCHASE_DETAIL_MISMATCH',(seen.has(r.sku)?'采购明细有重复商品编码：':'采购明细多出商品编码：')+r.sku,{sku:r.sku,sourceRow:r._sourceRow});
+    if(r.orderId!==id||r.store!==p.basis.store||r.supplier!==p.supplierCode||r.status!==status||(requireNote&&r.note!==p.note)||decimal(r.quantity)!==decimal(old.quantity)||decimal(r.amount)!==decimal(old.amount))fail('PURCHASE_DETAIL_MISMATCH','采购商品数量、金额或来源不一致：'+r.sku,{
+      sku:r.sku,sourceRow:r._sourceRow,quantity:r.quantity,expectedQuantity:old.quantity,amount:r.amount,expectedAmount:old.amount,store:r.store,supplier:r.supplier,sourceMatched:r.note===p.note});
+    if(originalUnits!==undefined&&(!Object.hasOwn(originalUnits,r.sku)||typeof r.unit!=='string'||r.unit.trim()!==originalUnits[r.sku].trim()))
+      fail('PURCHASE_DETAIL_MISMATCH','采购商品基础单位不一致或原单位未留存：'+r.sku,{sku:r.sku,sourceRow:r._sourceRow,unit:r.unit,expectedUnit:originalUnits[r.sku]??null});
     seen.add(r.sku);
   }
+  if(seen.size!==expected.size)fail('PURCHASE_DETAIL_MISMATCH','采购商品明细覆盖不完整，缺少 '+(expected.size-seen.size)+' 行',{
+    missing:[...expected.keys()].filter(sku=>!seen.has(sku)).slice(0,30),actualRows:seen.size,expectedRows:expected.size});
   if(!Array.isArray(e.files)||e.files.length!==2||e.files.map(f=>f.source).join(',')!=='D16,D17'||e.files.some(f=>!hash.test(f.sha256||'')||!text(f.file,2048)))fail('PURCHASE_PROOF_MISSING','缺少已验收主单及子单原文件依据');
   return true;
 }

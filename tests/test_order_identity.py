@@ -47,6 +47,7 @@ class Identity(unittest.TestCase):
                 resources.description.return_value='隔离验收'
                 ne.export(order,self.path,warehouse='河北仓',resources=resources,monthly_new_sheet_editable=editable)
                 with self.subTest(in_memory=in_memory,editable=editable),closing(openpyxl.load_workbook(self.path)) as book:
+                    self.assertEqual(book.active.title, ne.SHEETS[-1])
                     self.assertFalse(book.security.lockStructure)
                     self.assertEqual([ws.title for ws in book if ws.protection.sheet],[] if editable else ['本月新品'])
                     current=book['本月新品']

@@ -1,5 +1,6 @@
 import os
 import unittest
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 from PySide6.QtWidgets import QApplication,QMessageBox,QPlainTextEdit
@@ -26,6 +27,51 @@ class ReadingWorkflow(unittest.TestCase):
         QTimer.singleShot(20,d.reject);d.exec()
         self.assertIs(d.clickedButton(),cancel);self.assertIs(d.defaultButton(),cancel);self.assertIs(d.escapeButton(),cancel)
         self.assertGreaterEqual(d.maximumWidth(),d.width());d.deleteLater();self.app.processEvents()
+    def test_daily_draft_overwrite_shows_removed_and_invalidated_stores(self):
+        from workbench import Workbench
+
+        with TemporaryDirectory() as folder, patch.dict(os.environ, REPLENISHMENT_DATA_DIR=folder):
+            window = Workbench()
+            try:
+                original = window.snapshot()
+                original['input_dirty'] = False
+                original['states'] = {
+                    'A': {'name': '被移除店', 'state': '待计算'},
+                    'B': {'name': '待重算店', 'state': '已完成'},
+                }
+                original['results'] = {'B': {'summary': {'amount': 10}}}
+                repo = window.work_repository
+                repo.save_job(window.job_day, original)
+                saved = repo.get_job(window.job_day)
+                window.states = {'B': {'name': '待重算店', 'state': '待重算'}}
+                window.touch()
+
+                run_dialog = readable_ui.ReviewDialog.exec
+
+                for action in ('取消', '覆盖当天记录'):
+                    def choose(dialog):
+                        summary = dialog.information.text()
+                        self.assertIn('减少门店：被移除店(A)', summary)
+                        self.assertIn('完成变失效：待重算店(B)', summary)
+                        self.assertEqual(dialog.defaultButton().text(), '取消')
+                        button = next(b for b in dialog.buttons() if b.text() == action)
+                        QTimer.singleShot(0, button.click)
+                        return run_dialog(dialog)
+
+                    with patch.object(window, 'failed', side_effect=self.fail), patch.object(readable_ui.ReviewDialog, 'exec', choose):
+                        self.assertEqual(window.save_current(), action == '覆盖当天记录')
+                    if action == '取消':
+                        self.assertEqual(repo.get_job(window.job_day), saved)
+
+                current = repo.get_job(window.job_day)
+                self.assertNotEqual(current['revision'], saved['revision'])
+                self.assertEqual(current['payload']['states'], window.states)
+                self.assertEqual(len(repo.list_jobs()), 1)
+            finally:
+                window._discard_close = True
+                window.close()
+                window.deleteLater()
+                self.app.processEvents()
     def test_font_spacing_changes_only_display_and_corrupt_width_settings_are_ignored(self):
         from business_ui import grid
         d=readable_ui.ReviewDialog();table,model=grid(d,['门店编码','商品名称','风险原因'],[['S','商品','完整原因']]);d.body.addWidget(table);d.show()

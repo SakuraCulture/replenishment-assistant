@@ -406,7 +406,7 @@ def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None
                 else:
                     status = receipt.get('native_status') or '未知状态'
                     buyer_problem = confirmation.buyer_issue(receipt)
-                    if receipt.get('buyer_check') == 'mismatch':
+                    if receipt.get('buyer_check') in ('mismatch', 'masked_conflict'):
                         state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
                     elif status == '已取消' and buyer_problem:
                         state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
@@ -416,13 +416,13 @@ def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None
                         state, message = 'RETRY_PAYMENT_READ', receipt['detail_error']
                         if buyer_problem:
                             status = ''
-                    elif buyer_problem:
-                        state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
                     else:
                         try:
                             candidate = order_payment.prepare(order, receipt, cancel)
                         except (ValueError, TypeError, ArithmeticError) as exc:
                             state, message = 'NEEDS_REVIEW', str(exc)
+                            if buyer_problem:
+                                status = ''
                         else:
                             state, message = 'READY', order_payment.LABEL + '已核验，待人工确认付款'
             result = _observe_payment(path, order, state, message, status, candidate, cancel)

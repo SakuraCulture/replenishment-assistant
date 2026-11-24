@@ -1,9 +1,11 @@
 """Windows process identities. Never log command lines or terminate a process."""
 import ctypes,json,os,subprocess,time
+from contextlib import contextmanager
 from datetime import datetime,timezone
 from pathlib import PureWindowsPath,Path
 
-HELPERS={'--catalog-validate','--storage-copy','--catalog-lifetime-helper','--multiprocessing-fork','--data-location-progress'}
+STATUS_VIEWERS={'--data-location-progress','--order-migration-progress'}
+HELPERS={'--catalog-validate','--storage-copy','--catalog-lifetime-helper','--multiprocessing-fork'}|STATUS_VIEWERS
 
 def source_identity(argv):
     for arg in argv[1:]:
@@ -84,19 +86,39 @@ def process_snapshot():
     finally:kernel.CloseHandle(handle)
     return result
 
-def kernel_state(pid):
-    """A signaled process is exited even if its exit code happens to be 259."""
+def _open_process(pid):
     from ctypes import wintypes as w
     kernel=ctypes.WinDLL('kernel32',use_last_error=True)
     kernel.OpenProcess.argtypes=[w.DWORD,w.BOOL,w.DWORD];kernel.OpenProcess.restype=w.HANDLE;kernel.CloseHandle.argtypes=[w.HANDLE]
     kernel.WaitForSingleObject.argtypes=[w.HANDLE,w.DWORD];kernel.WaitForSingleObject.restype=w.DWORD
-    handle=kernel.OpenProcess(0x101000,False,pid)
+    return kernel,kernel.OpenProcess(0x101000,False,pid)
+
+def _handle_state(kernel,handle):
+    wait=kernel.WaitForSingleObject(handle,0)
+    return {'state':'EXITED' if wait==0 else 'RUNNING' if wait==258 else 'UNKNOWN','wait':wait}
+
+def kernel_state(pid):
+    """A signaled process is exited even if its exit code happens to be 259."""
+    kernel,handle=_open_process(pid)
     if not handle:
         error=ctypes.get_last_error()
         return {'state':'EXITED' if error==87 else 'UNKNOWN','error':error}
-    try:
-        wait=kernel.WaitForSingleObject(handle,0)
-        return {'state':'EXITED' if wait==0 else 'RUNNING' if wait==258 else 'UNKNOWN','wait':wait}
+    try:return _handle_state(kernel,handle)
+    finally:kernel.CloseHandle(handle)
+
+@contextmanager
+def watch_parent(pid):
+    """Keep the original Windows process object across polls and PID reuse."""
+    if os.name!='nt':
+        yield lambda:'RUNNING' if os.getppid()==pid else 'EXITED'
+        return
+    kernel,handle=_open_process(pid)
+    if not handle:
+        error=ctypes.get_last_error()
+        if error!=87:raise ctypes.WinError(error)
+        yield lambda:'EXITED'
+        return
+    try:yield lambda:_handle_state(kernel,handle)['state']
     finally:kernel.CloseHandle(handle)
 
 def records():
@@ -136,9 +158,8 @@ def discover(*,guarded=False):
         value=classify(row['argv'],row['name'])
         identified=row['name']=='补货助手.exe' or row['pid'] in windows or source_identity(row['argv'])
         if not value['application'] or not identified:continue
-        # This exact early-dispatch entrypoint can only read a status JSON and
-        # show a window. It never opens a repository, lease, browser or writer.
-        if '--data-location-progress' in row['argv']:continue
+        # These early-dispatch entrypoints have no repository or writer.
+        if STATUS_VIEWERS.intersection(row['argv']):continue
         state=kernel_state(row['pid'])
         if state['state']=='EXITED':continue
         if state['state']=='UNKNOWN' and row.get('threads')==0 and row.get('handles')==0:

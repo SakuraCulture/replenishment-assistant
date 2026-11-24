@@ -43,6 +43,8 @@ def start_smoke(app, win, args):
     path = win.work_repository.path
     online = fixture['online']
     receipt = json.loads((out/'receipt.json').read_text(encoding='utf-8'))
+    warehouse = fixture.get('warehouse', '山东仓')
+    use_frozen_preview = fixture.get('use_frozen_preview') is True
     messages, calls = [], []
     buyer = {'check':'unavailable'}
 
@@ -56,11 +58,12 @@ def start_smoke(app, win, args):
         def request(self, action, *, spec, **extra):
             assert action in ('order.lookup', 'order.payment_detail'), action
             assert spec['online'] == online and spec['binding'] == receipt['binding']
-            assert spec['warehouse'] == '山东仓' and spec['contact'] == {'buyer': fixture['buyer']}
+            assert spec['warehouse'] == warehouse and spec['contact'] == {'buyer': fixture['buyer']}
             calls.append(action)
             if action == 'order.lookup':
                 assert extra['identity_only'] is True and spec['internal'] in (None, receipt['internal'])
-                return {**fixture['lookup'], 'buyer_check': buyer['check'], 'contact_ok': buyer['check'] == 'verified'}
+                return {**(receipt if buyer.get('full_detail') else {}), **fixture['lookup'],
+                        'buyer_check': buyer['check'], 'contact_ok': buyer['check'] == 'verified'}
             assert spec['internal'] == receipt['internal']
             return receipt
 
@@ -109,7 +112,7 @@ def start_smoke(app, win, args):
                     assert original_order['stage'] == 'IMPORT_UNKNOWN' and original_order['internal'] is None
                     assert hint in dialog.note.text() and not current and not versions
                     snapshot(dialog, outcome)
-                buyer['check'] = 'verified'
+                buyer.update(check='unavailable' if use_frozen_preview else 'verified', full_detail=use_frozen_preview)
                 for _ in range(2):
                     dialog.buttons['recover'].click()
                 assert calls == ['order.lookup', 'order.lookup', 'order.lookup', 'order.payment_detail',
@@ -123,11 +126,13 @@ def start_smoke(app, win, args):
             assert dialog.table.item(0,12).text() == '待人工确认付款'
             assert not lifecycle.snapshot(path, order['payload']['head'])['present']['payment']
             _, summary = payment.prepare_review(path, [online])
-            assert summary[0]['quantity'] == '10503' and summary[0]['totals']['payable'] == '24554.61'
-            assert receipt['detail_count'] == len(order['payload']['lines']) == 582
+            assert summary[0]['quantity'] == fixture.get('quantity', '10503')
+            assert summary[0]['totals']['payable'] == fixture.get('amount', '24554.61')
+            assert receipt['detail_count'] == len(order['payload']['lines']) == fixture.get('sku_count', 582)
             assert not messages, messages
             snapshot(dialog, phase+'-待人工确认付款')
-            report.update(passed=True, synthetic_internal=order['internal'], payment_candidate=current['digest'],
+            report.update(passed=True, warehouse=warehouse, used_frozen_preview=use_frozen_preview,
+                          synthetic_internal=order['internal'], payment_candidate=current['digest'],
                           sku_count=receipt['detail_count'], quantity=summary[0]['quantity'],
                           amount=summary[0]['totals']['payable'], payment_confirmed=False)
         except BaseException:

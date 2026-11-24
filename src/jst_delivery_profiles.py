@@ -20,9 +20,11 @@ def clean_profile(warehouse, values):
     clean={}
     for field,value in values.items():
         title=CONTACT[field][1]
-        if not isinstance(value,str) or any(ord(c)<32 for c in value):
+        if not isinstance(value,str):
             raise ValueError(title+'应为单行文本')
         value=value.strip()
+        if any(ord(c)<32 for c in value):
+            raise ValueError(title+'中包含换行、制表符或其他控制字符，请保留一行内容')
         if cell_length(value)>(ADDRESS_LIMIT if field=='address' else TEXT_LIMIT):
             raise ValueError(title+'内容过长')
         clean[field]=value

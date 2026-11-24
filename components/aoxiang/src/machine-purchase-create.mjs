@@ -15,19 +15,20 @@ function mainVerificationRetry(record){
 export class MachinePurchaseCreate{
   constructor({ledger,adapter,preflight=async()=>{},onFatal=()=>{}}){Object.assign(this,{ledger,adapter,preflight,onFatal});this.pending=null;this.job=null;}
   get busy(){return !!this.pending;}
-  status(id){return {...purchasePublic(this.ledger.get(id)),active:this.job?.id===id&&this.busy,stage:this.job?.id===id?this.job.stage:null,pauseRequested:this.job?.id===id?this.job.cancelled:false};}
+  status(id){const job=this.job?.id===id?this.job:null;return {...purchasePublic(this.ledger.get(id)),active:!!job&&this.busy,stage:job?.stage||null,pauseRequested:job?.cancelled||false,verificationError:job?.verificationError||null};}
   check(){if(this.job.cancelled)fail('PAUSED','已停止新动作；已受理任务和采购单不会撤销');}
   progress(stage){this.job.stage=stage;this.job.updatedAt=now();}
-  start(id,{submitOnly=false}={}){
+  start(id,{submitOnly=false,verifyOnly=false,originalUnits}={}){
     if(this.busy)fail('PURCHASE_CREATE_BUSY','当前采购任务仍在安全结束，请勿重复执行');
-    const r=this.ledger.get(id);if(r.state==='BOUND')return this.status(id);
+    const r=this.ledger.get(id);if(r.state==='BOUND'&&!verifyOnly)return this.status(id);
     if(r.state==='RETIRED')fail('SOURCE_ORDER_DELETED','来源订单已删除，任务已退役');
     if(r.state==='SUPERSEDED')fail('PURCHASE_SUPERSEDED','旧任务已结束并重建，请打开后继任务；原平台单未撤销',{successorId:r.successorId});
     if(r.state==='CANCELLED_BEFORE_UPLOAD')fail('PURCHASE_CANCELLED','该任务已在上传前取消');
     if(r.receipt&&!r.uploadAttempted)fail('PURCHASE_RECEIPT_CONFLICT','原采购已有受理记录，上传标记不一致，请核对原任务');
     if(r.uploadAttempted&&!r.receipt)fail('SUBMISSION_UNKNOWN','已进入上传边界但无唯一受理任务号，只能核对，不允许重新上传');
     if(r.additionalTaskIds?.length)fail('MULTIPLE_IMPORT_TASKS','导入任务不唯一，请人工核对');
-    this.job={id,submitOnly,stage:r.uploadAttempted?'核对原导入任务':'核验已确认付款及采购文件',cancelled:false,updatedAt:now()};
+    if(verifyOnly&&(!r.uploadAttempted||!r.receipt))fail('SUBMISSION_UNKNOWN','原采购缺少唯一已受理导入回执；核对请求未进入上传');
+    this.job={id,submitOnly,verifyOnly,originalUnits,stage:r.uploadAttempted?'核对原导入任务':'核验已确认付款及采购文件',cancelled:false,updatedAt:now()};
     this.control=new AbortController();
     this.pending=Promise.resolve().then(()=>this.run(id)).catch(e=>{this.onFatal(e);}).finally(()=>{this.pending=null;});
     return this.status(id);
@@ -44,6 +45,7 @@ export class MachinePurchaseCreate{
     let r=this.ledger.get(id);
     try{
       this.check();
+      if(this.job.verifyOnly&&(!r.uploadAttempted||!r.receipt))fail('SUBMISSION_UNKNOWN','原导入回执缺失，无法继续核对');
       if(!r.uploadAttempted){
         r=this.ledger.update(id,r.sequence,'PREPARING',{error:null});
         await this.preflight(r.intent);this.check();
@@ -77,12 +79,15 @@ export class MachinePurchaseCreate{
       if(this.job.submitOnly){this.progress('平台已受理；可继续提交其他订单，原任务等待核对');return;}
       this.progress('核对原导入任务、采购主单和商品数量金额');
       const retryMainRunId=mainVerificationRetry(r);
-      r=this.ledger.update(id,r.sequence,'VERIFYING',{error:null});
-      const evidence=await this.adapter.observe(r.intent,r.receipt,{signal:this.control.signal,retryMainRunId});this.check();
-      const bound=this.ledger.bind(id,evidence);this.progress(bound.binding.status==='已作废'?'已核实原采购单已作废，可返回本地删除页重新核对':'采购单已核验并关联，保留待提交');
+      if(r.state!=='BOUND')r=this.ledger.update(id,r.sequence,'VERIFYING',{error:null});
+      const evidence=await this.adapter.observe(r.intent,r.receipt,{signal:this.control.signal,retryMainRunId,
+        verifyOnly:this.job.verifyOnly, originalUnits:this.job.originalUnits});this.check();
+      const bound=this.ledger.bind(id,evidence,{originalUnits:this.job.originalUnits});
+      this.progress('已核实原采购单 '+bound.binding.orderId+' · '+bound.binding.status);
     }catch(e){
       r=this.ledger.get(id);const error=errorInfo(e);
       if(r.state==='RETIRED'){this.progress('来源订单已删除；当前动作已结束，不建立本地业务关联');return;}
+      if(r.state==='BOUND'&&this.job.verifyOnly){this.job.verificationError=error;this.progress('本次原单核对未完成，保留已有采购关联');return;}
       if(['BOUND','CANCELLED_BEFORE_UPLOAD'].includes(r.state))throw e;
       if(!r.uploadAttempted){if(!['FAILED_PRECHECK','PAUSED'].includes(r.state))this.ledger.update(id,r.sequence,this.job.cancelled?'PAUSED':'FAILED_PRECHECK',{error});}
       else if(r.state==='SUBMITTING')this.ledger.update(id,r.sequence,'NEEDS_REVIEW',{error});

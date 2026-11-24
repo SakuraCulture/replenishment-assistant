@@ -88,6 +88,73 @@ class OrderPayment(unittest.TestCase):
         self.assertFalse(lifecycle.snapshot(self.path,self.base.head)['present']['payment'])
         self.assertEqual([a for a,_ in self.portal.calls],['preview','lookup','lookup','lookup','payment_detail','lookup','payment_detail'])
 
+    def test_masked_buyer_recovers_each_warehouse_by_its_frozen_preview_and_full_detail(self):
+        _, south_keys = self.prepare_south()
+        keys = self.keys + south_keys
+        receipts = {}
+        for online, internal, status in zip(keys, ('90011', '90012'), (confirmation.AWAITING, confirmation.AUDITED)):
+            order = self.base.read(online)
+            automatic._save(self.path, order, 'IMPORT_UNKNOWN', None, reason='合成原任务已发起导入')
+            items = [{'sku': sku, 'qty': qty, 'price': price, 'amount': str(Decimal(qty)*Decimal(price))}
+                     for sku, qty, price in order['payload']['lines']]
+            receipts[online] = {'found': True, 'buyer_check': 'unavailable', 'contact_ok': False,
+                                'online': online, 'internal': internal, 'native_status': status,
+                                'binding': order['proof']['binding'], 'items': items, 'detail_count': len(items),
+                                'currency': 'CNY', 'freight': '0', 'amount': order['proof']['amount']}
+
+        calls = []
+
+        def read(name, order, **kwargs):
+            self.assertIn(name, ('lookup', 'payment_detail'))
+            calls.append((name, order['online']))
+            return receipts[order['online']]
+
+        def recover(online):
+            result, = automatic.process(self.path, [online], self.portal, 'recover', prepare_payment=service.pull_order_payment)
+            return result
+
+        first, second = keys
+        valid = receipts[first]
+        item, = valid['items']
+        # Same order totals can hide wrong units, price or product.
+        for changes, hint in (
+            ({'binding': receipts[second]['binding']}, '企业、店铺或线上单号'),
+            ({'items': []}, '商品款数'),
+            ({'items': [{**item, 'sku': '0002'}]}, '原仓单外商品'),
+            ({'items': [{**item, 'qty': '20', 'price': '4'}]}, '逐项数量或单价'),
+            ({'buyer_check': 'mismatch'}, '完整买家账号与原任务不同'),
+            ({'buyer_check': 'masked_conflict'}, '隐号'),
+            ({'native_status': '已取消'}, '原单身份待核'),
+        ):
+            with self.subTest(changes=changes), patch.object(self.portal, 'action', side_effect=read):
+                receipts[first] = {**valid, **changes}
+                self.assertIn(hint, recover(first)['reason'])
+                self.assertIsNone(self.base.read(first)['internal'])
+                self.assertEqual(jobs.waiting_review(self.path), [])
+
+        receipts[first] = valid
+        calls.clear()
+        with patch.object(self.portal, 'action', side_effect=read):
+            for online in keys:
+                result = recover(online)
+                self.assertEqual(result['internal'], receipts[online]['internal'], result['reason'])
+                self.assertEqual(result['payment']['state'], 'READY')
+                self.assertEqual(recover(online)['payment']['digest'], result['payment']['digest'])
+            self.assertEqual(calls, [(action, online) for online in keys
+                                     for action in ('lookup', 'payment_detail')*2])
+            plan, _ = service.prepare_review(self.path, keys)
+            with patch.object(service, 'run_order_payment', side_effect=lambda *_: service.pull_order_payment(self.path, keys, self.portal)):
+                service.verify_order_before_commit(self.path, plan['jst_fulfillment'], None)
+                receipts[first] = {**valid, 'buyer_check': 'mismatch'}
+                with self.assertRaisesRegex(wr.Conflict, '完整买家账号与原任务不同'):
+                    service.verify_order_before_commit(self.path, plan['jst_fulfillment'], None)
+        with closing(wr.read_connection(self.path)) as db:
+            for online in keys:
+                order = self.base.read(online)
+                self.assertEqual(order['internal'], valid['internal'] if online == first else receipts[online]['internal'])
+                self.assertEqual(len(sources.history(db, online)), 1)
+                self.assertIsNone(lifecycle.current(db, order['payload']['head'], 'payment'))
+
     def test_insufficient_buyer_evidence_or_conflict_blocks_payment_recheck(self):
         ready = self.submit()['payment']
         plan, _ = service.prepare_review(self.path,self.keys)
@@ -289,7 +356,7 @@ class OrderPayment(unittest.TestCase):
             payment.prepare(order,receipt)
         self.assertEqual(jobs.waiting_review(self.path),[])
 
-    def test_same_store_two_warehouse_candidates_only_feed_purchase_after_manual_payment(self):
+    def prepare_south(self):
         south = next(h for h in self.base.f.f.heads if h['warehouse']=='山东仓')
         self.base.f.f.save('return',[{'补货单号':south['number'],'供货仓':'山东仓','商品编码':'0002','门店确认数量':18}])
         catalog = test_jst.catalog('山东仓')
@@ -300,13 +367,17 @@ class OrderPayment(unittest.TestCase):
         south_ready = automatic.prepare(self.path,[{'head':south,'gid':generated['generated'][0]}])
         self.assertEqual(south_ready['failed'],[])
         automatic.process(self.path,south_ready['ready'],self.portal,'preview')
+        return south, south_ready['ready']
+
+    def test_same_store_two_warehouse_candidates_only_feed_purchase_after_manual_payment(self):
+        south, south_keys = self.prepare_south()
         self.assertEqual(self.submit()['payment']['state'],'READY')
         self.portal.qty,self.portal.total = '9','26.75'
-        response, = automatic.process(self.path,south_ready['ready'],self.portal,'submit',prepare_payment=service.pull_order_payment)
+        response, = automatic.process(self.path,south_keys,self.portal,'submit',prepare_payment=service.pull_order_payment)
         self.assertEqual(response['payment']['state'],'READY')
 
         heads = [self.base.head,south]
-        keys = self.keys + south_ready['ready']
+        keys = self.keys + south_keys
         config = {'configured':True,'enabled':True,'account_binding':{'account_id':'QA'},
                   'store_mapping_version':'qa-v1','targets':[{'buyerWarehouseCode':south['store']}]}
         suppliers = {'河北仓':'QA-HB','山东仓':'QA-SD'}

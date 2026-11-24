@@ -1,27 +1,51 @@
 """A sibling handoff record survives UI destruction and directory replacement."""
-import json,traceback
+import time,traceback
 from pathlib import Path
-from stockout_common import atomic_json,now
+from data_location_status import read, save
+from stockout_common import now
 
 def folder(root):return Path(root).resolve().parent/('.'+Path(root).name+'.order-migrations')
-def record(plan,state,*,phase=None,error=None,result=None):
+def record(plan,state,*,phase=None,error=None,result=None,progress=None):
     from order_migration import checked_plan
     root=checked_plan(plan);dest=folder(root);dest.mkdir(parents=True,exist_ok=True);name=plan['nonce']
     original=dest/(name+'.plan.json')
-    if not original.exists():atomic_json(original,plan)
-    file=dest/(name+'.status.json');previous=json.loads(file.read_text('utf-8')) if file.is_file() else {}
+    if not original.exists():save(original,plan)
+    file=dest/(name+'.status.json');previous=read(file) if file.is_file() else {}
     value={'nonce':name,'state':state,'phase':phase or state,'at':now(),'root':str(root),'stage':plan['stage'],'backup':plan['backup'],'plan_file':str(original)}
     if error is not None:value['error']={'type':type(error).__name__,'message':str(error),'traceback':''.join(traceback.format_exception(type(error),error,error.__traceback__))}
     if result is not None:value['result']=result
-    value['history']=[*previous.get('history',[]),{k:value[k] for k in ('state','phase','at')}][-80:]
-    atomic_json(file,value);atomic_json(dest/'latest.json',{'nonce':name});return value
+    if progress is not None:value['progress']=progress
+    history=previous.get('history',[])
+    if (previous.get('state'),previous.get('phase'))!=(state,value['phase']):
+        history=[*history,{k:value[k] for k in ('state','phase','at')}][-80:]
+    value['history']=history
+    save(file,value)
+    pointer=dest/'latest.json'
+    try:latest_nonce=read(pointer).get('nonce')
+    except (OSError,ValueError,AttributeError):latest_nonce=None
+    if latest_nonce!=name:save(pointer,{'nonce':name})
+    return value
+
+
+def reporter(plan,phase):
+    """Persist running activity at most once a second; transitions bypass this."""
+    from export_progress import RowProgress
+    last=None
+    def report(message):
+        nonlocal last
+        at=time.monotonic()
+        if last is not None and at-last<1:return
+        detail={'label':str(message)}
+        if isinstance(message,RowProgress):detail.update(current=message.current,total=message.total)
+        record(plan,'APPLYING',phase=phase,progress=detail);last=at
+    return report
 def latest(root):
     dest=folder(root);pointer=dest/'latest.json'
     if not pointer.is_file():return None
     import re
-    name=json.loads(pointer.read_text('utf-8')).get('nonce','')
+    name=read(pointer).get('nonce','')
     if not re.fullmatch('[0-9a-f]{32}',name):raise ValueError('迁入状态身份无效，请保留诊断记录')
-    value=json.loads((dest/(name+'.status.json')).read_text('utf-8'))
+    value=read(dest/(name+'.status.json'))
     if Path(value['root']).resolve()!=Path(root).resolve():raise ValueError('迁入状态目录不一致')
     return value
 def waiting(host,plan):

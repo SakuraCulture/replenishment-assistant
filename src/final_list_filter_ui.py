@@ -8,9 +8,9 @@ import final_list_filters as rules
 
 class FilterDialog(QDialog):
     def __init__(self, rows, spec, parent=None):
-        super().__init__(parent); self.setWindowTitle('类目 / 销量 / 库存筛选'); self.resize(780,580)
+        super().__init__(parent); self.setWindowTitle(rules.FILTER_TITLE); self.resize(780,580)
         self.spec=copy.deepcopy(spec); v=QVBoxLayout(self)
-        info=QLabel('同类目多选为“或”；类目、模型分类及各数值条件同时满足。未勾选类目表示不限。数量均按库存单位。')
+        info=QLabel('同组类目可多选，命中其中一项即可。类目、模型分类和各数值条件须同时满足。未勾选类目表示不限。数量按库存单位。')
         info.setWordWrap(True);v.addWidget(info);line=QHBoxLayout();self.lists={}
         for key,title,model in [('categories','商品原始类目',False),('profiles','补货模型分类',True)]:
             col=QVBoxLayout();col.addWidget(QLabel(title));search=QLineEdit();search.setPlaceholderText('搜索分类（不改变已勾选项）');col.addWidget(search)
