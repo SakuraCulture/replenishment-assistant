@@ -137,3 +137,23 @@ class OrderSelectionTests(unittest.TestCase):
         imported_scope = order_selection.preview(self.target.root, (self.source.oid,), '')
         reexport = order_selection.export(self.target.root, self.root / 'scoped-reexport.zip', imported_scope)
         self.assertTrue(expected.keys() <= reexport['manifest']['external_map'].keys())
+
+    def test_native_template_receipts_in_external_output_are_included_in_both_formats(self):
+        folder = self.root / 'external-output/模板/采购单/合成商家'
+        template = folder / '获取记录/模板记录.json'
+        template.parent.mkdir(parents=True)
+        latest = folder / 'latest.json'
+        latest.write_text('{"format":1}', encoding='utf-8')
+        template.write_text(json.dumps({'format': 1, 'latestFile': str(latest)}), encoding='utf-8')
+        purchase_ledger(self.source, platform_id='PO-SYNTHETIC-EXTERNAL-TEMPLATE', template_record=template)
+        scope = order_selection.preview(self.source.root, (self.source.oid,), '')
+        for name, export in [('full', lambda p: order_migration.export(self.source.root, p)),
+                             ('selected', lambda p: order_selection.export(self.source.root, p, scope))]:
+            with self.subTest(name=name):
+                package = self.root / (name + '.zip')
+                result = export(package)
+                with zipfile.ZipFile(package) as book:
+                    for original in (template, latest):
+                        member = result['manifest']['external_map'][str(original)]
+                        self.assertTrue(order_migration.component_artifact(member))
+                        self.assertEqual(book.read(member), original.read_bytes())

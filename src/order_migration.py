@@ -4,6 +4,7 @@ No platform calls. Browser identities/configuration, cookies and analysis module
 are not exported. Existing target data is retained as a complete sibling backup.
 """
 import hashlib,json,os,re,shutil,sqlite3,tempfile,uuid,zipfile,zlib
+from collections import deque
 from contextlib import ExitStack,closing
 from pathlib import Path,PurePosixPath
 from stockout_common import encoded,file_hash,atomic_json,now,resource_check
@@ -43,6 +44,14 @@ def owned(name):
 def component_artifact(name):
     parts=PurePosixPath(name).parts
     return len(parts)>=4 and parts[:2]==('aoxiang','component-state') and parts[2] in STATE_DIRS and owned(name)
+
+
+def _native_template_receipt(path):
+    if path.suffix.lower()!='.json':return False
+    if path.name=='latest.json':tenant=path.parent
+    elif path.parent.name=='获取记录':tenant=path.parent.parent
+    else:return False
+    return tenant.parent.name=='采购单' and tenant.parent.parent.name=='模板'
 
 def tree(root):
     root=Path(root).resolve();result=[]
@@ -114,7 +123,9 @@ def _add_file_references(value,result):
         for v in value.values():_add_file_references(v,result)
     elif isinstance(value,list):
         for v in value:_add_file_references(v,result)
-    elif isinstance(value,str) and len(value)<32768 and Path(value).is_absolute() and Path(value).suffix.lower() in SUFFIXES:result.add(value)
+    elif isinstance(value,str) and len(value)<32768 and Path(value).is_absolute():
+        path=Path(value)
+        if path.suffix.lower() in SUFFIXES or _native_template_receipt(path):result.add(value)
 
 
 @measure('migration.export.references')
@@ -207,12 +218,27 @@ def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=N
                 for old,relative in previous.get('paths',{}).items():
                     if relative in included and owned(relative):external[old]=relative
             progress('正在从订单及快照查找原件引用…')
-            for value in sorted(referenced_files(work,work/'workbench.sqlite3',cancel,checked_blocks=checked_blocks,references=references)):
+            pending=deque(sorted(referenced_files(work,work/'workbench.sqlite3',cancel,checked_blocks=checked_blocks,references=references)))
+            seen=set()
+            while pending:
+                value=pending.popleft()
+                if value in seen:continue
+                seen.add(value)
                 if value in external:continue
                 path=Path(value)
                 if path.is_relative_to(root) and path in sources:continue
                 if not path.is_file() or path.is_symlink():missing.append(value);continue
-                sha=file_hash(path);name='migration-assets/'+sha+'/'+path.name;dest=work/name;dest.parent.mkdir(parents=True,exist_ok=True)
+                sha=file_hash(path)
+                template=_native_template_receipt(path)
+                if template:
+                    if path.stat().st_size>=32*1024**2:raise ValueError('翱象采购模板回执超过可核验大小：'+path.name)
+                    raw=path.read_bytes()
+                    if hashlib.sha256(raw).hexdigest()!=sha:raise ValueError('翱象采购模板回执在导出期间变化：'+path.name)
+                    receipt=json.loads(raw.decode('utf-8-sig'))
+                    if not isinstance(receipt,dict) or receipt.get('format')!=1:raise ValueError('翱象采购模板回执格式无效：'+path.name)
+                    linked=set();_add_file_references(receipt,linked);pending.extend(sorted(linked-seen))
+                directory='aoxiang/component-state/assets/migration-originals' if template else 'migration-assets'
+                name=directory+'/'+sha+'/'+path.name;dest=work/name;dest.parent.mkdir(parents=True,exist_ok=True)
                 if not dest.exists():
                     shutil.copyfile(path,dest)
                     if file_hash(dest)!=sha or file_hash(path)!=sha:raise ValueError('外部原文件在导出期间变化，未生成迁移包')

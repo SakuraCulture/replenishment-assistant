@@ -61,16 +61,14 @@ def main():
     source.complete(stock=7)
     peer = second_order(source, source.code, oid='cross-day-shared', day='2026-11-15')
     shared_purchase(source, [source.h, peer])
-    purchase = purchase_ledger(source, platform_id='PO-SYNTHETIC-SCOPE')
+    template_folder = out / 'isolated-aoxiang-output/模板/采购单/SYNTHETIC-MERCHANT'
+    template_receipt = template_folder / '获取记录/scope-template.json'
+    template_receipt.parent.mkdir(parents=True)
+    latest_template = template_folder / 'latest.json'
+    write(latest_template, {'format': 1, 'synthetic': True})
+    write(template_receipt, {'format': 1, 'latestFile': str(latest_template)})
+    purchase = purchase_ledger(source, platform_id='PO-SYNTHETIC-SCOPE', template_record=template_receipt)
     machine = machine_command(source)['record']
-    component_assets = source.root / 'aoxiang/component-state/assets'
-    template_receipt = component_assets / 'synthetic-template.json'
-    latest_template = component_assets / 'scope-latest-template.json'
-    write(latest_template, {'synthetic': True})
-    write(template_receipt, {'latestFile': str(latest_template)})
-    portable = {str(path): path.relative_to(source.root).as_posix() for path in (template_receipt, latest_template)}
-    contents = {hash_file(path): [portable[str(path)]] for path in (template_receipt, latest_template)}
-    write(source.root / '迁入原文件映射.json', {'version': 1, 'paths': portable, 'contents': contents})
     artifact_hashes = {str(path): hash_file(path) for path in (template_receipt, latest_template)}
     add_load(source, 15, 1200)
     local = Order(out / 'target', code='LOCAL')

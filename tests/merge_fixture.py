@@ -163,12 +163,13 @@ def shared_purchase(order,heads):
     return purchases.commit(order.path,purchases.prepare(order.path,scan))
 
 
-def purchase_ledger(order,*,platform_id=None):
+def purchase_ledger(order,*,platform_id=None,template_record=None):
     """Real local Node StateStore/PurchaseCreates; synthetic response, no browser."""
     component=Path(__file__).resolve().parents[1]/'components/aoxiang'
     state=order.root/'aoxiang/component-state';assets=state/'assets';assets.mkdir(parents=True,exist_ok=True)
     upload=assets/'synthetic-upload.xlsx';book=openpyxl.Workbook();book.active.append(['商品编码','数量']);book.active.append(['0001',2]);book.save(upload);book.close()
-    template=assets/'synthetic-template.json';template.write_text('{"synthetic":true}','utf-8')
+    template=template_record or assets/'synthetic-template.json'
+    if template_record is None:template.write_text('{"synthetic":true}','utf-8')
     command='purchase-'+order.oid
     identity={'accountId':'SYNTHETIC-USER','merchantCode':'SYNTHETIC-MERCHANT'}
     h='a'*64;head=order.h
