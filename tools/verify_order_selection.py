@@ -100,7 +100,7 @@ def main():
         seed = out / ('input-' + name)
         receiving_fixture(seed, local.root, out / name / 'orders.zip', expected, merge_marker(len(expected)))
         proof = run_one(exe, out / ('import-' + name), seed, 'merge')
-        results.append({'mode': 'import-' + name, 'passed': True, **proof})
+        results.append({**proof, 'mode': 'import-' + name, 'passed': True})
 
     installed = out / 'import-checked'
     for table_name in ('lifecycle_versions', 'purchase_documents', 'purchase_versions', 'jst_generations', 'purchase_files', 'lifecycle_files'):
