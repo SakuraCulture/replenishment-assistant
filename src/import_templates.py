@@ -17,6 +17,7 @@ TEMPLATES={
  'store_refusals':('门店拒收清单','门店拒收清单',['门店编码','商品编码','拒收原因'],['门店名称','商品名称','到期日']),
  'store_parameters':('门店参数','门店参数',['门店编码'],['门店名称','主仓','从仓','预算方式','预算金额']),
  'aoxiang_stores':('翱象门店目录','门店目录',['门店编码','门店名称'],[]),
+ 'replenishment_plans':('补货计划','补货计划',['计划名称','门店编码'],['门店名称','顺序','参数预案','计划备注']),
  'stocking':('铺货清单','铺货清单',['商品编码'],['商品名称','目标持有量','备注','关注']),
  'sales':('补货建议','商品补货建议',['仓库/门店编码','商品编码','日销','周销','月销','可用库存','在途库存','缺货天数（天）'],['仓库/门店名称','商品名称','单位类型','补货状态']),
  'catalog':('分仓商品资料','Sheet1',['商品编码','分类','基本售价','出库箱规','商品状态','可用数','商品标签'],['商品名称','商品等级','补货模型分类','实际库存数','采购在途数','订单占有数','新店新品首铺数']),
@@ -44,6 +45,19 @@ def make_workbook(kind, *, blank_rows=200):
     if kind=='aoxiang_stores':
         note.delete_rows(2,note.max_row)
         for item in [('必填字段','门店编码、门店名称；无需填写账号、仓供应商或系统版本'),('编码','按文本填写，保留前导零和长编码；按编码关联，不按相似名称合并'),('表头','按表头识别，列位置可调整；可直接使用翱象门店数据导出文件'),('重复','相同编码与名称去重并保留来源行；同码不同名阻断；同名不同码保留'),('核验','导入目录不代表已经核验平台权限；连接时按实际查询编码核对'),('原件','导入后保留原文件快照，不修改原文件')]:note.append(item)
+    if kind=='replenishment_plans':
+        note.delete_rows(2,note.max_row)
+        for item in [
+            ('填写方式','每行一家门店。相同计划名称归入同一计划，按门店编码匹配。'),
+            ('必填','计划名称、门店编码。门店目录没有该编码时，还需填写门店名称。编码按文本填写。'),
+            ('顺序','同计划的顺序全部留空时按表中行序。填写时每行填不同的正整数。'),
+            ('参数预案','填已保存的参数预案全名，或填“跟随门店默认”。空白保留同计划同店的原选择，新门店跟随默认。'),
+            ('计划备注','同计划内填写一处即可；重复填写须一致；留空保留原备注。'),
+            ('同名计划','保存前核对完整名单。同名计划按表中名单和顺序更新，其他计划保留。'),
+            ('使用范围','保存门店名单及参数选择。主从仓和预算在门店设置中维护。'),
+        ]:note.append(item)
+        ws.column_dimensions['C'].width=32
+        ws.column_dimensions['E'].width=32
     note.column_dimensions['A'].width=22;note.column_dimensions['B'].width=100
     return wb
 
@@ -58,8 +72,17 @@ def write(kind,path,progress=lambda _:None,cancel=None):
     if kind=='store_parameters':
         from store_parameter_import import write as write_parameters
         return write_parameters(path,progress=progress,cancel=cancel)
-    wb=make_workbook(kind)
-    fd,tmp=tempfile.mkstemp(dir=target.parent,suffix='.xlsx');os.close(fd)
-    try:wb.save(tmp);os.link(tmp,target)
-    finally:wb.close();Path(tmp).unlink(missing_ok=True)
+    return save_workbook(make_workbook(kind),target)
+
+
+def save_workbook(wb,target):
+    target=Path(target)
+    tmp=None
+    try:
+        if target.exists():raise FileExistsError('目标文件已存在，请另存为新文件')
+        fd,tmp=tempfile.mkstemp(dir=target.parent,suffix='.xlsx');os.close(fd)
+        wb.save(tmp);os.link(tmp,target)
+    finally:
+        wb.close()
+        if tmp is not None:Path(tmp).unlink(missing_ok=True)
     return str(target)

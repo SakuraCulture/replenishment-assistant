@@ -13,6 +13,12 @@ STATES={'QUEUED':'排队','RUNNING':'执行中','PAUSING':'正在安全暂停','
 
 def stamp():return datetime.now(TZ)
 def signature(value):return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
+
+
+def has_verified_bindings(schedule):
+    return schedule.get('reuse_verified_bindings') is True or bool(schedule.get('check_signature'))
+
+
 def schedule_value(value):
     x=copy.deepcopy(value)
     if not isinstance(x.get('plan_id'),str) or not x['plan_id']:raise ValueError('请选择补货预案')
@@ -75,7 +81,7 @@ class Repository:
     def save_schedule(self,value,expected=None):
         self.ensure();v=schedule_value(value);now=self.clock()
         v.update(id=expected['id'] if expected else uuid.uuid4().hex,revision=expected['revision']+1 if expected else 1,updated=now.isoformat())
-        if v['enabled'] and not v.get('check_signature'):raise ValueError('请先检查运行条件，或仅保存暂不启用')
+        if v['enabled'] and not has_verified_bindings(v):raise ValueError('请核验所需门店和仓账号，或仅保存暂不启用')
         v['next_at']=next_at(v,now) if v['enabled'] else None
         if v['enabled'] and not v['next_at']:raise ValueError('执行时间已过去，请选择下一次时间')
         with self.db(True) as db:

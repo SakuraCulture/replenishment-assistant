@@ -1,6 +1,8 @@
 """Opt-in actual Qt/spawn acceptance; only explicit isolated synthetic inputs."""
 import copy,json,os,sys,time,traceback
 from pathlib import Path
+from types import SimpleNamespace
+from scheduled_platforms import Platforms
 
 
 def fixture(root):
@@ -20,11 +22,36 @@ def fixture(root):
     return plan,catalogs,{'files':files}
 
 
-class SyntheticPlatforms:
-    def __init__(self,catalogs,manifest,cancel):self.data=catalogs;self.manifest=manifest;self.cancel=cancel
-    def acquire(self):pass
-    def preflight(self,basis,progress):
-        progress('合成连接核验，不访问平台');time.sleep(.15);return {'message':'合成核验通过'}
+class SyntheticPlatforms(Platforms):
+    def __init__(self, repo, catalogs, manifest, cancel, bindings):
+        def read_configuration(action):
+            if action != 'configuration':
+                raise AssertionError(action)
+            bindings['calls'].append(action)
+            return {'configured': True, 'enabled': True, 'targets': [
+                {'buyerWarehouseCode': item['warehouse_code'], 'mappingVerifiedAt': '2026-11-04'}
+                for item in manifest['files'] if item['warehouse_code'] != bindings.get('missing_store')
+            ]}
+
+        def read_catalog_status():
+            bindings['calls'].append('sync.status')
+            return {'accounts': [
+                {'warehouse': warehouse, 'enabled': True, 'mappingVerified': True,
+                 'expectedCompany': '合成' + warehouse, 'expectedCoid': str(i), 'expectedUid': '1'}
+                for i, warehouse in enumerate(catalogs, 1)
+            ]}
+
+        def control_lease(*, cancelled, control_only):
+            if not control_only:
+                raise AssertionError('读取配置不应占用翱象浏览器')
+            return SimpleNamespace(start=lambda: None, close=lambda: True, request=read_configuration)
+
+        ax = SimpleNamespace(session=SimpleNamespace(lease=control_lease))
+        catalog = SimpleNamespace(read_status=read_catalog_status)
+        super().__init__(repo.path.parent, repo.path, ax, catalog, cancel)
+        self.data = catalogs
+        self.manifest = manifest
+
     def sales(self,runner,basis):return self.manifest
     def catalogs(self,runner,basis):
         for w,c in self.data.items():runner.repo.save_value(runner.rid,'catalog:'+w,c,runner.epoch)
@@ -54,16 +81,30 @@ def start_smoke(app,win,args):
         timer=QTimer();timer.setInterval(50);timer.timeout.connect(lambda:beats.append((phase,time.monotonic())));timer.start()
         try:
             win.jst_generator.timer.stop();win.aoxiang_workflows.timer.stop();m.timer.stop();wait(lambda:not m.reader)
-            plan,catalogs,manifest=fixture(out/'user');m.platform=lambda c:SyntheticPlatforms(catalogs,manifest,c)
+            plan,catalogs,manifest=fixture(out/'user')
+            bindings = {'calls': [], 'missing_store': 'B'}
+            m.platform = lambda c: SyntheticPlatforms(m.repo, catalogs, manifest, c, bindings)
             win.job_dirty=True  # Unsaved work must postpone default publication.
             before=win.snapshot();phase='actual_ui';m.open();dialog=m.dialog;wait(lambda:not dialog.worker);dialog.edit();editor=dialog.editor
-            editor.name.setText('合成早班');editor.verify();wait(lambda:not editor.worker);require(editor.verified is not None,'运行条件在后台核验并绑定设置')
-            editor.save(True);wait(lambda:dialog.editor is None);dialog.refresh();wait(lambda:not dialog.worker)
-            require(len(m.repo.schedules())==1 and m.repo.schedules()[0]['enabled'],'实际表单保存并启用安排')
+            editor.name.setText('合成早班');editor.enable.click();wait(lambda:not editor.worker)
+            require(not m.repo.schedules() and '测试B（B）' in editor.note.text(),'缺少门店映射时在安排里指明该店')
+            bindings.pop('missing_store');bindings['calls'].clear()
+            editor.enable.click();wait(lambda:dialog.editor is None);dialog.refresh();wait(lambda:not dialog.worker)
+            saved, = m.repo.schedules()
+            require(saved['enabled'] and saved.get('reuse_verified_bindings') is True,'点保存并启用即可采用已有核验设置')
+            require(bindings['calls']==['configuration','sync.status'],'仅读取两个组件的已保存绑定')
+            dialog.arrangements.selectRow(0);dialog.edit_selected();editor=dialog.editor
+            editor.workers.setValue(1);editor.enable.click();wait(lambda:dialog.editor is None);dialog.refresh();wait(lambda:not dialog.worker)
+            require(m.repo.schedules()[0]['workers']==1,'修改已启用安排直接保存')
+            editor_record=win.work_repository.stores()['A']
+            editor_record['preset']['config']['warehouses']['河北仓']=[10,2]
+            win.work_repository.save_stores({'A':editor_record})
             dialog.grab().save(str(out/'01-执行安排.png'))
             ui.ask=lambda *a:True;dialog.arrangements.selectRow(0);dialog.manual();wait(lambda:m.worker is None and any(r['state']=='COMPLETE' for r in m.repo.list()['items']),60)
             m.timer.stop();wait(lambda:not m.reader and not m.publisher);dialog.refresh();wait(lambda:not dialog.worker)
             r=m.repo.list()['items'][0];require(r['state']=='COMPLETE','实际spawn计算两家门店并逐店保存结果')
+            require(m.repo.value(r['id'],'basis')['jobs']['A']['warehouses']['河北仓']==[10,2],
+                    '安排保存后调整门店参数，下一次任务采用已保存的新值')
             require(win.snapshot()==before,'后台计算没有改动现有工作台')
             require(win.work_repository.list_jobs()==[],'自动任务不覆盖每日草稿')
             require(not m.repo.get(r['id']).get('publication'),'未保存工作台阻止自动更新默认资料')
@@ -105,13 +146,13 @@ def start_smoke(app,win,args):
                     checkpoint(self.cancel)
             win.loaded=None;win._discard_close=True;win.job_dirty=False;phase='actual_ui'
             beats.append((phase,time.monotonic()))
-            m.platform=lambda c:Waiting(catalogs,manifest,c);next_run=m.repo.manual(m.repo.schedules()[0]);m.start(next_run)
+            m.platform=lambda c:Waiting(m.repo,catalogs,manifest,c,bindings);next_run=m.repo.manual(m.repo.schedules()[0]);m.start(next_run)
             wait(lambda:m.repo.get(next_run['id'])['stage']=='获取补货建议');m.pause(next_run['id'])
             wait(lambda:m.worker is None);require(m.repo.get(next_run['id'])['state']=='PAUSED','运行中暂停能到达安全检查点，进程不遗留')
-            current=m.repo.get(next_run['id']);m.repo.resume(current['id'],current['revision']);m.platform=lambda c:SyntheticPlatforms(catalogs,manifest,c);m.start(m.repo.get(current['id']))
+            current=m.repo.get(next_run['id']);m.repo.resume(current['id'],current['revision']);m.platform=lambda c:SyntheticPlatforms(m.repo,catalogs,manifest,c,bindings);m.start(m.repo.get(current['id']))
             wait(lambda:m.worker is None and m.publisher is None and m.reader is None);require(m.repo.get(current['id'])['state']=='COMPLETE','暂停后继续同一任务，取消状态不串入新轮次')
             m.repo.request_pause(current['id'],True)
-            last=m.repo.manual(m.repo.schedules()[0]);m.platform=lambda c:Waiting(catalogs,manifest,c);m.start(last)
+            last=m.repo.manual(m.repo.schedules()[0]);m.platform=lambda c:Waiting(m.repo,catalogs,manifest,c,bindings);m.start(last)
             wait(lambda:m.repo.get(last['id'])['stage']=='获取补货建议');win.close();wait(lambda:m.worker is None and not win.isVisible())
             require(m.repo.get(last['id'])['state']=='PAUSED','实际窗口关闭前安全暂停，保留原任务供重启恢复')
             intervals=[(b[1]-a[1])*1000 for a,b in zip(beats,beats[1:]) if a[0]==b[0]=='actual_ui']

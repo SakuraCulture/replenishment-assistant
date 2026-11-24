@@ -12,6 +12,55 @@ from scheduled_platforms import Platforms
 from runtime_support import Cancelled
 
 
+class SavedBindingsTests(unittest.TestCase):
+    def setUp(self):
+        self.ax = Mock()
+        self.ax.request.return_value = {'configured': True, 'enabled': True, 'targets': [
+            {'buyerWarehouseCode': 'A', 'mappingVerifiedAt': '2026-11-04'},
+        ]}
+        self.ax_manager = Mock()
+        self.ax_manager.session.lease.return_value = self.ax
+        self.catalog_owner = Mock()
+        self.account = {'warehouse': '山东仓', 'enabled': True, 'mappingVerified': True,
+                        'expectedCompany': '测试公司', 'expectedCoid': '1', 'expectedUid': '3'}
+        self.catalog_owner.read_status.return_value = {'running': True, 'accounts': [self.account]}
+        self.platform = Platforms(Path('.'), Path('isolated.sqlite3'), self.ax_manager,
+                                  self.catalog_owner, threading.Event())
+        self.basis = {'plan': {'stores': [{'code': 'A', 'name': '测试A'}]}, 'warehouses': ['山东仓']}
+
+    def test_already_verified_configuration_only_reads_shared_metadata(self):
+        self.platform.check_saved(self.basis, lambda _: None)
+        self.ax.request.assert_called_once_with('configuration')
+        self.ax_manager.gate.claim_background.assert_not_called()
+        self.assertTrue(self.ax_manager.session.lease.call_args.kwargs['control_only'])
+        self.catalog_owner.read_status.assert_called_once_with()
+        self.catalog_owner.acquire.assert_not_called()
+        self.ax.close.assert_called_once_with()
+
+    def test_missing_mapping_names_the_affected_store(self):
+        self.basis['plan']['stores'].append({'code': 'B', 'name': '测试B'})
+        with self.assertRaisesRegex(ValueError, '翱象配置.*测试B（B）'):
+            self.platform.check_saved(self.basis, lambda _: None)
+        self.catalog_owner.read_status.assert_not_called()
+
+    def test_missing_or_disabled_required_warehouse_stops_new_collection(self):
+        self.basis['warehouses'].append('河北仓')
+        runner = SimpleNamespace(repo=SimpleNamespace(get=lambda _: {'external': {}}), rid='run')
+        with patch('scheduled_platforms.Jobs'):
+            with self.assertRaisesRegex(ValueError, '河北仓尚无有效的账号核验'):
+                self.platform.sales(runner, self.basis)
+        self.ax_manager.session.lease.assert_not_called()
+        self.catalog_owner.read_status.return_value['accounts'].append(
+            {**self.account, 'warehouse': '河北仓', 'enabled': False})
+        with self.assertRaisesRegex(ValueError, '河北仓自动同步已停用'):
+            self.platform.check_saved(self.basis, lambda _: None)
+
+    def test_retiring_binding_still_requires_reverification(self):
+        self.catalog_owner.read_status.return_value['rebind_required'] = {'山东仓': True}
+        with self.assertRaisesRegex(ValueError, '山东仓尚无有效的账号核验'):
+            self.platform.check_saved(self.basis, lambda _: None)
+
+
 class Client:
     def __init__(self, warehouses, *, reused=False, cancel=None):
         self.calls = []

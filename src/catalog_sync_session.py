@@ -32,6 +32,12 @@ class SessionOwner:
             self.client.start()
             self.ready = True
 
+    def read_status(self):
+        with self.lock:
+            self.start()
+            client = self.client
+        return client.request('sync.status')
+
     def close(self, timeout=.5):
         with self.lock:
             if self.client is not None and not self.client.close(timeout=timeout):
