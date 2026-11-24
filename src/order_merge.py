@@ -6,6 +6,7 @@ records and divergent shared dependencies isolate the whole affected component.
 """
 from __future__ import annotations
 import hashlib,json,os,re,sqlite3,shutil,copy,tempfile
+from collections import deque
 from pathlib import Path
 from contextlib import closing
 from dataclasses import dataclass,field
@@ -415,12 +416,17 @@ def _compatible(src,dst,row):
     return None
 
 def _path_plan(src,dst,oid):
+    from order_migration import SUFFIXES,component_artifact
     references=set().union(*(r.refs for r in src.by_order[oid]))
     for owners,refs,value in src.files.values():
         if oid in owners:references.update(refs)
     result={};reasons=[]
     source_dir,target_dir=io_path(src.root),io_path(dst.root)
-    for old in sorted(references&src.map.keys()):
+    pending=deque(sorted(references&src.map.keys()));seen=set()
+    while pending:
+        old=pending.popleft()
+        if old in seen:continue
+        seen.add(old)
         rel=src.map[old];p=(source_dir/rel).resolve()
         if not p.is_relative_to(source_dir) or not p.is_file():reasons.append('关联原件不存在：'+old);continue
         h=file_hash(p)
@@ -431,7 +437,12 @@ def _path_plan(src,dst,oid):
             local=(target_dir/existing).resolve()
             if not local.is_relative_to(target_dir) or not local.is_file() or file_hash(local)!=h:reasons.append('本机原件路径映射冲突：'+old);continue
         elif old in dst.paths and not original.is_file():reasons.append('原件路径被本机旧资料引用且来源不明：'+old);continue
-        result[old]={'source':rel,'sha256':h,'target':'migration-assets/'+h+'/'+p.name}
+        component=component_artifact(rel)
+        directory='aoxiang/component-state/assets/migration-originals' if component and p.suffix.lower() not in SUFFIXES else 'migration-assets'
+        result[old]={'source':rel,'sha256':h,'target':directory+'/'+h+'/'+p.name}
+        if component and p.suffix.lower()=='.json' and p.stat().st_size<32*1024**2:
+            nested=strings(json.loads(p.read_text('utf-8-sig')))
+            pending.extend(ref for ref in nested if ref in src.map and ref not in seen)
     return result,reasons
 
 def _inspect(src,dst):

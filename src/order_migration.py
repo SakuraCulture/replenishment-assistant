@@ -39,6 +39,11 @@ def owned(name):
         return (len(parts)==2 and parts[1] in JST_FILES) or (parts[1]=='downloads' and p.suffix.lower() in SUFFIXES|{'.json'})
     return False
 
+
+def component_artifact(name):
+    parts=PurePosixPath(name).parts
+    return len(parts)>=4 and parts[:2]==('aoxiang','component-state') and parts[2] in STATE_DIRS and owned(name)
+
 def tree(root):
     root=Path(root).resolve();result=[]
     for folder,dirs,files in os.walk(root,followlinks=False):

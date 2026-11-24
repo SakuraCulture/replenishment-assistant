@@ -1,6 +1,7 @@
 """Freeze and export a complete subset of the existing order graph."""
 from contextlib import ExitStack, closing
 from datetime import date
+import json
 from pathlib import Path
 import shutil
 import sqlite3
@@ -115,8 +116,21 @@ def _copy_originals(graph, stage, rows, included, cancel):
             copy_file(relative)
 
     paths, contents = {}, {}
-    for old in sorted(references & graph.map.keys()):
-        relative = graph.map[old]
+    pending = sorted(ref for ref in references if order_merge._absolute(ref))
+    seen = set()
+    while pending:
+        old = pending.pop()
+        if old in seen:
+            continue
+        seen.add(old)
+        relative = graph.map.get(old)
+        if relative is None:
+            source = io_path(old)
+            if not source.is_relative_to(root):
+                continue
+            relative = source.relative_to(root).as_posix()
+            if not order_migration.component_artifact(relative):
+                continue
         if not order_migration.owned(relative):
             raise ValueError('订单关联原件映射无效：' + old)
         digest = copy_file(relative)
@@ -125,6 +139,10 @@ def _copy_originals(graph, stage, rows, included, cancel):
             raise ValueError('关联原件与留存的校验值不符：' + relative)
         paths[old] = relative
         contents.setdefault(digest, []).append(relative)
+        path = target / relative
+        if order_migration.component_artifact(relative) and path.suffix.lower() == '.json' and path.stat().st_size < 32 * 1024**2:
+            values = order_merge.strings(json.loads(path.read_text('utf-8-sig')))
+            pending.extend(ref for ref in values if order_merge._absolute(ref) and ref not in seen)
     for row in rows:
         if row.db != order_merge.DBS[3]:
             continue

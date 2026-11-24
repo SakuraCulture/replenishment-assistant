@@ -1,4 +1,5 @@
 from contextlib import closing
+import json
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -9,7 +10,7 @@ import zipfile
 import order_migration
 import order_selection
 import order_merge_migration
-from merge_fixture import Order, file_hashes, second_order, shared_batch, shared_purchase
+from merge_fixture import Order, file_hashes, purchase_ledger, second_order, shared_batch, shared_purchase
 
 
 class OrderSelectionTests(unittest.TestCase):
@@ -107,3 +108,32 @@ class OrderSelectionTests(unittest.TestCase):
         order_selection.export(self.source.root, package, scope)
         with zipfile.ZipFile(package) as book:
             self.assertEqual(book.read('export_receipts/' + receipt.name), expected)
+
+    def test_linked_component_artifacts_resolve_after_source_files_move(self):
+        purchase_ledger(self.source, platform_id='PO-SYNTHETIC-SCOPE')
+        assets = self.source.root / 'aoxiang/component-state/assets'
+        receipt = assets / 'synthetic-template.json'
+        latest = assets / 'latest-template.json'
+        latest.write_text('{"synthetic":true}', encoding='utf-8')
+        receipt.write_text(json.dumps({'latestFile': str(latest)}), encoding='utf-8')
+        expected = {str(path): path.read_bytes() for path in (receipt, latest)}
+        scope = order_selection.preview(self.source.root, (self.source.oid,), '')
+        package = self.root / 'with-component-artifacts.zip'
+        result = order_selection.export(self.source.root, package, scope)
+        self.assertTrue(expected.keys() <= result['manifest']['external_map'].keys())
+        for path in (receipt, latest):
+            path.rename(path.with_suffix('.held'))
+        plan = order_merge_migration.prepare(self.target.root, package)
+        self.assertEqual(plan['merge_report']['counts']['added'], 2)
+        with patch('order_merge_migration._check_other_processes'):
+            order_migration.apply(plan)
+        mapping = json.loads((self.target.root / '迁入原文件映射.json').read_text('utf-8'))['paths']
+        for path, raw in expected.items():
+            relative = mapping[path]
+            self.assertTrue(order_migration.owned(relative))
+            self.assertEqual((self.target.root / relative).read_bytes(), raw)
+        repeat = order_merge_migration.prepare(self.target.root, package)
+        self.assertEqual(repeat['merge_report']['counts']['duplicate'], 2)
+        imported_scope = order_selection.preview(self.target.root, (self.source.oid,), '')
+        reexport = order_selection.export(self.target.root, self.root / 'scoped-reexport.zip', imported_scope)
+        self.assertTrue(expected.keys() <= reexport['manifest']['external_map'].keys())

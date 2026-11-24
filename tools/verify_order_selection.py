@@ -7,8 +7,8 @@ import subprocess
 import sys
 
 from verify_order_migration_performance import add_load, close_progress, orders, run_one
-from verify_order_merge import hash_file, read, table, write
-from merge_fixture import Order, second_order, shared_purchase
+from verify_order_merge import component_probe, hash_file, read, table, write
+from merge_fixture import Order, machine_command, purchase_ledger, second_order, shared_purchase
 from migration_status import latest
 from order_migration import FORMAT, SELECTION_FORMAT, journal, manifest
 
@@ -61,6 +61,17 @@ def main():
     source.complete(stock=7)
     peer = second_order(source, source.code, oid='cross-day-shared', day='2026-11-15')
     shared_purchase(source, [source.h, peer])
+    purchase = purchase_ledger(source, platform_id='PO-SYNTHETIC-SCOPE')
+    machine = machine_command(source)['record']
+    component_assets = source.root / 'aoxiang/component-state/assets'
+    template_receipt = component_assets / 'synthetic-template.json'
+    latest_template = component_assets / 'scope-latest-template.json'
+    write(latest_template, {'synthetic': True})
+    write(template_receipt, {'latestFile': str(latest_template)})
+    portable = {str(path): path.relative_to(source.root).as_posix() for path in (template_receipt, latest_template)}
+    contents = {hash_file(path): [portable[str(path)]] for path in (template_receipt, latest_template)}
+    write(source.root / '迁入原文件映射.json', {'version': 1, 'paths': portable, 'contents': contents})
+    artifact_hashes = {str(path): hash_file(path) for path in (template_receipt, latest_template)}
     add_load(source, 15, 1200)
     local = Order(out / 'target', code='LOCAL')
     before, all_orders = orders(local.root), orders(source.root)
@@ -79,7 +90,13 @@ def main():
         if mode != 'full':
             assert set(packet['selection']['included']) == set(selected)
             assert packet['selection']['requested'] == [source.oid if mode == 'checked' else peer['oid']]
+        assert artifact_hashes.keys() <= packet['external_map'].keys()
         results.append({**proof, 'bytes': archive.stat().st_size, 'package_sha256': hash_file(archive), 'parents': expected_count})
+
+    # Only the generated originals are moved. The receiver must resolve the
+    # two JSON objects from the package on its own isolated disk layout.
+    for path in (template_receipt, latest_template):
+        path.rename(path.with_suffix('.held'))
 
     package = out / 'checked/orders.zip'
     rejected = out / 'reject-restore'
@@ -128,7 +145,13 @@ def main():
         assert not journal(case / 'settings').exists() and orders(case / 'settings') == expected
         results.append({'mode': mode, 'passed': True, 'writer_exit': code, 'recovered': receipt['state'], 'parents': len(expected)})
 
-    write(out / 'report.json', {'passed': True, 'exe_sha256': hash_file(exe), 'scope_evidence': selected, 'cases': results, 'live_platform': False})
+    mapping = read(installed / 'settings/迁入原文件映射.json')['paths']
+    assert all(hash_file(installed / 'settings' / mapping[name]) == sha for name, sha in artifact_hashes.items())
+    observer = component_probe(exe.parent / '_internal/components/aoxiang', installed / 'settings/aoxiang/component-state', purchase['id'], machine['id'])
+    assert observer['visits'] == []
+    write(out / 'report.json', {'passed': True, 'exe_sha256': hash_file(exe), 'scope_evidence': selected, 'cases': results,
+                               'portable_component_artifacts': artifact_hashes, 'component_automatic_dispatches': 0,
+                               'live_platform': False})
 
 
 if __name__ == '__main__':
