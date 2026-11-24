@@ -22,8 +22,10 @@ SHEETS=list(sem.SIGNED_GROUPS)
 TEMPLATE_SHA256='1cc7a8e9f99fec764d17286c6b0a028a7ea79416add7178a64e91512f311f7c6'
 
 
-def filename(order,warehouse=None):
-    name=re.sub(r'[<>:"/\\|?*\x00-\x1f]','_',order['payload']['result']['store_name']).rstrip(' .')[:100] or order['store']
+def filename(order,warehouse=None,*,store_name=None):
+    if store_name is None:
+        store_name = order['payload']['result']['store_name']
+    name=re.sub(r'[<>:"/\\|?*\x00-\x1f]','_',store_name).rstrip(' .')[:100] or order['store']
     if warehouse:
         from warehouse_orders import child_number
         child_number('',warehouse)

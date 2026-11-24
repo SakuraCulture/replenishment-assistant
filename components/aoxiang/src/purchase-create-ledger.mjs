@@ -11,8 +11,8 @@ const transitions={
   RESERVED:['PREPARING','PAUSED','CANCELLED_BEFORE_UPLOAD'],PREPARING:['READY','PAUSED','FAILED_PRECHECK'],
   READY:['SUBMITTING','PAUSED','FAILED_PRECHECK'],PAUSED:['PREPARING','CANCELLED_BEFORE_UPLOAD'],
   FAILED_PRECHECK:['PREPARING','CANCELLED_BEFORE_UPLOAD'],SUBMITTING:['ACCEPTED','NEEDS_REVIEW'],
-  ACCEPTED:['VERIFYING','NEEDS_REVIEW'],VERIFYING:['ACCEPTED','BOUND','NEEDS_REVIEW'],
-  NEEDS_REVIEW:['ACCEPTED','VERIFYING','NEEDS_REVIEW'],BOUND:['NEEDS_REVIEW'],CANCELLED_BEFORE_UPLOAD:[]
+  ACCEPTED:['VERIFYING','NEEDS_REVIEW'],VERIFYING:['VERIFYING','ACCEPTED','BOUND','NEEDS_REVIEW'],
+  NEEDS_REVIEW:['ACCEPTED','VERIFYING','NEEDS_REVIEW'],BOUND:['BOUND','NEEDS_REVIEW'],CANCELLED_BEFORE_UPLOAD:[]
 };
 export class PurchaseCreates{
   static async open(state){
@@ -119,7 +119,7 @@ export class PurchaseCreates{
         // late receipts immediately before recording this request's dispatch.
         for(const previous of this.previousAttempts(old.intent))requireReplaceable(this.db,previous);
       }
-      if(Object.keys(changes).some(k=>!['baseline','uploadAttempted','receipt','binding','error','evidence','additionalTaskIds','uploadWarning'].includes(k)))fail('PURCHASE_STATE_IMMUTABLE','不能修改采购冻结依据');
+      if(Object.keys(changes).some(k=>!['baseline','uploadAttempted','receipt','binding','error','evidence','additionalTaskIds','uploadWarning','verification'].includes(k)))fail('PURCHASE_STATE_IMMUTABLE','不能修改采购冻结依据');
       if(old.uploadAttempted&&changes.uploadAttempted===false)fail('PURCHASE_STATE_IMMUTABLE','已进入上传边界，不能清除提交事实');
       if(old.receipt&&changes.receipt?.taskId&&old.receipt.taskId!==changes.receipt.taskId)fail('PURCHASE_RECEIPT_CONFLICT','原导入任务号不能覆盖');
       const r={...old,...structuredClone(changes),state:next,sequence:sequence+1,updatedAt:now()};
@@ -188,10 +188,12 @@ export class PurchaseCreates{
       this.event(next,'OPERATOR_CONFIRMED_NATIVE_BINDING');return next;
     });
   }
-  bind(id,evidence){
+  bind(id,evidence,{originalUnits}={}){
     requireUnretired(this.db,id);
     const r=this.get(id);if(r.additionalTaskIds?.length)fail('MULTIPLE_IMPORT_TASKS','导入任务不唯一，需人工核对');
-    const binding=checkCreatedPurchase(r.intent,r.receipt,evidence);
+    const binding=checkCreatedPurchase(r.intent,r.receipt,evidence,{originalUnits});
+    if(r.binding&&(r.binding.orderId!==binding.orderId||r.binding.status==='已作废'&&binding.status!=='已作废'))
+      fail('PURCHASE_SOURCE_CONFLICT','原采购单号或已作废状态与本次回查冲突；保留原关联');
     return this.update(id,r.sequence,'BOUND',{binding,evidence,error:null},'EXACT_ORDER_BOUND');
   }
   recover(){
@@ -208,7 +210,7 @@ export function purchasePublic(r){
   if(r.state==='RETIRED')return {id:r.id,state:'RETIRED',sourceDeleted:true,uploadAttempted:r.uploadAttempted,taskIds:r.taskIds};
   return {id:r.id,state:r.state,sequence:r.sequence,createdAt:r.createdAt,updatedAt:r.updatedAt,
     basis:r.intent.basis,target:r.intent.target,supplierCode:r.intent.supplierCode,rows:r.intent.rows.length,totalQuantity:r.intent.totalQuantity,totalAmount:r.intent.totalAmount,
-    uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding:r.binding,error:r.error,uploadWarning:r.uploadWarning||null,additionalTaskIds:r.additionalTaskIds||[],
+    uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding:r.binding,candidateOrderId:r.verification?.orderId||null,error:r.error,uploadWarning:r.uploadWarning||null,additionalTaskIds:r.additionalTaskIds||[],
     ...(r.rebuildOperationId?{rebuildOperationId:r.rebuildOperationId,rebuildOf:r.rebuildOf,rebuildAlso:r.rebuildAlso,successorId:r.successorId,previousOrderId:r.previousOrderId,previousTaskId:r.previousTaskId}:{}),
     ...(r.bindingProposal?{bindingProposal:r.bindingProposal}:{})};
 }

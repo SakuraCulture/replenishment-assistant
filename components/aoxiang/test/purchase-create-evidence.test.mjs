@@ -6,7 +6,7 @@ import path from 'node:path';
 import {createArchive} from '../src/zip.mjs';
 import {dateBounds,exportScope,purchaseContract,purchaseScopeHash,PURCHASE_CODES} from '../src/purchase-contract.mjs';
 import {fileHash} from '../src/workbook-validator.mjs';
-import {nativeCreationEvidence,PurchaseCreateService} from '../src/purchase-create-service.mjs';
+import {nativeCreationEvidence,PurchaseCreateService,retryPurchaseRead} from '../src/purchase-create-service.mjs';
 import {checkCreatedPurchase,IMPORT_CODE} from '../src/purchase-create-contract.mjs';
 import {StateStore} from '../src/state.mjs';
 import {freshConfig} from '../src/config.mjs';
@@ -32,10 +32,37 @@ test('native main/detail XLSX values are read by contract and strictly compared 
   for(const source of ['D16','D17'])run.exports[source]={asset:{rows:1,sha256:await fileHash(files[source])}};
   const evidence=await nativeCreationEvidence(p,task,{supplyOrderId:'PO-1',buyerMessage:p.note},{sourceFile:async(_,s)=>files[s]},run);
   assert.equal(evidence.rows[0].sku,p.rows[0].sku);assert.equal(evidence.rows[0].amount,'0.99');assert.equal(checkCreatedPurchase(p,r,evidence).orderId,'PO-1');
+  const entered=structuredClone(evidence);entered.main.status='待入库';entered.listingStatus='synthetic-receiving';
+  entered.rows[0].status='待入库';entered.rows[0].unit='件';
+  const units={[p.rows[0].sku]:'件'};
+  assert.equal(checkCreatedPurchase(p,r,entered,{originalUnits:units}).status,'待入库');
+  for(const changed of [{supplier:'other-warehouse-supplier'},{quantity:'8'},{unit:'箱'}]){
+    const wrong=structuredClone(entered);Object.assign(wrong.rows[0],changed);
+    assert.throws(()=>checkCreatedPurchase(p,r,wrong,{originalUnits:units}),{code:'PURCHASE_DETAIL_MISMATCH'});
+  }
+  const duplicate=structuredClone(entered);duplicate.rows.push(duplicate.rows[0]);
+  assert.throws(()=>checkCreatedPurchase(p,r,duplicate,{originalUnits:units}),/重复商品编码/);
   detail[26]='';await workbook(path.join(root,'blank.xlsx'),'D17',[detail]);
   const old=files.D17;files.D17=path.join(root,'blank.xlsx');run.exports.D17.asset.sha256=await fileHash(files.D17);
   const blank=await nativeCreationEvidence(p,task,{supplyOrderId:'PO-1',buyerMessage:p.note},{sourceFile:async(_,s)=>files[s]},run);
   assert.equal(blank.rows[0].amount,'');assert.throws(()=>checkCreatedPurchase(p,r,blank),{code:'PURCHASE_DECIMAL'});assert.ok(await fileHash(old));
+});
+
+test('read-only recovery retries two independent transient stages and reports exhaustion',async()=>{
+  const phases=['查询原导入任务','读取原采购商品明细 D17'];
+  for(const stage of phases){
+    let calls=0;
+    const result=await retryPurchaseRead(stage,async()=>{
+      if(++calls===1)throw Object.assign(new Error('response timed out'),{code:'BROWSER_OPERATION_FAILED'});
+      return stage;
+    },{backoff:[1,1]});
+    assert.equal(result,stage);assert.equal(calls,2);
+  }
+  let calls=0;
+  await assert.rejects(()=>retryPurchaseRead('查询原采购单号',async()=>{
+    calls++;throw Object.assign(new Error('timeout'),{code:'PURCHASE_QUERY_TIMEOUT'});
+  },{backoff:[1,1]}),e=>e.code==='PURCHASE_VERIFY_TIMEOUT'&&e.details.stage==='查询原采购单号');
+  assert.equal(calls,3);
 });
 
 test('known-task service reaches native void proof and refreshes only completed old export runs',async t=>{

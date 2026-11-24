@@ -10,6 +10,78 @@ from deletion_barrier import SourceDeleted
 from aoxiang_purchase_messages import observation
 
 
+def original_units(path, item, record):
+    """Units from the exact signed source, using the original stock-unit scope."""
+    from lifecycle_facts import full_head
+
+    head = item['head']
+    basis = record.get('basis') or {}
+    for field, frozen in [('oid', 'oid'), ('number', 'number'), ('warehouse', 'warehouse'),
+                          ('store', 'store'), ('revision', 'revision'), ('digest', 'signedDigest')]:
+        if head[field] != basis.get(frozen):
+            raise ComponentError('PURCHASE_SOURCE_CONFLICT', '原仓单与采购任务的签发身份不一致：'+field)
+    import hashlib
+    import json
+    from pathlib import Path
+
+    package = item['package']
+    payload = Path(package['package_file']).read_bytes()
+    if hashlib.sha256(payload).hexdigest() != package['package_sha256']:
+        raise ComponentError('PURCHASE_SOURCE_CONFLICT', '原上传任务文件摘要不符')
+    intent = json.loads(payload)
+    if intent['id'] != package['id'] or intent['basis'] != basis:
+        raise ComponentError('PURCHASE_SOURCE_CONFLICT', '原上传任务文件与组件记录身份不一致')
+    products = full_head(path, head)['products']
+    skus = {row['sku'] for row in intent['rows']}
+    return {sku: unit for sku, row in products.items()
+            if sku in skus and isinstance(unit := row.get('unit'), str) and unit.strip()}
+
+
+def run_verification(runner, job):
+    """Only look up the listed original purchases. No upload path in this pass."""
+    store, client, id = runner.store, runner.client, job['id']
+    while True:
+        checkpoint(runner.cancel)
+        current = store.get(id)
+        queue = current.get('verification_queue', [])
+        if not queue:
+            return store.finish_upload(id, runner.execution_token, 'COMPLETED', verification=True)
+        key = queue[0]
+        item = next((i for i in current['items'] if i['item_id'] == key), None)
+        changes = {}
+        if item:
+            try:
+                require_orders(runner.business_path, [item])
+                pid = item['package']['id']
+                record = client.request('purchase.status', purchase_id=pid)
+                changes['purchase_observation'] = observation(record)
+                if record.get('id') != pid:
+                    raise ComponentError('PURCHASE_SOURCE_CONFLICT', '回执采购任务编号与原任务不同')
+                if not record.get('taskId') and record['state'] != 'BOUND':
+                    raise ComponentError('SUBMISSION_UNKNOWN', '原上传缺少可核实的唯一任务号；保留待核')
+                units = original_units(runner.business_path, item, record)
+                runner.progress(item['head']['number']+' · 核对原采购结果')
+                client.request('purchase.verify', purchase_id=pid, original_units=units)
+                record = runner.wait_status('purchase.status', 'purchase_id', pid,
+                                            cancel_action='purchase.pause')
+                changes['purchase_observation'] = observation(record)
+                error = record.get('verificationError') or record.get('error')
+                if record['state'] != 'BOUND' or error:
+                    error = error or {}
+                    raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'),
+                                         error.get('message', '原采购结果尚未核实'), error.get('details'))
+                require_orders(runner.business_path, [item])
+                changes.update(state='BOUND', result={'binding': record['binding']}, error=None)
+            except Cancelled:
+                raise
+            except Exception as exc:
+                # Preserve an earlier verified association and expose the new
+                # query failure independently. A failed query proves no void.
+                from aoxiang_workflow_runner import item_error
+                changes.update(state='BOUND' if item['state']=='BOUND' else 'REVIEW', error=item_error(exc))
+        store.settle_verification(id, key, runner.execution_token, changes)
+
+
 def run_upload(runner,job):
     store,client=runner.store,runner.client
     # Persisted max_inflight=1..4 belongs to the previous windowed scheduler.
@@ -92,7 +164,7 @@ def run_upload(runner,job):
             if not remaining:break
             if any(i['state']=='PENDING' for i in remaining):continue
             if time.monotonic()>=deadline:
-                return store.update(job['id'],execution_token=runner.execution_token,state='QUEUED',next_poll_at=store.clock()+runner.verification_interval,
+                return store.finish_upload(job['id'],runner.execution_token,'QUEUED',next_poll_at=store.clock()+runner.verification_interval,
                                     message='平台处理中；稍后继续原任务，等待时释放共享会话供其他作业使用')
             if runner.cancel.wait(min(runner.verification_interval,max(0,deadline-time.monotonic()))):raise Cancelled('已安全暂停，保留全部受理任务；继续时不重传')
     except SourceDeleted:return None
@@ -100,4 +172,4 @@ def run_upload(runner,job):
     outside=any(i['state'] in ('PENDING','ACCEPTED') and not eligible(i) for i in current_job['items'])
     from aoxiang_workflow_state import summary
     state='PAUSED' if outside else 'COMPLETED_WITH_ERRORS' if any(i['state'] in ('FAILED','REVIEW') for i in current_job['items']) else 'COMPLETED'
-    return store.update(job['id'],execution_token=runner.execution_token,state=state,next_poll_at=0,message=summary({**current_job,'state':state}))
+    return store.finish_upload(job['id'],runner.execution_token,state,message=summary({**current_job,'state':state}))

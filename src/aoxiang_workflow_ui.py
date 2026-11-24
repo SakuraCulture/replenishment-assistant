@@ -375,8 +375,8 @@ class QueueDialog(QDialog):
             self.note.setText(self.manager.message)
             self.stop_btn.setEnabled(active)
             self.retry_btn.setText('继续核对未完成采购' if job and job['kind']=='upload' else '重跑全部失败项')
-            self.retry_btn.setEnabled(bool(job and job['state']!='CANCELLED' and not active and any(
-                i['state'] in (('FAILED','REVIEW') if job['kind']=='upload' else ('FAILED',)) for i in job['items'])))
+            self.retry_btn.setEnabled(bool(job and job['state']!='CANCELLED' and (not active or job['kind']=='upload') and any(
+                i['state'] in (('FAILED','REVIEW','ACCEPTED') if job['kind']=='upload' else ('FAILED',)) for i in job['items'])))
             self.new_batch_btn.setEnabled(bool(job and job['state']!='RUNNING' and not any(i['state'] in ('RUNNING','REVIEW') for i in job['items']) and any(i['state'] in ('PENDING','FAILED') for i in job['items'])))
             self.resume_btn.setEnabled(bool(job and job['state'] in ('PAUSED', 'FAILED')) and not active)
             self.resume_btn.setText('继续上次勾选范围' if job and 'dispatch_keys' in job else '继续整批未完任务')
@@ -426,12 +426,17 @@ class QueueDialog(QDialog):
                 elif voided(i):state_text='平台已作废；常规同步已停止'
                 elif i.get('source_deleted'):state_text='原订单已删，平台记录保留'
                 elif not i.get('ended_locally') and local_preparation(i,job['kind']) and (i.get('error') or {}).get('code')=='PURCHASE_ALREADY_RESERVED':state_text='重复本地预览，可结束'
+                is_queued=i['item_id'] in job.get('verification_queue', [])
+                if is_queued:state_text='已排入原单核对'
                 values = [i.get('display_name') or h.get('name') or h.get('store'), h.get('warehouse'), h.get('number'), state_text,
                           f"{summary.get('sku_count', '—')} / {summary.get('amount', '—')}", (i.get('result') or {}).get('binding', {}).get('orderId') or i.get('order_id', '—'),
                           item_message(i,job['kind'])]
                 for c, x in enumerate(values, 1):
                     item = QTableWidgetItem(str(x));item.setToolTip(str(x));self.table.setItem(n, c, item)
-                if i['state']=='ACCEPTED' and not active:
+                if job['kind']=='upload' and i['state'] in ('FAILED','REVIEW','ACCEPTED','BOUND') and not i.get('rebuild_to') and not i.get('source_deleted'):
+                    b=button('已排入原单核对' if is_queued else '继续核对采购结果',lambda checked=False,item_id=i['item_id']:self.verify([item_id]))
+                    b.setEnabled(job['state']!='CANCELLED' and not is_queued);self.table.setCellWidget(n,8,b)
+                elif i['state']=='ACCEPTED' and not active:
                     self.table.setCellWidget(n,8,button('继续核对原受理结果',lambda checked=False,key=i['key']:self.recover_original([key])))
                 elif i['state'] in ('FAILED','REVIEW'):
                     b=button('继续核对采购结果' if job['kind']=='upload' else '核对原任务并继续' if i['state']=='REVIEW' else '重跑此任务',lambda checked=False,pos=n:self.retry([pos]))
@@ -559,7 +564,18 @@ class QueueDialog(QDialog):
             self.manager.ensure_owner();self.manager.store.retry_items(self.id,positions,self.current['sequence']);self.manager.tick();self.refresh()
         except Exception as exc:QMessageBox.warning(self,'未排入重跑',str(exc))
 
+    def verify(self,item_ids):
+        try:
+            self.manager.ensure_owner()
+            self.manager.store.queue_verification(self.id,item_ids)
+        except Exception as exc:
+            QMessageBox.warning(self,'未排入原单核对',str(exc));return
+        self.manager.tick();self.refresh()
+
     def retry_all(self):
+        if self.current and self.current['kind']=='upload':
+            return self.verify([i['item_id'] for i in self.current['items']
+                                if i['state'] in ('FAILED','REVIEW','ACCEPTED') and not i.get('rebuild_to') and not i.get('source_deleted')])
         if self.current:self.retry([i['position'] for i in self.current['items'] if i['state'] in (
             ('FAILED','REVIEW') if self.current['kind']=='upload' else ('FAILED',))])
 

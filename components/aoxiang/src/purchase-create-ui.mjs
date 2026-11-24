@@ -106,9 +106,9 @@ export class PurchaseCreateUI extends PurchaseUI{
       return await guard.result();
     }finally{await guard.dispose();if(!guard.requests)this.usedImports.delete(p.id);if(guard.blocked.length||guard.error)await guard.result();}
   }
-  async purchaseImportTask({taskId,identity}){
+  async purchaseImportTask({taskId,identity,reuseExistingPage=false}){
     if(!taskPattern.test(taskId||''))fail('IMPORT_TASK_ID','原导入任务编号无效');
-    await this.open(identity);const t=await this.findTask(taskId);
+    await this.open(identity,{reuseExistingPage});const t=await this.findTask(taskId);
     if((t.taskCode||t.code)!==IMPORT_CODE)fail('IMPORT_TASK_TYPE','原任务不是采购批量导入，不按近似任务匹配');
     return {taskId,code:IMPORT_CODE,status:t.taskStatus,successCount:t.successCount,failCount:t.failCount};
   }

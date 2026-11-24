@@ -466,6 +466,9 @@ def export(path, heads, folder, kind='comparison', mode='separate', progress=lam
     if mode not in ('separate', 'combined') or not heads: raise ValueError('请选择导出范围')
     completed = []; title = '生命周期对照' if kind == 'comparison' else TITLES[kind]
     try:
+        if kind in ('return', 'operations'):
+            from lifecycle_exports import export_returns, retained_versions
+            return export_returns(path, retained_versions(path, heads, kind, cancel), folder, mode, progress, cancel, stage=kind)
         views = []
         with closing(purchases.connect(path)) as db:
             db.execute('BEGIN')
@@ -473,9 +476,6 @@ def export(path, heads, folder, kind='comparison', mode='separate', progress=lam
                 checkpoint(cancel); ao.require_active(db, h['oid'], h['warehouse']); view = snapshot(path, h, progress, cancel, db)
                 if kind != 'comparison' and not view['documents'].get(kind): raise ValueError(h['number'] + '尚未导入' + title)
                 views.append(view)
-        if kind in ('return','operations'):
-            from lifecycle_exports import export_returns
-            return export_returns(path,views,folder,mode,progress,cancel,stage=kind)
         groups = [[v] for v in views] if mode == 'separate' else [[v for v in views if v['head']['warehouse'] == wh] for wh in dict.fromkeys(v['head']['warehouse'] for v in views)]
         for group in groups:
             checkpoint(cancel); rows = []

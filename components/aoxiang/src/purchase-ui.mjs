@@ -21,9 +21,20 @@ export class PurchaseUI extends AoxiangUI{
       this.receipts.push(receipt);this.onReceipt?.(receipt);
     }catch{}};page.on('response',this.listener);
   }
-  async open(expected){
+  async open(expected,{reuseExistingPage=false}={}){
     await this.activate();
     const url=SITE+'/#/chain/order/purchase';
+    if(reuseExistingPage&&this.identity&&this.loginReadUrl&&this.page.url()===url&&await this.page.locator('#storeCodeList').isVisible()){
+      const response=await this.page.context().request.get(this.loginReadUrl,{maxRedirects:0,timeout:this.timeoutMs});
+      try{
+        if(response.ok()){
+          const identity=identityFrom(parseResponse(await bounded(response.text(),this.timeoutMs,'IDENTITY_RESPONSE_TIMEOUT','采购页身份读取超时')));
+          if(!sameIdentity(identity,expected||this.identity))fail('WRONG_IDENTITY','采购页账号或商家与原任务不同');
+          this.identity=identity;
+          return identity;
+        }
+      }finally{await response.dispose();}
+    }
     // Hash-only routing does not necessarily request loginInfo again. Move to
     // the route first, then reload under the fresh identity observer.
     if(this.page.url().split('#')[0]===SITE+'/'&&this.page.url()!==url)await this.page.goto(url,{waitUntil:'domcontentloaded'});
@@ -64,7 +75,8 @@ export class PurchaseUI extends AoxiangUI{
     if(canonical(await this.page.locator('#'+id+' input').evaluateAll(ns=>ns.map(n=>n.value)))!==canonical([input.from,input.to]))fail('PURCHASE_DATE_NOT_APPLIED','采购时间控件未正确应用日期');
   }
   async queryPurchase(input){
-    if(input.queryMode!=='order_id')dateBounds(input.from,input.to);await this.open(input.identity||this.identity);
+    if(input.queryMode!=='order_id')dateBounds(input.from,input.to);await this.open(input.identity||this.identity,input);
+    if(input.reuseExistingPage)await this.closeHistory();
     await this.click(this.page.getByRole('button',{name:'重置',exact:true}));
     if(input.queryMode==='order_id'){
       idValue(input.orderId,'采购单号');
@@ -119,7 +131,7 @@ export class PurchaseUI extends AoxiangUI{
   async history(){
     await this.activate();const modal=this.historyModal(),open=await modal.count();const sent=this.page.waitForRequest(r=>this.isBusinessResponse(r,TASKS),{timeout:this.timeoutMs});sent.catch(()=>{});
     if(open)await this.click(modal.getByRole('button',{name:'刷新列表',exact:true}));else await this.click(this.page.locator('button:not(.next-dialog button)').filter({hasText:/^历史记录$/}).filter({visible:true}));
-    const request=await sent,response=await request.response();if(!response)fail('TASK_LIST_FAILED','采购历史查询失败');const j=parseResponse(await response.text());
+    const request=await sent,response=await bounded(request.response(),this.timeoutMs,'TASK_LIST_TIMEOUT','采购历史查询响应超时');if(!response)fail('TASK_LIST_FAILED','采购历史查询失败');const j=parseResponse(await bounded(response.text(),this.timeoutMs,'TASK_LIST_TIMEOUT','采购历史响应读取超时'));
     if(!Array.isArray(j.data)||j.success===false||j.status===false)fail('TASK_LIST_FAILED','采购历史记录响应无效');await this.historyModal().waitFor({state:'visible'});
     for(const t of j.data)this.taskCache.set(String(t.taskId),t);return {data:j.data,total:countValue(j.total)};
   }
@@ -129,7 +141,7 @@ export class PurchaseUI extends AoxiangUI{
     if(!found)fail('TASK_NOT_FOUND','采购历史30天范围内未定位原任务；不能据此重提',{taskId});return found;
   }
   async purchaseTask(taskId,sourceId,query){
-    await this.open(query.identity);const task=await this.findTask(taskId);let params;try{params=typeof task.params==='string'?parseResponse(task.params):task.params;}catch{}
+    await this.open(query.identity,query);const task=await this.findTask(taskId);let params;try{params=typeof task.params==='string'?parseResponse(task.params):task.params;}catch{}
     if((task.taskCode||task.code)!==PURCHASE_CODES[sourceId]||canonical(params)!==canonical(exportScope(query.request)))fail('PURCHASE_TASK_SCOPE','采购任务类型或已保存筛选不匹配，停止下载');return task;
   }
   async downloadPurchase({taskId,sourceId,query,directory,maxBytes=67108864,timeoutMs=600000}){

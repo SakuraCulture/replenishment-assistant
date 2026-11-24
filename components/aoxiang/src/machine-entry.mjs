@@ -80,7 +80,7 @@ async function main(){
       const independent=request.action==='reserve'?collectionPurpose(request.command)==='replenishment':
         !!collectionControl&&collectionPurpose(collectionControl.request)==='replenishment';
       if((configurationActions.includes(request.action)||(!independent&&['reserve','resume'].includes(request.action))||
-          ['purchase.start','purchase.submit','purchase.rebuild','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&
+          ['purchase.start','purchase.submit','purchase.verify','purchase.rebuild','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&
           (purchase.busy||receiptSync.busy||bindingCheck.busy))fail('PURCHASE_CREATE_BUSY','当前采购、关联核对或收货动作正在运行或安全停止，请等待后再执行其他作业');
       if(configurationActions.includes(request.action)&&(runtime.active||commands.list().some(r=>r.state==='QUEUED')))fail('COMPONENT_BUSY','先暂停或完成当前取数任务，再修改连接与目录');
       if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
@@ -125,9 +125,10 @@ async function main(){
           result={created:accepted.created,record:purchasePublic(accepted.record)};break;
         }
         case 'purchase.submit':
+        case 'purchase.verify':
         case 'purchase.start':{
           if(runtime.closing||runtime.active||commands.list().some(r=>r.state==='QUEUED')||setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止当前取数、模板或连接任务');
-          result=purchase.start(request.purchase_id,{submitOnly:request.action==='purchase.submit'});break;
+          result=purchase.start(request.purchase_id,{submitOnly:request.action==='purchase.submit',verifyOnly:request.action==='purchase.verify',originalUnits:request.original_units});break;
         }
         case 'purchase.status':result=purchase.status(request.purchase_id);break;
         case 'purchase.pause':result=purchase.pause(request.purchase_id);break;

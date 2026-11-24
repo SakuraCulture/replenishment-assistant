@@ -15,7 +15,7 @@ const fields={ping:[],'session.release':[],'session.status':[],'session.health':
   discover:[],'setup.check_login':[],'setup.verify_saved':['codes'],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
   'setup.cancel':['setup_id'],'setup.commit':['setup_id'],
   'template.start':[],'template.status':['template_id'],'template.cancel':['template_id'],
-  'purchase.reserve':['package_file','package_sha256'],'purchase.start':['purchase_id'],'purchase.submit':['purchase_id'],
+  'purchase.reserve':['package_file','package_sha256'],'purchase.start':['purchase_id'],'purchase.submit':['purchase_id'],'purchase.verify':['purchase_id','original_units'],
   'purchase.rebuild':['purchase_id','sequence','package_file','package_sha256','operation_id','reason','acknowledge_uncertainty'],
   'purchase.status':['purchase_id'],'purchase.pause':['purchase_id'],'purchase.cancel':['purchase_id'],'purchase.list':['offset','limit'],
   'binding.start':['purchase_id','binding_request'],'binding.status':['purchase_id'],'binding.pause':['purchase_id'],
@@ -41,6 +41,9 @@ export function validateRequest(value){
   if(fields[value.action].includes('setup_id')&&(typeof value.setup_id!=='string'||!idPattern.test(value.setup_id)))fail('REQUEST_SCHEMA','连接核验编号无效');
   if(fields[value.action].includes('template_id')&&(typeof value.template_id!=='string'||!idPattern.test(value.template_id)))fail('REQUEST_SCHEMA','模板获取编号无效');
   if(fields[value.action].includes('purchase_id')&&(typeof value.purchase_id!=='string'||!idPattern.test(value.purchase_id)))fail('REQUEST_SCHEMA','采购任务编号无效');
+  if(value.action==='purchase.verify'&&(!value.original_units||typeof value.original_units!=='object'||Array.isArray(value.original_units)||
+    Object.entries(value.original_units).some(([sku,unit])=>!sku||sku.length>128||typeof unit!=='string'||!unit.trim()||unit.length>128)))
+    fail('REQUEST_SCHEMA','原签发商品单位校验资料无效');
   if(value.action==='binding.start')bindingRequest(value.binding_request);
   if(value.action==='binding.confirm'&&(!idPattern.test(value.proposal_id||'')||!Number.isSafeInteger(value.sequence)||value.sequence<1||!/^[a-f0-9]{64}$/.test(value.manifest_sha256||'')))fail('REQUEST_SCHEMA','关联预览编号、版本或哈希无效');
   if(value.action==='receipt.synced'&&(!/^[a-f0-9]{64}$/.test(value.manifest_sha256||'')||!value.receipt||Object.keys(value.receipt).some(k=>!['number','revision','stage','version','changed'].includes(k))))fail('REQUEST_SCHEMA','正式实收回执或快照哈希无效');

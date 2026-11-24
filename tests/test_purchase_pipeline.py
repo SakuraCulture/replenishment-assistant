@@ -67,6 +67,50 @@ class PipelineTests(unittest.TestCase):
         with closing(sqlite3.connect(folder/'state.sqlite')) as db, db:
             db.execute('CREATE TABLE IF NOT EXISTS purchase_creates(id TEXT PRIMARY KEY,state TEXT,platform_order TEXT,payload TEXT)')
             db.execute('INSERT INTO purchase_creates VALUES(?,?,?,?)',(id,'RESERVED',None,json.dumps(payload)))
+
+    def test_original_lookup_queue_survives_claim_finish_and_restart(self):
+        job = self.batch(3)
+        for index in range(3):
+            self.store.update(job['id'], position=index, changes={'state':'REVIEW'})
+        job = self.store.update(job['id'], state='COMPLETED_WITH_ERRORS')
+        a,b,c = [row['item_id'] for row in job['items']]
+        for key in (a,b,a):
+            self.store.queue_verification(job['id'], [key])
+        self.assertEqual(self.store.next_queued()['verification_queue'], [a,b])
+        running = self.store.claim(job['id'])
+        self.store.settle_verification(job['id'], a, running['execution_token'], {'state':'BOUND','result':{'binding':{'orderId':'PO-A'}}})
+        self.store.settle_verification(job['id'], b, running['execution_token'], {'state':'BOUND','result':{'binding':{'orderId':'PO-B'}}})
+        self.store.queue_verification(job['id'], [c])  # accepted just before worker finishes
+        self.store.finish_upload(job['id'], running['execution_token'], 'COMPLETED', verification=True)
+        self.assertEqual(self.store.next_queued()['verification_queue'], [c])
+        self.store.claim(job['id'])  # simulate abrupt close during the next lookup
+        self.store = Workflows(self.root, clock=lambda:self.now)
+        self.store.recover()
+        platform = Platform(['p2'])
+        platform.records['p2'].update(state='ACCEPTED',uploadAttempted=True,taskId='TASK-C')
+        base_request = platform.request
+        def check(action, **values):
+            if action == 'purchase.verify':
+                platform.events.append(('verify',values['purchase_id']))
+                platform.records['p2'].update(state='BOUND',binding={'orderId':'PO-C','status':'待入库'})
+                return {}
+            return base_request(action,**values)
+        platform.request=check
+        with patch('aoxiang_upload_pipeline.original_units',return_value={'0001':'件'}):
+            result=self.run_batch(job,platform)
+        self.assertEqual(platform.events,[('verify','p2')])
+        self.assertEqual(platform.uploads,[])
+        self.assertEqual(result['verification_queue'],[])
+        self.assertEqual([r['result']['binding']['orderId'] for r in result['items']],['PO-A','PO-B','PO-C'])
+
+    def test_original_lookup_of_missing_task_does_not_detect_a_new_upload(self):
+        job=self.batch(1)
+        job=self.store.update(job['id'],state='COMPLETED_WITH_ERRORS',position=0,changes={'state':'REVIEW'})
+        self.store.queue_verification(job['id'],[job['items'][0]['item_id']])
+        platform=Platform(['p0'])
+        result=self.run_batch(job,platform)
+        self.assertEqual(platform.events,[])
+        self.assertEqual(result['items'][0]['error']['code'],'SUBMISSION_UNKNOWN')
     def test_all_uploads_precede_first_observation_without_pending_cap(self):
         job=self.batch(9);client=Platform(['p'+str(n) for n in range(9)],pending=1)
         out=self.run_batch(job,client)
