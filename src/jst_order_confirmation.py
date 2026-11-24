@@ -16,6 +16,8 @@ def buyer_issue(receipt):
     status = receipt.get('buyer_check')
     if status == 'mismatch':
         return '回查的完整买家账号与原任务不同'
+    if status == 'masked_conflict':
+        return '聚水潭隐号的可见部分与原任务资料不符，原单身份待核'
     if status == 'unavailable':
         return '聚水潭未返回可核验的完整买家账号，原单身份待核'
     if status not in (None, 'verified') or receipt.get('contact_ok') is not True:

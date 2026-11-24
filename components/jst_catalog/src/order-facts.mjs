@@ -14,8 +14,20 @@ function completeBuyer(value) {
 
 export function checkBuyer(value,expected) {
   const actual=completeBuyer(value), original=completeBuyer(expected);
+  if (!actual && original && typeof value==='string') {
+    const visible=/^(\d*)[*＊•●]+(\d*)$/u.exec(value.trim());
+    if (visible && (!original.startsWith(visible[1])||!original.endsWith(visible[2])
+        ||visible[1].length+visible[2].length>=original.length))
+      return 'masked_conflict';
+  }
   if (!actual||!original) return 'unavailable';
   return actual===original ? 'verified' : 'mismatch';
+}
+
+export function combinedBuyerCheck(list,detail) {
+  for (const evidence of ['mismatch','masked_conflict','verified'])
+    if (evidence===list||evidence===detail) return evidence;
+  return 'unavailable';
 }
 
 export function buyerEvidence(buyer_check) {
