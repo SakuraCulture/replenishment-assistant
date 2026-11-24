@@ -176,8 +176,22 @@ class Workbench(ParameterUi,BatchWindow):
         box=__import__('readable_ui').ReviewDialog(self);box.setObjectName('dailyOverwrite');box.setWindowTitle('覆盖 '+new['day']+' 的作业记录？')
         box.setText('每天只保留一份作业。本次将替换该日整份记录；已导出的Excel不受影响。')
         money=lambda x:'暂无有效金额' if x is None else f'¥{x:,.2f}'
-        box.setInformativeText(f"原保存：{old['saved']}\n原记录：{len(oldstores)}家 / 完成{a['completed']}家 / {money(a['amount'])}\n本次保存：{wr.now()}\n本次：{len(newstores)}家 / 完成{b['completed']}家 / {money(b['amount'])}\n新增{len(added)}家，减少{len(removed)}家，完成变失效{len(lost)}家。展开详情核对名单、状态和版本。")
-        if removed or lost:box.setInformativeText(box.informativeText()+'\n减少门店：'+('、'.join(oldstores[s]['name']+'('+s+')' for s in sorted(removed)[:8]) or '无')+'\n完成变失效：'+('、'.join(oldstores[s]['name']+'('+s+')' for s in lost[:8]) or '无')+'\n超过8家时完整名单见详情。')
+        information = (
+            f"原保存：{old['saved']}\n"
+            f"原记录：{len(oldstores)}家 / 完成{a['completed']}家 / {money(a['amount'])}\n"
+            f"本次保存：{wr.now()}\n"
+            f"本次：{len(newstores)}家 / 完成{b['completed']}家 / {money(b['amount'])}\n"
+            f"新增{len(added)}家，减少{len(removed)}家，完成变失效{len(lost)}家。展开详情核对名单、状态和版本。"
+        )
+        if removed or lost:
+            removed_names = '、'.join(f"{oldstores[s]['name']}({s})" for s in sorted(removed)[:8])
+            lost_names = '、'.join(f"{oldstores[s]['name']}({s})" for s in lost[:8])
+            information += (
+                f"\n减少门店：{removed_names or '无'}"
+                f"\n完成变失效：{lost_names or '无'}"
+                "\n超过8家时完整名单见详情。"
+            )
+        box.setInformativeText(information)
         previous=old['payload'];changed=[s for s in oldstores.keys()&newstores.keys() if wr.dumps(previous.get('store_presets',{}).get(s))!=wr.dumps(new.get('store_presets',{}).get(s)) or previous.get('store_ui',{}).get(s)!=new.get('store_ui',{}).get(s)]
         def versions(payload):return {'输入':(payload.get('loaded') or {}).get('hashes',{}),'仓资料':{w:c.get('revision') for w,c in payload.get('catalogs',{}).items()},'必卖':(payload.get('profile') or {}).get('revision')}
         details={'减少门店':[s+' '+oldstores[s]['name'] for s in sorted(removed)],'新增门店':[s+' '+newstores[s]['name'] for s in sorted(added)],'原已完成现失效':lost,'设置变化门店':changed,'原门店状态':oldstores,'新门店状态':newstores,'原数据版本':versions(previous),'新数据版本':versions(new)}
