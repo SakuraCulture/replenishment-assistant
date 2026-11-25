@@ -1,22 +1,23 @@
 """Exercise the Windows application and isolated platform boundaries for material orders."""
 import json
 import os
+import sys
 import traceback
 from contextlib import closing
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QPushButton
+from PySide6.QtWidgets import QFileDialog, QInputDialog, QLineEdit, QMessageBox, QPushButton
 
 
 def start_smoke(app, host, args):
     out, phase = Path(args[0]).resolve(), args[1]
     spec = json.loads((out/'material-fixture.json').read_text(encoding='utf-8'))
     path = host.work_repository.path
-    if (phase not in ('register','resume') or spec.get('synthetic') is not True
+    if (phase not in ('entry','register','resume') or spec.get('synthetic') is not True
             or spec.get('live_platform') is not False or path.resolve()!=out/'settings/workbench.sqlite3'
             or Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve()!=out/'settings'
             or Path(os.environ.get('LOCALAPPDATA','')).resolve()!=out/'test-appdata'):
@@ -41,7 +42,7 @@ def start_smoke(app, host, args):
     for manager in (host.jst_generator,host.aoxiang_workflows,host.browser_status,host.jst_fulfillment_runner,host.scheduled):
         manager.timer.stop()
     platform = jst_one_click_fixture.Component(out/'platform')
-    result = {'phase':phase, 'checks':[], 'orders':[]}
+    result = {'phase':phase, 'checks':[], 'orders':[], 'frozen_exe':bool(getattr(sys,'frozen',False))}
     checks = result['checks']
 
     def button(window, title):
@@ -87,11 +88,60 @@ def start_smoke(app, host, args):
         grab(dialog,'分配预览')
         button(dialog,'确认分配').click()
 
+    def demand_entry(desk):
+        import material_requests
+
+        def fill(editor):
+            editor.warehouse.setCurrentText(spec['affected'])
+            editor.stores.search.setText('MAT-A')
+            QTest.keyClick(editor.stores.search,Qt.Key.Key_Return)
+            editor.stores.search.setText('合成乙店')
+            editor.stores.items['MAT-B'].setCheckState(Qt.CheckState.Checked)
+            assert editor.stores.items['MAT-A'].isHidden() and editor.stores_to_save()==('MAT-A','MAT-B')
+            editor.products.search.setText(spec['sku'])
+            QTest.keyClick(editor.products.search,Qt.Key.Key_Return)
+            editor.lines.item(0,editor.QUANTITY).setText('6')
+            editor.products.search.setText('扎带')
+            editor.products.items['@ZERO'].setCheckState(Qt.CheckState.Checked)
+            editor.add_checked.click()
+            editor.lines.item(1,editor.QUANTITY).setText('2')
+            button(editor,'新增一行').click()
+            active_input = editor.lines.findChild(QLineEdit)
+            assert active_input is not None
+            active_input.setText('@MANUAL')
+            QTest.keyClick(active_input,Qt.Key.Key_Return)
+            QTest.qWait(20)
+            assert editor.lines.item(2,editor.SKU).text()=='@MANUAL'
+            editor.lines.item(2,editor.QUANTITY).setText('1')
+            editor.stores.search.clear()
+            editor.products.search.clear()
+            assert editor.save_btn.text()=='为 2 家保存同一份需求'
+            grab(editor,'多选登记')
+            editor.save_btn.click()
+
+        assert '登记门店物料需求' in drive(button(desk,'登记门店需求').click,{'登记门店物料需求':fill})
+        with closing(wr.read_connection(path)) as db:
+            created = material_requests.read(db)
+        assert [(r['store'],r['warehouse'],r['version']) for r in created]==[
+            ('MAT-A',spec['affected'],1),('MAT-B',spec['affected'],1)]
+        assert created[0]['id']!=created[1]['id'] and created[0]['lines']==created[1]['lines']
+        assert [(r['sku'],r['quantity']) for r in created[0]['lines']]==[(spec['sku'],'6'),('@ZERO','2'),('@MANUAL','1')]
+        assert desk.lines.rowCount()==6
+        grab(desk,'保存结果')
+        result['requests'] = created
+        checks.extend(['按编码回车勾选及列表勾选可混用，切换搜索保留已选门店',
+                       '按编码加入、勾选物料和直接输码同时可用',
+                       '两个门店分别保存 V001 申请，按原供货仓和录入顺序保存三行'])
+
     def desk_open(desk):
         desk.wh.setCurrentText(spec['affected'])
         assert {row[0] for row in desk.catalog_rows}=={spec['sku'],'@ZERO'}
         grab(desk,'物料目录')
         desk.tabs.setCurrentIndex(1)
+        if phase=='entry':
+            demand_entry(desk)
+            desk.reject()
+            return
         if phase=='register':
             def accept_import(dialog):
                 grab(dialog,'需求核对')

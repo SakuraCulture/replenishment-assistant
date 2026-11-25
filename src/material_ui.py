@@ -2,10 +2,11 @@
 from contextlib import closing
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSignalBlocker, Qt, Signal
 from PySide6.QtWidgets import (QAbstractItemView, QComboBox, QDialog, QFileDialog, QFormLayout,
-                               QHBoxLayout, QInputDialog, QLineEdit, QMessageBox, QTabWidget,
-                               QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
+                               QHBoxLayout, QInputDialog, QLineEdit, QListWidget, QListWidgetItem,
+                               QMessageBox, QSplitter, QTabWidget, QTableWidget, QTableWidgetItem,
+                               QVBoxLayout, QWidget)
 
 import material_orders as orders
 import material_requests as requests
@@ -14,15 +15,26 @@ import work_repository as wr
 from app_defaults import WAREHOUSES
 from business_ui import grid, run
 from interaction_ui import confirm, review_rows
+from runtime_support import Cancelled, checkpoint
+from sqlite_write import begin, commit
 from ui_controls import button, label
 
 
-def request_edit(path, store, wh, rows, original, *, progress, cancel):
-    from order_lifecycle import begin
-
+def request_edit(path, stores, wh, rows, original, *, progress, cancel):
+    stores = tuple(dict.fromkeys(stores))
+    if not stores:
+        raise ValueError('请先勾选门店')
+    if original and stores != (original['store'],):
+        raise ValueError('请在原门店更正申请')
     with closing(wr.Repository.open_existing(path).connect()) as db, db:
         begin(db,cancel)
-        return requests.save(db,store,wh,rows,request_id=original.get('id'),expected=original.get('version'))
+        saved = []
+        for store in stores:
+            checkpoint(cancel)
+            progress('保存 '+store+' 的物料申请')
+            saved.append(requests.save(db,store,wh,rows,request_id=original.get('id'),expected=original.get('version')))
+        commit(db,cancel)
+        return saved
 
 
 def preview_task(path, selections, previous, *, progress, cancel):
@@ -49,64 +61,296 @@ def value(table, row, col):
     return item.text() if item else ''
 
 
+def stock_text(item):
+    try:
+        return orders.allocation.text(orders.allocation.number(item.get('可用数'),'仓可用数'))
+    except ValueError:
+        return '待核'
+
+
+class RequestChoices(QWidget):
+    checked_changed = Signal()
+    match_entered = Signal(str)
+
+    def __init__(self, title, placeholder):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0,0,0,0)
+        layout.addWidget(label(title,'section'))
+        self.search = QLineEdit()
+        self.search.setPlaceholderText(placeholder)
+        self.search.setAccessibleName(placeholder)
+        self.search.setClearButtonEnabled(True)
+        layout.addWidget(self.search)
+        self.list = QListWidget()
+        self.list.setAccessibleName(title)
+        self.list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.list.setTextElideMode(Qt.TextElideMode.ElideRight)
+        layout.addWidget(self.list,1)
+        self.footer = QHBoxLayout()
+        self.status = label('','muted')
+        self.footer.addWidget(self.status,1)
+        layout.addLayout(self.footer)
+        self.items, self.names, self.checked = {}, {}, {}
+        self.visible = []
+        self.search.textChanged.connect(self.filter)
+        self.search.returnPressed.connect(self.enter_match)
+        self.list.itemChanged.connect(self.toggle)
+
+    def fill(self, choices):
+        with QSignalBlocker(self.list):
+            self.list.clear()
+            self.items.clear()
+            self.names.clear()
+            self.checked.clear()
+            for code, name, detail in choices:
+                item = QListWidgetItem(' · '.join(part for part in (name,code,detail) if part))
+                item.setToolTip(item.text())
+                item.setData(Qt.ItemDataRole.UserRole,code)
+                item.setFlags(item.flags()|Qt.ItemFlag.ItemIsUserCheckable)
+                item.setCheckState(Qt.CheckState.Unchecked)
+                self.list.addItem(item)
+                self.items[code] = item
+                self.names[code] = name
+        self.filter()
+        self.checked_changed.emit()
+
+    def filter(self, *_):
+        terms = self.search.text().casefold().split()
+        self.visible = []
+        for code, item in self.items.items():
+            text = code.casefold()+' '+self.names[code].casefold()
+            matches = all(term in text for term in terms)
+            item.setHidden(not matches)
+            if matches:
+                self.visible.append(code)
+        self.show_count()
+
+    def show_count(self):
+        self.status.setText(f'已勾选 {len(self.checked)} · 显示 {len(self.visible)} / {len(self.items)}')
+
+    def enter_match(self):
+        text = self.search.text().strip()
+        if not text:
+            return
+        if text in self.items:
+            self.match_entered.emit(text)
+            return
+        matches = [code for code in self.visible if text.casefold() in (code.casefold(),self.names[code].casefold())]
+        matches = matches or self.visible
+        if len(matches)==1:
+            self.match_entered.emit(matches[0])
+        else:
+            self.status.setText('有多条匹配，请勾选或输入完整编码' if matches else '未匹配到资料，请核对名称或编码')
+
+    def toggle(self, item):
+        code = item.data(Qt.ItemDataRole.UserRole)
+        if item.checkState()==Qt.CheckState.Checked:
+            self.checked[code] = None
+        else:
+            self.checked.pop(code,None)
+        self.show_count()
+        self.checked_changed.emit()
+
+    def check(self, code):
+        self.items[code].setCheckState(Qt.CheckState.Checked)
+
+    def clear_checked(self):
+        with QSignalBlocker(self.list):
+            for code in self.checked:
+                self.items[code].setCheckState(Qt.CheckState.Unchecked)
+        self.checked.clear()
+        self.show_count()
+        self.checked_changed.emit()
+
+
 class RequestEditor(QDialog):
-    def __init__(self, parent, original=None, preset_sku='', preset_warehouse=None):
+    SKU, QUANTITY, NOTE, NAME = range(4)
+
+    def __init__(self, parent, original=None, preset_skus=(), preset_warehouse=None):
         super().__init__(parent)
         self.path, self.original = parent.path, original or {}
         self.setWindowTitle('更正原物料申请' if original else '登记门店物料需求')
-        self.resize(820,490)
+        self.resize(1120 if not original else 870,570)
         layout = QVBoxLayout(self)
         form = QFormLayout()
-        self.store = QComboBox()
         with closing(wr.read_connection(self.path)) as db:
-            for code, raw in db.execute('SELECT code,data FROM stores ORDER BY code'):
-                name = wr.loads(raw).get('name') or code
-                self.store.addItem(f'{name}（{code}）',code)
+            self.store_names = {code:str(wr.loads(raw).get('name') or code)
+                                for code, raw in db.execute('SELECT code,data FROM stores ORDER BY code')}
         self.warehouse = QComboBox()
         self.warehouse.addItems(WAREHOUSES)
-        if preset_warehouse:
-            self.warehouse.setCurrentText(preset_warehouse)
-        form.addRow('门店', self.store)
+        self.warehouse.setMinimumWidth(120)
+        self.warehouse.setMaximumWidth(200)
+        self.warehouse.setCurrentText(self.original.get('warehouse') or preset_warehouse or WAREHOUSES[0])
         form.addRow('供货仓',self.warehouse)
         if original:
+            code = original['store']
+            form.addRow('门店',label(self.store_names.get(code,code)+' · '+code))
             form.addRow('申请修订',label(f"{original['id']} · V{original['version']:03d}"))
-            self.store.setCurrentIndex(self.store.findData(original['store']))
-            self.warehouse.setCurrentText(original['warehouse'])
-            self.store.setEnabled(False)
             self.warehouse.setEnabled(False)
         layout.addLayout(form)
-        self.lines = QTableWidget(0,3)
-        self.lines.setHorizontalHeaderLabels(('商品编码','申请数量（基础单位）','备注'))
-        self.lines.setColumnWidth(0,255)
-        self.lines.setColumnWidth(1,180)
+
+        panels = QSplitter(Qt.Orientation.Horizontal)
+        panels.setChildrenCollapsible(False)
+        self.stores = None
+        if not original:
+            self.stores = RequestChoices('门店','搜门店名称或编码，回车勾选')
+            self.stores.fill((code,name,'') for code,name in self.store_names.items())
+            self.stores.footer.addWidget(button('清空勾选',self.stores.clear_checked))
+            self.stores.match_entered.connect(self.stores.check)
+            panels.addWidget(self.stores)
+        self.products = RequestChoices('本仓物料','搜物料名称或编码，回车加入')
+        self.add_checked = button('加入已勾物料',self.add_picked)
+        self.products.footer.addWidget(self.add_checked)
+        self.products.match_entered.connect(lambda sku:self.add_items((sku,)))
+        panels.addWidget(self.products)
+
+        draft = QWidget()
+        content = QVBoxLayout(draft)
+        content.setContentsMargins(0,0,0,0)
+        content.addWidget(label('需求明细','section'))
+        content.addWidget(label('可直接填写商品编码、数量和备注。','muted'))
+        self.lines = QTableWidget(0,4)
+        self.lines.setHorizontalHeaderLabels(('商品编码','申请数量（基础单位）','备注','物料名称'))
+        self.lines.setColumnWidth(0,165)
+        self.lines.setColumnWidth(1,135)
+        self.lines.setColumnWidth(2,78)
+        self.lines.setColumnWidth(self.NAME,115)
+        self.lines.horizontalHeader().moveSection(self.NAME,1)
         self.lines.horizontalHeader().setStretchLastSection(True)
-        for row in self.original.get('lines', (dict(sku=preset_sku,quantity='',note=''),)):
+        for row in self.original.get('lines', ()):
             self.add_row(row['sku'],row['quantity'],row['note'])
-        layout.addWidget(self.lines,1)
+        if not self.lines.rowCount():
+            self.add_row()
+        content.addWidget(self.lines,1)
         actions = QHBoxLayout()
-        actions.addWidget(button('新增一行',lambda: self.add_row()))
-        actions.addWidget(button('移除空行或选中行',self.remove_row))
+        actions.addWidget(button('新增一行',self.new_row))
+        actions.addWidget(button('移除所选行',self.remove_rows))
         actions.addStretch()
-        actions.addWidget(button('保存申请',self.save,True))
+        content.addLayout(actions)
+        panels.addWidget(draft)
+        panels.setSizes([260,300,510] if self.stores else [305,520])
+        panels.setStretchFactor(panels.count()-1,1)
+        layout.addWidget(panels,1)
+
+        actions = QHBoxLayout()
+        self.summary = label('','muted')
+        actions.addWidget(self.summary,1)
+        actions.addStretch()
+        self.save_btn = button('保存申请',self.save,True)
+        actions.addWidget(self.save_btn)
         actions.addWidget(button('关闭',self.reject))
         layout.addLayout(actions)
+        self.lines.itemChanged.connect(self.line_changed)
+        if self.stores:
+            self.stores.checked_changed.connect(self.update_summary)
+        self.products.checked_changed.connect(self.update_summary)
+        self.warehouse.currentTextChanged.connect(self.read_products)
+        self.read_products()
+        if preset_skus and not original:
+            self.add_items(preset_skus)
+        if self.stores:
+            self.stores.search.setFocus()
+
+    def stores_to_save(self):
+        return tuple(self.stores.checked) if self.stores else (self.original['store'],)
+
+    def read_products(self, *_):
+        warehouse = self.warehouse.currentText()
+        try:
+            catalogs, _ = warehouse_catalog.Repository(Path(self.path).parent).snapshots((warehouse,))
+            catalog = catalogs.get(warehouse)
+            self.products.fill((sku,str(item.get('商品名称') or ''),'可用 '+stock_text(item))
+                               for sku,item in (catalog or {}).get('items',{}).items() if not requests.eligibility(item))
+            if not catalog:
+                self.products.status.setText('本仓尚未采用商品资料')
+        except (ValueError, OSError, RuntimeError) as exc:
+            self.products.fill(())
+            self.products.status.setText('仓资料未打开 '+str(exc))
+        with QSignalBlocker(self.lines):
+            for row in range(self.lines.rowCount()):
+                self.set_product_name(row)
+        self.update_summary()
+
+    def set_product_name(self, row):
+        sku = value(self.lines,row,self.SKU)
+        self.lines.item(row,self.NAME).setText(self.products.names.get(sku,''))
+
+    def line_changed(self, item):
+        if item.column()==self.SKU:
+            with QSignalBlocker(self.lines):
+                self.set_product_name(item.row())
+        self.update_summary()
+
+    def draft_rows(self):
+        for row in range(self.lines.rowCount()):
+            cells = tuple(value(self.lines,row,col) for col in range(3))
+            if any(cells):
+                yield dict(zip(('sku','quantity','note'),cells))
+
+    def update_summary(self, *_):
+        stores = self.stores_to_save()
+        count = sum(1 for _ in self.draft_rows())
+        self.summary.setText(f'{self.warehouse.currentText()} · {len(stores)} 家门店 · {count} 行需求')
+        self.summary.setToolTip(' → '.join(self.store_names.get(code,code)+' · '+code for code in stores))
+        self.save_btn.setText(f'为 {len(stores)} 家保存同一份需求' if len(stores)>1 else '保存申请')
+        self.save_btn.setEnabled(bool(stores) and bool(count))
+        self.add_checked.setEnabled(bool(self.products.checked))
+
+    def add_picked(self):
+        self.add_items(tuple(self.products.checked))
+        self.products.clear_checked()
+
+    def add_items(self, codes):
+        existing = {value(self.lines,i,0):i for i in range(self.lines.rowCount()) if value(self.lines,i,0)}
+        empty = iter(i for i in range(self.lines.rowCount()) if not any(value(self.lines,i,col) for col in range(3)))
+        first = None
+        with QSignalBlocker(self.lines):
+            for code in dict.fromkeys(codes):
+                row = existing.get(code)
+                if row is None:
+                    row = next(empty,None)
+                    if row is None:
+                        row = self.add_row(code)
+                    else:
+                        self.lines.item(row,0).setText(code)
+                        self.set_product_name(row)
+                if first is None:
+                    first = row
+        if first is not None:
+            self.lines.setCurrentCell(first,1)
+        self.update_summary()
 
     def add_row(self, sku='', qty='', note=''):
         index = self.lines.rowCount()
-        self.lines.insertRow(index)
-        for col, text in enumerate((sku,qty,note)):
-            self.lines.setItem(index,col,QTableWidgetItem(str(text)))
+        with QSignalBlocker(self.lines):
+            self.lines.insertRow(index)
+            for col, text in enumerate((sku,qty,note)):
+                self.lines.setItem(index,col,QTableWidgetItem(str(text)))
+            name = QTableWidgetItem()
+            name.setFlags(name.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.lines.setItem(index,self.NAME,name)
+            self.set_product_name(index)
+        return index
 
-    def remove_row(self):
-        row = self.lines.currentRow()
-        if row >= 0:
+    def new_row(self):
+        self.lines.setCurrentCell(self.add_row(),0)
+        self.lines.setFocus()
+        self.lines.editItem(self.lines.currentItem())
+
+    def remove_rows(self):
+        for row in sorted({index.row() for index in self.lines.selectedIndexes()},reverse=True):
             self.lines.removeRow(row)
+        if not self.lines.rowCount():
+            self.add_row()
+        self.update_summary()
 
     def save(self):
-        rows = [dict(sku=value(self.lines,i,0),quantity=value(self.lines,i,1),note=value(self.lines,i,2))
-                for i in range(self.lines.rowCount()) if any(value(self.lines,i,c) for c in range(3))]
         try:
-            run(self,request_edit,(self.path,self.store.currentData(),self.warehouse.currentText(),rows,self.original),'保存门店物料申请')
+            run(self,request_edit,(self.path,self.stores_to_save(),self.warehouse.currentText(),list(self.draft_rows()),
+                                   self.original),'保存门店物料申请')
+        except Cancelled:
+            return
         except Exception as exc:
             QMessageBox.warning(self,'物料申请未保存',str(exc))
             return
@@ -150,6 +394,7 @@ class MaterialDesk(QDialog):
         self.catalog_note = label('','muted')
         layout.addWidget(self.catalog_note)
         self.catalog_table, self.catalog_model = grid(page,('商品编码','商品名','产品分类','状态','库存单位','仓可用数'))
+        self.catalog_table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         layout.addWidget(self.catalog_table,1)
         self.tabs.addTab(page,'物料目录')
 
@@ -178,17 +423,13 @@ class MaterialDesk(QDialog):
             name = str(item.get('商品名称') or '')
             if requests.eligibility(item) or term not in (sku+' '+name).casefold():
                 continue
-            try:
-                stock = orders.allocation.text(orders.allocation.number(item.get('可用数'),'仓可用数'))
-            except ValueError:
-                stock = '待核'
-            self.catalog_rows.append((sku,name,item['分类'],item['商品状态'],self.catalog_units.get(sku,'库存单位'),stock))
+            self.catalog_rows.append((sku,name,item['分类'],item['商品状态'],self.catalog_units.get(sku,'库存单位'),stock_text(item)))
         self.catalog_model.replace(self.catalog_rows)
 
     def from_catalog(self):
-        selected = self.catalog_table.selectionModel().selectedRows()
-        sku = self.catalog_model.data(selected[0]) if selected else ''
-        self.edit_request(preset_sku=sku,preset_warehouse=self.wh.currentText())
+        selected = sorted(self.catalog_table.selectionModel().selectedRows(),key=lambda index:index.row())
+        self.edit_request(preset_skus=tuple(self.catalog_model.data(index) for index in selected),
+                          preset_warehouse=self.wh.currentText())
 
     def demand_tab(self):
         page = QWidget()
@@ -228,8 +469,8 @@ class MaterialDesk(QDialog):
         i = self.lines.currentRow()
         return self.request_rows[i][0] if i>=0 else None
 
-    def edit_request(self, *, preset_sku='', preset_warehouse=None, original=None):
-        editor = RequestEditor(self,original,preset_sku,preset_warehouse)
+    def edit_request(self, *, preset_skus=(), preset_warehouse=None, original=None):
+        editor = RequestEditor(self,original,preset_skus,preset_warehouse)
         if editor.exec()==QDialog.DialogCode.Accepted:
             self.read_demands()
             self.tabs.setCurrentIndex(1)

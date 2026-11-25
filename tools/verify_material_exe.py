@@ -35,6 +35,7 @@ def seed(root,old_db,affected):
     from test_material_orders import catalog, SKU, HB, SD
 
     root.mkdir()
+    write(root/'synthetic.json',{'synthetic':True,'live_platform':False,'case':'material-orders'})
     settings = root/'settings'
     settings.mkdir()
     path = settings/'workbench.sqlite3'
@@ -94,6 +95,8 @@ def invoke(command, case, phase):
     env = os.environ.copy()
     env.update(REPLENISHMENT_DATA_DIR=str(case/'settings'),LOCALAPPDATA=str(case/'test-appdata'),
                APPDATA=str(case/'test-appdata'),QT_QPA_PLATFORM='offscreen',PYTHONUTF8='1')
+    if phase=='entry':
+        env.pop('QT_QPA_PLATFORM',None)
     started=time.perf_counter()
     with (case/(phase+'.log')).open('wb') as output:
         process = subprocess.run([*command,'--material-smoke',str(case),phase],cwd=case,env=env,stdout=output,
@@ -111,6 +114,7 @@ def main():
     parser.add_argument('--old-db',type=Path,required=True)
     parser.add_argument('--zip',type=Path)
     parser.add_argument('--warehouse',choices=('山东仓','河北仓'))
+    parser.add_argument('--entry-only',action='store_true',help='从工作台验证手工录入与多选登记')
     args=parser.parse_args()
     root=args.out.resolve()
     root.mkdir(parents=True)
@@ -118,6 +122,7 @@ def main():
     if args.zip:
         unpacked=root/'空目录解包'
         with zipfile.ZipFile(args.zip) as book:
+            assert book.testzip() is None
             book.extractall(unpacked)
         exe,=unpacked.rglob('补货助手.exe')
         command=[str(exe)]
@@ -128,14 +133,19 @@ def main():
     for affected in (args.warehouse,) if args.warehouse else ('山东仓','河北仓'):
         case=root/affected
         parents=seed(case,args.old_db,affected)
-        before=invoke(command,case,'register')
-        catalog(case,affected,60 if affected=='山东仓' else 90,postfix='-新')
-        after=invoke(command,case,'resume')
-        assert before['batch']==after['batch'] and before['rows']==after['rows']
+        before=invoke(command,case,'entry' if args.entry_only else 'register')
+        assert before['frozen_exe'] is bool(args.zip)
+        if args.entry_only:
+            assert not before['calls']
+            reports.append(dict(exception_warehouse=affected,registered=before))
+        else:
+            catalog(case,affected,60 if affected=='山东仓' else 90,postfix='-新')
+            after=invoke(command,case,'resume')
+            assert before['batch']==after['batch'] and before['rows']==after['rows']
+            reports.append(dict(exception_warehouse=affected,registered=before,resumed=after))
         with closing(sqlite3.connect(case/'settings/workbench.sqlite3')) as db:
             unchanged=db.execute("SELECT day,store,kind,oid,number,current FROM normal_orders WHERE kind<>'material' ORDER BY oid").fetchall()
             assert unchanged==parents
-        reports.append(dict(exception_warehouse=affected,registered=before,resumed=after))
     assert digest(args.old_db)==old_sha
     write(root/'逐仓验收.json',dict(reports=reports,old_source_sha256=old_sha,
           exe_sha256=digest(exe) if args.zip else None,zip_sha256=digest(args.zip) if args.zip else None))
