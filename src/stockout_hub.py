@@ -80,6 +80,18 @@ class Entry(BaseEntry):
     def finished(self):
         task=self.worker;super().finished()
         if self.page and task and task.operation in ('hub_collect','hub_scheduled','hub_end','hub_reuse'):self.page.refresh_metadata()
+    def settle_schedule(self,state,message=''):
+        if self.worker and self.worker.operation=='hub_scheduled' and getattr(self,'scheduled_claim',None):
+            from stockout_schedule_queue import Queue
+            claim=self.scheduled_claim
+            Queue(self.host.repository.folder).finish(claim['id'],claim['epoch'],state,message)
+            self.scheduled_claim=None
+    def success(self,result):
+        self.settle_schedule(result.get('state','REVIEW') if isinstance(result,dict) else 'REVIEW')
+        super().success(result)
+    def failure(self,message):
+        self.settle_schedule('PAUSED' if getattr(self.worker,'cancel',None) and self.worker.cancel.is_set() else 'REVIEW',message)
+        super().failure(message)
     def arm(self):
         from stockout_hub_schedule import arm
         arm(self)

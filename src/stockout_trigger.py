@@ -9,6 +9,14 @@ def path(folder,filename='stockout-schedule.json'):return Path(folder)/'analysis
 
 
 def load(folder,*,filename='stockout-schedule.json'):
+    from stockout_schedule_queue import Queue,SOURCES
+    stored=Queue(folder)
+    if stored.path.is_file() and filename in dict(SOURCES):
+        return stored.plans()[filename]
+    return legacy_load(folder,filename)
+
+
+def legacy_load(folder,filename):
     source=path(folder,filename)
     if not source.exists():return {'enabled':False}
     value=read_json(source,8192)
@@ -34,6 +42,9 @@ def save(folder,enabled,at='08:00',clock=None,*,filename='stockout-schedule.json
     if type(enabled) is not bool or not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d',at):
         raise ValueError('请输入有效的每日采集时间')
     value={'schema':1,'enabled':enabled,'at':at,'next_at':next_time(at,clock) if enabled else None}
+    from stockout_schedule_queue import Queue,SOURCES
+    stored=Queue(folder)
+    if stored.path.is_file() and filename in dict(SOURCES):stored.save(filename,value)
     atomic_json(path(folder,filename),value);return value
 
 

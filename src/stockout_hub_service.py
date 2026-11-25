@@ -40,8 +40,17 @@ def preview(root,mode,warehouses=None):
     return result
 
 
-def create(journal,plan,*,trigger='manual'):
-    if preview(journal.root,plan['mode'],plan['warehouses'])!=plan:raise ValueError('选择或分析设置已变化，请重新确认运行范围')
+def create(journal,plan,*,trigger='manual',run_id=None):
+    if run_id and journal.path(run_id).exists():
+        old=journal.run(run_id)
+        if old.get('trigger')!=trigger or old['mode']!=plan['mode'] or old['day']!=plan['day']:
+            raise ValueError('原缺货运行与登记的范围不符')
+        return old
+    if run_id:
+        body={key:value for key,value in plan.items() if key!='token'}
+        if plan.get('token')!=digest(body) or plan['day']!=today():raise ValueError('原时点冻结的采集依据不完整')
+    elif preview(journal.root,plan['mode'],plan['warehouses'])!=plan:
+        raise ValueError('选择或分析设置已变化，请重新确认运行范围')
     for old in journal.recent():
         if trigger!='manual' and old.get('trigger')==trigger:return old
         if old['state'] not in TERMINAL:
@@ -54,7 +63,7 @@ def create(journal,plan,*,trigger='manual'):
                 wh=Repository(journal.root)
                 independent=not old.get('warehouse_run') or wh.run(old['warehouse_run'])['state']=='COMPLETE'
             if not independent:raise ValueError('请先继续或结束统一分析原作业：'+old['id'])
-    rid=uuid.uuid4().hex
+    rid=run_id or uuid.uuid4().hex
     row={**{k:v for k,v in plan.items() if k!='token'},'id':rid,'trigger':trigger,'state':'PREPARED','created':now(),'updated':now(),
          'external':{},'catalogs':{},'errors':{},'store_run':uuid.uuid4().hex if plan['mode']!='warehouse' else None,
          'warehouse_run':uuid.uuid4().hex if plan['mode']!='store' else None}

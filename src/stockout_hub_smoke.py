@@ -64,6 +64,36 @@ def start_smoke(app,win,args):
                     require(book['门店_门店总览']['E2'].value==.5,'门店导出与前端50%一致')
                 finally:book.close()
                 require(all(not d['qt_loaded'] for d in diagnostics),'分析子进程不加载Qt');require(len(beats)>5,'分析期间主界面心跳继续')
+                if '--durable' in args:
+                    from datetime import datetime,timedelta
+                    from stockout_common import TZ
+                    from stockout_schedule_queue import Queue,SOURCES
+                    from stockout_hub_schedule import due
+                    from stockout_trigger import next_time
+                    queue=Queue(settings);clock=datetime.now(TZ);when=clock.replace(second=0,microsecond=0)
+                    for source,mode in SOURCES:
+                        queue.save(source,{'enabled':True,'at':when.strftime('%H:%M'),'next_at':when.isoformat(),
+                                           'mode':mode or 'both','warehouses':['山东仓','河北仓']})
+                    # Simulate an unrelated busy window before the actual due callback.
+                    with patch.object(root,'busy',return_value=True):
+                        due(root,clock);due(root,clock)
+                        queued=queue.entries()
+                        require(len(queued)==1 and queued[0]['state']=='QUEUED' and len(queued[0]['contributors'])==3,
+                                '正常到点入口将三个来源同一时点合并落盘，重复唤醒只登记一次')
+                        require(all(value['next_at']==next_time(when.strftime('%H:%M'),clock) for value in queue.plans().values()),'同事务推进三个原游标')
+                        pending=queue.claim();plan=pending['request']['plan'];rid=pending['id']
+                        interrupted=create(journal,plan,trigger=pending['request']['trigger'],run_id=rid)
+                        journal.change(rid,state='COMPLETE')
+                        require(interrupted['id']==rid,'业务运行使用登记时分配的原号')
+                        # Lost acknowledgement after the domain write. Reopening the
+                        # store and letting the normal hub drain reconcile the same ID.
+                        root.scheduled_recovered=False
+                    root.tick();wait()
+                    settled=queue.entries()[0]
+                    require(settled['id']==rid and settled['state']=='COMPLETE' and settled['epoch']>pending['epoch'],
+                            '领取中断后查询原业务运行，只补同一原号回执')
+                    require(sum(r['trigger']==pending['request']['trigger'] for r in journal.recent())==1,'原父批只有一条，补回执实际平台提交0次')
+                    (out/'durable-queue.json').write_text(json.dumps({'before':queued,'after':settled,'platform_submissions':0},ensure_ascii=False,indent=2),'utf-8')
                 win.show_section(0);wait();require(root.page is None and all(c.page is None for c in root.children.values()),'离开缺货率释放两个页面')
             timer.stop();result={'passed':True,'checks':checks,'workers':diagnostics,'frozen_exe':bool(getattr(sys,'frozen',False)),'live_platform':False}
             from version_info import diagnostic

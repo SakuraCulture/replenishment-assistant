@@ -4,14 +4,13 @@ from pathlib import Path
 from PySide6.QtCore import QTimer
 import stockout_trigger as trigger
 from stockout_common import TZ,read_json,atomic_json,WAREHOUSES
-
-FILES=(('stockout-schedule.json','store'),('warehouse-stockout-schedule.json','warehouse'),('stockout-hub-schedule.json',None))
+from stockout_schedule_queue import Queue,SOURCES as FILES
 
 
 def plans(folder):
-    result=[]
+    result=[];values=Queue(folder).plans()
     for filename,mode in FILES:
-        row=trigger.load(folder,filename=filename)
+        row=values[filename]
         if row['enabled']:
             mode=mode or row.get('mode')
             if mode not in ('store','warehouse','both'):raise ValueError('统一分析计划范围无效')
@@ -21,9 +20,10 @@ def plans(folder):
 
 def arm(entry):
     if entry.timer:entry.timer.stop();entry.timer.deleteLater();entry.timer=None
-    if entry.closing:return
+    if entry.closing or not owns_dispatch(entry):return
     try:
-        rows=plans(entry.host.repository.folder)
+        folder=entry.host.repository.folder;rows=plans(folder)
+        if Queue(folder).pending():entry.ensure_watch()
         if not rows:return
         when=min(datetime.fromisoformat(r['next_at']) for r in rows)
         delay=max(1,int((when-datetime.now(TZ)).total_seconds()*1000))
@@ -31,34 +31,56 @@ def arm(entry):
     except Exception as exc:entry.status('缺货率计划未启动：'+str(exc))
 
 
-def due(entry):
-    folder=entry.host.repository.folder;groups={}
+def owns_dispatch(entry):
+    manager=getattr(entry.host,'scheduled',None)
+    return manager is None or manager.owner
+
+
+def due(entry,clock=None):
+    if not owns_dispatch(entry):entry.arm();return
+    folder=entry.host.repository.folder
+    clock=clock or datetime.now(TZ)
+    from stockout_hub_service import preview
     selected=Path(folder)/'analysis'/'warehouse_stockout'/'selection.json'
     default_warehouses=read_json(selected,8192) if selected.exists() else list(WAREHOUSES)
-    for row in plans(folder):
-        outcome=trigger.due(folder,filename=row['filename'])
-        if not outcome:continue
-        if outcome.get('missed'):entry.status(outcome['message']);continue
-        group=groups.setdefault(row['next_at'],{'modes':set(),'warehouses':set()})
-        group['modes'].update(('store','warehouse') if row['mode']=='both' else (row['mode'],))
-        if row['mode']!='store':group['warehouses'].update(row.get('warehouses',default_warehouses))
-    queue=getattr(entry,'scheduled_queue',[])
-    for when,group in groups.items():
-        modes=group['modes']
+    def freeze(when,parts):
+        modes,warehouses=set(),set()
+        for _,mode,row in parts:
+            modes.update(('store','warehouse') if mode=='both' else (mode,))
+            if mode!='store':warehouses.update(row.get('warehouses',default_warehouses))
         mode='both' if len(modes)==2 else next(iter(modes))
-        queue.append({'mode':mode,'warehouses':sorted(group['warehouses']),'trigger':'schedule:'+when[:10]+':'+when[11:16]+':'+mode})
-    entry.scheduled_queue=queue
-    drain(entry);entry.arm()
+        when=when.isoformat()
+        request={'mode':mode,'warehouses':sorted(warehouses),'trigger':'schedule:'+when[:10]+':'+when[11:16]+':'+mode}
+        try:request['plan']=preview(folder,mode,request['warehouses'])
+        except (ValueError,OSError) as exc:request['input_error']=str(exc)
+        return request
+    try:
+        rows=Queue(folder).due(clock,freeze)
+        if any(row['state']=='MISSED' for row in rows):entry.status('原日期已错过，已保留错过记录')
+        drain(entry)
+    except Exception as exc:entry.status('缺货采集登记待重试：'+str(exc))
+    finally:entry.arm()
 
 
 def drain(entry):
-    queue=getattr(entry,'scheduled_queue',[])
-    if queue and not entry.worker and not entry.queued and not entry.busy() and not entry.closing:
-        args=queue.pop(0)
-        from stockout_common import today
-        if args['trigger'].split(':',1)[1][:10]!=today():entry.status('排队计划已跨日，未补写旧日库存')
-        else:entry.start('hub_scheduled',args,background=True)
-    if queue:entry.ensure_watch()
+    if not owns_dispatch(entry) or entry.closing:return
+    queue=Queue(entry.host.repository.folder)
+    if not queue.path.is_file():return
+    if not getattr(entry,'scheduled_recovered',False):
+        queue.recover();entry.scheduled_recovered=True
+    if not queue.pending():return
+    if not entry.worker and not entry.queued and not entry.busy():
+        row=queue.claim()
+        if row:
+            from stockout_common import today
+            args=row['request']
+            if row['day']!=today() or args.get('input_error'):
+                message=args.get('input_error') or '原已登记采集已跨日，继续前请核对原任务'
+                queue.finish(row['id'],row['epoch'],'REVIEW',message);entry.status(message)
+            else:
+                entry.scheduled_claim=row
+                entry.start('hub_scheduled',{**args,'scheduled_id':row['id'],'scheduled_epoch':row['epoch']},background=True)
+    if queue.pending():entry.ensure_watch()
 
 
 def save(folder,enabled,at,mode,warehouses=None):
@@ -66,10 +88,12 @@ def save(folder,enabled,at,mode,warehouses=None):
     if warehouses is not None and mode!='store' and (not isinstance(warehouses,list) or not warehouses or len(warehouses)!=len(set(warehouses)) or set(warehouses)-set(WAREHOUSES)):raise ValueError('请选择计划输出仓')
     # The dialog explicitly replaces the displayed old schedules, keeping their
     # files and disabled state rather than silently enabling an additional job.
-    value=trigger.save(folder,enabled,at,filename='stockout-hub-schedule.json');value['mode']=mode
+    import re
+    if type(enabled) is not bool or not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d',at):raise ValueError('请输入有效的每日采集时间')
+    value={'schema':1,'enabled':enabled,'at':at,'next_at':trigger.next_time(at) if enabled else None,'mode':mode}
     if warehouses is not None:value['warehouses']=warehouses if mode!='store' else []
+    queue=Queue(folder);queue.save(FILES[-1][0],value,disable_legacy=True)
     atomic_json(trigger.path(folder,'stockout-hub-schedule.json'),value)
-    for filename,_ in FILES[:2]:
-        old=trigger.load(folder,filename=filename)
-        if old['enabled']:trigger.save(folder,False,old.get('at','08:00'),filename=filename)
+    for filename,old in queue.plans().items():
+        if filename!=FILES[-1][0] and trigger.path(folder,filename).exists():atomic_json(trigger.path(folder,filename),old)
     return value
