@@ -25,6 +25,10 @@ NODE={'purchase_creates','purchase_create_events','purchase_receipts','purchase_
 NODE_GLOBAL={'metadata','runs','items','attempts','publishes','imported_pending','migration_imports','conflicts','retired_collections','collection_reexports','collection_consumers','machine_protocol'}
 PARENTS={'normal_orders':('oid',),'jst_generations':('gid','operation'),'jst_batches':('batch_id',),'jst_runs':('runid',),'jst_tasks':('task',),'purchase_documents':('docid','identity'),'automation_tasks':('id','operation_key'),'scheduled_runs':('id',),'ax_workflows':('id',),'ax_jobs':('id',),'purchase_creates':('id',),'purchase_runs':('id',),'purchase_receipts':('id',),'machine_commands':('id',),'runs':('id',),'items':('id',),'attempts':('id',),'publishes':('id',),'assets':('asset_key',)}
 PARENTS['material_batches']=('id',)
+MAIN.update(('special_plans','special_versions','special_confirmations','special_observations','special_runs',
+             'special_packages','special_claims','special_releases','special_records','special_groups','special_receipts','special_effects','special_tickets'))
+GLOBAL.add('special_settings')
+PARENTS.update(special_plans=('plan',),special_runs=('run',),special_groups=('id',),special_packages=('oid','gid'))
 LINKS={'oid','gid','batch_id','runid','docid','task','run_id','id','item_id','command_id','purchase_id','hostOrderId','hostPurchaseId','hostOrderIds','rebuildOf','successorId','operation'}
 ASSETS={'source_files','lifecycle_files','jst_files','purchase_files'}
 ACTIVE={'QUEUED','RUNNING','YIELDED','PAUSING','PAUSE_REQUESTED','PREPARING','READY','VERIFYING','SUBMITTING'}
@@ -361,7 +365,7 @@ def _order_header_contract(contract):
     if keys != {('day','store','kind'),('oid',),('number',)}:
         return False
     return all(all(values[1:] == ('BINARY',0) for values in index) and
-               expression == (_sql_contract("kind<>'material'") if pk==('oid',) and len(index)==3 else '')
+               expression in ({_sql_contract("kind<>'material'"),_sql_contract("kind NOT IN ('material','policy','opening')")} if pk==('oid',) and len(index)==3 else {''})
                for index,expression in contract['unique']) and pk in (('oid',),('day','store','kind'))
 def _chunk_refs(node):
     if node[0]=='ref':yield node[1]
@@ -478,10 +482,10 @@ def _inspect(src,dst):
         incoming=src.active_warehouses.get(oid,src.legacy_warehouses.get(oid,set()))
         retired={warehouse for owner,warehouse in dst.deleted_warehouses if owner==oid}
         if incoming & {warehouse for owner,warehouse in src.deleted_warehouses if owner==oid}:reasons.append('来源包同一仓单同时有效与退役，不能自动迁入')
-        if oid in dst.deleted or incoming & retired or head['kind']!='material' and (head['day'],head['store']) in dst.deleted_business and (head['day'],head['store']) not in stores:
+        if oid in dst.deleted or incoming & retired or head['kind'] not in ('material','policy','opening') and (head['day'],head['store']) in dst.deleted_business and (head['day'],head['store']) not in stores:
             state='DELETED';reasons.append('本机已删除此订单，旧迁移包不恢复')
         else:
-            collisions=oid in dst.order or head['kind']!='material' and (head['day'],head['store'],head['kind']) in matches or head['number'] in numbers
+            collisions=oid in dst.order or head['kind'] not in ('material','policy','opening') and (head['day'],head['store'],head['kind']) in matches or head['number'] in numbers
             if collisions:
                 receipt=dst.receipts.get(oid);same=oid in dst.order and typed(head)==typed(dst.order[oid])
                 target_hash=dst.owner_hash(oid) if oid in dst.order else None
@@ -629,7 +633,7 @@ def merge(source_root,private_target,expected_report=None,progress=lambda _:None
                     if not subset:continue
                     p=target/name;p.parent.mkdir(parents=True,exist_ok=True);db=sqlite3.connect(p);connections[name]=db;db.execute('PRAGMA synchronous=FULL');db.execute('BEGIN IMMEDIATE')
                     _ensure_schema(src,dst,name,db,{r.table for r in subset})
-                    if name==DBS[0] and any(r.table=='normal_orders' and r.values['kind']=='material' for r in subset):
+                    if name==DBS[0] and any(r.table=='normal_orders' and r.values['kind'] in ('material','policy','opening') for r in subset):
                         from normal_orders import order_header_schema
                         order_header_schema(db)
                     for r in subset:

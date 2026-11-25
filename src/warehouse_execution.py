@@ -203,11 +203,11 @@ def _head(parent,warehouse,revision,digest,saved,child_revision=None,snapshot_di
 
 def heads(db,parent_headers=None,*,history=False,with_names=True,include_material=False):
     selected=None if parent_headers is None else {h['oid'] for h in parent_headers}
-    sql="SELECT oid,day,store,number,current,kind FROM normal_orders WHERE kind IN ('normal_model','material')" if include_material else "SELECT oid,day,store,number,current,kind FROM normal_orders WHERE kind='normal_model'"
+    sql="SELECT oid,day,store,number,current,kind FROM normal_orders WHERE kind IN ('normal_model','material','policy','opening')" if include_material else "SELECT oid,day,store,number,current,kind FROM normal_orders WHERE kind='normal_model'"
     args=()
     if selected is not None:
         sql+=' AND oid IN (SELECT value FROM json_each(?))';args=(wr.dumps(sorted(selected)),)
-    parents=[dict(zip(('oid','day','store','number','current'),r[:5]), **({'kind':'material'} if r[5]=='material' else {}))
+    parents=[dict(zip(('oid','day','store','number','current'),r[:5]), **({'kind':r[5]} if r[5] in ('material','policy','opening') else {}))
              for r in db.execute(sql+' ORDER BY day DESC,store',args)]
     result=[]
     for parent in parents:

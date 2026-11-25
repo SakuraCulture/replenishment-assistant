@@ -101,6 +101,8 @@ def import_catalog(path,warehouse,progress=lambda s:None,cancel=None,*,evidence=
         seen[sku]=raw['_row']
         row={k:raw.get(ARCHIVE_ALIASES.get(k,k) if archive else k) for k in FIELDS}
         row.update(商品编码=sku,_row=raw['_row'])
+        if '商品单位' in heads:
+            row['商品单位']=raw.get('商品单位')
         if archive:
             if row['商品状态'] not in ('启用','备用','禁用'):
                 raise ValueError(f"第{raw['_row']}行商品状态无法识别：{sku}")

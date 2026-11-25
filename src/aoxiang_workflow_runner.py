@@ -175,6 +175,8 @@ class Runner:
                 record = self.client.request('receipt.synced', purchase_id=id,
                                              manifest_sha256=record['manifest']['sha256'], receipt=receipt)
             verify_acknowledgement(record,original,receipt)
+            from special_native import remember_ack
+            remember_ack(self.business_path,record)
             observe(record,acknowledged=True)
             return 'SYNCED', {'receipt': record.get('hostReceipt'), 'summary': record.get('summary')}
         if record['state'] == 'IDLE':

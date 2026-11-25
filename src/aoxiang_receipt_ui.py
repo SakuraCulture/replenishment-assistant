@@ -182,6 +182,8 @@ class ReceiptDialog(ComponentDialog):
         verified = record['state'] == 'SYNCED'
         if verified:
             verify_acknowledgement(record,*(acknowledged or (record,posted)))
+            from special_native import remember_ack
+            remember_ack(path,record)
         manager=getattr(self.host,'aoxiang_workflows',None)
         if manager:manager.store.observe_schedule(id,record,acknowledgement_verified=verified)
         manifest = record.get('manifest')

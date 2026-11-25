@@ -85,6 +85,10 @@ def authorize(path, intent, validate, *, cancel=None):
             raise wr.Conflict('核验期间本仓付款或上游已变化；尚未上传，请重新核验')
         db.execute('CREATE TABLE IF NOT EXISTS purchase_dispatch_guards(purchase_id TEXT PRIMARY KEY,identity_hash TEXT NOT NULL,proof TEXT NOT NULL,state TEXT NOT NULL,request_hash TEXT,updated_at TEXT NOT NULL)')
         old = db.execute('SELECT identity_hash,state FROM purchase_dispatch_guards WHERE purchase_id=?', (intent['id'],)).fetchone()
+        if intent.get('openingGroup'):
+            from special_settlement import authorize_dispatch
+            group=intent['openingGroup']
+            authorize_dispatch(db,group['id'],group['sha'],intent['id'])
         key = identity(intent)
         if old and (old[0] != key or old[1] not in ('AUTHORIZED', 'ABORTED')):
             raise ValueError('原采购已有提交登记或依据不同，请核对原任务；未重新上传')

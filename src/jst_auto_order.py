@@ -326,6 +326,9 @@ def _save(path, order, stage, cancel, *, check_plan=False, proof=None, reason=''
         begin(db,cancel)
         if check_plan:
             _require_plan(db,order['payload'])
+            if stage=='IMPORT_UNKNOWN':
+                from special_native import guard_jst
+                guard_jst(db,path,order)
         result=store.update(db,order,stage,proof=proof,reason=reason)
         if stage in store.UNRESOLVED and stage!=order['stage']:
             _event(db,result,'聚水潭自动下单执行意图',{'stage':stage})
@@ -448,6 +451,8 @@ def _record_found(path, order, result, cancel, *, identity_only=False, manual_pr
             if digest != order['payload']['generation']['digest'] or any(generation['head'].get(k) != h[k] for k in HEAD_KEYS):
                 raise wr.Conflict('原仓单签发修订或生成单摘要已变化，请核对原关联')
         current=store.update(db,order,stage,proof=manual_proof,internal=internal,status=state,reason=reason)
+        from special_native import remember_jst
+        remember_jst(db,current,result)
         lock=allocations.locked(db,h)
         if lock and lock!=order['gid']:
             raise wr.Conflict('已存在其他生成版本的下单标记，请核对')

@@ -753,6 +753,12 @@ def prepare_selected(parent, host, heads, *, saved=False):
         QMessageBox.information(parent, '先选择范围', '请先勾选已确认付款的仓单。')
         return
     from platform_order_scope import choose
+    from special_settlement import resolve_head
+    try:
+        heads=list({h['oid']+'|'+h['warehouse']:h for h in (resolve_head(host.work_repository.path,x) for x in heads)}.values())
+    except ValueError as exc:
+        QMessageBox.warning(parent,'核对开业采购组',str(exc))
+        return
     heads=choose(parent,host.work_repository.path,heads)
     if not heads:return
     from aoxiang_preview_ui import PreviewScope

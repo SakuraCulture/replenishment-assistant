@@ -120,9 +120,9 @@ def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda 
         if c['warehouse'] != wh: raise ValueError('选用资料与供货仓不一致')
         stocks[wh] = dict(bid=bid, warehouse=wh, catalog=c, included=[], created=wr.now(), batch_id=batch_id)
         states[wh] = (bid, 0)
-    from material_stock import has_material, included
+    from material_stock import shared_ledger, included
     with closing(wr.read_connection(path)) as db:
-        if has_material(db):
+        if shared_ledger(db):
             for wh, base in stocks.items():
                 base['included'] = sorted(included(db,wh,base))
     spec = dict(batch_id=batch_id, created=wr.now(), epoch=0, stocks=stocks, states=states, members=[], new=True)

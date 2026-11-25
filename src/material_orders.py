@@ -285,13 +285,13 @@ def _save_parent(db, batch, store, name, scopes, saved, cancel):
     return oid, number, digest
 
 
-def _save_generation(db, batch, head, items, position, saved):
+def _save_generation(db, batch, head, items, position, saved, *, kind='material'):
     from lifecycle_rules import DOCUMENT_SCHEMA, RULE, reconcile
 
     rows = [dict(sku=r['sku'], name=r['name'], quantity=r['quantity'], base_quantity=r['quantity'], unit=r['unit'],
                  conversion_basis=r['unit_basis'], factor=None, amount=None, price=None, currency='',
                  document_number=head['number'], document_date=head['day'], note=None, sources=r['return_sources'],
-                 adapter='material_request', raw_headers=[], raw_values=[]) for r in items]
+                 adapter='material_request' if kind=='material' else kind, raw_headers=[], raw_values=[]) for r in items]
     products = {r['sku']:dict(sku=r['sku'], name=r['name'], quantity=r['quantity'], price=r['price'], unit=r['unit']) for r in items}
     full = dict(head, products=products)
     basis = lifecycle.upstream(db, full, 'return')
@@ -299,16 +299,16 @@ def _save_generation(db, batch, head, items, position, saved):
     # records actual confirmed material requests, including immutable claim references.
     payload = dict(schema=DOCUMENT_SCHEMA, rule=RULE, stage='return', head=head, basis=basis, pending=False,
                    raw_rows=rows, rows=reconcile(rows, products), files=[], missing=[], extra=[], explicit_zero=False,
-                   material_requests=[claim for item in items for claim in item['claims']])
+                   **{'material_requests' if kind=='material' else 'special_targets':[claim for item in items for claim in item['claims']]})
     digest = lifecycle_store.fingerprint(payload)
     key = head['oid'], head['revision'], head['warehouse']
     db.execute("INSERT INTO lifecycle_versions VALUES(?,?,?,'return',1,?,?,?)", (*key, saved, digest, wr.dumps(payload)))
     db.execute("INSERT INTO lifecycle_events(at,oid,revision,warehouse,stage,version,action,detail) "
-               "VALUES(?,?,?,?,'return',1,?,?)", (saved,*key,'确认物料申请与分配',wr.dumps({'batch_id':batch['id'],'digest':digest})))
+               "VALUES(?,?,?,?,'return',1,?,?)", (saved,*key,'确认物料申请与分配' if kind=='material' else '确认专项原行与分配',wr.dumps({'batch_id':batch['id'],'digest':digest})))
     wh = head['warehouse']
     stock = batch['stocks'][wh]
     gid = uuid.uuid5(uuid.UUID(batch['id']), head['number']).hex
-    generation = dict(gid=gid, operation=f'{batch["id"]}:{position}', rule=allocation.MATERIAL_RULE, head=head,
+    generation = dict(gid=gid, operation=f'{batch["id"]}:{position}', rule=allocation.MATERIAL_RULE if kind=='material' else 'special-stock-v1', head=head,
                       basis=lifecycle.upstream(db, full, 'payment'), bid=stock['bid'], old=None, rows=items,
                       summary=allocation.totals(items), saved=saved, position=position, catalog=warehouse_catalog.metadata(stock['catalog']),
                       draft_status='待核对付款单', batch_id=batch['id'], batch_epoch=0)

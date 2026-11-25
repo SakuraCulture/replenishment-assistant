@@ -80,6 +80,8 @@ def freeze_payment(path, head, configuration, suppliers, *, expected_payment=Non
                 'payment_total_amount': str(sum((Decimal(r['payment_amount']) for r in rows), Decimal(0))),
                 'rounding_delta': str(sum((Decimal(r['rounding_delta']) for r in rows), Decimal(0))),
                 'create_external_order': False, 'post_creation_state': '待提交'}
+        from special_native import merge_purchase
+        merge_purchase(db,plan)
     if authorization is not None:
         plan['cancellation_review'] = authorization
     plan['fingerprint'] = fingerprint(plan)
@@ -101,6 +103,10 @@ def validate_basis(path, plan, configuration, suppliers, *, cancel=None, _db=Non
     with (closing(purchases.connect(path)) if _db is None else nullcontext(_db)) as db:
         if _db is None:db.execute('BEGIN')
         validate_original_context(db, plan, configuration, suppliers, cancel=cancel)
+        if plan.get('opening_group') and not for_binding:
+            from special_native import validate_group
+            g=plan['opening_group']
+            validate_group(db,plan,g['id'],g['sha'])
         view = lifecycle.snapshot(path, plan['head'], cancel=cancel, db=db,_comparison=False)
         current = view['documents']['payment']
         if not for_binding and payment_authorization(db,plan['head'],current) != plan.get('cancellation_review'):

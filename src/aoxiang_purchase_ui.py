@@ -372,5 +372,7 @@ class PurchaseDialog(BindingActions, ComponentDialog):
 
 
 def open_purchase(parent, host, head, *, original_id=None):
+    from special_settlement import resolve_head
+    head=resolve_head(host.work_repository.path,head)
     dialog = PurchaseDialog(parent, host, head, original_id=original_id)
     show_modal(host, dialog)

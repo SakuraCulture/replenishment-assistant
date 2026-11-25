@@ -62,6 +62,11 @@ def existing_receipt(path, head, index, record, *, cancel=None):
     checkpoint(cancel)
     with closing(wr.read_connection(path)) as db:
         db.execute('BEGIN')
+        from special_settlement import group_for_oid
+        group=group_for_oid(db,head['oid'])
+        if group:
+            from special_native import posted_group
+            return posted_group(db,head,index,record,group)
         old = _posted_document(db, head, record)
         if not old:
             return None
@@ -228,6 +233,9 @@ def prepare(path, package, manifest, configuration, suppliers, *, approval=None,
 
 
 def synchronize(path, package, manifest, configuration, suppliers, *, approval=None, cancel=None, progress=lambda _: None):
+    if package.get('intent',{}).get('openingGroup'):
+        from special_native import sync_group
+        return sync_group(path,package,manifest,configuration,suppliers)
     plan = prepare(path, package, manifest, configuration, suppliers, approval=approval, cancel=cancel, progress=progress)
     # Original service checks version, dependencies, files and cancellation under the write lock.
     return lifecycle.commit(path, plan, progress, cancel)[0]

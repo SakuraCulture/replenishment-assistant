@@ -32,7 +32,11 @@ def order_header_schema(db):
         db.execute('ALTER TABLE normal_orders_upgrade RENAME TO normal_orders')
     else:
         db.execute(f'CREATE TABLE IF NOT EXISTS normal_orders({definition})')
-    db.execute("CREATE UNIQUE INDEX IF NOT EXISTS normal_orders_standard_key ON normal_orders(day,store,kind) WHERE kind<>'material'")
+    predicate = "kind NOT IN ('material','policy','opening')"
+    old = db.execute("SELECT sql FROM sqlite_master WHERE type='index' AND name='normal_orders_standard_key'").fetchone()
+    if old and predicate not in old[0]:
+        db.execute('DROP INDEX normal_orders_standard_key')
+    db.execute('CREATE UNIQUE INDEX IF NOT EXISTS normal_orders_standard_key ON normal_orders(day,store,kind) WHERE '+predicate)
     db.execute('CREATE INDEX IF NOT EXISTS normal_orders_business_lookup ON normal_orders(day,store,kind)')
 
 
@@ -110,7 +114,8 @@ class Repository:
         self.work=work
         with closing(work.connect()) as db:
             exists=db.execute("SELECT name FROM sqlite_master WHERE name='normal_orders'").fetchone()
-            if not exists or has_legacy_order_key(db):
+            prior_index=db.execute("SELECT sql FROM sqlite_master WHERE name='normal_orders_standard_key'").fetchone()
+            if not exists or has_legacy_order_key(db) or prior_index and "'opening'" not in prior_index[0]:
                 # SQLite backup API also captures an existing WAL consistently.
                 backup=work.path.with_name('workbench.before-normal-orders.'+uuid.uuid4().hex+'.sqlite3')
                 with closing(sqlite3.connect(backup)) as target:db.backup(target)
@@ -155,11 +160,12 @@ class Repository:
         return dict(zip(('day','store','oid','number','revision','digest','saved'),row)) if row else None
 
     def headers(self, *, order_kind='normal_model'):
-        condition = { 'normal_model': "o.kind<>'material'", 'material': "o.kind='material'", 'all': '1' }[order_kind]
+        condition = {'normal_model': "o.kind NOT IN ('material','policy','opening')", 'material': "o.kind='material'",
+                     'policy': "o.kind='policy'", 'opening': "o.kind='opening'", 'all': '1'}[order_kind]
         with closing(self.work.connect()) as db:
             rows=db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved,o.kind FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE '+condition+' ORDER BY o.day DESC,o.store,o.rowid').fetchall()
         return [dict(zip(('day','store','oid','number','revision','digest','saved'),r[:7]),
-                     **({'kind':'material'} if r[7]=='material' else {})) for r in rows]
+                     **({'kind':r[7]} if r[7] in ('material','policy','opening') else {})) for r in rows]
 
     def list(self):
         records=[]

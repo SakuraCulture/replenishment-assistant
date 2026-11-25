@@ -93,8 +93,8 @@ def return_basis(db, head):
 def reservations(db, wh, included, exclude=()):
     values = {}
     sql = 'SELECT a.gid,r.sku,r.quantity FROM jst_active a JOIN jst_reservations r ON a.gid=r.gid WHERE a.warehouse=?'
-    if material_stock.has_material(db):
-        sql += " AND NOT EXISTS(SELECT 1 FROM normal_orders o WHERE o.oid=a.oid AND o.kind='material')"
+    if material_stock.shared_ledger(db):
+        sql += " AND NOT EXISTS(SELECT 1 FROM normal_orders o WHERE o.oid=a.oid AND o.kind IN ('material','policy','opening'))"
     for gid, sku, qty in db.execute(sql+' ORDER BY a.rowid,r.rowid', (wh,)):
         if gid in included or gid in exclude:
             continue
@@ -245,7 +245,7 @@ def validate_plan(db, p, catalog_revisions=None):
     if increases:=(p.get('manual_correction') or {}).get('material_increase'):
         from allocation_amendments import validate_material_claims
         validate_material_claims(db,h,p['old'],increases)
-    if material_stock.has_material(db):
+    if material_stock.shared_ledger(db):
         base = decode(db.execute('SELECT payload,digest FROM jst_baselines WHERE bid=?',(p['bid'],)).fetchone())
         seen = material_stock.cross_reservations(db,h['warehouse'],base,{r['sku'] for r in p['rows']},
             material=material_stock.is_material(db,h['oid']),batch_id=p.get('batch_id'),
@@ -461,9 +461,13 @@ def cancel_generated(path,gids,reason,progress=lambda _:None,cancel=None):
         for p in orders:
             checkpoint(cancel);h=p['head'];purchases.validate_head(db,h)
             if active(db,h)!=p['gid']:raise wr.Conflict('生成单已变化，请重新核对')
-            reason=saved_execution_reason(db,h)
-            if reason or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):
-                raise ValueError((reason or '已有付款或收货资料')+'，不可作为未下单生成单撤销')
+            guard=saved_execution_reason(db,h)
+            if guard or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):
+                raise ValueError((guard or '已有付款或收货资料')+'，不可作为未下单生成单撤销')
+            from special_plans import exists as has_special
+            if has_special(db,'special_packages') and db.execute('SELECT 1 FROM special_packages WHERE oid=?',(h['oid'],)).fetchone():
+                from special_settlement import release_unsubmitted
+                release_unsubmitted(db,h['oid'],'撤销生成单',reason)
         for p in orders:
             h=p['head'];db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(h['oid'],h['warehouse']))
             jst_batches.cancel_member(db,h,p['gid'])

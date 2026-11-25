@@ -334,6 +334,9 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
                 from order_amendments import validate
                 validate(db,p)
             old = current(db, p['head'], p['stage'],_verified=verified)
+            from special_settlement import group_for_oid
+            if p['stage']=='receipt' and group_for_oid(db,p['head']['oid']):
+                raise ValueError('开业组只登记一份原采购实收，请从新店开业工作台进入该张翱象采购')
             if p['stage'] in ('return','operations'):
                 from material_stock import has_material, is_material
                 if has_material(db) and is_material(db, p['head']['oid']):

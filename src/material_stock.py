@@ -27,7 +27,14 @@ def is_material(db, oid):
     return bool(db.execute("SELECT 1 FROM normal_orders WHERE oid=? AND kind='material'", (oid,)).fetchone())
 
 
+def shared_ledger(db):
+    return bool(db.execute("SELECT 1 FROM sqlite_master WHERE name IN ('material_batches','special_packages') LIMIT 1").fetchone())
+
+
 def _locally_unsubmitted(db, oid, warehouse, gid):
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='special_records'").fetchone() and db.execute(
+            "SELECT 1 FROM special_records WHERE object=? AND stage='原单' LIMIT 1",(oid,)).fetchone():
+        return False
     if stock.locked(db, {'oid': oid, 'warehouse': warehouse}):
         return False
     if automatic.exists(db):
@@ -44,20 +51,20 @@ def _locally_unsubmitted(db, oid, warehouse, gid):
 def cross_reservations(db, warehouse, baseline, skus, *, material=False, batch_id=None, exclude=()):
     """Return additional reservations and SKU-specific uncertainties. Caller owns the snapshot."""
     reserved, uncertain = {}, {}
-    if not skus or not stock.exists(db) or not (material or has_material(db)):
+    if not skus or not stock.exists(db) or not (material or shared_ledger(db)):
         return {'reserved': reserved, 'uncertain': uncertain}
     tables = {row[0] for row in db.execute('SELECT name FROM sqlite_master WHERE type=\'table\'')}
     has_batches = 'jst_generation_batches' in tables
     joins = ('LEFT JOIN jst_generation_batches gb ON gb.gid=a.gid' if has_batches else '')
     batch = 'gb.batch_id' if has_batches else 'NULL'
-    sql = f'''SELECT a.gid,a.oid,r.sku,r.quantity,b.payload,{batch},n.number,n.kind
+    sql = f'''SELECT a.gid,a.oid,r.sku,r.quantity,b.bid,{batch},n.number,n.kind
                FROM jst_active a JOIN jst_reservations r ON r.gid=a.gid
                JOIN jst_generations g ON g.gid=a.gid
                JOIN normal_orders n ON n.oid=a.oid
                LEFT JOIN jst_baselines b ON b.bid=json_extract(g.payload,'$.bid')
                {joins} WHERE a.warehouse=? AND r.sku IN (SELECT value FROM json_each(?))'''
     if not material:
-        sql += " AND n.kind='material'"
+        sql += " AND n.kind IN ('material','policy','opening')"
     included_gids = set(baseline.get('included', ()))
     excluded = included_gids | set(exclude)
     revision, sha = source(baseline['catalog'])
@@ -71,10 +78,20 @@ def cross_reservations(db, warehouse, baseline, skus, *, material=False, batch_i
         else:
             uncertain.setdefault(sku, []).append(reference)
 
-    for gid, oid, sku, qty, raw, other_batch, number, kind in db.execute(sql, (warehouse, wr.dumps(sorted(skus)))):
+    origins = {None: (None,None)}
+    releases = {}
+    if 'special_releases' in tables:
+        releases = {(gid,sku):Decimal(qty) for gid,sku,qty in db.execute(
+            'SELECT gid,sku,qty FROM special_releases WHERE warehouse=?', (warehouse,))}
+    for gid, oid, sku, qty, bid, other_batch, number, kind in db.execute(sql, (warehouse, wr.dumps(sorted(skus)))):
         if gid in excluded or batch_id is not None and other_batch == batch_id:
             continue
-        old_revision, old_sha = source(wr.loads(raw)['catalog']) if raw else (None, None)
+        if bid not in origins:
+            origins[bid] = db.execute("SELECT json_extract(payload,'$.catalog.revision'),json_extract(payload,'$.catalog.source_sha256') FROM jst_baselines WHERE bid=?", (bid,)).fetchone()
+        old_revision, old_sha = origins[bid]
+        qty = Decimal(qty) - releases.get((gid,sku),0)
+        if not qty:
+            continue
         local = False
         if (old_revision, old_sha) != (revision, sha):
             if gid not in local_only:
@@ -85,7 +102,7 @@ def cross_reservations(db, warehouse, baseline, skus, *, material=False, batch_i
         sql = '''SELECT gid,sku,quantity,catalog_revision,source_sha,batch_id FROM material_retired_stock
                  WHERE warehouse=? AND sku IN (SELECT value FROM json_each(?))'''
         if not material:
-            sql += " AND kind='material'"
+            sql += " AND kind IN ('material','policy','opening')"
         for gid, sku, qty, old_revision, old_sha, parent in db.execute(sql, (warehouse, wr.dumps(sorted(skus)))):
             if batch_id is None or batch_id != parent:
                 add(gid, sku, qty, old_revision, old_sha, '原执行 '+gid[:10])
