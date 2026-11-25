@@ -325,28 +325,37 @@ class Orders(QDialog):
         if self.busy or len(rows) != 1 or rows[0].get('historical'):
             return
         row = rows[0]
+        order_label = f"{row['number']} · {row['warehouse']}"
         from catalog_session_ui import manager
         from jst_cancellation import begin_redo
         self.busy = True
         self.controls()
+        self.note.setText(order_label+' · 正在核实聚水潭原单是否取消…')
         try:
             owner = manager(self.host).session
-            result = notify(self,lambda:run(self,service.run_browser,
-                (self.path,[row['online']],owner,'recover'),'核实聚水潭原单是否取消'))
+            result = run(self,service.run_browser,
+                         (self.path,[row['online']],owner,'recover'),'核实聚水潭原单是否取消')
             if not result:
-                return
+                raise service.Check('未取得原单回查结果，请继续核对原任务。')
             checked = result[0]
-            self.note.setText(checked['reason'])
             if not checked['ok'] or checked['stage'] != 'CANCELLED':
-                return
+                raise service.Check('尚未核实原单已取消。\n'+checked['reason'])
+            self.note.setText(checked['reason'])
             if not confirm(self,'确认沿原仓单重做',
-                           f"{row['number']} · {row['warehouse']} · 聚水潭 {checked['internal']} 已核实取消。\n"
+                           f"{order_label} · 聚水潭 {checked['internal']} 已核实取消。\n"
                            '确认后按原记录释放占用，保留原单和付款，并返回本仓单。维持需求可直接一键分配下单，改量请先更正回传。'):
                 return
-            redo = notify(self,lambda:run(self,begin_redo,(self.path,row['online']),'登记后继执行并核销原占用'))
-            if redo:
-                self.redo_target = redo['head']
-                self.accept()
+            redo = run(self,begin_redo,(self.path,row['online']),'登记后继执行并核销原占用')
+            if not redo:
+                raise service.Check('未收到重做结果，请刷新任务并核对原记录。')
+            self.redo_target = redo['head']
+            self.accept()
+        except Cancelled:
+            self.note.setText(order_label+' · 本次操作已取消。')
+        except (ValueError, RuntimeError, OSError) as exc:
+            detail = f"{order_label}\n聚水潭线上单号 {row['online']}\n{exc}"
+            self.note.setText(detail)
+            QMessageBox.warning(self,'取消重做未完成',detail)
         finally:
             self.busy = False
             if self.redo_target is None:

@@ -19,7 +19,7 @@ import storage_chunks
 import jst_allocation as allocation
 from runtime_support import checkpoint, CommitProgress, Cancelled
 from export_progress import RowProgress
-from jst_order_guards import allocation_gate, guard_payment, guard_resign, guard_return, saved_execution_reason
+from jst_order_guards import allocation_gate, guard_payment, guard_resign, saved_execution_reason
 from jst_order_store import active, baseline, decode, digest, event, exists, get, locked, schema, state
 
 

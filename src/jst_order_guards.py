@@ -52,14 +52,14 @@ def guard_resign(db, oid):
         raise Conflict('本单已有聚水潭生成记录；请先在订单跟踪核对下游，不能覆盖签发绕过库存占用或锁单')
 
 
-def guard_return(db, head):
+def guard_operations(db, head):
     pending=automatic.state(db,head)
     if pending and pending[0] == 'CANCELLED':
-        raise Conflict('原单已取消，请在聚水潭自动下单任务使用「核对取消并重做」，再沿原仓单更正回传')
+        raise Conflict('原单已取消，请在聚水潭自动下单任务使用「核对取消并重做」，再更正运营签发')
     if pending and pending[0] in automatic.RELEASED:
         raise Conflict('该仓单已有聚水潭下单结果或提交待核，请先核对原自动下单任务')
     if locked(db, head):
-        raise Conflict('该订单由旧版下单标记锁定。请在“聚水潭导入单”勾选本单，从“其他订单操作”核对原单后再更正回传。')
+        raise Conflict('该订单由旧版下单标记锁定。请在“聚水潭导入单”勾选本单，从“其他订单操作”核对原单后再更正运营签发。')
 
 
 def guard_payment(db, p):

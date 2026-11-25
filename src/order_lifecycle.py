@@ -18,7 +18,7 @@ from export_progress import RowProgress
 from lifecycle_io import STAGES, TITLES, QUANTITIES, DOCNUM, DOCDATE, fields
 from lifecycle_io import ALL_STAGES
 import lifecycle_routes as flow
-from jst_order_guards import guard_payment, guard_return
+from jst_order_guards import guard_operations, guard_payment
 from jst_task_store import enqueue
 from lifecycle_stages import FINISHED, PENDING, STATUSES, route as document_route
 from lifecycle_stages import presence_state as state, progress_state
@@ -319,7 +319,8 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
         for p in plan['plans']:
             verified=p.get('_read_proofs')
             checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'],_verified=verified)
-            if p['stage'] in ('return','operations') and p['changed']:guard_return(db,p['head'])
+            # Saving store demand leaves the original execution and reservation in place.
+            if p['stage']=='operations' and p['changed']:guard_operations(db,p['head'])
             if p['stage']=='payment':guard_payment(db,p)
             if p['stage']=='receipt' and p['payload'].get('aoxiang_payment_review'):
                 from aoxiang_receipt_scope import validate_review

@@ -4,6 +4,7 @@ import sqlite3
 import threading
 import unittest
 from contextlib import closing
+from decimal import Decimal
 
 import test_jst as fixture
 import jst_orders as orders
@@ -123,10 +124,19 @@ class PaidReturnReallocation(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'已有收货记录'):self.preview()
         self.assertEqual(self.doc(self.head,'receipt'),before);self.assertEqual(self.active(),self.old_gid);self.assert_originals()
 
-    def test_lock_still_blocks_return_change_and_correction(self):
+    def test_lock_allows_local_return_update_and_blocks_reallocation(self):
         self.paid();orders.lock(self.path,[self.old_gid])
-        with self.assertRaisesRegex(Exception,'锁定'):self.change_return()
+        before=self.doc(self.head,'return')
+        with closing(sqlite3.connect(self.path)) as db:
+            reserved=batches.reservations(db,self.bid,self.head['warehouse'])
+        self.change_return()
+        after=self.doc(self.head,'return')
+        self.assertEqual(after['version'],before['version']+1)
+        self.assertEqual(Decimal(after['payload']['rows'][0]['base_quantity']),30)
         with self.assertRaisesRegex(ValueError,'已锁单'):self.preview()
+        with closing(sqlite3.connect(self.path)) as db:
+            self.assertEqual(orders.locked(db,self.head),self.old_gid)
+            self.assertEqual(batches.reservations(db,self.bid,self.head['warehouse']),reserved)
         self.assert_originals()
 
     def test_pending_and_legacy_payments_do_not_gain_correction_permission(self):
