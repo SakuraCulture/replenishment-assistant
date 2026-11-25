@@ -11,6 +11,7 @@ const fields={ping:[],'session.release':[],'session.status':[],'session.health':
   'collection.preview':['command_id','operation'],'collection.apply':['command_id','operation','token'],'collection.continue':['command_id'],'orders.retire':['operation_id','oids','scopes'],
   'collection.reexport.preview':['operation_id','warehouse_codes','purpose'],'collection.reexport.apply':['operation_id','warehouse_codes','purpose','token'],
   'collection.consumer':['command_id','fingerprint','purpose','owner'],
+  'collection.retry_selected':['command_id','indices','sequence','retry_id'],
   events:['command_id','after','limit'],pause:['command_id'],resume:['command_id'],retry:['command_id','indices','sequence'],shutdown:[],
   discover:[],'setup.check_login':[],'setup.verify_saved':['codes'],'setup.start':['candidate','output_root','targets'],'setup.status':['setup_id'],
   'setup.cancel':['setup_id'],'setup.commit':['setup_id'],
@@ -31,7 +32,8 @@ export function validateRequest(value){
     !Array.isArray(value.warehouse_codes)||!value.warehouse_codes.length||value.warehouse_codes.length>256||new Set(value.warehouse_codes).size!==value.warehouse_codes.length||
     value.warehouse_codes.some(c=>typeof c!=='string'||!c||c.length>128)||(value.action.endsWith('.apply')&&!/^[a-f0-9]{64}$/.test(value.token||''))))fail('REQUEST_SCHEMA','重导操作编号、用途、门店范围或确认凭据无效');
   if(['collection.preview','collection.apply'].includes(value.action)&&(!['end','delete'].includes(value.operation)||(value.action==='collection.apply'&&!/^[a-f0-9]{64}$/.test(value.token||''))))fail('REQUEST_SCHEMA','采集维护动作或确认凭据无效');
-  if(value.action==='retry'&&(!Number.isInteger(value.sequence)||value.sequence<1||!Array.isArray(value.indices)||!value.indices.length||value.indices.length>256||value.indices.some(i=>!Number.isInteger(i)||i<0)||new Set(value.indices).size!==value.indices.length))fail('REQUEST_SCHEMA','重跑序号与范围无效');
+  if(['retry','collection.retry_selected'].includes(value.action)&&(!Number.isInteger(value.sequence)||value.sequence<1||!Array.isArray(value.indices)||!value.indices.length||value.indices.length>256||value.indices.some(i=>!Number.isInteger(i)||i<0)||new Set(value.indices).size!==value.indices.length))fail('REQUEST_SCHEMA','重跑序号与范围无效');
+  if(value.action==='collection.retry_selected'&&!/^[a-f0-9]{32}$/.test(value.retry_id||''))fail('REQUEST_SCHEMA','缺少原重试编号');
   if(value.action==='orders.retire'&&(!/^[a-f0-9]{32}$/.test(value.operation_id)||!Array.isArray(value.oids)||!value.oids.length||value.oids.length>256||new Set(value.oids).size!==value.oids.length||value.oids.some(o=>typeof o!=='string'||!o||o.length>100)))fail('REQUEST_SCHEMA','删除操作号或原订单身份无效');
   if(value.action==='orders.retire'&&value.scopes!==undefined&&(!Array.isArray(value.scopes)||!value.scopes.length||value.scopes.length>512||value.scopes.some(s=>!s||Object.keys(s).some(k=>!['oid','warehouse'].includes(k))||!value.oids.includes(s.oid)||!['河北仓','山东仓'].includes(s.warehouse))||new Set(value.scopes.map(s=>JSON.stringify([s.oid,s.warehouse]))).size!==value.scopes.length))fail('REQUEST_SCHEMA','分仓退役范围无效');
   if(value.action==='setup.verify_saved'&&(!Array.isArray(value.codes)||!value.codes.length||value.codes.length>256||value.codes.some(c=>typeof c!=='string'||!c||c.length>128)||new Set(value.codes).size!==value.codes.length))fail('REQUEST_SCHEMA','核验门店范围无效');

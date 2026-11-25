@@ -6,6 +6,11 @@ from stockout_common import WAREHOUSES,encoded,now,today,digest,file_hash,date_o
 from runtime_support import checkpoint
 
 VERSION='warehouse-stockout-2'
+_NO_EXPECTATION=object()
+
+
+class PublicationChanged(ValueError):
+    pass
 FIELDS=('商品编码','商品名称','可用数','商品状态','虚拟分类','商品标签','分类','一级分类','二级分类','三级分类','供应商编码','供应商名称')
 DIMENSIONS={'warehouse':('warehouse','供货仓'),'supplier_code':('supplier_code','供应商编码'),'supplier':('supplier','供应商名称'),
     'category':('category','商品分类'),'category1':('category1','一级分类'),'category2':('category2','二级分类'),
@@ -91,8 +96,9 @@ class Repository:
         with self.connect(True) as db:db.execute('INSERT OR IGNORE INTO originals VALUES(?,?,?)',(sha,str(target),target.stat().st_size))
         return target
 
-    def publish(self,rid,wh,*,once=False):
+    def publish(self,rid,wh,*,once=False,expected=_NO_EXPECTATION):
         with self.connect(True) as db:
+            db.execute('BEGIN IMMEDIATE')
             row=db.execute('SELECT s.* FROM snapshots s JOIN run_snapshots r ON r.snapshot=s.id WHERE r.run=? AND r.warehouse=?',(rid,wh)).fetchone()
             if row is None:raise ValueError('该仓没有完整的分析快照')
             if once:
@@ -102,6 +108,10 @@ class Repository:
                 if wh in published:
                     if published[wh]!=row['id']:raise ValueError('原仓发布身份已变化')
                     return  # Never rewind a later independent publication.
+                if expected is not _NO_EXPECTATION:
+                    current=db.execute('SELECT snapshot FROM current WHERE day=? AND warehouse=?',(row['day'],wh)).fetchone()
+                    if (current[0] if current else None)!=expected:
+                        raise PublicationChanged(wh+'已有更新的已采用观测，原分析快照已保留')
                 published[wh]=row['id']
                 db.execute('UPDATE runs SET external=? WHERE id=?',(encoded(ext),rid))
             db.execute('INSERT INTO current VALUES(?,?,?,?) ON CONFLICT(day,warehouse) DO UPDATE SET snapshot=excluded.snapshot,run=excluded.run',(row['day'],wh,row['id'],rid))
@@ -210,7 +220,12 @@ def query(repo,options):
     clause,values=where(options)
     with repo.connect() as db:
         totals=metric(db.execute('SELECT '+SUMS+LINK+'WHERE '+clause,values).fetchone())
-        totals['coverage']=[dict(r) for r in db.execute('SELECT s.day,s.warehouse,s.observed,s.rows FROM current c JOIN snapshots s ON c.snapshot=s.id WHERE s.day BETWEEN ? AND ? ORDER BY s.day,s.warehouse',(options['start'],options['end']))]
+        coverage='s.day BETWEEN ? AND ?';scope=[options['start'],options['end']]
+        for key in ('warehouse','day'):
+            selected=options.get('filters',{}).get(key)
+            if selected:
+                coverage+=f" AND s.{key} IN ({','.join('?' for _ in selected)})";scope.extend(selected)
+        totals['coverage']=[dict(r) for r in db.execute('SELECT s.day,s.warehouse,s.observed,s.rows FROM current c JOIN snapshots s ON c.snapshot=s.id WHERE '+coverage+' ORDER BY s.day,s.warehouse',scope)]
     return totals
 
 

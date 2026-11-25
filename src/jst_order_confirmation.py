@@ -7,7 +7,9 @@ from lifecycle_rules import DOCUMENT_SCHEMA, JST_ORDER
 
 AUDITED = '已客审待财审'
 AWAITING = '已付款待审核'
-SHIPPING = ('发货中(打单拣货)', '已发货')
+DELIVERING = '发货中(打单拣货)'
+SHIPPED = '已发货'
+SHIPPING = (DELIVERING, SHIPPED)
 PAYMENT_STATES = frozenset((AWAITING, AUDITED, *SHIPPING))
 REVERSED = frozenset(('待付款', '已取消', '被合并', '被拆分', '异常', '等供销商|外仓发货'))
 
@@ -23,6 +25,16 @@ def buyer_issue(receipt):
     if status not in (None, 'verified') or receipt.get('contact_ok') is not True:
         return '聚水潭原单买家身份待核'
     return ''
+
+
+def bound_cancelled_order(order, receipt):
+    """An earlier verified internal number can anchor the native cancellation status."""
+    binding = (order.get('proof') or {}).get('binding')
+    internal = order.get('internal')
+    return bool(binding and internal and receipt.get('found') is True
+                and receipt.get('native_status') == '已取消' and receipt.get('buyer_check') == 'unavailable'
+                and receipt.get('binding') == binding and receipt.get('online') == order['online']
+                and receipt.get('internal') == internal and not receipt.get('detail_error'))
 
 
 def record(db, task, status, *, rows=None):

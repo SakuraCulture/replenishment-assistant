@@ -17,7 +17,8 @@ def verify(app,win,out,report,drive,require):
     vals=fixture();admission.save(win.work_repository.path,vals,{s:{} for s in vals})
     d=Overview(win,win,'refusals');started=time.perf_counter();d.reload();d.show();app.processEvents();report['bulk_ui_query_seconds']=time.perf_counter()-started
     try:
-        d.search.setText('BULK');d.filter();require(len(d.filtered)==7000,'7000条店-SKU按门店商品展示');started=time.perf_counter();d.select_all(True);report['bulk_select_seconds']=time.perf_counter()-started
+        store,product,reason=d.search_fields
+        store.setText('BULK');d.filter();require(len(d.filtered)==7000,'7000条店-SKU按门店商品展示');started=time.perf_counter();d.select_all(True);report['bulk_select_seconds']=time.perf_counter()-started
         require(len(d.model.keys())==7000,'一键勾选当前筛选7000条')
         index=d.model.index(0,0);rect=d.table.visualRect(index);QTest.mouseClick(d.table.viewport(),Qt.MouseButton.LeftButton,Qt.KeyboardModifier.NoModifier,QPoint(rect.left()+10,rect.center().y()))
         require(len(d.model.keys())==6999 and ('BULK000','000000') not in d.model.checked,'实际点击复选框仅取消该店该SKU');d.select_all(True);d.grab().save(str(out/'07-批量勾选7000条.png'))
@@ -27,8 +28,8 @@ def verify(app,win,out,report,drive,require):
                     require(dialog.findChild(QTableView).model().rowCount()==7000,'批量核对完整显示7000条，不截断');dialog.grab().save(str(out/'08-批量解除核对.png'));dialog.reject() if cancel else dialog.accept()
             return handler
         drive(d.release_checked,preview(True));require(admission.snapshot(win.work_repository.path,'BULK000')['record']==vals['BULK000'],'取消批量核对未解除')
-        d.search.setText('BULK001');d.filter();require(not d.model.keys(),'改变筛选清空旧勾选');d.select_all(True);require(len(d.model.keys())==100,'筛选单店只勾选该店100条')
-        d.search.setText('BULK');d.filter();d.select_all(True);started=time.perf_counter();drive(d.release_checked,preview(False));report['bulk_ui_confirm_save_refresh_seconds']=time.perf_counter()-started
+        store.setText('BULK001');d.filter();require(not d.model.keys(),'改变筛选清空旧勾选');d.select_all(True);require(len(d.model.keys())==100,'筛选单店只勾选该店100条')
+        store.setText('BULK');d.filter();d.select_all(True);started=time.perf_counter();drive(d.release_checked,preview(False));report['bulk_ui_confirm_save_refresh_seconds']=time.perf_counter()-started
         require(not d.filtered,'批量解除后有效拒收筛选为空');d.state.setCurrentText('已解除');require(len(d.filtered)==7000,'7000条全部可在已解除中核对')
         for s,before in vals.items():
             expected=copy.deepcopy(before)
@@ -37,6 +38,53 @@ def verify(app,win,out,report,drive,require):
         require(True,'70店全部核对：仅active改变，资质、原因和来源保留')
         require(admission.snapshot(win.work_repository.path,'NEW')['record']['refusals']['000099']['active'],'未勾选的其他店拒收未解除')
         d.grab().save(str(out/'09-批量解除完成.png'))
+
+        store.setText('合成门店00');product.setText('合成商品99');reason.setText('合成拒收');d.filter()
+        require(len(d.filtered)==10,'门店、商品、拒收原因、状态交叉筛选')
+        def apply_codes(dialog):
+            if dialog.objectName()=='bulkRefusalFilters':
+                dialog.stores.setPlainText('BULK000\nBULK001\nBULK053')
+                dialog.products.setPlainText('000099，000098')
+                dialog.apply()
+        drive(d.batch_filter,apply_codes)
+        require([(r[0],r[2]) for r in d.filtered]==[('BULK000','000099'),('BULK001','000099')],
+                '批量粘贴编码保留前导零，且叠加关键词筛选')
+        d.select_all(True)
+        d.model.setData(d.model.index(1,0),Qt.CheckState.Unchecked,Qt.ItemDataRole.CheckStateRole)
+        d.grab().save(str(out/'10-组合筛选与勾选.png'))
+        def apply_edit(dialog):
+            if dialog.objectName()=='bulkRefusalEdit':
+                dialog.reason.setText('验收修改原因')
+                dialog.expiry.setCurrentIndex(dialog.expiry.findData('set'))
+                dialog.date.setDate(dialog.date.date().addDays(3))
+                dialog.next.click()
+            elif dialog.objectName()=='interactionReview':
+                model=dialog.findChild(QTableView).model()
+                require(model.rowCount()==1 and model.rows[0][0]=='BULK000' and model.rows[0][5]=='验收修改原因',
+                        '修改预览包含勾选行及新旧原因、到期日')
+                dialog.grab().save(str(out/'11-批量修改预览.png'));dialog.accept()
+        drive(d.edit_checked_btn.click,apply_edit)
+        edited=admission.snapshot(win.work_repository.path,'BULK000')['record']['refusals']['000099']
+        require(edited['reason']=='验收修改原因' and edited['expires'] and not edited['active'],
+                '已解除记录更新原因和日期后仍处于已解除')
+        require([(r[0],r[2]) for r in d.filtered]==[('BULK001','000099')], '修改后按当前条件刷新')
+        d.select_all(True)
+        def preview_delete(cancel):
+            def handler(dialog):
+                if dialog.objectName()=='interactionReview':
+                    model=dialog.findChild(QTableView).model()
+                    require(model.rowCount()==1 and model.rows[0][0]=='BULK001', '删除预览只含勾选的对应门店商品')
+                    if cancel:dialog.reject()
+                    else:
+                        dialog.grab().save(str(out/'12-批量删除预览.png'));dialog.accept()
+            return handler
+        drive(d.delete_btn.click,preview_delete(True))
+        require('000099' in admission.snapshot(win.work_repository.path,'BULK001')['record']['refusals'], '取消删除后原记录可查')
+        drive(d.delete_btn.click,preview_delete(False))
+        require(not d.filtered and '000099' not in admission.snapshot(win.work_repository.path,'BULK001')['record']['refusals'],
+                '确认后删除所选门店的记录')
+        require(admission.snapshot(win.work_repository.path,'BULK000')['record']['refusals']['000099']==edited,
+                '另一家同 SKU 的记录保留')
     finally:d.close()
     raw=[]
     for i in range(3):

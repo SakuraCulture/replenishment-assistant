@@ -46,12 +46,13 @@ class Adoptions:
             return dict(r) if r else None
     def mark(self,ident,state):
         with closing(self.connect()) as db,db:db.execute('UPDATE catalog_sync_applies SET state=?,updated=? WHERE id=?',(state,wr.now(),ident))
-    def recover(self,progress=lambda _:None,cancel=None):
+    def recover(self,progress=lambda _:None,cancel=None,*,warehouses=None):
         with closing(self.connect()) as db:
             if not db.execute("SELECT 1 FROM sqlite_master WHERE name='catalog_sync_applies'").fetchone():return []
             db.row_factory=sqlite3.Row;rows=[dict(r) for r in db.execute("SELECT * FROM catalog_sync_applies WHERE state='APPLYING' AND new_digest IS NOT NULL")]
         results=[]
         for row in rows:
+            if warehouses and row['warehouse'] not in warehouses:continue
             with acquire(self.folder,row['warehouse'],cancel):
                 current=self.catalogs.current_digest(row['warehouse'])
                 state='APPLIED' if current==row['new_digest'] else 'READY' if current==row['old_digest'] else 'CONFLICT'
@@ -130,20 +131,22 @@ class Adoptions:
 
 def run_sync(client,folder,dbpath,warehouses,purpose='default_catalog',resume=None,progress=lambda _:None,cancel=None):
     """One worker coordinates Node, pre-query observation and local adoption."""
-    adoptions=Adoptions(folder,dbpath,client.folder,state_reader=lambda bid:client.request('sync.status',batch_id=bid));adoptions.recover(progress,cancel)
+    scope=getattr(client,'scope',None)
+    adoptions=Adoptions(folder,dbpath,client.folder,state_reader=lambda bid:client.request('sync.status',batch_id=bid));adoptions.recover(progress,cancel,warehouses=scope)
     if not client.running:client.start()
     if resume:
         result=client.request('sync.resume',batch_id=resume['batch_id'],item_ids=resume['item_ids']);bid=result['batch_id']
     else:
         items=[{'warehouse':wh,'expected_catalog_digest':adoptions.catalogs.current_digest(wh)} for wh in warehouses]
-        result=client.request('sync.start',operation_id=uuid.uuid4().hex,purpose=purpose,items=items);bid=result['batch_id']
+        observation={'independent_observation':True} if purpose=='default_catalog' else {}
+        result=client.request('sync.start',operation_id=uuid.uuid4().hex,purpose=purpose,items=items,**observation);bid=result['batch_id']
     sent_stop=False;adoption_errors={};observations=set();last=None
     while True:
         if cancel is not None and cancel.is_set() and not sent_stop:
             client.request('sync.stop',batch_id=bid);sent_stop=True
         state=client.request('sync.status',batch_id=bid);batch=state['batches'][0]
         for item in batch['items']:
-            if item.get('retirement'):continue
+            if item.get('retirement') or scope and item['account']['warehouse'] not in scope:continue
             if item['stage']=='WAIT_HOST' and not item.get('observation') and not sent_stop:
                 token=item['observationRequest']
                 if token not in observations:

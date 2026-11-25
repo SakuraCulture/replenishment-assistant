@@ -281,6 +281,13 @@ def build_facts(order, head, view, evidence, cancel=None, *, spec=None, mode='fu
         if ordered:
             row['payment_valid']=bool(view['health']['payment'] and (
                 paid_rows.get(sku,{}).get('base_quantity') is not None or payment['payload'].get('schema')==lifecycle.SCHEMA))
+        if mode=='business_daily':
+            row['order_values']={}
+            for stage in ('return','payment'):
+                if not row['valid'][stage]:
+                    continue
+                value=num(maps[stage].get(sku,{}).get('amount'))
+                row['order_values'][stage]=Decimal(0) if value is None and quantities[stage]==0 else value
         if mode=='analysis_detail':
             set_operations(row,view,maps.get('operations',{}).get(sku,{}))
             if not retain_detail_row(row):continue
@@ -370,6 +377,10 @@ def data_stamp(db,spec):
         if table.startswith('warehouse_execution_') and table not in tables:continue
         relevant=" AND action IN ('生成聚水潭订单','库存不足未生成','撤销未下单生成单')" if table=='jst_events' else ''
         values.append(db.execute(f'SELECT {columns} FROM {table} WHERE oid IN ({selection})'+relevant+f' ORDER BY {order}',args).fetchall() if table in tables else [])
+    if not spec.get('as_of'):
+        from jst_shipping import read as read_shipments
+        shipments=read_shipments(db,(record[0] for record in values[0]))
+        if shipments:values.append(sorted((*key, shipment['ready']) for key,shipment in shipments.items()))
     return digest(values)
 
 
@@ -434,8 +445,10 @@ def _lifecycle_documents(db,head,at,cancel):
 
 def _query_orders(path,db,spec,progress,cancel,seen_stores,seen_orders,*,mode,verifying):
     from history_read import repository
+    from jst_shipping import read as read_shipments
     records=_order_records(db,spec);visibility=ao.states(db);numbers=set(spec['orders'])
     at=spec.get('as_of');stage=spec.get('lifecycle_from','')
+    shipments=read_shipments(db,(r[2] for r,_ in records),cancel) if not at else {}
     reader=repository(path)
     for i,(record,signed_head) in enumerate(records,1):
         checkpoint(cancel)
@@ -454,7 +467,7 @@ def _query_orders(path,db,spec,progress,cancel,seen_stores,seen_orders,*,mode,ve
             basis=_lifecycle_documents(db,signed_head,at,cancel)
             route,docs,old=basis
             if not old:
-                view=lifecycle.snapshot_state(signed_head,route,docs,None)
+                view=lifecycle.snapshot_state(signed_head,route,docs,None,shipment=shipments.get((oid,signed_head['revision'],wh)))
                 if not lifecycle_scope.includes(view,stage):continue
         progress(RowProgress('读取签发与履约快照',i,len(records)))
         if signed_head:
@@ -477,7 +490,7 @@ def _query_orders(path,db,spec,progress,cancel,seen_stores,seen_orders,*,mode,ve
                 if old:
                     products={r['E']:{'quantity':sem.order_quantity(r)} for group in sem.signed_groups(result,payload.get('new_focus')).values() for r in group if ao.warehouse(r)==wh}
                     legacy=lifecycle.legacy_return_record(old,products)
-                current=lifecycle.snapshot_state(h,route,docs,legacy)
+                current=lifecycle.snapshot_state(h,route,docs,legacy,shipment=shipments.get((oid,h['revision'],wh)))
             else:current={**view,'head':h}
             if lifecycle_scope.includes(current,stage):yield order,h,current
         order=payload=result=current=basis=view=route=docs=old=None

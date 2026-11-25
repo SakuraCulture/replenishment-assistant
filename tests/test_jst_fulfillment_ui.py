@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, Mock
 
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 from PySide6.QtGui import QFont, QFontDatabase
 import jst_fulfillment as service
 import jst_fulfillment_jobs as jobs
@@ -48,6 +48,73 @@ class FulfillmentUI(unittest.TestCase):
             self.assertTrue(dialog.allocation.isEnabled())
             self.assertFalse(dialog.auto_allocation.isChecked())
         finally:dialog.deleteLater()
+
+    def test_cancel_redo_shows_the_reason_when_cancellation_is_unverified(self):
+        dialog=Orders(self.host,self.host,self.fixture.keys)
+        self.addCleanup(dialog.deleteLater)
+        examples=(
+            ([{'ok':False,'stage':'AUDITED','reason':'原单身份待核'}], '原单身份待核'),
+            ([{'ok':True,'stage':'AUDITED','reason':'聚水潭当前为“已客审待财审”'}], '已客审待财审'),
+            ([], '未取得原单回查结果'),
+        )
+        for result,reason in examples:
+            with self.subTest(reason=reason), patch('catalog_session_ui.manager'), \
+                    patch('jst_auto_order_ui.run',return_value=result) as run, \
+                    patch('jst_auto_order_ui.confirm') as confirm, patch.object(QMessageBox,'warning') as warning:
+                dialog.redo_btn.click()
+                run.assert_called_once()
+                confirm.assert_not_called()
+                warning.assert_called_once()
+                parent,title,detail=warning.call_args.args
+                self.assertIs(parent,dialog)
+                self.assertEqual(title,'取消重做未完成')
+                self.assertIn(reason,detail)
+                self.assertIn(self.fixture.keys[0],detail)
+                self.assertEqual(dialog.note.text(),detail)
+                self.assertTrue(dialog.redo_btn.isEnabled())
+                self.assertIsNone(dialog.redo_target)
+
+    def test_cancel_redo_leaves_visible_status_when_the_lookup_is_cancelled(self):
+        from runtime_support import Cancelled
+        dialog=Orders(self.host,self.host,self.fixture.keys)
+        self.addCleanup(dialog.deleteLater)
+        with patch('catalog_session_ui.manager'), patch('jst_auto_order_ui.run',side_effect=Cancelled), \
+                patch('jst_auto_order_ui.confirm') as confirm:
+            dialog.redo_btn.click()
+            confirm.assert_not_called()
+            self.assertIn('本次操作已取消',dialog.note.text())
+            self.assertTrue(dialog.redo_btn.isEnabled())
+            self.assertIsNone(dialog.redo_target)
+
+    def test_receipt_page_explains_formal_payment_and_the_linked_original(self):
+        import daily_batch
+        import order_lifecycle as lifecycle
+        from lifecycle_home_ui import LifecycleWidget
+
+        cache = self.fixture.root/'receipt-page.sqlite3'
+        request = {'stage_view':'receipt','stage_filter':'待处理','platform_tracking':True}
+        self.assertEqual(daily_batch.read(self.fixture.path,cache,request)['count'],0)
+        plan, _ = service.prepare_review(self.fixture.path,self.fixture.keys)
+        lifecycle.commit(self.fixture.path,plan)
+        widget = LifecycleWidget(self.host,'receipt')
+        self.addCleanup(widget.deleteLater)
+        self.addCleanup(widget.reader.shutdown)
+        widget.ready(daily_batch.read(self.fixture.path,cache,request))
+        self.assertEqual(widget.table.rowCount(),0)
+        import jst_auto_order as automatic
+        online, = self.fixture.keys
+        self.fixture.fixture.portal.orders[online]['native_status'] = '发货中(打单拣货)'
+        [verified] = automatic.process(self.fixture.path,[online],self.fixture.fixture.portal,'recover')
+        self.assertTrue(verified['ok'], verified)
+        widget.ready(daily_batch.read(self.fixture.path,cache,request))
+        self.assertEqual(widget.table.rowCount(),1)
+        self.assertEqual(widget.table.item(0,3).text(),self.fixture.head['day'])
+        self.assertEqual(widget.table.item(0,7).text(),'待收货')
+        notice = widget.table.item(0,widget.table.columnCount()-1)
+        self.assertIn('已确认付款 V001',notice.text())
+        self.assertIn('聚水潭原单 '+self.fixture.order['internal'],notice.text())
+        self.assertNotIn('历史下单标记',notice.text())
+        self.assertEqual(notice.toolTip(),notice.text())
 
     def test_payment_review_cannot_save_until_human_confirms(self):
         plan,overview=service.prepare_review(self.fixture.path,self.fixture.keys)

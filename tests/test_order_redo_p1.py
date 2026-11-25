@@ -26,6 +26,7 @@ import jst_auto_order_store as orders
 import jst_batches
 import jst_fulfillment as fulfillment
 import jst_order_store as generations
+import lifecycle_batch
 import lifecycle_io as io
 import normal_delivery
 import normal_orders
@@ -166,7 +167,7 @@ class Dual:
         warehouse_catalog.Repository(self.path.parent).save(value)
         return value
 
-    def manual(self, wh, stage, quantity, amount=None, *, include_zero=True):
+    def manual_file(self, wh, stage, quantity, amount=None, *, include_zero=True):
         head = self.heads[wh]
         self.sequence += 1
         path = self.root/f'{stage}-{self.sequence}.xlsx'
@@ -182,6 +183,11 @@ class Dual:
             sheet.append([record.get(k) for k in fields])
         book.save(path)
         book.close()
+        return path
+
+    def manual(self, wh, stage, quantity, amount=None, *, include_zero=True):
+        head = self.heads[wh]
+        path = self.manual_file(wh, stage, quantity, amount, include_zero=include_zero)
         file, = io.inspect([path])
         spec = file['sheets'][0]
         scan = io.scan(stage,[{**file,**spec,'mapping':{k:i for i,k in enumerate(spec['headers'])}}])
@@ -329,6 +335,75 @@ class OrderRedoTests(unittest.TestCase):
         from jst_cancellation import review_context
         with closing(wr.read_connection(case.path)) as db:
             return review_context(db,case.heads[wh])['stamp']
+
+    def test_batch_return_replacement_preserves_platform_execution(self):
+        from jst_cancellation import begin_redo
+        from jst_order_guards import allocation_gate
+
+        for linked, pending in (WAREHOUSES, WAREHOUSES[::-1]):
+            with self.subTest(linked=linked, pending=pending):
+                case = self.dual()
+                gids = case.begin()
+                heads = [case.heads[wh] for wh in (linked, pending)]
+                keys = [case.order(linked, gids[linked]), case.order(pending, gids[pending], disconnect=True)]
+                case.pay(keys[0])
+                package = case.make_package(linked)
+                payments = lifecycle.history(case.path, heads[0], 'payment')
+                old_returns = [lifecycle.history(case.path, head, 'return')[0] for head in heads]
+                with closing(wr.read_connection(case.path)) as db:
+                    old_tasks = [orders.read(db, key) for key in keys]
+                self.assertEqual([row['stage'] for row in old_tasks], ['IMPORTED', 'IMPORT_UNKNOWN'])
+                case.jst.orders[keys[0]].update(native_status='已取消', status='review', buyer_check='unavailable')
+                calls = list(case.jst.calls)
+
+                files = [case.manual_file(linked, 'return', 12), case.manual_file(pending, 'return', 7)]
+                documents = lifecycle_batch.read(files)['documents']
+                receipt = lifecycle.commit(case.path, lifecycle_batch.prepare(case.path, documents, heads))
+                self.assertEqual([(r['number'], r['version'], r['changed']) for r in receipt],
+                                 [(head['number'], 2, True) for head in heads])
+                repeated = lifecycle.commit(case.path, lifecycle_batch.prepare(case.path, documents, heads))
+                self.assertEqual([(r['version'], r['changed']) for r in repeated], [(2, False), (2, False)])
+                for head, old, quantity in zip(heads, old_returns, ('12', '7')):
+                    new, retained = lifecycle.history(case.path, head, 'return')
+                    self.assertEqual(retained, old)
+                    self.assertEqual(new['payload']['rows'][0]['base_quantity'], quantity)
+                self.assertEqual(lifecycle.history(case.path, heads[0], 'payment'), payments)
+                self.assertEqual(case.jst.calls, calls)
+                with closing(wr.read_connection(case.path)) as db:
+                    self.assertEqual([orders.read(db, key) for key in keys], old_tasks)
+                    for wh, head in zip((linked, pending), heads):
+                        self.assertEqual(generations.active(db, head), gids[wh])
+                        self.assertEqual(case.remaining(gids[wh]), STOCK[wh] - QUANTITY[wh])
+                        reason, _ = allocation_gate(db, head, gids[wh], correction=True)
+                        self.assertIn('聚水潭', reason)
+                with self.assertRaisesRegex(ValueError, '回传对照依据变化'):
+                    validate_for_upload(case.path, package, case.config, SUPPLIERS)
+                with self.assertRaisesRegex(ValueError, '明确返回'):
+                    begin_redo(case.path, keys[0])
+
+                case.jst.orders[keys[0]]['buyer_check'] = 'verified'
+                self.assertEqual(case.recover(keys[0])['stage'], 'CANCELLED')
+                begin_redo(case.path, keys[0])
+                new_gid = case.allocate([linked])[linked]
+                self.assertEqual(case.generation(new_gid)['rows'][0]['quantity'], '12')
+                self.assertEqual(case.remaining(new_gid), STOCK[linked] - 12)
+                self.assertEqual(case.remaining(gids[pending]), STOCK[pending] - QUANTITY[pending])
+                self.assertEqual([action for action, _ in case.jst.calls].count('import'), 2)
+
+    def test_replacing_return_prevents_old_platform_candidate_becoming_current_payment(self):
+        case = self.dual()
+        warehouse = '河北仓'
+        gid = case.begin()[warehouse]
+        original = case.order(warehouse, gid)
+        payment, _ = fulfillment.prepare_review(case.path, [original])
+
+        result, = case.manual(warehouse, 'return', 12)
+        self.assertEqual(result['version'], 2)
+        with self.assertRaisesRegex(wr.Conflict, '回传或运营签发依据已更新'):
+            fulfillment.prepare_review(case.path, [original])
+        with self.assertRaisesRegex(wr.Conflict, '回传或运营签发依据已更新'):
+            lifecycle.commit(case.path, payment)
+        self.assertEqual(lifecycle.history(case.path, case.heads[warehouse], 'payment'), [])
 
     def test_unpaid_cancel_redo_full_two_warehouses_and_stock_refresh(self):
         from jst_cancellation import begin_redo

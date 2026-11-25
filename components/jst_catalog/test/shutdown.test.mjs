@@ -30,7 +30,7 @@ test('browser disconnect failure must still release the task-state guard and pre
 
 test('shutdown waits for the in-flight state commit before releasing ownership',async t=>{
   const {root,service}=await fixture(t,{close:async()=>{}});let finish;
-  const controller=new AbortController();service.active={controller,promise:new Promise(r=>{finish=r;})};
+  const controller=new AbortController();service.ordersActive={controller,promise:new Promise(r=>{finish=r;})};
   const closing=service.close();await new Promise(r=>setTimeout(r,20));assert(controller.signal.aborted);
   await assert.rejects(JobStore.open(root));
   await service.store.write(d=>{d.batches.original.nativeTaskRef='EXACT-LATE-RECEIPT';});finish();await closing;
@@ -63,7 +63,7 @@ test('parent loss notifies once; alive or unknown parent never requests shutdown
 
 test('parent loss during a commit only requests cooperative shutdown, preserves its late receipt',async t=>{
   const {root,service}=await fixture(t,{close:async()=>{}});let finish,closing,alive=true;
-  service.active={controller:new AbortController(),promise:new Promise(r=>{finish=r;})};
+  service.ordersActive={controller:new AbortController(),promise:new Promise(r=>{finish=r;})};
   const stop=watchParent(123,()=>{closing=service.close();},{interval:5,alive:()=>alive});
   try{
     alive=false;await new Promise(r=>setTimeout(r,20));assert(service.active.controller.signal.aborted);
@@ -79,7 +79,7 @@ test('safe drain keeps a real Node process alive even with only an unreferenced 
   const module=new URL('../src/service.mjs',import.meta.url).href;
   const script=`import {CatalogService} from ${JSON.stringify(module)};
 const service=await CatalogService.open({stateRoot:process.argv[1],driver:{close:async()=>{}}});
-service.active={controller:new AbortController(),promise:new Promise(resolve=>{setTimeout(async()=>{await service.store.write(d=>{d.batches.kept={id:'kept',nativeTaskRef:'PERSISTED-LATE'};});resolve();},50).unref();})};
+service.ordersActive={controller:new AbortController(),promise:new Promise(resolve=>{setTimeout(async()=>{await service.store.write(d=>{d.batches.kept={id:'kept',nativeTaskRef:'PERSISTED-LATE'};});resolve();},50).unref();})};
 await service.close();`;
   const child=spawn(process.execPath,['--input-type=module','-e',script,root],{stdio:'ignore',windowsHide:true});
   const [code]=await once(child,'exit');assert.equal(code,0);

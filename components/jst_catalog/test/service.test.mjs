@@ -27,7 +27,7 @@ async function fixture(t){
     close:async()=>{},
   };
   const service=await CatalogService.open({stateRoot:root,driver});
-  await service.store.write(d=>{d.accounts=Object.fromEntries(warehouses.map((w,i)=>[w,{id:i?'hb':'sd',warehouse:w,expectedCompany:'company'+i,expectedCoid:String(i+1),expectedUid:'99',enabled:true,mappingVerified:true,bindingVersion:1,binding:{profile:'test'+i}}]));});
+  await service.store.write(d=>{d.accounts=Object.fromEntries(warehouses.map((w,i)=>[w,{id:i?'hb':'sd',warehouse:w,expectedCompany:'company'+i,expectedCoid:String(i+1),expectedUid:'99',enabled:true,mappingVerified:true,bindingVersion:1,binding:{profile:'test'+i,userDataRoot:path.join(root,'profile'+i)}}]));});
   t.after(async()=>{await service.close();await fs.rm(root,{recursive:true,force:true});});return {service,counts,failure,root};
 }
 const request=(operation='operation_1',order=warehouses)=>({action:'sync.start',operation_id:operation,purpose:'default_catalog',items:order.map(warehouse=>({warehouse,expected_catalog_digest:null}))});
@@ -62,7 +62,7 @@ test('stockout analysis owns native receipts and cannot replay as default catalo
 });
 async function finish(s,bid){
   const until=Date.now()+4000;
-  while(s.active){
+  while(s.status(bid).running){
     for(const i of s.store.batch(bid).items)if(i.stage==='WAIT_HOST'&&!i.observation)
       await s.command({action:'sync.provide_observation',batch_id:bid,item_id:i.id,token:i.observationRequest,observation:{state:null,included:[]}});
     if(Date.now()>until)throw Error('test worker timeout');await sleep(5);
@@ -75,6 +75,21 @@ test('same driver handles both accounts in user order and repeated intent never 
   const b=await finish(s,x.batch_id);assert.deepEqual(counts.exports,[...warehouses].reverse());assert.ok(b.items.every(i=>i.stage==='READY_TO_ADOPT'));
   await assert.rejects(s.command({...r,purpose:'allocation_baseline'}),/不同范围/);
   const again=await s.command(r);assert.equal(again.batch_id,b.id);assert.equal(counts.exports.length,2);
+});
+test('separate verified warehouse scopes can overlap and only release their own work',async t=>{
+  const {service:s,counts}=await fixture(t),[sd,hb]=warehouses;
+  const scoped=(w,lease_id)=>({scoped:true,scope:[w],lease_id});
+  const one=await s.command({...request('scope_sd_1',[sd]),...scoped(sd,'sd')});
+  await assert.rejects(s.command({...request('scope_sd_2',[sd]),...scoped(sd,'sd-other')}),{code:'BUSY'});
+  await s.store.write(d=>{d.accounts[hb].binding.userDataRoot=d.accounts[sd].binding.userDataRoot;});
+  await assert.rejects(s.command({...request('scope_hb_1',[hb]),...scoped(hb,'hb')}),{code:'ACCOUNT_ISOLATION'});
+  await s.store.write(d=>{d.accounts[hb].binding.userDataRoot+='-independent';});
+  const two=await s.command({...request('scope_hb_1',[hb]),...scoped(hb,'hb')});
+  assert.ok(s.status(one.batch_id).running&&s.status(two.batch_id).running);
+  await assert.rejects(s.command({action:'sync.resume',batch_id:two.batch_id,...scoped(sd,'sd')}),{code:'BUSY'});
+  assert.deepEqual(await s.command({action:'session.release',...scoped(sd,'sd')}),{idle:false});
+  const b=await finish(s,two.batch_id);await finish(s,one.batch_id);
+  assert.equal(b.items[0].stage,'READY_TO_ADOPT');assert.deepEqual(counts.exports,[hb]);
 });
 test('login required only pauses one account; resume does not export successful account again',async t=>{
   const {service:s,counts,failure}=await fixture(t);failure['山东仓']='login';const {batch_id}=await s.command(request());let b=await finish(s,batch_id);

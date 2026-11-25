@@ -15,7 +15,7 @@ def start_smoke(app, win, args):
     out = Path(args[0]).resolve()
     phase = args[1]
     fixture = json.loads((out/'synthetic.json').read_text(encoding='utf-8'))
-    if (phase not in ('recover', 'reopen') or fixture.get('synthetic') is not True
+    if (phase not in ('recover', 'reopen', 'cancel-redo', 'cancel-reopen', 'shipping') or fixture.get('synthetic') is not True
             or fixture.get('live_platform') is not False or fixture.get('case') != 'jst-buyer-recovery'
             or Path(os.environ.get('REPLENISHMENT_DATA_DIR', '')).resolve() != out/'settings'
             or win.work_repository.path.resolve() != out/'settings/workbench.sqlite3'):
@@ -85,12 +85,16 @@ def start_smoke(app, win, args):
         def dismiss_error():
             box = app.activeModalWidget()
             if isinstance(box, QMessageBox):
+                if phase == 'cancel-redo' and box.windowTitle() == '确认沿原仓单重做':
+                    box.grab().save(str(out/'确认沿原仓单重做.png'))
+                    box.button(QMessageBox.StandardButton.Yes).click()
+                    return
                 messages.append(box.text())
                 box.reject()
 
         qtimer.timeout.connect(dismiss_error)
         try:
-            if phase == 'recover':
+            if phase in ('recover', 'cancel-redo', 'shipping'):
                 component = Client(out/'component-startup')
                 try:
                     component.start()
@@ -103,8 +107,30 @@ def start_smoke(app, win, args):
             dialog = Orders(win, win, [online])
             dialog.show()
             qtimer.start(25)
+            if phase in ('cancel-redo', 'cancel-reopen'):
+                from jst_cancellation import begin_redo
+                from jst_order_store import active, locked
+                if phase == 'cancel-redo':
+                    before, _, _ = state()
+                    assert before['internal'] is None and dialog.redo_btn.isEnabled()
+                    buyer['full_detail'] = True
+                    dialog.redo_btn.click()
+                    assert dialog.redo_target and calls == ['order.lookup'], messages
+                order, _, versions = state()
+                head = order['payload']['head']
+                assert order['historical'] and order['internal'] == receipt['internal'] and order['stage'] == 'CANCELLED'
+                assert not versions and not messages
+                redo = begin_redo(path, online)
+                assert redo['online'] != online and redo['released'] == {sku: qty for sku, qty, _ in order['payload']['lines']}
+                with closing(read_connection(path)) as db:
+                    assert active(db, head) is None and locked(db, head) is None
+                    assert db.execute('SELECT count(*) FROM jst_cancellations WHERE online=? AND successor=?', (online, redo['online'])).fetchone() == (1,)
+                    assert db.execute("SELECT count(*) FROM jst_events WHERE action='原取消单释放占用并登记后继'").fetchone() == (1,)
+                report.update(passed=True, warehouse=warehouse, internal=order['internal'],
+                              successor=redo['online'], released=redo['released'])
+                return
             assert dialog.buttons['recover'].isEnabled() and not dialog.buttons['submit'].isEnabled()
-            if phase == 'recover':
+            if phase in ('recover', 'shipping'):
                 for outcome, hint in (('unavailable','原单身份待核'),('mismatch','完整买家账号与原任务不同')):
                     buyer['check'] = outcome
                     dialog.buttons['recover'].click()
@@ -125,16 +151,42 @@ def start_smoke(app, win, args):
             assert dialog.table.item(0,10).text() == order['internal']
             assert dialog.table.item(0,12).text() == '待人工确认付款'
             assert not lifecycle.snapshot(path, order['payload']['head'])['present']['payment']
-            _, summary = payment.prepare_review(path, [online])
+            plan, summary = payment.prepare_review(path, [online])
             assert summary[0]['quantity'] == fixture.get('quantity', '10503')
             assert summary[0]['totals']['payable'] == fixture.get('amount', '24554.61')
             assert receipt['detail_count'] == len(order['payload']['lines']) == fixture.get('sku_count', 582)
             assert not messages, messages
             snapshot(dialog, phase+'-待人工确认付款')
+            if phase == 'shipping':
+                import daily_batch
+                from lifecycle_home_ui import LifecycleWidget
+                head = order['payload']['head']
+                lifecycle.commit(path, plan)
+                cache = out/'shipping.sqlite3'
+                overview = {'status':'待发货','platform_tracking':True}
+                inbox = {'stage_view':'receipt','stage_filter':'待处理'}
+                assert daily_batch.read(path, cache, inbox)['count'] == 0
+                widget = LifecycleWidget(win)
+                try:
+                    widget.ready(daily_batch.read(path, cache, overview))
+                    widget.show()
+                    action = widget.table.cellWidget(0,2)
+                    assert action.text() == '核对聚水潭发货状态' and action.isEnabled()
+                    assert widget.grab().save(str(out/'待发货.png'))
+                    fixture['lookup']['native_status'] = '发货中(打单拣货)'
+                    action.click()
+                    received = daily_batch.read(path, cache, inbox)
+                    assert received['count'] == 1 and received['records'][0]['number'] == head['number']
+                    assert lifecycle.snapshot(path, head)['status'] == '待收货'
+                    assert len(lifecycle.history(path, head, 'payment')) == 1 and not messages
+                    report.update(receipt_status_before='待发货', receipt_status_after='待收货')
+                finally:
+                    widget.reader.shutdown()
+                    widget.deleteLater()
             report.update(passed=True, warehouse=warehouse, used_frozen_preview=use_frozen_preview,
                           synthetic_internal=order['internal'], payment_candidate=current['digest'],
                           sku_count=receipt['detail_count'], quantity=summary[0]['quantity'],
-                          amount=summary[0]['totals']['payable'], payment_confirmed=False)
+                          amount=summary[0]['totals']['payable'], payment_confirmed=phase == 'shipping')
         except BaseException:
             report['error'] = traceback.format_exc()
         finally:
@@ -143,13 +195,13 @@ def start_smoke(app, win, args):
                 dialog.reject()
                 dialog.deleteLater()
             catalog_session_ui.manager = original
-        with (out/(phase+'-report.json')).open('x', encoding='utf-8') as f:
-            json.dump(report, f, ensure_ascii=False, indent=2)
-        win.job_dirty = False
-        win._discard_close = True
-        if report['passed']:
-            win.close()
-        else:
-            app.exit(1)
+            with (out/(phase+'-report.json')).open('x', encoding='utf-8') as f:
+                json.dump(report, f, ensure_ascii=False, indent=2)
+            win.job_dirty = False
+            win._discard_close = True
+            if report['passed']:
+                win.close()
+            else:
+                app.exit(1)
 
     QTimer.singleShot(0, run)

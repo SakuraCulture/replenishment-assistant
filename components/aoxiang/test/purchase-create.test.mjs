@@ -47,6 +47,22 @@ function evidence(p,r=receipt(p)){
     rows:p.rows.map(s=>({...s,orderId,store:p.basis.store,supplier:p.supplierCode,status:'待提交',note:p.note})),
     files:['D16','D17'].map(source=>({source,sha256:h,file:path.resolve(source+'.xlsx')})),observedAt:'2026-11-02T00:00:00Z'};
 }
+
+test('partially received PO uses all original base-unit quantities and amounts',()=>{
+  const p=intent(), e=evidence(p);
+  e.main.status='部分入库';
+  e.listingStatus='2';
+  const unit='件';
+  const originalUnits=Object.fromEntries(p.rows.map(r=>[r.sku,unit]));
+  for(const r of e.rows){r.status='部分入库';r.unit=unit;r.receivedQuantity='1';}
+  assert.equal(checkCreatedPurchase(p,receipt(p),e,{originalUnits}).status,'部分入库');
+  const changed=structuredClone(e);
+  changed.rows[0].quantity=changed.rows[0].receivedQuantity;
+  assert.throws(()=>checkCreatedPurchase(p,receipt(p),changed,{originalUnits}),{code:'PURCHASE_DETAIL_MISMATCH'});
+  const missing=structuredClone(e);missing.rows.pop();
+  assert.throws(()=>checkCreatedPurchase(p,receipt(p),missing,{originalUnits}),{code:'PURCHASE_DETAIL_MISMATCH'});
+});
+
 async function fixture(t){
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'ax-create-'));let state=await StateStore.open(root),ledger=await PurchaseCreates.open(state);
   t.after(async()=>{state.close();await fs.rm(root,{recursive:true,force:true});});

@@ -19,6 +19,15 @@ def has_verified_bindings(schedule):
     return schedule.get('reuse_verified_bindings') is True or bool(schedule.get('check_signature'))
 
 
+def check_unsigned(db, day, codes):
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='normal_orders'").fetchone():
+        return
+    signed = {row[0] for row in db.execute('SELECT store FROM normal_orders WHERE day=?', (day,))}
+    conflicts = [code for code in codes if code in signed]
+    if conflicts:
+        raise ValueError('本日已有签发：' + '、'.join(conflicts) + '，请沿原单处理')
+
+
 def schedule_value(value):
     x=copy.deepcopy(value)
     if not isinstance(x.get('plan_id'),str) or not x['plan_id']:raise ValueError('请选择补货预案')
@@ -34,6 +43,7 @@ def schedule_value(value):
         if date.fromisoformat(x.get('date','')).isoformat()!=x['date']:raise ValueError('执行日期无效')
     if type(x.get('workers',2)) is not int or not 1<=x.get('workers',2)<=4:raise ValueError('同时计算门店数须为1至4')
     x['workers']=x.get('workers',2);x['timezone']='Asia/Shanghai'
+    if x.get('catalog_source','refresh') not in ('refresh','default'):raise ValueError('仓资料采用方式无效')
     x['name']=str(x.get('name','')).strip()
     if not x['name'] or len(x['name'])>80:raise ValueError('安排名称须为1至80字')
     if type(x.get('enabled',False)) is not bool:raise ValueError('启用状态无效')
@@ -55,9 +65,11 @@ class Repository:
     def db(self,write=False):
         db=sqlite3.connect(self.path,timeout=1);db.row_factory=sqlite3.Row
         try:
-            if write:db.execute('BEGIN IMMEDIATE')
+            if write:
+                from sqlite_write import begin,commit
+                begin(db,None)
             yield db
-            if write:db.commit()
+            if write:commit(db,None)
         except BaseException:db.rollback();raise
         finally:db.close()
 
@@ -122,9 +134,18 @@ class Repository:
         db.execute('INSERT INTO scheduled_runs VALUES(?,?,?,?,?)',(r['id'],key,r['day'],r['state'],wr.dumps(r)))
         return self._save(db,r,r['message'])
 
-    def manual(self,s):
+    def manual(self,s,*,request_id=None,repeated_from=None):
         self.ensure();s=schedule_value(s)
-        with self.db(True) as db:return self._create(db,s,'manual:'+uuid.uuid4().hex,self.clock())
+        with self.db(True) as db:
+            if repeated_from:
+                original=self._get(db,repeated_from)
+                if original['state'] in ACTIVE or original['schedule']['plan_id']!=s['plan_id']:
+                    raise wr.Conflict('请等待原任务安全结束，再按新资料另跑')
+            run=self._create(db,s,'manual:'+(request_id or uuid.uuid4().hex),self.clock())
+            if repeated_from and 'repeated_from' not in run:
+                run['repeated_from']=repeated_from
+                self._save(db,run,'已建立独立任务，采用本次确认的当前仓资料')
+            return run
 
     def due(self):
         if not self.exists():return []
@@ -190,32 +211,73 @@ class Repository:
     def resume(self,rid,expected,codes=None):
         with self.db(True) as db:
             r=self._get(db,rid)
-            if r['revision']!=expected or r['state'] not in ('REVIEW','PAUSED'):raise wr.Conflict('只能继续已暂停或需处理的原任务，请刷新')
             failures=[s['code'] for s in r['stores'] if s['state']!='READY']
-            if codes is not None and (not codes or len(set(codes))!=len(codes) or set(codes)-set(failures)):raise ValueError('只能重试本任务未完成门店，成功门店保持')
-            r.update(state='QUEUED',control=None,retry_codes=codes,viewed=False)
-            return self._save(db,r,'已排入原任务；成功项保持，不更换资料')
+            if codes is not None:
+                if not codes or len(set(codes))!=len(codes) or set(codes)-set(failures):
+                    raise ValueError('请选择本任务尚未完成的门店')
+                codes=[code for code in failures if code in codes]
+                if r['state'] in ACTIVE and r.get('retry_codes')==codes and r.get('retry_id'):
+                    return r
+            allowed=('REVIEW','PAUSED','ENDED') if codes is not None else ('REVIEW','PAUSED')
+            if r['revision']!=expected or r['state'] not in allowed:
+                raise wr.Conflict('任务状态已变化，请刷新后继续')
+            if r['state']=='ENDED' and not db.execute(
+                "SELECT 1 FROM scheduled_values WHERE run_id=? AND name='basis'",(rid,)
+            ).fetchone():
+                raise ValueError('原任务未留下计算依据，请核对执行安排')
+            retry_id=r.get('retry_id')
+            if codes is not None:
+                retry_id=uuid.uuid4().hex
+            elif retry_id:
+                codes=r['retry_codes']
+            check_unsigned(db,r['day'],[code for code in failures if codes is None or code in codes])
+            r.update(state='QUEUED',control=None,retry_codes=codes,retry_id=retry_id,viewed=False,recovering_process=False)
+            message='已排入原任务'+(f'，重试 {len(codes)} 家门店' if codes is not None else '')+'。已完成结果已保留。'
+            return self._save(db,r,message)
 
-    def recover(self):
+    def recover(self, *, after_process_exit=False):
         if not self.exists():return
+        day=self.clock().astimezone(TZ).date().isoformat()
         with self.db(True) as db:
             for row in db.execute("SELECT payload FROM scheduled_runs WHERE state IN ('RUNNING','PAUSING')").fetchall():
                 r=wr.loads(row[0])
-                if not r.get('control') and r['stage']=='等待浏览器可用' and r['external'].get('ax'):
+                if after_process_exit and r['state']=='RUNNING' and not r.get('control') and r['day']==day:
+                    r.update(state='QUEUED',epoch=r['epoch']+1,recovering_process=True)
+                    self._save(db,r,'软件已从异常退出恢复，正在排队核对原任务和已保存结果')
+                elif not after_process_exit and not r.get('control') and r['stage']=='等待浏览器可用' and r['external'].get('ax'):
                     r.update(state='QUEUED',epoch=r['epoch']+1)
                     self._save(db,r,'继续等待浏览器可用，沿用原采集编号')
                 else:
                     r.update(state='ENDED' if r.get('control')=='end' else 'PAUSED',epoch=r['epoch']+1)
-                    self._save(db,r,'上次中断；继续前核对原平台任务，不重新提交')
+                    message='原任务已跨业务日，请先核对原平台回执和资料日期' if after_process_exit and r['day']!=day and not r.get('control') else '上次中断；继续前核对原平台任务，不重新提交'
+                    self._save(db,r,message)
 
-    def save_value(self,rid,name,value,epoch,*,store=None):
+    def save_value(self,rid,name,value,epoch,*,store=None,adoption=None):
         # Encode outside the write transaction; immutable blocks deduplicate shared data.
         with self.db() as db:known=chunks.known(db)
         p=chunks.prepare(value,known)
         with self.db(True) as db:
             r=self._get(db,rid)
             if r['epoch']!=epoch or r['state'] not in ('RUNNING','PAUSING'):raise wr.Conflict('本次执行已退出，未采用迟到结果')
+            if name.startswith('catalog:'):
+                warehouse=name.removeprefix('catalog:')
+                if value.get('warehouse')!=warehouse:raise ValueError('采用资料与原仓不一致')
+                previous=db.execute('SELECT digest FROM scheduled_values WHERE run_id=? AND name=?',(rid,name)).fetchone()
+                if previous and previous['digest']!=p.digest:
+                    raise wr.Conflict(warehouse+'原任务已有不同仓资料，保留原采用版本')
+                if adoption is not None:
+                    receipts=r.setdefault('catalog_adoptions',{})
+                    if warehouse not in receipts:
+                        receipts[warehouse]={**adoption,'warehouse':warehouse,'run_id':rid,'day':r['day'],
+                                             'revision':value['revision'],'source_sha256':value['source_sha256'],
+                                             'snapshot_digest':p.digest,'adopted_at':self.clock().isoformat()}
+                        self._save(db,r,warehouse+'已固定本次采用资料')
+                if previous:return
             if store and name=='result:'+store:
+                if any(i['code']==store and i['state']=='READY' for i in r['stores']):
+                    previous=db.execute('SELECT digest FROM scheduled_values WHERE run_id=? AND name=?',(rid,name)).fetchone()
+                    if previous and previous['digest']==p.digest:return
+                    raise wr.Conflict('门店已完成，未覆盖原计算结果：'+store)
                 import deletion_barrier
                 row=db.execute("SELECT digest,payload FROM scheduled_values WHERE run_id=? AND name='basis'",(rid,)).fetchone()
                 basis=chunks.load(row['payload'],db,expected=row['digest']) if row else {}

@@ -136,7 +136,7 @@ def prepare(path, documents, scope=None, progress=lambda _:None, cancel=None):
 def export_signed(path,heads,folder,progress=lambda _:None,cancel=None):
     """Existing immutable signed export, in explicit selected-order sequence."""
     from history_read import repository
-    import os,export_settings,normal_delivery,normal_exports,purchases,warehouse_execution
+    import os,uuid,export_settings,normal_delivery,normal_exports,purchases,warehouse_execution
     import storage_chunks
     from warehouse_orders import child_number
     from contextlib import closing
@@ -145,6 +145,7 @@ def export_signed(path,heads,folder,progress=lambda _:None,cancel=None):
     # repository initialization/migration; a read-only projection cannot log.
     work=wr.Repository.__new__(wr.Repository);work.path=Path(path).resolve();repo.work=work
     monthly_new_sheet_editable=export_settings.monthly_new_sheet_editable(work.path)
+    batch_id=uuid.uuid4().hex
     for i,h in enumerate(heads):
         try:
             checkpoint(cancel);progress(RowProgress(f'导出签发单 {i+1}/{len(heads)}',i,len(heads)))
@@ -152,7 +153,7 @@ def export_signed(path,heads,folder,progress=lambda _:None,cancel=None):
                 db.execute('BEGIN')
                 purchases.validate_head(db,h)
                 if warehouse_execution.has_parent(db,h['oid']):
-                    _, digest, _, blob = warehouse_execution.active_snapshot_source(db,h)
+                    _, digest, saved, blob = warehouse_execution.active_snapshot_source(db,h)
                     parent = db.execute('SELECT day,store,number FROM normal_orders WHERE oid=?',(h['oid'],)).fetchone()
                     if (not parent or parent[:2] != (h['day'],h['store']) or
                             child_number(parent[2],h['warehouse']) != h['number'] or
@@ -160,7 +161,7 @@ def export_signed(path,heads,folder,progress=lambda _:None,cancel=None):
                         raise wr.Conflict('原仓单身份或签发快照已变化，请刷新')
                     field = ('result','store_name')
                     store_name = storage_chunks.load(blob,db,paths=[field],binding=digest)[field]
-                    order = {**h, 'parent_number':parent[2], 'snapshot_digest':digest}
+                    order = {**h, 'parent_number':parent[2], 'snapshot_digest':digest, 'saved':saved}
                 else:
                     order=repo.get(h['day'],h['store'],h['revision'],view='export')
                     if not order or any(order[k]!=h[k] for k in ('oid','revision','digest')):
@@ -171,7 +172,8 @@ def export_signed(path,heads,folder,progress=lambda _:None,cancel=None):
             if normalized in targets:raise ValueError('本批次门店文件名重复，请分次导出并指定不同目录；此前完成文件保留')
             targets.add(normalized)
             files.extend(normal_delivery.export_signed(repo,order,target,[h['warehouse']],progress,cancel,
-                                                       monthly_new_sheet_editable=monthly_new_sheet_editable))
+                                                       monthly_new_sheet_editable=monthly_new_sheet_editable,
+                                                       reuse_original=True,batch_id=batch_id))
         except Exception as exc:
             raise RuntimeError('原签发不变。此前已导出文件：'+('、'.join(files) or '无')+
                                '；本次中断订单：'+h['number']+'；尚未开始：'+

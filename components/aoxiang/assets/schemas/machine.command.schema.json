@@ -11,7 +11,8 @@
     "consumer": {
       "type": "object", "additionalProperties": false, "required": ["purpose"],
       "properties": {"purpose": {"enum": ["replenishment", "stockout_analysis"]},
-        "owner": {"type": "string", "minLength": 1, "maxLength": 128}}
+        "owner": {"type": "string", "minLength": 1, "maxLength": 128},
+        "independent": {"const": true}}
     },
     "account_binding": {
       "type": "object", "additionalProperties": false,

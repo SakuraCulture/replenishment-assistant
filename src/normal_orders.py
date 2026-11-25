@@ -98,6 +98,7 @@ class Repository:
                 CREATE TABLE IF NOT EXISTS normal_orders(day TEXT NOT NULL,store TEXT NOT NULL,kind TEXT NOT NULL,oid TEXT NOT NULL UNIQUE,number TEXT NOT NULL UNIQUE,current INTEGER NOT NULL,PRIMARY KEY(day,store,kind));
                 CREATE TABLE IF NOT EXISTS normal_revisions(oid TEXT NOT NULL,revision INTEGER NOT NULL,digest TEXT NOT NULL,saved TEXT NOT NULL,payload BLOB NOT NULL,PRIMARY KEY(oid,revision));
                 CREATE TABLE IF NOT EXISTS normal_events(id INTEGER PRIMARY KEY AUTOINCREMENT,at TEXT NOT NULL,oid TEXT,revision INTEGER,action TEXT NOT NULL,detail TEXT NOT NULL);
+                CREATE INDEX IF NOT EXISTS normal_event_delivery ON normal_events(oid,revision,id) WHERE action='带号导出';
                 CREATE TABLE IF NOT EXISTS normal_work_revisions(revision TEXT PRIMARY KEY,day TEXT NOT NULL,payload BLOB NOT NULL);
             ''')
 

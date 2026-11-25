@@ -9,10 +9,14 @@ import {collectionPurpose} from './state.mjs';
 export const PROTOCOL_VERSION=1;
 export const MAX_FRAME_BYTES=1024*1024;
 const validate=new Ajv({strict:true,allErrors:true}).compile(schema);
+export const independentCollection=command=>collectionPurpose(command)==='replenishment'||
+  command?.consumer?.independent===true&&command.consumer.purpose==='stockout_analysis'&&!!command.consumer.owner;
 export function validateCommand(value){
   if(!validate(value))fail('COMMAND_SCHEMA','自动化命令格式不符合接口契约',{
     issues:validate.errors.map(e=>({path:e.instancePath,message:e.message}))
   });
+  if(value.consumer?.independent===true&&(value.consumer.purpose!=='stockout_analysis'||!value.consumer.owner))
+    fail('COMMAND_SCHEMA','独立分析采集须绑定原分析运行号');
   if(Buffer.byteLength(JSON.stringify(value),'utf8')>MAX_FRAME_BYTES)fail('COMMAND_TOO_LARGE','命令超过接口大小限制');
   return value;
 }
@@ -90,7 +94,7 @@ export class MachineCommands{
       }));
       for(const plan of plans)Object.assign(plan.run,{purpose:collectionPurpose(command),consumer:command.consumer||{purpose:'replenishment'}});
       const recovered=plans.map(plan=>{
-        if(collectionPurpose(command)==='replenishment')return null;
+        if(independentCollection(command))return null;
         const pending=this.state.pending(config.tenantBinding,plan.run.targets[0].buyerWarehouseCode,undefined,collectionPurpose(command));
         if(pending.length!==1||!resumableTask(pending[0]))return null;
         const attempt=pending[0],run=this.state.getRun(attempt.runId),items=this.state.getItems(attempt.runId);
@@ -116,17 +120,19 @@ export class MachineCommands{
       return {created:true,record};
     });
   }
-  advance(id,expectedSequence,next,{kind='STATE',detail={},result,error,items,durableQueue=false}={}){
+  advance(id,expectedSequence,next,{kind='STATE',detail={},result,error,items,durableQueue=false,selectedRetry}={}){
     return this.state.write(()=>{
       const current=this.get(id);
       if(!current)fail('COMMAND_NOT_FOUND','未找到自动化作业');
       if(current.sequence!==expectedSequence)fail('STALE_COMMAND','作业状态已更新，请重新读取');
-      const reviewResume=current.state==='NEEDS_REVIEW'&&next==='QUEUED'&&kind==='RESUME_WITH_REVIEW_RETAINED'&&items&&items.length===current.items.length&&
+      const scoped=kind==='RETRY_SELECTED_ITEMS'&&selectedRetry&&collectionPurpose(current.request)==='replenishment';
+      const reviewResume=current.state==='NEEDS_REVIEW'&&next==='QUEUED'&&(kind==='RESUME_WITH_REVIEW_RETAINED'||scoped)&&items&&items.length===current.items.length&&
         items.every((item,index)=>{
           const old=current.items[index];
-          if(old.state!=='NEEDS_REVIEW')return item.state===old.state;
-          if(item.state==='NEEDS_REVIEW')return true;
-          return item.state==='PENDING'&&resumableReview(this.state,old,collectionPurpose(current.request)==='replenishment');
+          if(item.state===old.state)return true;
+          if(item.state!=='PENDING'||scoped&&!selectedRetry.indices.includes(index))return false;
+          if(old.state==='NEEDS_REVIEW')return resumableReview(this.state,old,collectionPurpose(current.request)==='replenishment');
+          return scoped&&!['SUCCEEDED','ENDED'].includes(old.state);
         });
       if(!transitions[current.state]?.includes(next)&&!reviewResume)fail('COMMAND_TRANSITION','该作业状态不能执行此操作');
       const record={...current,state:next,sequence:current.sequence+1,updated_at:now()};
@@ -139,6 +145,8 @@ export class MachineCommands{
       }
       if(result!==undefined)record.result=structuredClone(result);
       if(error!==undefined)record.error=structuredClone(error);
+      if(selectedRetry===null)delete record.selected_retry;
+      else if(selectedRetry)record.selected_retry=structuredClone(selectedRetry);
       this.db.prepare('UPDATE machine_commands SET state=?,sequence=?,payload=? WHERE id=?').run(next,record.sequence,JSON.stringify(record),id);
       const event=this.insertEvent(record,kind,detail);
       return {record,event};

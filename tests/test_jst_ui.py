@@ -26,7 +26,7 @@ class JstUI(unittest.TestCase):
         self.assertTrue({'进入回传处理','进入运营签发','进入付款核对','进入收货核对'}.isdisjoint(texts))
         self.assertNotIn('生成勾选聚水潭订单',texts);self.assertNotIn('确认勾选已下单并锁定',texts)
         self.assertNotIn('全部锁状态',[c.itemText(0) for c in w.findChildren(QComboBox)])
-        self.assertEqual(list(w.cards),['待回传','待运营签发','待付款','待收货','已结束'])
+        self.assertEqual(list(w.cards),['待回传','待运营签发','待付款','待发货','待收货','已结束'])
         self.assertEqual(w.start.text(),w.end.text())
         w.query();request=self.reader_mock.call_args.args[0];self.assertEqual(request['kind'],'daily_batch');self.assertNotIn('lock',request)
     def test_progress_cards_route_selected_orders_or_overview_filters(self):

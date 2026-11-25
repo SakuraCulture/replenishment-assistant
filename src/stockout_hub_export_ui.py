@@ -34,13 +34,21 @@ def show(page):
     v.addStretch()
     buttons=QDialogButtonBox(QDialogButtonBox.StandardButton.Ok|QDialogButtonBox.StandardButton.Cancel);buttons.accepted.connect(dialog.accept);buttons.rejected.connect(dialog.reject);v.addWidget(buttons)
     buttons.button(QDialogButtonBox.StandardButton.Ok).setText('导出');buttons.button(QDialogButtonBox.StandardButton.Cancel).setText('取消')
+    timed=buttons.addButton('设为定时导出', QDialogButtonBox.ButtonRole.ActionRole)
+    timed.clicked.connect(lambda:dialog.done(2))
     from table_readability import fit_window
     fit_window(dialog,900,700)
-    if dialog.exec()!=QDialog.DialogCode.Accepted:return
-    destination,_=QFileDialog.getSaveFileName(page,'导出缺货率','缺货率_'+today()+'.xlsx','Excel (*.xlsx)')
-    if not destination:return
+    action=dialog.exec()
+    if action not in (QDialog.DialogCode.Accepted,2):return
     date_values={k:d.date().toString('yyyy-MM-dd') for k,d in zip(('start','end'),dates)}
     sq={**queries.get('store',{'view':'all','filters':{},'exclude_stopped':True,'exclude_disabled':True}),**date_values}
     wq={**queries.get('warehouse',{'filters':{}}),**date_values}
     def selected(listing):return [listing.item(i).data(Qt.ItemDataRole.UserRole) for i in range(listing.count()) if listing.item(i).checkState()==Qt.CheckState.Checked]
-    page.entry.start('hub_export',{'mode':mode.currentData(),'destination':destination,'store_query':sq,'warehouse_query':wq,'store_combinations':selected(lists['store']),'warehouse_combinations':selected(lists['warehouse']),'include_detail':details.isChecked()},lambda path:page.note.setText('已导出：'+path))
+    scope={'mode':mode.currentData(),'store_query':sq,'warehouse_query':wq,'store_combinations':selected(lists['store']),
+           'warehouse_combinations':selected(lists['warehouse']),'include_detail':details.isChecked()}
+    if action==2:
+        page.host.timed_workbench.edit('stockout',scope,[date_values['start'],date_values['end']])
+        return
+    destination,_=QFileDialog.getSaveFileName(page,'导出缺货率','缺货率_'+today()+'.xlsx','Excel (*.xlsx)')
+    if destination:
+        page.entry.start('hub_export',{**scope,'destination':destination},lambda path:page.note.setText('已导出：'+path))

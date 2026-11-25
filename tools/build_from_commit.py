@@ -15,14 +15,18 @@ def main():
     parser.add_argument('--build-id',required=True)
     parser.add_argument('--output-root',type=Path,default=ROOT)
     parser.add_argument('--aoxiang-dependencies',type=Path,default=ROOT/'components/aoxiang')
+    parser.add_argument('--package-label',help='简短改动名称，生成补货助手_<版本>_<构建>_<改动>.zip')
     a=parser.parse_args()
     if not re.fullmatch('[a-zA-Z0-9_-]+',a.build_id):raise ValueError('Invalid build id')
+    if a.package_label is not None and not re.fullmatch(r'[\w-]{1,40}',a.package_label):
+        raise ValueError('交付包改动名称须为1至40个文字、数字、横线或下划线')
     commit=subprocess.check_output(['git','rev-parse','--verify',a.commit+'^{commit}'],cwd=ROOT,text=True).strip()
     raw=subprocess.check_output(['git','show',commit+':src/version.json'],cwd=ROOT)
     version=json.loads(raw)['version']
     output=a.output_root.resolve()
     build=output/f'build_{version}_{a.build_id}';dist=output/f'交付_{version}_{a.build_id}'
-    if build.exists() or dist.exists():raise FileExistsError('Build id exists; choose another id')
+    package=output/f'补货助手_{version}_{a.build_id}_{a.package_label}.zip' if a.package_label else None
+    if build.exists() or dist.exists() or package and package.exists():raise FileExistsError('Build id exists; choose another id')
     build.mkdir();archive=build/'source.zip';source=build/'source'
     subprocess.run(['git','archive','--format=zip','-o',str(archive),commit],cwd=ROOT,check=True)
     with zipfile.ZipFile(archive) as z:z.extractall(source)
@@ -73,7 +77,12 @@ def main():
         if jst_source.exists():
             shutil.copytree(jst_staged,dist/'补货助手/_internal/components/jst_catalog')
         subprocess.run([sys.executable,str(source/'prepare_delivery.py'),'--delivery',str(dist/'补货助手')],cwd=source,env=env,stdout=log,stderr=log,check=True)
-    print(json.dumps({'delivery':str(dist),'source_commit':commit,'log':str(build/'build.log')},ensure_ascii=False))
+    if package:
+        with zipfile.ZipFile(package,'x',compression=zipfile.ZIP_DEFLATED) as z:
+            for path in sorted(dist.rglob('*')):
+                if path.is_file():z.write(path,path.relative_to(dist).as_posix())
+    print(json.dumps({'delivery':str(dist),'package':str(package) if package else None,
+                      'source_commit':commit,'log':str(build/'build.log')},ensure_ascii=False))
 
 
 if __name__=='__main__':main()

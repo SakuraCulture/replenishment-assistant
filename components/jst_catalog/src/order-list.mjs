@@ -150,13 +150,14 @@ export async function readImportResult(page,frame,spec,signal){
   const buyer=checkBuyer(native.buyer,spec.contact?.buyer);
   if (buyer==='verified'||buyer==='mismatch') return {...result,...buyerEvidence(buyer)};
   try {
-    // The host may corroborate a masked order using its frozen preview and full payment detail.
-    const payment=canReadPayment(native_status);
+    // An unbound cancelled order also needs complete quantities to prove its identity.
+    const quantitiesOnly=native_status==='已取消'&&!spec.internal;
+    const includeItems=canReadPayment(native_status)||quantitiesOnly;
     const facts=await fullOrder(frame,{...spec,internal},{coid:native.coid,shop_id:native.shop_id,
-      count:Number(native.count),payment},signal);
+      count:Number(native.count),payment:includeItems,quantitiesOnly},signal);
     if (facts.native_status!==native_status) fail('原单状态已变化，请继续核对原单');
     const combined=combinedBuyerCheck(buyer,facts.buyer_check);
-    return {...(payment&&combined==='unavailable'?facts:{}),...result,...buyerEvidence(combined)};
+    return {...(includeItems&&combined==='unavailable'?facts:{}),...result,...buyerEvidence(combined)};
   } catch (error) {
     check(signal);
     return {...result,...buyerEvidence(buyer),

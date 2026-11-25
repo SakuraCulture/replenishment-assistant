@@ -257,29 +257,36 @@ def _write_exports(repository,records,receipt,progress,cancel):
     from warehouse_orders import child_number
     monthly_new_sheet_editable=receipt.get('monthly_new_sheet_editable') is True
     done=[];current=None;loaded=None
+    def read_original(descriptor):
+        nonlocal loaded
+        if 'payload' in descriptor:
+            return descriptor
+        if loaded is None or any(loaded.get(k)!=descriptor.get(k) for k in ('oid','revision','digest','warehouse')):
+            loaded=None
+            progress('读取并校验原签发修订：'+descriptor['store'])
+            import warehouse_execution
+            loaded=warehouse_execution.get_order(repository,descriptor,progress=progress,export_io=True)
+            if (not loaded or any(loaded[k]!=descriptor[k] for k in ('oid','revision','digest')) or
+                    descriptor.get('snapshot_digest',loaded.get('snapshot_digest')) != loaded.get('snapshot_digest')):
+                raise ValueError('原签发修订身份变化，未导出替代版本：'+descriptor['store'])
+        return loaded
     try:
         for i,(descriptor,item) in enumerate(records,1):
             current=item;checkpoint(cancel);warehouse=item['warehouse'];path=Path(item['path'])
-            if 'payload' in descriptor:order=descriptor
-            else:
-                if loaded is None or any(loaded.get(k)!=descriptor.get(k) for k in ('oid','revision','digest','warehouse')):
-                    # Release the preceding decoded store before reading another.
-                    loaded=None;order=None
-                    progress('读取并校验原签发修订：'+descriptor['store'])
-                    import warehouse_execution
-                    loaded=warehouse_execution.get_order(repository,descriptor,progress=progress,export_io=True)
-                    if (not loaded or any(loaded[k]!=descriptor[k] for k in ('oid','revision','digest')) or
-                            descriptor.get('snapshot_digest',loaded.get('snapshot_digest')) != loaded.get('snapshot_digest')):
-                        raise ValueError('原签发修订身份变化，未导出替代版本：'+descriptor['store'])
-                order=loaded
-            with closing(repository.work.connect()) as db:require_active(db,order['oid'],warehouse)
+            with closing(repository.work.connect()) as db:require_active(db,descriptor['oid'],warehouse)
+            item['output_profile']=normal_exports.output_profile(descriptor, monthly_new_sheet_editable)
             item.update(stage='写出文件',state='正在写出');receipts.update(repository.work.path,receipt)
             with stage(f'写出确认单 {i}/{len(records)} · {warehouse}',progress):
+                if receipt.get('reuse_original'):
+                    from signed_delivery_files import deliver
+                    done.append(deliver(repository,descriptor,lambda:read_original(descriptor),receipt,item,progress,cancel))
+                    continue
+                order=read_original(descriptor)
                 normal_exports.export(order,path,cancel=cancel,progress=ep.prefixed(progress,f'文件 {i}/{len(records)} · {order["payload"]["result"]["store_name"]} · {warehouse}'),
                                       warehouse=warehouse,monthly_new_sheet_editable=monthly_new_sheet_editable)
             item.update(state='已生成',stage='核验文件摘要');done.append(str(path));receipts.update(repository.work.path,receipt)
             progress('核验导出文件摘要…');item['sha256']=sha256(path);item['stage']='记录导出日志';receipts.update(repository.work.path,receipt)
-            repository.log(order,'带号导出',{'path':str(path),'sha256':item['sha256'],'warehouse':warehouse,'child_number':child_number(order['number'],warehouse),'export_task':receipt['id']})
+            repository.log(order,'带号导出',{'path':str(path),'sha256':item['sha256'],'warehouse':warehouse,'child_number':child_number(order['number'],warehouse),'export_task':receipt['id'],'output_profile':item['output_profile']})
             item.update(state='已完成',stage='完成');receipts.update(repository.work.path,receipt)
     except Exception as exc:
         evidence=failure_context.capture(exc,repository.work.path);receipt['failure']=evidence
@@ -300,7 +307,8 @@ def execute(repository,plan,path,progress=lambda s:None,cancel=None):
     return {**receipt,'path':receipt['paths'][0],'number':order['number'],'revision':order['revision']}
 
 
-def export_signed(repository,order,destination,warehouses,progress=lambda s:None,cancel=None,*,monthly_new_sheet_editable=None):
+def export_signed(repository,order,destination,warehouses,progress=lambda s:None,cancel=None,*,
+                  monthly_new_sheet_editable=None,reuse_original=False,batch_id=None):
     """Re-export this immutable revision, including historical revisions; no signing."""
     from warehouse_orders import partitions
     checkpoint(cancel)
@@ -331,5 +339,6 @@ def export_signed(repository,order,destination,warehouses,progress=lambda s:None
     receipt=receipts.begin(repository.work.path,'merchant',[
         {'path':str(path.resolve()),'state':'未执行','stage':'准备','head':warehouse_identity(descriptor,wh),
          'day':order['day'],'store':order['store'],'warehouse':wh} for descriptor,wh,path in zip(records,selected,paths)],
-        signature=f'原修订 V{order["revision"]:03d} 保留',signed=False,monthly_new_sheet_editable=monthly_new_sheet_editable)
+        signature=f'原修订 V{order["revision"]:03d} 保留',signed=False,monthly_new_sheet_editable=monthly_new_sheet_editable,
+        reuse_original=reuse_original,batch_id=batch_id)
     return _write_exports(repository,list(zip(records,receipt['files'])),receipt,progress,cancel)

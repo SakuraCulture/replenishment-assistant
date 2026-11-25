@@ -83,6 +83,7 @@ class AnalyticsWidget(QWidget):
         for title,k in [('订单经营分析','analysis'),('订单经营细则分析','analysis_detail'),
                         ('SKU订单完成率汇总','sku_completion')]:self.export_kind.addItem(title,k)
         row.addWidget(self.export_kind);self.export_btn=button('导出当前范围',lambda:self.export(False),True);row.addWidget(self.export_btn)
+        row.addWidget(button('SKU 汇总设为定时导出', self.schedule_sku))
         self.selected_btn=button('导出所选订单',lambda:self.export(True));row.addWidget(self.selected_btn)
         row.addWidget(button('保存常用视图',self.save_view));row.addWidget(button('复制 AI 分析指令',self.copy_prompt));self.cancel_btn=button('■ 停止当前任务',self.cancel);row.addWidget(self.cancel_btn);v.addLayout(row)
         self.timer=QTimer(self);self.timer.setInterval(1000);self.timer.timeout.connect(self.heartbeat);self.ticks=0
@@ -360,6 +361,23 @@ class AnalyticsWidget(QWidget):
         self.controls();self.page_note.setText(f'已选 {len(self.selected)} 单；支持跨页选择')
 
     def clear_selected(self):self.selected.clear();self.tables['order'].clearSelection();self.controls()
+
+    def schedule_sku(self):
+        if not self.report:
+            QMessageBox.information(self,'先明确范围','请先查询经营分析范围')
+            return
+        wanted = set(self.selected)
+        if not wanted and self.drill:
+            wanted = {row['order'] for row in self.visible_rows()}
+        heads = [h for h in self.report['heads'] if h['number'] in wanted]
+        query = dict(self.report['query'])
+        scope = {'query': query}
+        if wanted:
+            scope['orders'] = [h['number'] for h in heads]
+            scope['heads'] = [{k: h.get(k) for k in ('number', 'store', 'warehouse', 'revision', 'child_revision', 'digest')}
+                              for h in heads]
+            query['as_of'] = self.report['as_of']
+        self.host.timed_workbench.edit('sku_completion', scope, [query['from'], query['to']])
 
     def export(self,selected,*,kind=None):
         if not self.report:return

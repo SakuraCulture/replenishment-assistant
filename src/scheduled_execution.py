@@ -90,12 +90,25 @@ def require_arranged_stores(frozen, schedule):
         raise ValueError('补货预案的门店范围已变化，请编辑安排，确认门店后保存')
 
 
-def check_signed(repo,run,codes):
-    with repo.db() as db:
-        tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        if 'normal_orders' in tables:
-            signed={r[0] for r in db.execute('SELECT store FROM normal_orders WHERE day=?',(run['day'],))}
-            if signed.intersection(codes):raise ValueError('本日已有签发：'+ '、'.join(s for s in codes if s in signed)+'；请人工核对，不自动覆盖')
+def adopted_catalogs(repo,rid,warehouses):
+    from warehouse_catalog import validate
+    previous=repo.value(rid,'catalogs',{})
+    receipts=repo.get(rid).get('catalog_adoptions',{})
+    catalogs={}
+    for wh in warehouses:
+        catalog=repo.value(rid,'catalog:'+wh)
+        legacy=previous.get(wh)
+        if catalog and legacy and catalog!=legacy:raise wr.Conflict(wh+'原任务仓资料留存互相冲突，请核对原件')
+        catalog=catalog or legacy
+        if not catalog:
+            if wh in receipts:raise wr.Conflict(wh+'缺少原采用快照，请核对原任务')
+            continue
+        validate(catalog)
+        if catalog['warehouse']!=wh or wh in receipts and any(
+                catalog[key]!=receipts[wh].get(key) for key in ('revision','source_sha256')):
+            raise wr.Conflict(wh+'仓资料与原采用回执不符，请核对原任务')
+        catalogs[wh]=catalog
+    return catalogs
 
 
 class Runner:
@@ -111,8 +124,23 @@ class Runner:
             self.repo.change(self.rid,epoch=self.epoch,stage=stage,message=str(message),**fields)
             self.last=key;self.progress(str(message))
 
+    def defaults(self,warehouses,day):
+        from warehouse_catalog import Repository
+        from source_archive import capture
+        if self.repo.clock().astimezone(sr.TZ).date().isoformat()!=day:
+            raise ValueError('原任务未采用'+ '、'.join(warehouses)+'资料且已跨日，请建立当天任务')
+        catalogs,digests=Repository(self.folder).snapshots(warehouses)
+        for wh,catalog in catalogs.items():
+            checkpoint(self.cancel)
+            if Path(catalog['source_path']).is_file():
+                capture(self.repo.path,catalog['source_path'],catalog['source_sha256'],self.progress,self.cancel)
+            self.repo.save_value(self.rid,'catalog:'+wh,catalog,self.epoch,
+                                 adoption={'source':'default','default_digest':digests[wh]})
+        return catalogs
+
     def execute(self,rid):
         run=self.repo.claim(rid);self.rid=rid;self.epoch=run['epoch']
+        resources=getattr(self.backend,'resources',None)
         try:
             frozen=self.repo.value(rid,'basis')
             if frozen is None:
@@ -124,30 +152,65 @@ class Runner:
                     require_arranged_stores(frozen, schedule)
                 elif not matches_check_signature(frozen, schedule.get('check_signature'), self.folder):
                     raise ValueError('旧安排的门店范围无法核对，请编辑安排，确认门店后保存')
-                codes=[i['code'] for i in frozen['plan']['stores']];check_signed(self.repo,run,codes)
                 self.repo.change(rid,epoch=self.epoch,stores=[{**i,'state':'PENDING','message':'等待处理'} for i in frozen['plan']['stores']])
                 self.repo.save_value(rid,'basis',frozen,self.epoch)
+            wanted=run.get('retry_codes')
+            stores=self.repo.get(rid)['stores']
+            if run.get('recovering_process') and stores and all(s['state']=='READY' for s in stores):
+                self.update('等待人工核对',f'{len(stores)}/{len(stores)} 家已计算并保存，等待核对',
+                            state='COMPLETE',retry_codes=None,retry_id=None,recovering_process=False)
+                return
+            selected=[s['code'] for s in stores if s['state']!='READY' and (wanted is None or s['code'] in wanted)]
+            with self.repo.db() as db:
+                sr.check_unsigned(db,run['day'],selected)
             from version_info import MODEL_VERSION
             if frozen['model_version']!=MODEL_VERSION:raise ValueError('模型版本变化，原任务仅供查看，请建立新任务')
             checkpoint(self.cancel)
             self.backend.acquire()
             self.update('获取补货建议','按预案门店顺序获取；成功文件留存，失败项单独处理')
-            manifest=self.backend.sales(self, frozen)
-            self.repo.save_value(rid,'sales',manifest,self.epoch)
+            manifest=self.repo.value(rid,'sales')
+            if not manifest or not set(selected)<={f['warehouse_code'] for f in manifest['files']}:
+                manifest=self.backend.sales(self, frozen)
+                self.repo.save_value(rid,'sales',manifest,self.epoch)
             checkpoint(self.cancel)
-            self.update('更新仓商品资料','本任务每仓获取一次，不修改聚水潭分配库存')
-            catalogs=self.backend.catalogs(self,frozen)
-            checkpoint(self.cancel)
-            run=self.repo.get(rid);wanted=run.get('retry_codes')
+            available={f['warehouse_code'] for f in manifest['files']}
+            omitted={s['warehouse_code']:s for s in manifest.get('omitted',[])}
+            for s in selected:
+                if s in available:
+                    continue
+                failure=omitted.get(s,{})
+                error=failure.get('error') or {}
+                reason=error.get('message') or '补货建议未取得，请核对原采集任务'
+                if failure.get('task_id'):
+                    reason+=f"（原任务 {failure['task_id']}）"
+                self.repo.store_state(rid,s,'FAILED',reason,self.epoch)
+            selected=[s for s in selected if s in available]
+            catalogs=adopted_catalogs(self.repo,rid,frozen['warehouses'])
+            missing=[wh for wh in frozen['warehouses'] if wh not in catalogs]
+            if selected and missing:
+                self.update('更新仓商品资料','正在核对本次任务的仓资料')
+                if run['schedule'].get('catalog_source')=='default':
+                    catalogs.update(self.defaults(missing,run['day']))
+                else:
+                    acquired=self.backend.catalogs(self,frozen)
+                    if any(wh in catalogs and catalogs[wh]!=data for wh,data in acquired.items()):
+                        raise wr.Conflict('新返回仓资料与本次已采用版本不同，请核对原仓项')
+                    catalogs.update(acquired)
+                checkpoint(self.cancel)
             eligible=[]
-            for item in run['stores']:
-                s=item['code']
-                if item['state']=='READY' or wanted is not None and s not in wanted:continue
+            for s in selected:
                 missing=[w for w in frozen['jobs'][s]['supply_route'].values() if w and w not in catalogs]
                 if missing:self.repo.store_state(rid,s,'FAILED','仓资料未完成：'+'、'.join(missing),self.epoch)
-                elif not any(f['warehouse_code']==s for f in manifest['files']):self.repo.store_state(rid,s,'FAILED','补货建议未取得，请查看原采集任务',self.epoch)
                 else:eligible.append(s)
             if eligible:
+                workers=frozen['workers']
+                if resources:
+                    from unattended_resources import configured
+                    if configured(self.folder):
+                        workers=min(workers,2)
+                        while not resources.try_heavy(self,self.repo.path.parent):
+                            self.update('等待本地作业','计算等待本地名额、内存和资料卷余量')
+                            self.cancel.wait(.5);checkpoint(self.cancel)
                 self.update('检查文件','按原规则检查已验收文件，保留冲突及来源顺序')
                 paths=[f['file'] for f in manifest['files']]
                 loaded=batch_service.load(paths,catalogs,lambda m:self.update('检查文件',m),self.cancel)
@@ -161,7 +224,7 @@ class Runner:
                 jobs={s:frozen['jobs'][s] for s in eligible if s in loaded['stores']}
                 for s in eligible:
                     if s not in jobs:self.repo.store_state(rid,s,'FAILED','文件没有该门店记录',self.epoch)
-                self.update('计算门店',f'同时计算最多{frozen["workers"]}家；运行中的门店安全完成后暂停')
+                self.update('计算门店',f'同时计算最多{workers}家；运行中的门店安全完成后暂停')
                 persistence=[]
                 def notify(s,state,result,error):
                     if result is not None:
@@ -172,11 +235,16 @@ class Runner:
                 profile=frozen['profile']
                 if priority_list.is_catalog_profile(profile):
                     profile=priority_list.catalog_profile(catalogs)
-                batch_service.run(loaded,jobs,profile,frozen['workers'],notify,self.cancel)
+                batch_service.run(loaded,jobs,profile,workers,notify,self.cancel)
+                if resources:resources.release_heavy(self)
                 if persistence:raise persistence[0]
             checkpoint(self.cancel)
             run=self.repo.get(rid);all_ready=all(s['state']=='READY' for s in run['stores'])
-            self.update('等待人工核对','已完成门店的结果已保存，可进入核对；尚未签发',state='COMPLETE' if all_ready else 'REVIEW')
+            done=sum(s['state']=='READY' for s in run['stores'])
+            message=f'{done}/{len(run["stores"])} 家已计算并保存，等待核对'
+            if not all_ready:message+='。请查看待处理门店的原因'
+            fields={'publication':{'state':'USING_DEFAULT'}} if run['schedule'].get('catalog_source')=='default' else {}
+            self.update('等待人工核对',message,state='COMPLETE' if all_ready else 'REVIEW',retry_codes=None,retry_id=None,recovering_process=False,**fields)
         except Cancelled:
             run=self.repo.get(rid)
             self.update('已安全停止','成功结果已保存；继续时沿用原任务和冻结依据',state='ENDED' if run.get('control')=='end' else 'PAUSED')
@@ -184,7 +252,9 @@ class Runner:
             import logging
             logging.exception('定时补货运行未完成 %s',rid)
             self.update('需要处理',str(exc),state='REVIEW')
-        finally:self.backend.release(self.progress)
+        finally:
+            if resources:resources.release_heavy(self)
+            self.backend.release(self.progress)
 
 
 def workbench_record(repo,rid):
@@ -223,9 +293,17 @@ def publish_catalogs(repo,rid,folder):
     from contextlib import ExitStack
     run=repo.get(rid)
     if run['state'] not in ('COMPLETE','REVIEW','PAUSED'):raise ValueError('请等待本次计算安全结束后采用资料')
+    if run['schedule'].get('catalog_source')=='default':
+        return '本任务已固定当时的默认仓资料，供本次计算使用',{}
+    if run['day']!=sr.stamp().date().isoformat():
+        message='原业务日的已采用仓资料继续留存，当前仓资料等待当日采集'
+        repo.change(rid,publication={'state':'HISTORICAL_ONLY'},message=message)
+        return message,{}
     basis=repo.value(rid,'basis');catalogs=repo.value(rid,'catalogs',{})
     if not basis or not catalogs:raise ValueError('没有可采用的资料')
-    master=Repository(folder);done=dict(run.get('publication',{}).get('digests',{}))
+    master=Repository(folder);publication=run.get('publication',{})
+    done=dict(publication.get('digests',{}));intents=dict(publication.get('intents',{}))
+    desired={wh:master.publication_digest(data) for wh,data in catalogs.items()}
     issues={wh:warning for wh,data in catalogs.items() if wh not in done
             and (warning:=stock_publication_warning(data))}
     with ExitStack() as locks:
@@ -233,12 +311,19 @@ def publish_catalogs(repo,rid,folder):
             if wh in catalogs:locks.enter_context(acquire(folder,wh,None))
         for wh in catalogs:
             current=master.current_digest(wh)
+            if wh not in done and intents.get(wh)==desired[wh] and current==desired[wh]:
+                done[wh]=current
             if current!=done.get(wh,basis['catalog_digests'][wh]):
-                raise ValueError(wh+'当前仓资料已变化，请从资料维护核对，本次未覆盖')
+                error=wh+'当前仓资料已变化，请从资料维护核对，本次原资料已保留'
+                repo.change(rid,publication={'state':'NEEDS_REVIEW','digests':done,'intents':intents,'errors':{wh:error}},message=error)
+                raise wr.Conflict(error)
         for wh,data in catalogs.items():
             if wh not in done and wh not in issues:
-                master.save_locked(data,expected_digest=basis['catalog_digests'][wh]);done[wh]=master.current_digest(wh)
-                repo.change(rid,publication={'state':'PUBLISHING','digests':done})
+                intents[wh]=desired[wh]
+                repo.change(rid,publication={'state':'PUBLISHING','digests':done,'intents':intents})
+                if master.current_digest(wh)!=desired[wh]:
+                    master.save_locked(data,expected_digest=basis['catalog_digests'][wh])
+                done[wh]=desired[wh]
     if issues:
         message=('、'.join(done)+'已更新。' if done else '')+'仓资料发布待核：'+ '；'.join(wh+' '+error for wh,error in issues.items())
         repo.change(rid,publication={'state':'NEEDS_REVIEW','digests':done,'errors':issues},message=message)

@@ -32,7 +32,11 @@ def serve(connection,folder,operation,args,cancel):
                     rid=args.get('resume')
                     if not rid:
                         plan=args.get('plan') or preview(folder,args['mode'],args.get('warehouses'))
-                        rid=create(repo,plan,trigger=args.get('trigger','manual'))['id']
+                        scheduled=args.get('scheduled_id')
+                        if scheduled:
+                            from stockout_schedule_queue import Queue
+                            Queue(folder).require_claim(scheduled,args['scheduled_epoch'])
+                        rid=create(repo,plan,trigger=args.get('trigger','manual'),run_id=scheduled)['id']
                     progress('统一分析原作业 '+rid);result=execute(repo,rid,rpc,cancel,progress)
                 elif operation=='hub_end':result=end(repo,args['run'],rpc,cancel)
                 elif operation=='hub_export':

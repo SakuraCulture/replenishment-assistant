@@ -11,6 +11,7 @@ import openpyxl
 import jst_auto_order as automatic
 import jst_auto_order_store as orders
 import jst_fulfillment_store as sources
+from jst_order_guards import require_generation_basis
 import jst_order_store as generations
 import jst_order_payment as order_payment
 import jst_order_confirmation as confirmation
@@ -58,7 +59,7 @@ class Browser(automatic.Browser):
         }, retained_only=self.retained_only, **extra)
 
 
-def _order(db, online, expected=None):
+def _order(db, online, expected=None, *, check_current_basis=False):
     order = orders.read(db, online)
     if order and (order.get('historical') or order['stage'] == 'CANCELLED'):
         raise ValueError('聚水潭原单已取消，请在付款核对重新核对原付款')
@@ -73,7 +74,7 @@ def _order(db, online, expected=None):
     purchases.validate_head(db, payload['head'])
     if generations.active(db, payload['head']) != order['gid']:
         raise wr.Conflict('原分仓生成版本已变化，不能回流到另一版本')
-    _, digest = generations.read_generation(db, order['gid'])
+    generation, digest = generations.read_generation(db, order['gid'])
     if digest != payload['generation']['digest']:
         raise wr.Conflict('原生成单摘要不一致，停止回流')
     from analytics_identifiers import registered
@@ -84,6 +85,8 @@ def _order(db, online, expected=None):
                      or order['gid'] != expected['gid'] or binding != expected['binding']
                      or not same_head(payload['head'], expected['head'])):
         raise wr.Conflict('回流期间原任务、店仓身份或生成版本已变化')
+    if check_current_basis:
+        require_generation_basis(db, generation)
     return order
 
 
@@ -220,7 +223,7 @@ def prepare_review(path, keys, progress=lambda _: None, cancel=None):
             if not state or state['state'] != 'READY':
                 raise ValueError((state or {}).get('message') or '尚无已核验实配资料，请先拉取原单')
             payload, raw = sources.source(db, online, state['digest'])
-            order = _order(db, online, payload)
+            order = _order(db, online, payload, check_current_basis=True)
             source_kind = payload.get('source_kind')
             is_native = source_kind in order_payment.NATIVE_KINDS
             former = _existing_payment(db,payload) if is_native else None
@@ -269,7 +272,7 @@ def validate_guard(db, plan):
         if not current or current['state'] != 'READY' or current['digest'] != guard['digest']:
             raise wr.Conflict('实配资料已更新或原单状态变化，请重新核对；未保存付款')
         payload, _ = sources.source(db, guard['online'], guard['digest'])
-        _order(db, guard['online'], payload)
+        _order(db, guard['online'], payload, check_current_basis=True)
         matches = [p for p in allocated if same_head(p['head'], payload['head'])]
         if len(matches) != 1:
             raise ValueError('实配证据与付款目标不一致')
@@ -376,6 +379,8 @@ def _observe_payment(path, order, state, message, native_status, candidate, canc
             if native_status in confirmation.REVERSED:
                 confirmation.record(db, current, native_status)
             sources.observe(db, online, state, message, digest)
+        if native_status in confirmation.PAYMENT_STATES | confirmation.REVERSED:
+            automatic._event(db, current, '聚水潭回读原单状态', {'internal': current['internal'], 'native_status': native_status})
         commit(db, cancel)
         return {'online': online, 'state': state, 'digest': digest, 'message': message, 'order_stage': current['stage']}
 
@@ -408,7 +413,7 @@ def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None
                     buyer_problem = confirmation.buyer_issue(receipt)
                     if receipt.get('buyer_check') in ('mismatch', 'masked_conflict'):
                         state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
-                    elif status == '已取消' and buyer_problem:
+                    elif status == '已取消' and buyer_problem and not confirmation.bound_cancelled_order(order, receipt):
                         state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
                     elif status not in confirmation.PAYMENT_STATES:
                         state, message = 'PAYMENT_SOURCE_PENDING', f'聚水潭当前为“{status}”，须核对原订单后准备付款资料'

@@ -17,6 +17,17 @@ function matchesReceipt(receipt,warehouseCode,semanticVersion){
   const extras=s?.extraKeys||Object.keys(s||{}).filter(k=>k!=='buyerWarehouseCodeList');
   return receipt?.code===expectedCode&&JSON.stringify(s?.buyerWarehouseCodeList)===JSON.stringify([warehouseCode])&&!extras.length;
 }
+function canReplaceFailedExport(attempt,run,item,retryId,error){
+  if(!attempt?.taskId||attempt.retryId===retryId||attempt.additionalTaskIds?.length||
+    attempt.runId!==run.id||attempt.itemId!==item.id||!sameIdentity(attempt,run.identity)||
+    attempt.buyerWarehouseCode!==item.target.buyerWarehouseCode||attempt.acquisitionDate!==run.day||
+    attempt.scopeHash!==scopeHash(attempt.buyerWarehouseCode,attempt.semanticVersion)||
+    attempt.receipt?.taskId!==attempt.taskId||!matchesReceipt(attempt.receipt,attempt.buyerWarehouseCode,attempt.semanticVersion)||
+    attempt.taskSummary?.taskId!==attempt.taskId)return false;
+  if(attempt.stage==='FAILED_CONFIRMED')return attempt.taskSummary.failCount>0;
+  return attempt.stage==='DOWNLOADED'&&attempt.taskSummary.failCount===0&&platform.exportCodes.includes(attempt.taskSummary.code)&&
+    ['QUERY_FILE_COUNT_DIFF','ROW_COUNT_MISMATCH'].includes(error);
+}
 export class Coordinator{
   constructor({state,config,binding,adapter,onProgress=()=>{},signal,download=downloadKnownTask,publish=publishAsset}){
     Object.assign(this,{state,config,binding,adapter,onProgress,signal,download,publish});
@@ -30,7 +41,7 @@ export class Coordinator{
     const contract=await fieldContract(asset.semanticVersion==='D13-all-info-1'?'v1':'current');
     await validateWorkbook(file,{warehouseCode:asset.buyerWarehouseCode,expectedRows:asset.rows,contract,maxCompressedBytes:this.config.resourceLimits.maxCompressedFileBytes});return file;
   }
-  async run({mode='normal',batchId='default',warehouseCode,runId,phase='complete',independent=false}={}){
+  async run({mode='normal',batchId='default',warehouseCode,runId,phase='complete',independent=false,retryId,retryError}={}){
     if(!['complete','submit','collect'].includes(phase))fail('INVALID_PHASE','未知采集阶段');
     await validateConfig('portable.config',this.config);
     if(!this.config.enabled||!this.binding.outputRoot)fail('SETUP_REQUIRED','请先完成本机配置');
@@ -44,7 +55,7 @@ export class Coordinator{
       const {asset}=p;
       this.state.putAttempt({...attempt,stage:'SUCCEEDED',assetKey:asset.assetKey,assetSnapshot:asset,completedAt:now()});
       const item=this.state.getItems(attempt.runId).find(i=>i.id===attempt.itemId);
-      if(item)this.state.putItem({...item,stage:'SUCCEEDED',assetKey:asset.assetKey,assetSnapshot:asset});
+      if(item?.attemptId===attempt.id)this.state.putItem({...item,stage:'SUCCEEDED',assetKey:asset.assetKey,assetSnapshot:asset});
     }
     let run=runId?this.state.getRun(runId):null;
     if(runId&&!run)fail('RUN_NOT_FOUND','未找到指定作业');
@@ -59,6 +70,8 @@ export class Coordinator{
       for(let item of this.state.getItems(run.id)){
         if(DONE.has(item.stage))continue;this.stopped();
         let attempt=item.attemptId?this.state.getAttempt(item.attemptId):null;
+        const prior=independent&&phase==='submit'&&retryId&&canReplaceFailedExport(attempt,run,item,retryId,retryError)?attempt:null;
+        if(prior)attempt=null;
          if(attempt?.stage==='CANCELLED_BEFORE_SUBMIT'){
            item={...item,stage:'PLANNED',attemptId:null};this.state.putItem(item);attempt=null;
          }
@@ -96,8 +109,12 @@ export class Coordinator{
           if(!query.total)fail('EMPTY_UNVERIFIED','当前查询为0，零行文件契约尚未验证，不制造空Excel');
           await checkOutput(this.binding.outputRoot,{minimumFreeBytes:this.config.resourceLimits.maxCompressedFileBytes*2+(existing?.bytes||0)+16777216});
           const baseline=await this.adapter.prepareExport(query);
+          if(prior&&!canReplaceFailedExport(this.state.getAttempt(prior.id),run,item,retryId,retryError))
+            fail('SUBMISSION_UNKNOWN','原导出回执已变化，请继续核对原任务',{taskId:prior.taskId});
           attempt={id:uid(),itemId:item.id,runId:run.id,...identity,purpose,buyerWarehouseCode:target.buyerWarehouseCode,scopeHash:scope,semanticVersion:this.config.exportPolicy.semanticVersion,createdAt:now(),acquisitionDate:run.day,stage:'INTENT_RECORDED',taskId:null,query,baseline};
-          this.state.putAttempt(attempt);item={...item,stage:'INTENT_RECORDED',attemptId:attempt.id};this.state.putItem(item);
+          if(retryId)attempt.retryId=retryId;
+          if(prior)attempt.priorAttemptId=prior.id;
+          item={...item,stage:'INTENT_RECORDED',attemptId:attempt.id};this.state.putAttempt(attempt,item);
           await this.progress('INTENT_RECORDED',{runId:run.id,attemptId:attempt.id,warehouseCode:target.buyerWarehouseCode,queryRows:query.total});
           try{this.stopped();}catch(e){this.state.putAttempt({...attempt,stage:'CANCELLED_BEFORE_SUBMIT',errorCode:'PAUSED_BEFORE_DISPATCH'});item={...item,stage:'PLANNED',attemptId:null};this.state.putItem(item);throw e;}
           attempt={...attempt,stage:'SUBMITTING'};this.state.putAttempt(attempt);
@@ -152,8 +169,8 @@ export class Coordinator{
             if(Date.now()>=until)fail('TASK_PENDING','任务仍待完成；继续时跟踪原任务');
             await this.abortableWait(this.config.resourceLimits.pollIntervalMs);
           }while(true);
-          if(countValue(task.failCount)!==0){attempt={...attempt,stage:'FAILED_CONFIRMED',taskSummary:{taskId:attempt.taskId,successCount:countValue(task.successCount),failCount:countValue(task.failCount)}};this.state.putAttempt(attempt);fail('TASK_HAS_FAILURES','平台任务包含失败行，不能按完整文件发布');}
-          if(!platform.exportCodes.includes(task.code||task.taskCode))fail('TASK_TYPE_MISMATCH','任务类型不属于已验证补货建议导出');
+          if(String(task.taskId)!==attempt.taskId||!platform.exportCodes.includes(task.code||task.taskCode))fail('TASK_TYPE_MISMATCH','原任务号或导出类型不符，请核对原采集');
+          if(countValue(task.failCount)!==0){attempt={...attempt,stage:'FAILED_CONFIRMED',taskSummary:{taskId:attempt.taskId,code:task.code||task.taskCode,successCount:countValue(task.successCount),failCount:countValue(task.failCount)}};this.state.putAttempt(attempt);fail('TASK_HAS_FAILURES','平台任务包含失败行，不能按完整文件发布');}
           attempt={...attempt,stage:'FINISHED',taskSummary:{taskId:attempt.taskId,code:task.code||task.taskCode,successCount:countValue(task.successCount),failCount:countValue(task.failCount)}};this.state.putAttempt(attempt);
           const currentIdentity=await this.adapter.verifyIdentity(identity);if(!sameIdentity(currentIdentity,identity))fail('WRONG_IDENTITY','当前登录身份变化，保留原任务并停止');
           task=await this.adapter.findTask(attempt.taskId);

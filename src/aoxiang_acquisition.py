@@ -25,7 +25,7 @@ class PendingAcquisition(ValueError):
                          '\n已定位原记录。可继续原采集，或点击“重新导出所选门店”，核对范围后结束所选旧项并获取新文件。')
 
 
-def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=None):
+def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=None, independent=False):
     if not configuration.get('configured') or not configuration.get('enabled'):
         raise ValueError('请先核验并保存翱象连接与门店')
     if freshness not in {'reuse', 'refresh'}:
@@ -35,7 +35,7 @@ def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=N
         raise ValueError('请选择1至256家门店，不能重复')
     if any(not isinstance(code, str) or code not in available for code in codes):
         raise ValueError('所选门店不在已核验绑定中，请重新核验')
-    if purpose == 'stockout_analysis':
+    if purpose == 'stockout_analysis' and not independent:
         blockers = []
         for pending in jobs.unfinished():
             old = pending['command']
@@ -53,6 +53,7 @@ def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=N
                'policy': {'freshness': freshness}}
     command['consumer']={'purpose':purpose or 'replenishment'}
     if owner:command['consumer']['owner']=owner
+    if independent and purpose=='stockout_analysis':command['consumer']['independent']=True
     context = {'day': day, 'created': now(), 'stores': [available[code] for code in codes]}
     if purpose is not None:
         if purpose != 'stockout_analysis' or not isinstance(owner,str) or not owner:
@@ -76,7 +77,7 @@ def configuration_for_new(client, progress, cancel=None):
     return client.request('configuration')
 
 
-def manifest(job, state_root):
+def manifest(job, state_root, *, allow_empty=False):
     """Accept only complete validated files in the command's original order, even after interruption."""
     record, command = job.get('record'), job['command']
     if not record or record['state'] in ACTIVE:
@@ -92,7 +93,10 @@ def manifest(job, state_root):
         if type(item['index']) is not int or item['index'] != index or item['warehouse_code'] != code:
             raise ValueError('门店顺序或编码变化，未采用')
         if item['state'] != 'SUCCEEDED':
-            omitted.append({'index': index, 'warehouse_code': code, 'state': item['state'], 'error': item.get('error')})
+            entry={'index':index,'warehouse_code':code,'state':item['state'],'error':item.get('error')}
+            if allow_empty:
+                entry.update(error=entry['error'] or record.get('error'),task_id=item.get('task_id'))
+            omitted.append(entry)
             continue
         result = item['result']
         if (result['warehouse_code'] != code or result['run_id'] != item['run_id'] or
@@ -108,7 +112,7 @@ def manifest(job, state_root):
         if actual.stat().st_size != result['bytes'] or file_hash(actual) != digest:
             raise ValueError('已验收文件变化，未采用')
         files.append(dict(result, index=index))
-    if not files:
+    if not files and not allow_empty:
         raise ValueError('本次没有可采用的已验收文件')
     return {'schema': 1, 'command_id': job['id'], 'request': command,
             'context': job['context'], 'sequence': record['sequence'], 'files': files, 'omitted': omitted}

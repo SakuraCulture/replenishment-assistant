@@ -27,7 +27,9 @@ class Bridge:
                 from browser_startup import yield_startup
                 yield_startup(self.host,'ax',progress=self.progress,cancel=self.cancel)
                 manager=self.host.aoxiang_workflows
-                self.token=manager.gate.claim_background()
+                from unattended_resources import configured
+                self.token=(manager.gate.wait_background(self.cancel,self.progress)
+                            if configured(self.host.repository.folder) else manager.gate.claim_background())
                 if self.token is None:raise ValueError('翱象被原业务占用，请稍后继续分析原任务')
                 self.ax=manager.session.lease(cancelled=lambda:self.cancel.is_set() or self.yielding())
                 self.ax.start()
@@ -39,14 +41,19 @@ class Bridge:
         if service=='jst':
             action=payload['action']
             if action not in self.JST_ACTIONS:raise ValueError('分析不允许该聚水潭操作')
+            values=payload.get('values',{})
+            owner=self.host.catalog_sessions.session
+            if self.jst is None and action=='sync.status' and hasattr(owner,'read_status'):
+                return owner.read_status(**values)
             if self.jst is None:
                 from browser_startup import yield_startup
                 yield_startup(self.host,'jst',progress=self.progress,cancel=self.cancel)
-                self.jst=self.host.catalog_sessions.session.acquire();self.jst.start()
+                scope=[i['warehouse'] for i in values.get('items',[])] if action=='sync.start' else []
+                self.jst=(owner.acquire_wait(scope,self.cancel,self.progress) if scope and hasattr(owner,'acquire_wait') else owner.acquire())
+                self.jst.start()
             if action in {'sync.start','sync.resume'}:self.jst_operation=True
             if self.cancel.is_set() and action in {'sync.start','sync.resume','sync.provide_observation'}:
                 raise ValueError('已请求安全暂停，未启动后续仓导出；原任务保留')
-            values=payload.get('values',{})
             reply=self.jst.request(action,**values)
             if action=='sync.start' and values.get('purpose')=='stockout_analysis':
                 self.catalog_batches.add(reply['batch_id'])

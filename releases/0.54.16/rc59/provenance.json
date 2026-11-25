@@ -1,0 +1,87 @@
+{
+  "release": "0.54.16 rc59",
+  "model_version": "0.3.8-rules",
+  "previous_main_commit": "9a5c2970e2c03dbf5fc24dc98272450bd3386ac5",
+  "source_commit": "8e9bfbf035501bc07dbde79f1e27fbe162db9175",
+  "source_tree": "5486b94f3fcedabea48d766bab3e02aa54540ee7",
+  "source_archive_sha256": "8c2e392ce033ab7e3fa92a5dd263fb29caed7d2c90f0d3a04c72f2a1415f048b",
+  "source_commits_since_main": 21,
+  "built_at": "2026-11-25T19:43:26.702182+08:00",
+  "release_branch": "codex/release-05416-rc59",
+  "tag": "v0.54.16-rc59",
+  "deliverables": {
+    "zip_name": "补货助手_0.54.16_rc59_取消重做与发货核对.zip",
+    "zip_bytes": 158099591,
+    "zip_sha256": "d4c84f8b0dbd90ca31b2b43308d0f6b91fc8e87394732a69cefaf45210eadefc",
+    "exe_sha256": "61d57229eee620ea03980ede8f29a5f04fb30ace6f53a8b684d0484fac683ed3"
+  },
+  "component_manifest_sha256": {
+    "jst_catalog": "bb2063f1f69c525c3a7bca4be815bf013b3224cdb5e8d601b286ab702eca55de",
+    "aoxiang": "bdf3962129c9df6dd7fde84f7188f8e9494adddc9ed62bafb81aef8bae956a3a"
+  },
+  "acceptance": {
+    "mode": "Isolated data and controlled platform replies through the packaged EXE",
+    "checks": [
+      {
+        "warehouse": "河北仓",
+        "check": "原单取消并重做",
+        "passed": true,
+        "original_lookups_and_reads": 1,
+        "platform_imports": 0,
+        "platform_audits": 0,
+        "evidence_sha256": "560b194adabf626f56f1403e2b251654332c8308d84b16c5f956d72f34f7cea5"
+      },
+      {
+        "warehouse": "河北仓",
+        "check": "重启复核原单占用",
+        "passed": true,
+        "original_lookups_and_reads": 0,
+        "platform_imports": 0,
+        "platform_audits": 0,
+        "evidence_sha256": "49f2693763b8a2a0382e95ee35732dd4232090afee93991dea952e1db20693f7"
+      },
+      {
+        "warehouse": "河北仓",
+        "check": "待发货后转待收货",
+        "passed": true,
+        "original_lookups_and_reads": 7,
+        "platform_imports": 0,
+        "platform_audits": 0,
+        "evidence_sha256": "ecc8375dc20fd35b95fbf352dba2335f99c8743d8ae631e06f143a8285a33bd2"
+      },
+      {
+        "warehouse": "山东仓",
+        "check": "原单取消并重做",
+        "passed": true,
+        "original_lookups_and_reads": 1,
+        "platform_imports": 0,
+        "platform_audits": 0,
+        "evidence_sha256": "96dd3b81fc529ac3c140f5314a6332318f9adc39890edf98fdb38792fb00f68f"
+      },
+      {
+        "warehouse": "山东仓",
+        "check": "重启复核原单占用",
+        "passed": true,
+        "original_lookups_and_reads": 0,
+        "platform_imports": 0,
+        "platform_audits": 0,
+        "evidence_sha256": "31fabce368a5fcfd841c922bc72d901b6a90fca373818bca121b39142c0af3b6"
+      },
+      {
+        "warehouse": "山东仓",
+        "check": "待发货后转待收货",
+        "passed": true,
+        "original_lookups_and_reads": 7,
+        "platform_imports": 0,
+        "platform_audits": 0,
+        "evidence_sha256": "240fbe00734cc123e3b978d1a2d4c2d18faf937e1d08f34f98fbeffdd5b059de"
+      }
+    ],
+    "python_regression_passed": 185,
+    "jst_component_regression_passed": 30,
+    "baseline_failure_reproduction_sha256": "550d0f7b42254a190623c11b1cb84586d32cc69ef76f9bfb151cac4f9ca8b5b1",
+    "python_regression_log_sha256": "61a621706cfe629851fb60d02ef7f10f497d00e4ad9e9beba51fcd41de7ab702",
+    "full_local_acceptance_summary_sha256": "f650e2a0a7629813751417250408cc0ebbed25ed40daff8419ce7e77419327f6",
+    "other_baseline_issue": "The must-sell tag fixture check failed with the same error in rc58."
+  }
+}

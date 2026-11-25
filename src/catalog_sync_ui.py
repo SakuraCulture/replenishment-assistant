@@ -49,18 +49,42 @@ def shutdown(client,progress=lambda _:None,cancel=None):
         progress('正在结束当前操作；保留健康连接，不强杀提交、不关闭浏览器…')
         time.sleep(.15)
 
+
+def collect_scoped(owner,folder,dbpath,warehouses,purpose,resume,scope,progress=lambda _:None,cancel=None):
+    client=owner.acquire_wait(scope,cancel,progress)
+    try:
+        client.start()
+        return run_sync(client,folder,dbpath,warehouses,purpose,resume,progress=progress,cancel=cancel)
+    finally:
+        shutdown(client,progress)
+
+
+def account_scoped(owner,command,values,progress=lambda _:None,cancel=None):
+    client=owner.acquire()
+    try:
+        client.start()
+        if command=='session.reset':
+            client.reconnect(values['warehouse'])
+            command='accounts.verify'
+        return action(client,command,values,progress,cancel)
+    finally:
+        shutdown(client,progress)
+
 class Dialog(QDialog):
     def __init__(self,host,warehouses=None,purpose='default_catalog',parent=None,*,binding_repair=False):
         super().__init__(parent or host);self.host=host;self.purpose=purpose;self.worker=None;self._completed=False;self.committing=False;self.close_pending=False;self.state={};self.probe=None;self.adopted=[]
         self.binding_repair=binding_repair
-        self.client=manager(host).session.acquire()
+        self.owner=manager(host).session
+        from unattended_resources import configured
+        self.scoped_collection=not binding_repair and configured(host.repository.folder)
+        self.client=None if self.scoped_collection else self.owner.acquire()
         v=QVBoxLayout(self)
         if binding_repair:
             self.setWindowTitle('聚水潭 · 核验并保存仓账号');self.resize(820,360)
             v.addWidget(label('登录本仓专用浏览器，核对公司与所选仓后保存。','section'))
         else:
             self.setWindowTitle('聚水潭商品资料 · 刷新当前仓资料');self.resize(1090,710)
-            v.addWidget(label('选择仓 → 核验账号 → 获取并采用；两仓独立登录，按仓依次处理。','section'))
+            v.addWidget(label('选择仓 → 核验账号 → 获取并采用；两仓使用各自账号。','section'))
             v.addWidget(label('通过对应仓聚水潭账号获取全商品档案。采用后补货检查和新分配共用该仓资料，按首入库日期判断仓新品。','muted'))
         row=QHBoxLayout();self.warehouse=QComboBox();self.warehouse.addItems(warehouses if binding_repair else WAREHOUSES)
         if warehouses:self.warehouse.setCurrentText(warehouses[0])
@@ -96,9 +120,13 @@ class Dialog(QDialog):
                 widget.hide()
         self.clock=QTimer(self);self.clock.setInterval(500);self.clock.timeout.connect(self.tick)
         self.warehouse.currentIndexChanged.connect(self.select_account);self.records.currentIndexChanged.connect(self.show_record);self.profile.textChanged.connect(self.clear_probe);self.company.textChanged.connect(self.clear_probe);self.mapping.toggled.connect(self.controls)
-        try:self.state=read_connection(self,self.client,'读取聚水潭连接设置');self.refresh(self.state)
+        try:self.state=self.read_state('读取聚水潭连接设置');self.refresh(self.state)
         except Exception:
-            run(self,shutdown,(self.client,),'安全关闭连接',cancellable=False);raise
+            if self.client:run(self,shutdown,(self.client,),'安全关闭连接',cancellable=False)
+            raise
+    def read_state(self,title):
+        if self.client:return read_connection(self,self.client,title)
+        return run(self,lambda progress,cancel:self.owner.read_status(),(),title)
     def choose(self):
         p=QFileDialog.getExistingDirectory(self,'选择已有的专用浏览器配置目录')
         if p:self.profile.setText(p)
@@ -146,6 +174,7 @@ class Dialog(QDialog):
         if not a:return
         def operation(progress,cancel):
             progress('主动重新连接本仓；另一仓和翱象连接保持不变。请留意浏览器授权提示。')
+            if not self.client:return account_scoped(self.owner,'session.reset',{'warehouse':a['warehouse']},progress,cancel)
             self.client.reconnect(a['warehouse'])
             return action(self.client,'accounts.verify',{'warehouse':a['warehouse']},progress,cancel)
         try:
@@ -154,8 +183,9 @@ class Dialog(QDialog):
         except Exception as exc:QMessageBox.warning(self,'连接未完成',str(exc))
     def invoke(self,command,**values):
         try:
-            result=run(self,action,(self.client,command,values),'聚水潭账号设置')
-            self.state=read_connection(self,self.client,'读取连接状态');self.show_connection()
+            callback,argument=(action,self.client) if self.client else (account_scoped,self.owner)
+            result=run(self,callback,(argument,command,values),'聚水潭账号设置')
+            self.state=self.read_state('读取连接状态');self.show_connection()
             return result
         except Exception as exc:QMessageBox.warning(self,'操作未完成',str(exc));return None
     def probe_account(self):
@@ -181,7 +211,7 @@ class Dialog(QDialog):
             message=('本仓自动同步已启用，可继续原任务；原账号及文件保留。' if value else
                      '本仓自动同步已停用；原任务、文件和浏览器连接保留。运行中的任务需用“停止本次同步”安全停止，继续原任务前先启用本仓。')
             self.identity.setText(message);self.note.setText(message)
-    def reload(self):self.refresh(read_connection(self,self.client,'读取采集状态'))
+    def reload(self):self.refresh(self.read_state('读取采集状态'))
     def refresh(self,state):
         previous=self.records.currentData();self.state=state;self.records.blockSignals(True);self.records.clear()
         for b in state.get('batches',[]):self.records.addItem(b['createdAt'][:19].replace('T',' ')+' · '+{'default_catalog':'商品资料','allocation_baseline':'分配入口','scheduled_replenishment':'定时补货','stockout_analysis':'缺货率采集'}.get(b['purpose'],'未知用途')+' · '+'、'.join(i['account']['warehouse'] for i in b['items']),b['id'])
@@ -214,9 +244,18 @@ class Dialog(QDialog):
     def start(self,warehouses,resume=None):
         if self.worker:return
         if self.purpose=='default_catalog' and getattr(self.host,'results',{}) and not confirm(self,'更新后需重新检查','成功采用后，本次计算将需要重新检查；已签发单及历史快照不变。'):return
-        self.worker=Worker(run_sync,(self.client,self.host.repository.folder,self.host.work_repository.path,warehouses,self.purpose,resume),self)
-        self.worker.status.connect(self.note.setText);self.worker.business_event.connect(self.on_business_event);self.worker.commit_state.connect(self.commit_state);self.worker.success.connect(self.success);self.worker.failed.connect(lambda m:self.note.setText('未完成：'+m));self.worker.cancelled.connect(lambda:self.note.setText('已停止，原任务保留'));self.worker.finished.connect(self.worker_finished)
+        args=(self.host.repository.folder,self.host.work_repository.path,warehouses,self.purpose,resume)
+        if self.client:self.worker=Worker(run_sync,(self.client,*args),self)
+        else:
+            scope=warehouses
+            if resume:
+                batch=next(b for b in self.state['batches'] if b['id']==resume['batch_id'])
+                scope=[i['account']['warehouse'] for i in batch['items'] if i['id'] in resume['item_ids']]
+            self.worker=Worker(collect_scoped,(self.owner,*args,scope),self)
+        self.worker.status.connect(self.on_progress);self.worker.business_event.connect(self.on_business_event);self.worker.commit_state.connect(self.commit_state);self.worker.success.connect(self.success);self.worker.failed.connect(lambda m:self.note.setText('未完成：'+m));self.worker.cancelled.connect(lambda:self.note.setText('已停止，原任务保留'));self.worker.finished.connect(self.worker_finished)
         self.started=time.monotonic();self.phase='准备中';self.clock.start();self.bar.setRange(0,0);self.controls();self.worker.start()
+    def on_progress(self,message):
+        self.phase=message;self.note.setText(message)
     def on_business_event(self,event):
         if event['kind']=='adopted':
             self.adopted.append(event['ack'])
@@ -241,7 +280,8 @@ class Dialog(QDialog):
         if self.worker and not self.committing:self.worker.cancel.set();self.controls();self.tick()
     def reject(self):
         if self.worker:self.close_pending=True;self.cancel();return
-        try:run(self,shutdown,(self.client,),'结束当前操作并保留连接',cancellable=False)
+        try:
+            if self.client:run(self,shutdown,(self.client,),'结束当前操作并保留连接',cancellable=False)
         except Exception as exc:QMessageBox.warning(self,'连接仍需处理',str(exc));return
         self._completed=True;super().reject()
     def closeEvent(self,event):

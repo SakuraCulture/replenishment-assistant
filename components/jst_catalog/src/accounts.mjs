@@ -22,7 +22,7 @@ export function validateIdentity(a){
 export class AccountSessions {
   constructor({bridgeRoot,stateRoot,lockRoot,forbiddenRoots=[],storageAliases=[],phase=()=>{}}){
     Object.assign(this,{bridgeRoot,stateRoot,lockRoot,forbiddenRoots,storageAliases,phase});
-    this.sessions=new Map();this.instanceLocks=new Map();this.connectionStates=new Map();this.closed=false;
+    this.sessions=new Map();this.endpoints=new Map();this.instanceLocks=new Map();this.connectionStates=new Map();this.closed=false;
   }
   async initialize(){
     if(this.components)return;
@@ -105,23 +105,28 @@ export class AccountSessions {
     const cached=retained();
     if(cached&&this.healthy(cached))return cached;
     if(retainedOnly)throw unavailable();
-    if(cached){await cached.close().catch(()=>{});this.sessions.delete(key);}
+    if(cached){await cached.close().catch(()=>{});this.endpoints.delete(cached.catalogEndpoint);this.sessions.delete(key);}
     if(!this.instanceLocks.has(key)){
       const file=path.join(this.lockRoot,sha(binding.userDataRoot.toLowerCase())+'.sqlite3');
       try{this.instanceLocks.set(key,await this.components.ExclusiveLock.acquire(file));}
       catch{throw new CatalogError('BROWSER_BUSY','该聚水潭专用浏览器正由另一采集服务使用，请先完成原任务');}
     }
+    let endpoint;
     try{
-      const endpoint=await this.ensureBrowser(binding,signal);
-      for(const [otherKey,b] of this.sessions)if(otherKey!==key&&b.catalogEndpoint===endpoint)
+      endpoint=await this.ensureBrowser(binding,signal);
+      if(this.endpoints.has(endpoint)&&this.endpoints.get(endpoint)!==key)
         throw new CatalogError('ACCOUNT_ISOLATION','两仓连接到了相同浏览器实例');
+      this.endpoints.set(endpoint,key);
       const bridge=new this.components.EdgeBridge();
       this.connectionStates.set(key,{state:'CONNECTING',reason:cached?'原连接已断开，正在重新连接':'首次连接或已主动重连'});
       this.phase('CONNECTING','正在自动连接本仓专用浏览器');
       try{await bridge.bind(binding,{timeout:60000,mode:'background_tab',onPhase:()=>check(signal)});check(signal);}
       catch(e){await bridge.close().catch(()=>{});this.connectionStates.set(key,{state:'DISCONNECTED',reason:'连接未建立，请重试自动配置或检查专用浏览器状态'});throw e;}
       bridge.catalogEndpoint=endpoint;this.sessions.set(key,bridge);this.connectionStates.set(key,{state:'CONNECTED',reason:'关闭业务窗口后继续保留'});return bridge;
-    }catch(e){if(!this.sessions.has(key)){this.instanceLocks.get(key)?.release();this.instanceLocks.delete(key);}throw e;}
+    }catch(e){if(!this.sessions.has(key)){
+      if(this.endpoints.get(endpoint)===key)this.endpoints.delete(endpoint);
+      this.instanceLocks.get(key)?.release();this.instanceLocks.delete(key);
+    }throw e;}
   }
   healthy(bridge){return !!(bridge.page&&!bridge.page.isClosed()&&bridge.browser?.isConnected());}
   status(accounts){
@@ -133,7 +138,7 @@ export class AccountSessions {
   }
   async disconnect(binding){
     const key=sha(canonical(binding)),bridge=this.sessions.get(key);
-    if(bridge)await bridge.close();
+    if(bridge){await bridge.close();this.endpoints.delete(bridge.catalogEndpoint);}
     this.sessions.delete(key);this.instanceLocks.get(key)?.release();this.instanceLocks.delete(key);
     this.connectionStates.set(key,{state:'DISCONNECTED',reason:'已主动断开本仓；下次连接可能需要重新允许'});
   }
@@ -168,6 +173,6 @@ export class AccountSessions {
   async close(){
     this.closed=true;
     for(const bridge of this.sessions.values())await bridge.close().catch(()=>{});
-    this.sessions.clear();for(const lock of this.instanceLocks.values())lock.release();this.instanceLocks.clear();
+    this.sessions.clear();this.endpoints.clear();for(const lock of this.instanceLocks.values())lock.release();this.instanceLocks.clear();
   }
 }

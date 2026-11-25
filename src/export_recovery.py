@@ -29,6 +29,10 @@ def original(repo, head):
     return order
 
 
+def stage_views(item):
+    return [{'head': head, 'version': version} for head, version in zip(item['heads'], item['versions'], strict=True)]
+
+
 def inspect(database, task_id, progress=lambda _: None, cancel=None):
     from history_read import repository
     repo = repository(database)
@@ -45,12 +49,30 @@ def inspect(database, task_id, progress=lambda _: None, cancel=None):
             if not heads:
                 raise ValueError('提交时未能留存确切签发修订。请按原日期、门店到订单跟踪核对，不能自动重签或猜修订。')
             # Recheck order availability even when the exported file survives.
-            for head in heads:
-                original(repo, head)
+            order = None
+            if receipt['kind'] == 'lifecycle-stage':
+                from lifecycle_exports import validate_retained
+                with closing(repo.work.connect()) as db:
+                    validate_retained(db, stage_views(item), receipt['stage_kind'])
+            else:
+                for head in heads:
+                    order = original(repo, head)
             same = bool(output.get('sha256') and path.is_file() and sha256(path) == output['sha256'])
             if same:
-                row.update(action='record' if receipt['kind'] == 'merchant' and item['state'] == '已生成' else 'keep',
-                           reason='原文件及摘要一致；仅补导出记录' if item['state'] == '已生成' else '文件完整保留，无需重复生成')
+                kind = receipt['kind']
+                pending = (kind == 'merchant' and item['state'] == '已生成' or
+                           kind in ('merchant','lifecycle-stage') and item.get('publish_intent') and item['state'] != '已完成')
+                if pending and item.get('publish_intent'):
+                    if item['publish_intent'] != {'path': item['path'], 'sha256': item['sha256']}:
+                        raise ValueError('原发布意图与文件回执冲突')
+                    if kind == 'merchant':
+                        from signed_delivery_files import expected_identity, verify
+                        verify(path, expected_identity(order, heads[0]['warehouse']), item['output_profile'])
+                    else:
+                        from export_files import verify_identity
+                        verify_identity(path, item['identities'])
+                row.update(action='record' if pending else 'keep',
+                           reason='原文件及摘要一致，补记导出记录' if pending else '文件完整保留')
             else:
                 row.update(action='export', reason='原文件不存在、已改变或摘要未留存；在新的恢复目录按原修订补导出，保留原文件')
         except (OSError, ValueError) as exc:
@@ -85,7 +107,15 @@ def recover(database, review, selected, folder, progress=lambda _: None, cancel=
         item = receipt['files'][row['index']]
         if row['action'] == 'keep':
             continue
-        if row['action'] == 'record':
+        if row['action'] == 'record' and receipt['kind'] == 'lifecycle-stage':
+            from lifecycle_exports import validate_retained
+            with closing(repo.work.connect()) as db:
+                validate_retained(db, stage_views(item), receipt['stage_kind'])
+            if sha256(item['path']) != item['sha256']:
+                raise ValueError('原发布文件已变化，请重新核对')
+            item.update(state='已完成', stage='完成');item.pop('error', None)
+            completed.append(item['path'])
+        elif row['action'] == 'record':
             head = row['heads'][0]
             original(repo, head)
             detail = {'path': item['path'], 'sha256': item['sha256'], 'warehouse': head['warehouse'],
@@ -94,6 +124,10 @@ def recover(database, review, selected, folder, progress=lambda _: None, cancel=
                 db.execute('BEGIN IMMEDIATE')
                 from archive_orders import require_active
                 require_active(db,head['oid'],head['warehouse'])
+                if item.get('publish_intent'):
+                    from signed_delivery_files import check_order, log_once
+                    check_order(db, head)
+                    log_once(db, item, receipt['id'])
                 exists = any(json.loads(r[0]).get('export_task') == receipt['id'] and json.loads(r[0]).get('path') == item['path']
                              and json.loads(r[0]).get('sha256') == item['sha256'] for r in db.execute(
                                  "SELECT detail FROM normal_events WHERE oid=? AND revision=? AND action='带号导出'", (head['oid'], head['revision'])))
@@ -111,6 +145,15 @@ def recover(database, review, selected, folder, progress=lambda _: None, cancel=
                                                   monthly_new_sheet_editable=receipt.get('monthly_new_sheet_editable') is True)
             item['recovered'] = {'path': paths[0], 'sha256': sha256(paths[0])}
             item['state'] = '已恢复';completed.extend(paths)
+        elif receipt['kind'] == 'lifecycle-stage':
+            from lifecycle_exports import export_returns
+            result = export_returns(database, stage_views(item), root, receipt['mode'], progress, cancel,
+                                    stage=receipt['stage_kind'])
+            if result['cancelled'] or result['error'] or len(result['files']) != 1:
+                raise RuntimeError('原环节恢复未完成：'+str(result['error'] or result.get('task')))
+            path = result['files'][0]
+            item['recovered'] = {'path': path, 'sha256': sha256(path)}
+            item['state']='已恢复';completed.append(path)
         else:
             plan = archive_batch.prepare(database, row['heads'], receipt['plan_kind'], receipt['mode'], progress, cancel)
             result = archive_batch.execute(database, plan, root, False, progress, cancel)

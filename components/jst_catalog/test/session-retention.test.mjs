@@ -52,14 +52,14 @@ test('closing owned page recreates only its own session',async()=>{
 test('service release aborts current operation but retains browser pool and task records',async()=>{
   const data={accounts:{},batches:{original:{id:'original',nativeTaskRef:'123'}}};
   const s=new CatalogService({store:{read:()=>data},driver:{close:()=>{throw Error('must not close')}}});
-  const controller=new AbortController();s.active={controller};const before=canonical(data);
+  const controller=new AbortController();s.ordersActive={controller};const before=canonical(data);
   assert.deepEqual(await s.command({action:'session.release'}),{idle:false});assert(controller.signal.aborted);
-  s.active=null;assert.deepEqual(await s.command({action:'session.release'}),{idle:true});assert.equal(canonical(data),before);
+  s.ordersActive=null;assert.deepEqual(await s.command({action:'session.release'}),{idle:true});assert.equal(canonical(data),before);
 });
 test('reset is refused during active work; cannot touch another platform',async()=>{
-  const s=new CatalogService({store:{read:()=>({accounts:{}})},driver:{}});s.active={controller:new AbortController()};
+  const s=new CatalogService({store:{read:()=>({accounts:{}})},driver:{}});s.ordersActive={controller:new AbortController()};
   await assert.rejects(s.command({action:'session.reset',warehouse:'山东仓'}),{code:'BUSY'});
-  s.active=null;await assert.rejects(s.command({action:'session.reset',warehouse:'翱象'}),{code:'ACCOUNT_UNVERIFIED'});
+  s.ordersActive=null;await assert.rejects(s.command({action:'session.reset',warehouse:'翱象'}),{code:'ACCOUNT_UNVERIFIED'});
 });
 
 test('lightweight health does not read full jobs or queue behind mutations',async()=>{

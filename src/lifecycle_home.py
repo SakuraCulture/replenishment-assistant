@@ -10,7 +10,8 @@ from lifecycle_facts import current, legacy_return
 from app_defaults import WAREHOUSES
 from result_semantics import SIGNED_GROUPS, order_quantity, signed_rows
 from lifecycle_rules import JST_ORDER, basis_token, document_summary
-from lifecycle_stages import CURRENT as ALL_STAGES, STATUSES, progress_state
+from lifecycle_stages import CURRENT as ALL_STAGES, STATUSES, WAITING_SHIPMENT, progress_state
+from jst_shipping import read as read_shipments
 from order_keys import warehouse_revision
 import warehouse_execution as execution
 from normal_orders import read_repository as repository
@@ -72,6 +73,7 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
             for placeholders,oids in oid_batches(h['oid'] for h in selected):
                 checkpoint(cancel)
                 versions.update(((o,r,w,s),v) for o,r,w,s,v in db.execute('SELECT oid,revision,warehouse,stage,MAX(version) FROM lifecycle_versions WHERE oid IN ('+placeholders+') GROUP BY oid,revision,warehouse,stage',oids))
+        shipments = read_shipments(db,(o for o,r,w,s in versions if s=='payment'),cancel)
         older=set()
         selected_revisions={(h['oid'],h.get('warehouse')):h['revision'] for h in selected}
         active_generations={}
@@ -138,11 +140,12 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
                     summaries[s]=summary
                 required=routes.get((h['oid'],h['revision']),0)>=2 or present['operations']
                 if request.get('_with_tokens'):basis_tokens[h['oid'],wh]={s:basis_token(d) for s,d in summaries.items()}
-                status,next_stage,note,health=progress_state(summaries,legacy,required)
+                shipment = shipments.get(warehouse_revision(head))
+                status,next_stage,note,health=progress_state(summaries,legacy,required,shipment=shipment)
                 old = (h['oid'],wh) in older
                 parent_number=h.get('parent_number',h['number'])
                 record = {**h, 'warehouse': wh, 'name': part['name'], 'number': ao.number(parent_number, wh), 'parent_number': parent_number, 'current_revision': h.get('current_revision',h['revision']), 'visibility_token': vis.get('token', 0), 'present': present, 'status': status, 'next': next_stage, 'old_revision': old, 'legacy_return': bool(legacy), 'legacy_incomplete': bool(legacy and not legacy['complete']), 'wait_days': max(0, (date.fromisoformat(wr.today()) - date.fromisoformat(h['saved'][:10])).days)}
-                record.update(note=note,health=health,flow_version=2 if required else 1)
+                record.update(note=note,health=health,flow_version=2 if required else 1,shipment=shipment)
                 search = ' '.join(str(record[k]) for k in ('day', 'store', 'name', 'warehouse', 'number')).lower()
                 if track_platform:
                     payment=summaries['payment'] or {}
@@ -160,7 +163,7 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
             now_managed=execution.managed(fresh,(h['oid'] for h in selected_parents))
             if now_managed!=managed or (managed and execution.heads(fresh,[h for h in selected_parents if h['oid'] in managed])!=managed_heads):raise wr.Conflict('仓单签发范围在查询期间变化，请刷新')
         idx.commit()
-    counts = {s: sum(r['status'] == s for r in records) for s in (*STATUSES,'待运营签发')}
+    counts = {s: sum(r['status'] == s for r in records) for s in (*STATUSES,'待运营签发',WAITING_SHIPMENT)}
     for i, r in enumerate(records): r['list_position'] = i
     if request.get('all_records'):return {'records':records,'counts':counts,'scope':len(records),**({'_basis_tokens':basis_tokens} if request.get('_with_tokens') else {})}
     kind = request.get('status', '')

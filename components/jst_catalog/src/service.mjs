@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import {AsyncLocalStorage} from 'node:async_hooks';
 import {JobStore} from './job-store.mjs';
 import {AccountSessions,accountId,validateIdentity} from './accounts.mjs';
 import * as native from './product-export.mjs';
@@ -15,6 +16,8 @@ import {SaleoutPages} from './saleout-allocation.mjs';
 
 const businessAccount=a=>({id:a.id,warehouse:a.warehouse,expectedCompany:a.expectedCompany,expectedCoid:a.expectedCoid,expectedUid:a.expectedUid,mappingVerified:a.mappingVerified,bindingVersion:a.bindingVersion,binding:a.binding});
 const unresolved=i=>!retired(i)&&(i.native?.submissions>0||i.native?.nativeTaskRef)&&!['FAILED_CONFIRMED','DOWNLOADED'].includes(i.native.stage)&&!i.adoption;
+const scopedActions=new Set(['sync.start','sync.resume','sync.retry_unsubmitted','sync.status','sync.stop',
+  'sync.provide_observation','sync.record_adoption_error','sync.acknowledge_adoption','session.release']);
 
 export class CatalogService {
   static async open({stateRoot,parentPid,bridgeRoot,lockRoot,forbiddenRoots,storageAliases,validator,driver}){
@@ -23,8 +26,8 @@ export class CatalogService {
       store:await JobStore.open(stateRoot,{parentPid})});
   }
   constructor({store,stateRoot,bridgeRoot,lockRoot,forbiddenRoots,storageAliases=[],validator,driver,orderPages}){
-    Object.assign(this,{store,stateRoot,validator,storageAliases});this.active=null;this.shuttingDown=false;this.sequence=0;this.controlTail=Promise.resolve();
-    this.sessions=driver?null:new AccountSessions({stateRoot,bridgeRoot,lockRoot,forbiddenRoots,storageAliases,phase:(phase,message)=>{if(this.active)this.active.phase={phase,message,at:now()};}});
+    Object.assign(this,{store,stateRoot,validator,storageAliases});this.ordersActive=null;this.catalogActive=new Map();this.operation=new AsyncLocalStorage();this.shuttingDown=false;this.sequence=0;this.controlTail=Promise.resolve();
+    this.sessions=driver?null:new AccountSessions({stateRoot,bridgeRoot,lockRoot,forbiddenRoots,storageAliases,phase:(phase,message)=>{const active=this.operation.getStore();if(active)active.phase={phase,message,at:now()};}});
     this.driver=driver||{
       binding:(...a)=>this.sessions.binding(...a),
       automaticBinding:(...a)=>this.sessions.automaticBinding(...a),
@@ -40,6 +43,31 @@ export class CatalogService {
     this.orders=new OrderFlow(this.driver,{pages:orderPages});
     this.allocations=new AllocationFlow(this.driver,{store:this.store,root:stateRoot,pages:new SaleoutPages()});
   }
+  allActive(){return [this.ordersActive,...this.catalogActive.values()].filter(Boolean);}
+  get active(){return this.allActive()[0]||null;}
+  requireScope(c,warehouses){
+    if(c.scoped&&warehouses.some(wh=>!c.scope.includes(wh)))
+      throw new CatalogError('SESSION_CONFLICT','仓项超出本次仓资料操作权');
+  }
+  async requireSlot(warehouses,scoped){
+    const active=this.allActive();
+    if(active.some(item=>!scoped||!item.scoped||item.warehouses.some(w=>warehouses.includes(w))))
+      throw new CatalogError('BUSY','所用仓浏览器已有原操作，请等本仓释放');
+    if(scoped){
+      const all=[...warehouses,...active.flatMap(item=>item.warehouses)];
+      const accounts=this.store.accounts().filter(a=>all.includes(a.warehouse));
+      const profiles=[];const enterprises=[];
+      for(const a of accounts){
+        validateIdentity(a);
+        const dir=a.binding.userDataRoot;
+        if(!dir)throw new CatalogError('ACCOUNT_UNVERIFIED','缺少专用浏览器配置');
+        const real=this.sessions?await fs.realpath(dir):path.resolve(dir);
+        profiles.push(real.toLowerCase());enterprises.push(String(a.expectedCoid));
+      }
+      if(accounts.length!==all.length||new Set(profiles).size!==all.length||new Set(enterprises).size!==all.length)
+        throw new CatalogError('ACCOUNT_ISOLATION','各仓须使用独立且已核验的实例和企业');
+    }
+  }
   async patch(batchId,itemId,change){
     await this.store.write(data=>{
       const b=data.batches[batchId],i=b?.items.find(i=>i.id===itemId);if(!i)throw Error('原任务不存在');
@@ -49,8 +77,9 @@ export class CatalogService {
   }
   current(batch,item){return requireLive(this.store.batch(batch).items.find(i=>i.id===item));}
   status(batchId){
-    const data=this.store.read();return {protocol:'jst.catalog.v1',running:!!this.active,
-      active:this.active?{id:this.active.id,kind:this.active.kind,stopRequested:this.active.controller.signal.aborted,phase:this.active.phase}:null,
+    const active=batchId?this.catalogActive.get(batchId):this.active;
+    const data=this.store.read();return {protocol:'jst.catalog.v1',running:!!active,
+      active:active?{id:active.id,kind:active.kind,stopRequested:active.controller.signal.aborted,phase:active.phase}:null,
       accounts:Object.values(data.accounts||{}),operations:data.operations||{},
       binding_epochs:data.bindingEpochs||{},rebind_required:data.rebindRequired||{},
       connections:this.sessions?.status(Object.values(data.accounts||{}))||[],
@@ -62,7 +91,16 @@ export class CatalogService {
   }
   async dispatch(c){
     const action=c.action;
-    if(action==='capabilities')return {protocol:'jst.catalog.v1',component_version:'0.31.0',dedicated_browser:true,password_login:false};
+    if(c.scoped){
+      if(!scopedActions.has(action)||!c.lease_id||!Array.isArray(c.scope)||!c.scope.length||c.scope.some(w=>!WAREHOUSES.includes(w)))
+        throw new CatalogError('SESSION_CONFLICT','本次操作权只适用于指定仓的资料采集');
+      if(c.item_id){
+        this.requireScope(c,[this.current(c.batch_id,c.item_id).account.warehouse]);
+        const active=this.catalogActive.get(c.batch_id);
+        if(active&&active.owner!==c.lease_id)throw new CatalogError('SESSION_CONFLICT','本次回执不属于该活动原任务');
+      }
+    }
+    if(action==='capabilities')return {protocol:'jst.catalog.v1',component_version:'0.31.0',dedicated_browser:true,password_login:false,warehouse_slots:true};
     if(action==='sync.status')return this.status(c.batch_id);
     if(action==='sync.migration_snapshot'){
       if(this.active)throw new CatalogError('BUSY','请先安全结束聚水潭采集或核验，再导出迁移包');
@@ -70,14 +108,16 @@ export class CatalogService {
     }
     if(action==='session.health')return {connections:this.sessions?.status(this.store.accounts())||[]};
     if(action==='session.release'){
-      this.active?.controller.abort();
-      if(!this.active)this.orders.permits.clear();
-      return {idle:!this.active};
+      const owned=this.allActive().filter(item=>!c.lease_id||item.owner===c.lease_id);
+      for(const item of owned)item.controller.abort();
+      if(!c.scoped&&!owned.length&&!this.active)this.orders.permits.clear();
+      return {idle:!owned.length};
     }
     if(action==='sync.stop'||action==='shutdown'){
       if(action==='shutdown')this.shuttingDown=true;
-      if(this.active&&(!c.batch_id||c.batch_id===this.active.id))this.active.controller.abort();
-      return {stop_requested:true,still_running:!!this.active};
+      const owned=this.allActive().filter(item=>(!c.batch_id||c.batch_id===item.id)&&(!c.lease_id||item.owner===c.lease_id));
+      for(const item of owned)item.controller.abort();
+      return {stop_requested:true,still_running:!!owned.length};
     }
     if(action==='sync.provide_observation'){
       const i=this.current(c.batch_id,c.item_id);
@@ -106,7 +146,8 @@ export class CatalogService {
       return this.configure(c);
     }
     if(action==='sync.start')return this.start(c);
-    if(this.active)throw new CatalogError('BUSY','已有采集或账号核验在运行，可查看状态或停止');
+    if(this.active&&!['sync.resume','sync.retry_unsubmitted'].includes(action))
+      throw new CatalogError('BUSY','已有采集或账号核验在运行，可查看状态或停止');
     if(action==='order.capabilities')return {probe:true,preview:true,ordinary_audit:true,allocation:true,payment_detail:true,
       allocation_quantity_contract:'final_saleout_and_native_transaction',allocation_live_validated:false};
     if(['order.probe','order.preview','order.stage_import','order.import','order.lookup','order.stage_audit','order.audit','order.allocation','order.payment_detail'].includes(action))
@@ -121,11 +162,17 @@ export class CatalogService {
     if(['accounts.ensure','accounts.auto','accounts.probe','accounts.verify','accounts.open_login'].includes(action))return this.accountOperation(c);
     if(action==='sync.resume'||action==='sync.retry_unsubmitted'){
       const b=this.store.batch(c.batch_id),ids=c.item_ids||b.items.filter(i=>!i.adoption&&!retired(i)).map(i=>i.id);
+      if(this.catalogActive.has(b.id))throw new CatalogError('BUSY','原采集仍在执行，可继续查看原进度');
       if(b.items.some(i=>ids.includes(i.id)&&i.migration?.needs_binding))throw new CatalogError('MIGRATION_BINDING_REQUIRED','迁入任务已暂停；请先在本机核验相同仓账号并确认保存，再继续原任务，不会重发已受理导出');
       if(!ids.length||new Set(ids).size!==ids.length||ids.some(id=>!b.items.some(i=>i.id===id)))throw Error('恢复项无效');
       ids.forEach(id=>requireLive(b.items.find(i=>i.id===id)));
       if(action==='sync.retry_unsubmitted'&&ids.some(id=>b.items.find(i=>i.id===id).native?.submissions>0))throw Error('该项已经提交，只能恢复原任务');
-      this.launch(b.id,'batch',signal=>this.run(b.id,ids,signal));return {batch_id:b.id};
+      const warehouses=b.items.filter(i=>ids.includes(i.id)).map(i=>i.account.warehouse);
+      this.requireScope(c,warehouses);
+      if(c.recover_only&&b.items.some(i=>ids.includes(i.id)&&!i.native?.nativeTaskRef))
+        throw new CatalogError('NEEDS_ORIGINAL_TASK','本次仅回收已受理原任务，未取得原平台编号的仓项继续待核');
+      await this.requireSlot(warehouses,!!c.scoped);
+      this.launch(b.id,'batch',(signal,active)=>this.run(b.id,ids,signal,active),warehouses,c);return {batch_id:b.id};
     }
     throw new CatalogError('UNKNOWN_ACTION','未知商品资料操作');
   }
@@ -135,11 +182,11 @@ export class CatalogService {
     const account=data.accounts?.[wh];
     if(!account||data.rebindRequired?.[wh])throw new CatalogError('ACCOUNT_UNVERIFIED','请先核验对应仓专用账号');
     validateIdentity(account);
-    const active={id:crypto.randomUUID(),kind:'order',controller:new AbortController(),
+    const active={id:crypto.randomUUID(),kind:'order',owner:c.lease_id,controller:new AbortController(),
       phase:{phase:'ORDER',message:'聚水潭订单操作',warehouse:wh,at:now()}};
-    this.active=active;
+    this.ordersActive=active;
     try{
-      active.promise=c.action==='order.allocation'?this.allocations.run(c,account,active.controller.signal):this.orders.run(c.action.slice(6),c,account,active.controller.signal);
+      active.promise=this.operation.run(active,()=>c.action==='order.allocation'?this.allocations.run(c,account,active.controller.signal):this.orders.run(c.action.slice(6),c,account,active.controller.signal));
       return await active.promise;
     }catch(e){
       if (process.env.JST_AUTO_ORDER_DIAGNOSTIC==='1') {
@@ -152,7 +199,7 @@ export class CatalogService {
       // Browser exception traces may embed fields from a locator or a form.
       throw new CatalogError('ORDER_PAGE_CHANGED','聚水潭页或连接响应待核');
     }finally{
-      if(this.active===active)this.active=null;
+      if(this.ordersActive===active)this.ordersActive=null;
     }
   }
   async configure(c,verified=null){
@@ -196,12 +243,12 @@ export class CatalogService {
         }
     });return next;
   }
-  launch(id,kind,fn){
+  launch(id,kind,fn,warehouses=[],command={}){
     if(this.shuttingDown)throw new CatalogError('CLOSING','正在安全关闭，未开始新动作');
-    const active={id,kind,controller:new AbortController(),phase:{phase:'STARTING',message:'准备中',at:now()}};
-    this.active=active;active.promise=Promise.resolve().then(()=>fn(active.controller.signal)).catch(async e=>{
+    const active={id,kind,owner:command.lease_id,scoped:!!command.scoped,warehouses,controller:new AbortController(),phase:{phase:'STARTING',message:'准备中',at:now()}};
+    this.catalogActive.set(id,active);active.promise=Promise.resolve().then(()=>this.operation.run(active,()=>fn(active.controller.signal,active))).catch(async e=>{
       await this.store.write(d=>{if(kind==='batch'){if(d.batches[id].items.every(i=>i.adoption||retired(i)))return;d.batches[id].error=safeError(e);d.batches[id].state='NEEDS_ATTENTION';}else if(d.operations?.[id]&&!d.operations[id].retirement)Object.assign(d.operations[id],{state:'FAILED',error:safeError(e)});});
-    }).finally(()=>{if(this.active===active)this.active=null;});
+    }).finally(()=>this.catalogActive.delete(id));
   }
   async accountOperation(c){
     if(!WAREHOUSES.includes(c.warehouse))throw Error('未知仓库');
@@ -248,37 +295,46 @@ export class CatalogService {
       }catch(e){
         await this.store.write(d=>Object.assign(d.operations[id],{state:e.code==='LOGIN_REQUIRED'?'LOGIN_REQUIRED':signal.aborted?'CANCELLED':'FAILED',error:safeError(e),binding,finishedAt:now()}));
       }
-    });return {operation_id:id};
+    },[c.warehouse],c);return {operation_id:id};
   }
   async start(c){
     if(!/^[a-zA-Z0-9_-]{8,100}$/.test(c.operation_id||'')||!['default_catalog','allocation_baseline','scheduled_replenishment','stockout_analysis'].includes(c.purpose))throw Error('同步意图缺少稳定编号或用途');
     if(!Array.isArray(c.items)||!c.items.length||c.items.length>2||new Set(c.items.map(i=>i.warehouse)).size!==c.items.length)throw Error('请选择一仓或两仓，不可重复');
+    const warehouses=c.items.map(i=>i.warehouse);this.requireScope(c,warehouses);
     const data=this.store.read(),fingerprint=sha(canonical({operation_id:c.operation_id,purpose:c.purpose,items:c.items}));
     const existing=Object.values(data.batches).find(b=>b.operation_id===c.operation_id);
     if(existing){if(existing.fingerprint!==fingerprint)throw Error('同一同步编号对应不同范围');if(existing.items.some(retired))throw new CatalogError('ITEM_RETIRED','原采集已在本地结束，请明确新建采集；未重放旧导出');return {batch_id:existing.id,reused:true};}
-    if(this.active)throw new CatalogError('BUSY','已有采集或账号核验在运行，可查看状态或停止');
+    if(c.recover_only)throw new CatalogError('NEEDS_ORIGINAL_TASK','未找到原仓导出任务；本次仅核对原记录');
+    await this.requireSlot(warehouses,!!c.scoped);
+    const independent=c.independent_observation===true&&c.purpose!=='allocation_baseline'&&!!this.driver.exportArchive;
     const items=c.items.map((i,index)=>{
       const a=data.accounts?.[i.warehouse];if(!a?.enabled)throw Error(i.warehouse+'尚未启用自动同步');validateIdentity(a);
-      if(Object.values(data.batches).some(b=>b.items.some(x=>x.account.id===a.id&&unresolved(x))))throw new CatalogError('PENDING_TASK',i.warehouse+'有已受理未决任务，请继续原批次');
+      if(!independent&&Object.values(data.batches).some(b=>b.items.some(x=>x.account.id===a.id&&unresolved(x))))throw new CatalogError('PENDING_TASK',i.warehouse+'有已受理未决任务，请继续原批次');
       return {id:crypto.randomUUID(),index,account:businessAccount(a),expected_catalog_digest:i.expected_catalog_digest??null,
         ...(this.driver.exportArchive?{sourceFormat:ARCHIVE}:{}),stage:'QUEUED',native:null,receipt:null,adoption:null,observation:null,error:null};
     });
     const id=crypto.randomUUID();await this.store.write(d=>{d.batches[id]={id,operation_id:c.operation_id,fingerprint,purpose:c.purpose,state:'QUEUED',createdAt:now(),items};});
-    this.launch(id,'batch',signal=>this.run(id,items.map(i=>i.id),signal));return {batch_id:id};
+    this.launch(id,'batch',(signal,active)=>this.run(id,items.map(i=>i.id),signal,active),warehouses,c);return {batch_id:id};
   }
   async observation(batchId,itemId,signal){
     const token=crypto.randomUUID();await this.patch(batchId,itemId,{stage:'WAIT_HOST',observationRequest:token,observation:null});
     const until=Date.now()+30000;
     while(!this.current(batchId,itemId).observation){check(signal);if(Date.now()>until)throw new CatalogError('HOST_TIMEOUT','主应用未提供查询前库存依据，未提交导出');await new Promise(r=>setTimeout(r,50));}
   }
-  async run(batchId,ids,signal){
+  async run(batchId,ids,signal,active){
     await this.store.write(d=>{const b=d.batches[batchId];b.items.filter(i=>ids.includes(i.id)).forEach(requireLive);b.state='RUNNING';b.error=null;});
-    for(const initial of this.store.batch(batchId).items){
-      if(!ids.includes(initial.id)||initial.adoption||retired(initial))continue;
-      if(signal.aborted)break;
+    const items=this.store.batch(batchId).items.filter(i=>ids.includes(i.id)&&!i.adoption&&!retired(i));
+    if(active.scoped&&items.length>1)await Promise.allSettled(items.map(i=>this.runItem(batchId,i,signal,active))).then(results=>{
+      const failed=results.find(r=>r.status==='rejected');if(failed)throw failed.reason;
+    });
+    else for(const item of items)await this.runItem(batchId,item,signal,active);
+    await this.store.write(d=>{const b=d.batches[batchId];b.state=signal.aborted?'STOPPED':b.items.every(i=>i.receipt||i.adoption)?'FILES_READY':'NEEDS_ATTENTION';b.finishedAt=now();});
+  }
+  async runItem(batchId,initial,signal,active){
+      if(signal.aborted)return;
       const id=initial.id,a=initial.account;let item=this.current(batchId,id);
       const archive=item.sourceFormat===ARCHIVE;
-      const phase=async(stage,message)=>{this.active.phase={phase:stage,message,warehouse:a.warehouse,at:now()};};
+      const phase=async(stage,message)=>{active.phase={phase:stage,message,warehouse:a.warehouse,at:now()};};
       try{
         const accounts=this.store.read().accounts||{};
         const latest=accounts[a.warehouse];
@@ -331,19 +387,18 @@ export class CatalogService {
         await this.patch(batchId,id,{stage,connection_state:e.code==='LOGIN_REQUIRED'?'LOGIN_REQUIRED':item.connection_state,
           error:safeError(e),stopped:signal.aborted});
       }
-    }
-    await this.store.write(d=>{const b=d.batches[batchId];b.state=signal.aborted?'STOPPED':b.items.every(i=>i.receipt||i.adoption)?'FILES_READY':'NEEDS_ATTENTION';b.finishedAt=now();});
   }
   close({disconnectTimeout=3000}={}){
     if(this.closePromise)return this.closePromise;
-    this.shuttingDown=true;this.active?.controller.abort();
+    this.shuttingDown=true;for(const item of this.allActive())item.controller.abort();
     this.closePromise=Promise.resolve().then(async()=>{
       // A pending Promise alone does not keep Node alive after stdin is gone.
       // Keep the transport alive until its safe drain has actually completed.
       const keepAlive=setInterval(()=>{},1000);
       try{
-        await this.controlTail.catch(()=>{});this.active?.controller.abort();
-        try{await this.active?.promise;}
+        await this.controlTail.catch(()=>{});
+        const active=this.allActive();for(const item of active)item.controller.abort();
+        try{await Promise.allSettled(active.map(item=>item.promise));}
         finally{
           // No timeout applies to a running task or state commit. Only idle
           // disconnect cleanup is bounded; failures cannot skip store release.

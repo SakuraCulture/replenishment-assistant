@@ -26,8 +26,8 @@ async function context(){
     async verifyIdentity(){return identity;},
     async querySingle(){return {warehouseCode:'WARE01',name:target.displayName,total:1,observedAt:new Date().toISOString(),identity};},
     async prepareExport(){return {taskIds:[],total:0};},
-    async submitOnce({intentId}){submits++;this.onReceipt?.({intentId,taskId:'task123',code:'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2',scope:{buyerWarehouseCodeList:['WARE01'],extraKeys:[]}});return {taskId:'task123',code:'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2'};},
-    async findTask(){return {taskId:'task123',taskStatus:'FINISHED',successCount:'1',failCount:'0',code:'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2',fileUrl:'https://tc-open-gateway-supply-deploy.oss-cn-zhangjiakou.aliyuncs.com/export/task123/file.xlsx?signature=not-a-real-signature'};},
+    async submitOnce({intentId}){submits++;const receipt={intentId,taskId:'task123',code:'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2',scope:{buyerWarehouseCodeList:['WARE01'],extraKeys:[]}};this.onReceipt?.(receipt);return receipt;},
+    async findTask(taskId='task123'){return {taskId,taskStatus:'FINISHED',successCount:'1',failCount:'0',code:'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2',fileUrl:'https://tc-open-gateway-supply-deploy.oss-cn-zhangjiakou.aliyuncs.com/export/task123/file.xlsx?signature=not-a-real-signature'};},
   };
   const args={state,adapter,config:freshConfig(identity,[target]),binding:{outputRoot:path.join(root,'output')},download:async()=>{downloads++;return {file,sha256:sha256(bytes),bytes:bytes.length,taskId:'task123'};}};
   return {root,state,adapter,args,counts:()=>({submits,downloads})};
@@ -105,6 +105,38 @@ test('提交结果未知不可重放；正面受理已记录时可恢复同任�
   const known=d.state.rows('runs')[0];assert.equal(d.state.rows('attempts')[0].stage,'ACCEPTED');
   await new Coordinator(d.args).run({runId:known.id});assert.deepEqual(d.counts(),{submits:1,downloads:1});d.state.close();
 });
+
+for(const [error,taskCounts] of [['TASK_HAS_FAILURES',{failCount:'1'}],['ROW_COUNT_MISMATCH',{successCount:'2'}]]){
+  test(`显式重试可重取已确认失败的原导出 ${error}，同一重试只派发一次`,async t=>{
+    const c=await context(),coordinator=new Coordinator(c.args);t.after(()=>c.state.close());
+    const submit=c.adapter.submitOnce,find=c.adapter.findTask;
+    c.adapter.submitOnce=async function(params){
+      const handler=this.onReceipt;
+      const tag=receipt=>({...receipt,taskId:'attempt-'+c.counts().submits});
+      this.onReceipt=receipt=>handler(tag(receipt));
+      try{return tag(await submit.call(this,params));}finally{this.onReceipt=handler;}
+    };
+    c.adapter.findTask=async id=>({...await find(id),...(id==='attempt-1'?taskCounts:{})});
+    await assert.rejects(()=>coordinator.run({mode:'rerun',independent:true}),{code:error});
+    const run=c.state.rows('runs')[0],old=c.state.rows('attempts')[0];
+    await assert.rejects(()=>coordinator.run({runId:run.id,independent:true}),{code:error});
+    assert.equal(c.counts().submits,1);
+    const retry={runId:run.id,independent:true,phase:'submit',retryId:'one-retry',retryError:error};
+    await coordinator.run(retry);
+    const current=c.state.getAttempt(c.state.getItems(run.id)[0].attemptId);
+    assert.equal(current.priorAttemptId,old.id);
+    assert.equal(current.taskId,'attempt-2');
+    c.state.recordReceipt({...old.receipt});
+    assert.equal(c.state.getAttempt(old.id).stage,old.stage);
+    assert.equal(c.state.getItems(run.id)[0].attemptId,current.id);
+    await coordinator.run(retry);
+    assert.equal(c.counts().submits,2);
+    const done=await coordinator.run({...retry,phase:'collect'});
+    assert.equal(done.status,'SUCCEEDED');
+    assert.equal(c.state.getItems(run.id)[0].assetSnapshot.taskId,'attempt-2');
+    assert.equal(c.state.getAttempt(old.id).taskId,'attempt-1');
+  });
+}
 test('已下载后本地保存失败，恢复不再访问浏览器或重新下载',async()=>{
   const c=await context();
   await assert.rejects(()=>new Coordinator({...c.args,publish:async()=>{throw new AppError('SAVE_BLOCKED','模拟文件占用');}}).run(),{code:'SAVE_BLOCKED'});

@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[1];sys.path[:0]=[str(ROOT/'src'),str(ROOT/
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--out',type=Path,required=True);parser.add_argument('--exe',type=Path);args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--out',type=Path,required=True);parser.add_argument('--exe',type=Path);parser.add_argument('--durable',action='store_true');args=parser.parse_args()
     out=args.out.resolve();out.relative_to(ROOT/'qa');out.mkdir(parents=True,exist_ok=False);(out/'inputs').mkdir();(out/'exports').mkdir()
     from test_stockout_analysis import workbook
     from stockout_repository import Repository
@@ -19,7 +19,7 @@ def main():
     path=workbook(out/'inputs'/'store.xlsx',['仓库/门店编码','商品编码','商品名称','月销','可用库存','在途库存'],[['S',r[0],r[0],1,r[5],0] for r in rows])
     fixture={'day':today(),'catalogs':catalogs,'files':[{'store':'S','file':str(path),'sha256':file_hash(path),'rows':4,'observed':today()+'T08:00:00+08:00'}]}
     (out/'fixture.json').write_text(json.dumps(fixture,ensure_ascii=False),'utf-8');(out/'synthetic.json').write_text('{"synthetic":true,"live_platform":false}','utf-8')
-    command=([str(args.exe.resolve())] if args.exe else [sys.executable,str(ROOT/'src/app.py')])+['--stockout-hub-smoke',str(out)]
+    command=([str(args.exe.resolve())] if args.exe else [sys.executable,str(ROOT/'src/app.py')])+['--stockout-hub-smoke',str(out)]+(['--durable'] if args.durable else [])
     env={**os.environ,'REPLENISHMENT_DATA_DIR':str(settings),'LOCALAPPDATA':str(out/'localappdata'),'QT_QPA_PLATFORM':'windows','PYTHONUTF8':'1'}
     with (out/'process.log').open('wb') as log:
         process=subprocess.Popen(command,cwd=ROOT,env=env,stdout=log,stderr=log,creationflags=subprocess.CREATE_NO_WINDOW);begin=time.monotonic()

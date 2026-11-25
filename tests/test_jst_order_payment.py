@@ -121,10 +121,10 @@ class OrderPayment(unittest.TestCase):
             ({'binding': receipts[second]['binding']}, '企业、店铺或线上单号'),
             ({'items': []}, '商品款数'),
             ({'items': [{**item, 'sku': '0002'}]}, '原仓单外商品'),
-            ({'items': [{**item, 'qty': '20', 'price': '4'}]}, '逐项数量或单价'),
+            ({'items': [{**item, 'qty': '20', 'price': '4'}]}, '数量与原生成单不同'),
             ({'buyer_check': 'mismatch'}, '完整买家账号与原任务不同'),
             ({'buyer_check': 'masked_conflict'}, '隐号'),
-            ({'native_status': '已取消'}, '原单身份待核'),
+            ({'native_status': '已取消', 'items': []}, '原单身份待核'),
         ):
             with self.subTest(changes=changes), patch.object(self.portal, 'action', side_effect=read):
                 receipts[first] = {**valid, **changes}
@@ -154,6 +154,109 @@ class OrderPayment(unittest.TestCase):
                 self.assertEqual(order['internal'], valid['internal'] if online == first else receipts[online]['internal'])
                 self.assertEqual(len(sources.history(db, online)), 1)
                 self.assertIsNone(lifecycle.current(db, order['payload']['head'], 'payment'))
+
+    def test_masked_buyer_can_bind_original_with_line_amount_pending(self):
+        order = self.base.read(self.online)
+        automatic._save(self.path, order, 'IMPORT_UNKNOWN', None, reason='合成平台已落原单')
+        sku, qty, price = order['payload']['lines'][0]
+        item = {'sku': sku, 'qty': qty, 'price': price, 'amount': '79.99'}
+        receipt = {'found': True, 'buyer_check': 'unavailable', 'contact_ok': False,
+                   'online': self.online, 'internal': '90013', 'native_status': confirmation.AWAITING,
+                   'binding': order['proof']['binding'], 'items': [item], 'detail_count': 1,
+                   'currency': 'CNY', 'freight': '0', 'amount': '79.99'}
+        with patch.object(self.portal, 'action', return_value=receipt) as read:
+            result, = automatic.process(self.path, self.keys, self.portal, 'recover',
+                                        prepare_payment=service.pull_order_payment)
+            self.assertEqual((result['stage'], result['internal']), ('IMPORTED', '90013'))
+            self.assertEqual(result['payment']['state'], 'NEEDS_REVIEW')
+            self.assertIn(f'商品 {sku}', result['payment']['message'])
+            self.assertIn('平台行金额 79.99 元', result['payment']['message'])
+            self.assertIn('差额 -0.01 元', result['payment']['message'])
+            self.assertEqual(jobs.waiting_review(self.path), [])
+            self.assertFalse(lifecycle.snapshot(self.path,self.base.head)['present']['payment'])
+            item['amount'] = receipt['amount'] = '80.00'
+            result, = automatic.process(self.path, self.keys, self.portal, 'recover',
+                                        prepare_payment=service.pull_order_payment)
+        self.assertEqual(result['internal'], '90013')
+        self.assertEqual(result['payment']['state'], 'READY')
+        self.assertEqual([call.args[0] for call in read.call_args_list], ['lookup','payment_detail']*2)
+        self.assertEqual([op for op, _ in self.portal.calls], ['preview'])
+
+    def test_bound_original_can_read_cancelled_status_with_hidden_buyer(self):
+        self.submit()
+        order = self.base.read(self.online)
+        original = self.portal.orders[self.online]
+        original.update(native_status='已取消', status='review', buyer_check='unavailable', contact_ok=False)
+        for changes in ({'buyer_check':'mismatch'}, {'buyer_check':'masked_conflict'},
+                        {'internal':'6002'}, {'detail_error':'原生整单明细身份待核'}):
+            with self.subTest(changes=changes), patch.dict(original, changes):
+                check, = automatic.process(self.path, self.keys, self.portal, 'recover')
+                self.assertFalse(check['ok'])
+                self.assertEqual(check['stage'], 'IMPORTED')
+        check, = automatic.process(self.path, self.keys, self.portal, 'recover')
+        self.assertEqual((check['stage'],check['internal']), ('CANCELLED',order['internal']))
+        with closing(wr.read_connection(self.path)) as db:
+            from jst_order_store import active, locked
+            self.assertEqual(active(db,order['payload']['head']), order['gid'])
+            self.assertEqual(locked(db,order['payload']['head']), order['gid'])
+        self.assertEqual([op for op, _ in self.portal.calls].count('import'), 1)
+
+    def test_unbound_cancelled_original_can_redo_with_verified_native_items(self):
+        from jst_cancellation import begin_redo
+        from jst_order_store import active, locked
+
+        _, south_keys = self.prepare_south()
+        keys = self.keys + south_keys
+        originals = {online: self.base.read(online) for online in keys}
+        for online, internal in zip(keys, ('90017', '90018')):
+            order = originals[online]
+            automatic._save(self.path, order, 'IMPORT_UNKNOWN', None, reason='合成平台已导入，内部号尚未回写')
+            sku, quantity, price = order['payload']['lines'][0]
+            # The cancelled line retains the inventory quantity; its former
+            # price and refund state are not evidence of a new payment.
+            items = [{'sku':sku, 'qty':quantity, 'price':price, 'amount':'0',
+                      'item_status':'Cancelled', 'refund_status':'Refunded'}]
+            self.portal.orders[online] = {'internal':internal, 'status':'review', 'native_status':'已取消',
+                                          'buyer_check':'unavailable', 'contact_ok':False,
+                                          'detail_count':1, 'items':items}
+
+        for online, peer in (keys, keys[::-1]):
+            order = originals[online]
+            head = order['payload']['head']
+            remote = self.portal.orders[online]
+            item, = remote['items']
+            cases = (
+                ({'native_status':'被合并'}, '被合并'),
+                ({'buyer_check':'masked_conflict'}, '隐号'),
+                ({'buyer_check':'mismatch'}, '完整买家账号与原任务不同'),
+                ({'binding': originals[peer]['proof']['binding']}, '企业、店铺或线上单号'),
+                ({'items': [], 'detail_count':0}, '商品款数'),
+                ({'detail_error':'原生整单明细身份不同'}, '整单明细身份不同'),
+                ({'items':[dict(item, qty='1')]}, '数量与原生成单不同'),
+                ({'items':[dict(item, sku='other')]}, '原仓单外商品'),
+            )
+            for changes, hint in cases:
+                with self.subTest(warehouse=head['warehouse'], changes=changes), patch.dict(remote, changes):
+                    check, = automatic.process(self.path, [online], self.portal, 'recover')
+                    self.assertFalse(check['ok'])
+                    self.assertIn(hint, check['reason'])
+                    self.assertIsNone(self.base.read(online)['internal'])
+                    with self.assertRaisesRegex(ValueError, '明确返回'):
+                        begin_redo(self.path, online)
+            check, = automatic.process(self.path, [online], self.portal, 'recover')
+            self.assertEqual((check['stage'], check['internal']), ('CANCELLED', remote['internal']))
+            with closing(wr.read_connection(self.path)) as db:
+                self.assertEqual(active(db, head), order['gid'])
+                self.assertEqual(locked(db, head), order['gid'])
+                self.assertIsNone(lifecycle.current(db, head, 'payment'))
+            redo = begin_redo(self.path, online)
+            self.assertNotEqual(redo['online'], online)
+            self.assertEqual(redo['released'], {item['sku']:item['qty']})
+            self.assertEqual(begin_redo(self.path, online), redo)
+            with closing(wr.read_connection(self.path)) as db:
+                self.assertIsNone(active(db, head))
+                self.assertIsNone(locked(db, head))
+        self.assertFalse([action for action, _ in self.portal.calls if action in ('import','audit')])
 
     def test_insufficient_buyer_evidence_or_conflict_blocks_payment_recheck(self):
         ready = self.submit()['payment']
@@ -212,7 +315,28 @@ class OrderPayment(unittest.TestCase):
 
         plan, _ = service.prepare_review(self.path,self.keys)
         lifecycle.commit(self.path,plan)
+        receipt_request = {'stage_view':'receipt','stage_filter':'待处理','all_matched':True}
+        cache = self.base.f.f.root/'progress.sqlite'
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待发货')
+        self.assertEqual(daily_batch.read(self.path,cache,receipt_request)['records'],[])
+        for state in (confirmation.AUDITED, confirmation.SHIPPED):
+            self.portal.orders[self.online]['native_status'] = state
+            result, = service.pull_order_payment(self.path,self.keys,self.portal)
+            self.assertEqual(result['state'],'MATCHES_PAYMENT')
+            self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待发货')
+            self.assertEqual(daily_batch.read(self.path,cache,receipt_request)['records'],[])
+
+        self.portal.orders[self.online]['native_status'] = confirmation.DELIVERING
+        self.portal.detail_buyer_check = 'mismatch'
+        service.pull_order_payment(self.path,self.keys,self.portal)
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待发货')
+        self.portal.detail_buyer_check = 'verified'
+        service.pull_order_payment(self.path,self.keys,self.portal)
         self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待收货')
+        self.portal.orders[self.online]['native_status'] = confirmation.SHIPPED
+        service.pull_order_payment(self.path,self.keys,self.portal)
+        self.assertEqual([r['number'] for r in daily_batch.read(self.path,cache,receipt_request)['records']], [head['number']])
+        self.assertEqual(len(lifecycle.history(self.path,head,'payment')),1)
         form = self.base.f.f
         receipt, _ = form.save('receipt',[{'实际收货数量':11}])
         saved = receipt['plans'][0]['payload']
@@ -393,3 +517,9 @@ class OrderPayment(unittest.TestCase):
                            p['total_quantity'],p['payment_total_amount']) for p in both],
                          [('QA-HB','0001','6001','12','33'),('QA-SD','0002','6002','9','24.75')])
         self.assertEqual([lifecycle.snapshot(self.path,h)['present']['receipt'] for h in heads],[False,False])
+        self.assertEqual([lifecycle.snapshot(self.path,h)['status'] for h in heads],['待发货','待发货'])
+        for online, statuses in zip(keys, (['待收货','待发货'], ['待收货','待收货'])):
+            self.portal.orders[online]['native_status'] = confirmation.DELIVERING
+            [verified] = automatic.process(self.path,[online],self.portal,'recover')
+            self.assertTrue(verified['ok'], verified)
+            self.assertEqual([lifecycle.snapshot(self.path,h)['status'] for h in heads],statuses)

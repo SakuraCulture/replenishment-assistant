@@ -52,6 +52,26 @@ class ScheduleTests(unittest.TestCase):
         self.repo=sr.Repository(self.work.path,lambda:self.now)
         self.s={'name':'早班','plan_id':'p','time':'06:30','kind':'weekly','weekdays':[2],'workers':2,'enabled':True,'check_signature':'verified'}
     def tearDown(self):self.tmp.cleanup()
+    def test_busy_commit_keeps_original_transaction_and_one_registration(self):
+        repo=self.repo;repo.ensure();opened=threading.Event();committing=threading.Event()
+        with repo.db() as db:
+            db.execute('BEGIN');db.execute('SELECT id FROM scheduled_runs').fetchall()
+            outcomes=[]
+            def write():
+                try:
+                    with repo.db(True) as transaction:
+                        transaction.execute("INSERT INTO scheduled_arrangements VALUES('busy-probe','{}')")
+                        committing.set()
+                    outcomes.append('saved')
+                except Exception as exc:outcomes.append(exc)
+                finally:opened.set()
+            writer=threading.Thread(target=write);writer.start()
+            self.assertTrue(committing.wait(2))
+            self.assertFalse(opened.wait(1.2))
+            db.commit()
+        writer.join(5)
+        self.assertEqual(outcomes,['saved'])
+        with repo.db() as db:self.assertEqual(db.execute("SELECT count(*) FROM scheduled_arrangements WHERE id='busy-probe'").fetchone()[0],1)
     def test_once_trigger_and_no_duplicate_after_restart(self):
         self.repo.save_schedule(self.s);self.now+=timedelta(minutes=1)
         r=self.repo.due();self.assertEqual(len(r),1);self.assertEqual(r[0]['day'],'2026-11-04');self.assertEqual(self.repo.due(),[])
@@ -70,6 +90,36 @@ class ScheduleTests(unittest.TestCase):
         r=self.repo.manual(self.s);running=self.repo.claim(r['id']);self.repo.recover()
         with self.assertRaises(wr.Conflict):self.repo.change(r['id'],epoch=running['epoch'],state='COMPLETE')
         with self.assertRaises(wr.Conflict):self.repo.resume(r['id'],running['revision'])
+    def test_process_restart_recovers_only_active_same_day_originals(self):
+        old=self.repo.claim(self.repo.manual(self.s)['id'])
+        self.now+=timedelta(days=1)
+        active=self.repo.claim(self.repo.manual(self.s)['id'])
+        self.repo.change(active['id'],epoch=active['epoch'],external={'ax':'original'},retry_codes=['B'],retry_id='selected')
+        self.repo.save_value(active['id'],'checkpoint',{'store':'A','quantity':12},active['epoch'])
+        paused=self.repo.claim(self.repo.manual(self.s)['id']);self.repo.request_pause(paused['id'])
+        ended=self.repo.claim(self.repo.manual(self.s)['id']);self.repo.request_pause(ended['id'],True)
+        self.repo.recover(after_process_exit=True)
+        recovered=self.repo.get(active['id'])
+        self.assertEqual(recovered['state'],'QUEUED')
+        self.assertEqual((recovered['external'],recovered['retry_codes'],recovered['retry_id']),({'ax':'original'},['B'],'selected'))
+        self.assertTrue(recovered['recovering_process'])
+        self.assertEqual(self.repo.value(active['id'],'checkpoint'),{'store':'A','quantity':12})
+        self.assertEqual([self.repo.get(run['id'])['state'] for run in (old,paused,ended)],['PAUSED','PAUSED','ENDED'])
+        self.assertIn('跨业务日',self.repo.get(old['id'])['message'])
+        self.repo.recover(after_process_exit=True)
+        self.assertEqual(recovered,self.repo.get(active['id']))
+
+    def test_process_restart_does_not_reissue_a_completed_failed_export(self):
+        from scheduled_platforms import Platforms
+        from unittest.mock import Mock
+        client,jobs=Mock(),Mock()
+        job={'id':'original','state':'COMPLETED_WITH_ERRORS','sequence':2,
+             'record':{'items':[{'index':0,'state':'FAILED','warehouse_code':'A'}]}}
+        self.assertFalse(Platforms.continue_sales(client,jobs,job,None,None,after_process_exit=True))
+        client.request.assert_not_called()
+        self.assertTrue(Platforms.continue_sales(client,jobs,job,['A'],'selected',after_process_exit=True))
+        client.request.assert_called_once_with('collection.retry_selected',command_id='original',indices=[0],sequence=2,retry_id='selected')
+
     def test_chunk_copy_and_garbage_collection_keep_run(self):
         import normal_orders,storage_maintenance,data_maintenance
         normal_orders.Repository(self.work)
@@ -176,6 +226,42 @@ class ExecutionTests(unittest.TestCase):
         old=self.repo.value(r['id'],'result:B');self.repo.resume(r['id'],r['revision'],['A']);self.backend.data=self.catalogs
         se.Runner(self.repo,self.backend,self.root).execute(r['id']);self.assertEqual(self.repo.get(r['id'])['state'],'COMPLETE')
         self.assertEqual(self.repo.value(r['id'],'result:B'),old)
+    def test_ended_partial_run_retries_only_selected_and_persists_scope(self):
+        both=self.backend.manifest
+        self.backend.manifest={**both,'files':both['files'][:1]}
+        first=self.run_one()
+        self.assertEqual([s['state'] for s in first['stores']],['READY','FAILED'])
+        saved=self.repo.value(first['id'],'result:A')
+        self.repo.request_pause(first['id'],True)
+        ended=self.repo.get(first['id'])
+        with self.assertRaises(wr.Conflict):self.repo.resume(ended['id'],ended['revision'])
+        with self.assertRaises(ValueError):self.repo.resume(ended['id'],ended['revision'],['A','B'])
+        queued=self.repo.resume(ended['id'],ended['revision'],['B'])
+        self.assertEqual(queued,self.repo.resume(ended['id'],ended['revision'],['B']))
+        self.repo.claim(ended['id']);self.repo.recover()
+        paused=self.repo.get(ended['id'])
+        resumed=self.repo.resume(paused['id'],paused['revision'])
+        self.assertEqual(resumed['retry_id'],queued['retry_id'])
+        self.assertEqual(resumed['retry_codes'],['B'])
+        self.backend.manifest=both
+        se.Runner(self.repo,self.backend,self.root).execute(ended['id'])
+        self.assertEqual(self.repo.get(ended['id'])['state'],'COMPLETE')
+        self.assertEqual(self.repo.value(ended['id'],'result:A'),saved)
+
+    def test_signed_after_queue_blocks_recollection_before_platform_access(self):
+        import normal_orders
+        self.backend.manifest={**self.backend.manifest,'files':self.backend.manifest['files'][:1]}
+        partial=self.run_one()
+        self.repo.resume(partial['id'],partial['revision'],['B'])
+        normal_orders.Repository(self.work)
+        with self.repo.db(True) as db:
+            db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',
+                       (partial['day'],'B','regular','isolated-order','BH-B',1))
+        self.backend.calls.clear()
+        se.Runner(self.repo,self.backend,self.root).execute(partial['id'])
+        self.assertEqual(self.backend.calls,['release'])
+        self.assertIn('已有签发：B',self.repo.get(partial['id'])['message'])
+
     def test_pause_recovers_frozen_profile_and_no_daily_overwrite(self):
         stop=threading.Event();self.backend.cancel=stop;r=self.repo.manual(self.s)
         se.Runner(self.repo,self.backend,self.root,stop).execute(r['id']);r=self.repo.get(r['id']);self.assertEqual(r['state'],'PAUSED')
@@ -217,6 +303,49 @@ class ExecutionTests(unittest.TestCase):
             se.publish_catalogs(self.repo,r['id'],self.root)
         self.assertEqual(self.repo.get(r['id'])['publication']['state'],'PUBLISHED')
         self.assertEqual(self.repo.value(r['id'],'result:A'),before)
+
+    def test_continue_original_without_new_warehouse_read(self):
+        before=copy.deepcopy(self.catalogs)
+        run=self.repo.manual(self.s);rid=run['id']
+        older=LocalBackend(before,{'files':self.manifest['files'][:1]})
+        se.Runner(self.repo,older,self.root).execute(rid)
+        partial=self.repo.get(rid);self.assertEqual(partial['state'],'REVIEW')
+        done=self.repo.value(rid,'result:A')
+        newer=copy.deepcopy(before)
+        newer['山东仓']['items']['0001']['可用数']=60
+        newer['山东仓']['revision']=wc.revision(newer['山东仓']['items'])
+        wc.Repository(self.root).save(newer['山东仓'])
+        self.repo.resume(rid,partial['revision'])
+        still_original=LocalBackend(newer,self.manifest)
+        se.Runner(self.repo,still_original,self.root).execute(rid)
+        self.assertNotIn('catalogs',still_original.calls)
+        self.assertEqual(self.repo.get(rid)['state'],'COMPLETE')
+        self.assertEqual(self.repo.value(rid,'catalogs'),before)
+        self.assertEqual(self.repo.value(rid,'result:A'),done)
+
+    def test_publication_recovers_replace_without_receipt(self):
+        run=self.run_one();rid=run['id']
+        master=wc.Repository(self.root)
+        actual=master.save_locked
+        saved=[]
+        def replace_then_interrupt(instance,data,**kw):
+            actual(data,**kw);saved.append(data['warehouse'])
+            raise OSError('synthetic interruption after replace')
+        candidates=copy.deepcopy(self.repo.value(rid,'catalogs'))
+        for c in candidates.values():c['imported_at']='2026-11-04T10:00:00'
+        get_value=self.repo.value
+        with patch.object(self.repo,'value',side_effect=lambda run_id,key,*args:
+                          candidates if key=='catalogs' else get_value(run_id,key,*args)):
+            with patch.object(wc.Repository,'save_locked',replace_then_interrupt):
+                with self.assertRaisesRegex(OSError,'after replace'):
+                    se.publish_catalogs(self.repo,rid,self.root)
+            publication=self.repo.get(rid)['publication'];wh=saved[0]
+            self.assertEqual(publication['state'],'PUBLISHING')
+            self.assertEqual(master.current_digest(wh),publication['intents'][wh])
+            def save_other(instance,data,**kw):
+                self.assertNotEqual(data['warehouse'],wh);actual(data,**kw)
+            with patch.object(wc.Repository,'save_locked',save_other):se.publish_catalogs(self.repo,rid,self.root)
+        self.assertEqual(self.repo.get(rid)['publication']['state'],'PUBLISHED')
 
     def test_publication_holds_invalid_stock_and_publishes_valid_sibling(self):
         run=self.run_one();rid=run['id']

@@ -10,6 +10,8 @@ PENDING = {
     'receipt': '待收货',
 }
 FINISHED = '已收齐'
+WAITING_SHIPMENT = '待发货'
+SHIPMENT_CHECK = 'jst_shipping'
 TITLES = {
     'return': '门店回传单',
     'payment': '门店付款单',
@@ -29,7 +31,7 @@ def presence_state(present):
         if not present.get(stage): return STATUSES[i], stage
     return STATUSES[-1], None
 
-def progress_state(summaries, legacy=None, operations_required=False):
+def progress_state(summaries, legacy=None, operations_required=False, *, shipment=None):
     summaries=dict(summaries)
     stages=route(operations_required or summaries.get('operations'))
     if not summaries['return'] and legacy and legacy['complete']:
@@ -55,10 +57,15 @@ def progress_state(summaries, legacy=None, operations_required=False):
     order_note='已核实聚水潭原单，待人工确认付款' if order_valid and not health['payment'] else ''
     if not summaries['return'] and not (legacy and legacy['complete']):return PENDING['return'],'return','',health
     for i,s in enumerate(stages[1:],1):
+        document=summaries.get(s)
         prev=ordered if s=='receipt' and order_valid else summaries.get(stages[i-1])
-        if not summaries.get(s):
-            if prev and health[stages[i-1]] and prev['schema']==DOCUMENT_SCHEMA and prev['positive']==0 and not any(summaries.get(k) for k in stages[i:]):
-                return STATUSES[-1],None,('无要货，无需后续运营、分配、付款或收货' if stages[i-1] in ('return','operations') else '无付款数量，无需收货'),health
+        if not document and prev and health[stages[i-1]] and prev['schema']==DOCUMENT_SCHEMA and prev['positive']==0 and not any(summaries.get(k) for k in stages[i:]):
+            return STATUSES[-1],None,('无要货，无需后续运营、分配、付款或收货' if stages[i-1] in ('return','operations') else '无付款数量，无需收货'),health
+        if s=='receipt' and not health[s] and shipment and not shipment['ready']:
+            status = shipment['status']
+            observed = f'原单当前为“{status}”，' if status else ''
+            return WAITING_SHIPMENT,SHIPMENT_CHECK,'已确认付款，'+observed+'待核实聚水潭原单发货中（打单拣货）',health
+        if not document:
             return PENDING[s],s,order_note,health
         if not health[s]:return PENDING[s],s,order_note if s=='payment' and order_note else TITLES[s]+'对照依据已更新或未就绪，请重新核对',health
     return STATUSES[-1],None,order_note or '单据已收齐；不代表数量完全一致',health

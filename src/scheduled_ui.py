@@ -2,6 +2,7 @@
 import copy
 import threading
 from datetime import datetime
+from sqlite3 import OperationalError
 from PySide6.QtCore import QObject,QTimer,Qt
 from PySide6.QtWidgets import (QDialog,QWidget,QVBoxLayout,QHBoxLayout,QFormLayout,QTabWidget,
     QTableWidget,QTableWidgetItem,QLineEdit,QComboBox,QSpinBox,QCheckBox,QMessageBox,QProgressBar,QTimeEdit,QDateEdit)
@@ -41,9 +42,12 @@ class Manager(QObject):
         self.host.import_page.layout().insertWidget(1,button('定时补货 · 设置与运行记录',self.open))
         from catalog_session_ui import manager
         self.catalog_owner=manager(host).session
+        from application_runtime import current
+        recovery=getattr(current(),'process_recovery',None)
+        self.recover_after_exit=bool(recovery and recovery.restarted)
+        self.recovered=not self.owner
         self.timer=QTimer(self);self.timer.setInterval(2000);self.timer.timeout.connect(self.poll)
         host.destroyed.connect(self.shutdown)
-        if self.owner:self.repo.recover()
         self.timer.start();QTimer.singleShot(0,self.poll)
 
     def platform(self,cancel):return Platforms(self.folder,self.repo.path,self.host.aoxiang_workflows,self.catalog_owner,cancel)
@@ -52,19 +56,27 @@ class Manager(QObject):
         h=self.host
         pending=getattr(h,'_large_io_dialog',None)
         maintenance=getattr(getattr(h,'aoxiang_workflows',None),'maintenance_depth',0)
-        return bool(getattr(h,'_data_location_preparing',False) or getattr(h,'worker',None) or pending is not None and not pending._completed or
+        from unattended_resources import configured
+        parallel=configured(self.folder)
+        return bool(getattr(h,'_data_location_preparing',False) or getattr(h,'worker',None) or pending is not None and not pending._completed and not getattr(pending,'scoped_collection',False) or
                     maintenance or
                     getattr(getattr(h,'browser_startup',None),'workers',None) or
-                    h.catalog_sessions.session.lease or
-                    h.jst_generator.worker or getattr(getattr(h,'stockout',None),'worker',None) or getattr(h,'closing',False))
+                    not parallel and (h.catalog_sessions.session.lease or getattr(getattr(h,'stockout',None),'worker',None)
+                                      or getattr(getattr(h,'timed_workbench',None),'worker',None)) or
+                    h.jst_generator.worker or getattr(h,'closing',False))
 
     def poll(self):
         if self.reader or self.closing or getattr(self.host,'_data_location_preparing',False):return
         pending=getattr(self.host,'_large_io_dialog',None)
         manager=getattr(self.host,'aoxiang_workflows',None)
-        if (pending is not None and not pending._completed) or getattr(manager,'maintenance_depth',0):
+        if (pending is not None and not pending._completed and not getattr(pending,'scoped_collection',False)) or getattr(manager,'maintenance_depth',0):
             self.status.setText('定时检查等待当前保存、签发或数据维护结束；不会启动新作业');return
         def read(_):
+            resources=getattr(self.catalog_owner,'resources',None)
+            if resources:resources.check()
+            if not self.recovered:
+                self.repo.recover(after_process_exit=self.recover_after_exit)
+                self.recovered=True
             if not self.repo.exists():return None
             if self.owner:self.repo.due()
             return self.repo.schedules(),self.repo.list(limit=50)['items'],self.repo.next_queued()
@@ -74,13 +86,15 @@ class Manager(QObject):
             self.schedules,self.recent,queued=value
             self.queued_for_execution=bool(queued)
             stockout=getattr(self.host,'stockout',None)
-            if queued and stockout and stockout.worker:stockout.pause('定时补货已排队，分析安全让行；可稍后继续原分析任务')
+            from unattended_resources import configured
+            if queued and stockout and stockout.worker and not configured(self.folder):stockout.pause('定时补货已排队，分析安全让行；可稍后继续原分析任务')
             active=next((r for r in self.recent if r['state'] in ('RUNNING','PAUSING','REVIEW','COMPLETE') and not r['viewed']),None)
             future=[s['next_at'] for s in self.schedules if s['enabled'] and s.get('next_at')]
             self.status.setText(('另一个窗口负责定时执行 · ' if not self.owner else '')+
                 (active['schedule']['name']+' · '+sr.STATES[active['state']] if active else '下次：'+min(future)[5:16].replace('T',' ')+'（北京时间）' if future else '定时补货：未启用安排'))
             if self.owner and not self.worker and not self.publisher and not self.busy():
-                pending=next((r for r in reversed(self.recent) if r['state']=='COMPLETE' and not r.get('publication')),None)
+                pending=next((r for r in reversed(self.recent) if r['state']=='COMPLETE' and
+                              r.get('publication',{}).get('state') in (None,'PUBLISHING')),None)
                 if pending and not self.host.loaded and not self.host.job_dirty:self.publish(pending)
                 elif queued:self.start(queued)
         def failed(error):
@@ -172,6 +186,8 @@ class Editor(QDialog):
             c=QCheckBox('周'+n);c.setChecked(i<5);days.addWidget(c);self.days.append(c)
         form.addRow('执行星期',days);self.date=QDateEdit();self.date.setCalendarPopup(True);self.date.setDate(self.date.date().currentDate());form.addRow('指定日期',self.date)
         self.workers=QSpinBox();self.workers.setRange(1,4);self.workers.setValue(2);form.addRow('同时计算门店数',self.workers)
+        self.catalog_source=QComboBox();self.catalog_source.addItem('本次从聚水潭重新采集','refresh');self.catalog_source.addItem('固定当前默认仓资料','default')
+        form.addRow('仓资料采用方式',self.catalog_source)
         self.note=label('保存并启用时复用已核验的翱象门店和聚水潭仓账号。计算完成后进入人工核对。','muted');self.note.setWordWrap(True);v.addWidget(self.note)
         self.progress=QProgressBar();self.progress.hide();v.addWidget(self.progress)
         self.stop=button('取消本次保存',self.reject);self.stop.hide();v.addWidget(self.stop)
@@ -179,6 +195,7 @@ class Editor(QDialog):
         if existing:
             self.name.setText(existing['name']);self.plan.setCurrentIndex(self.plan.findData(existing['plan_id']));self.clock.setTime(self.clock.time().fromString(existing['time'],'HH:mm'));self.kind.setCurrentIndex(self.kind.findData(existing['kind']))
             self.date.setDate(self.date.date().fromString(existing.get('date',sr.stamp().date().isoformat()),'yyyy-MM-dd'));self.workers.setValue(existing['workers'])
+            self.catalog_source.setCurrentIndex(self.catalog_source.findData(existing.get('catalog_source','refresh')))
             for i,c in enumerate(self.days):c.setChecked(i in existing.get('weekdays',[]))
         else:self.name.setText(self.plan.currentText().split(' · ')[0] or '补货安排')
         self.kind.currentIndexChanged.connect(self.kind_changed);self.kind_changed()
@@ -191,7 +208,8 @@ class Editor(QDialog):
         plan=next((p for p in self.plans if p['id']==self.plan.currentData()),None)
         return sr.schedule_value({'name':self.name.text(),'plan_id':self.plan.currentData(),'plan_name':plan['name'] if plan else '', 'stores':plan['stores'] if plan else [],
             'time':self.clock.time().toString('HH:mm'),'kind':self.kind.currentData(),'date':self.date.date().toString('yyyy-MM-dd'),
-            'weekdays':[i for i,c in enumerate(self.days) if c.isChecked()],'workers':self.workers.value(),'enabled':False})
+            'weekdays':[i for i,c in enumerate(self.days) if c.isChecked()],'workers':self.workers.value(),
+            'catalog_source':self.catalog_source.currentData(),'enabled':False})
 
     def save(self,enabled):
         if self.worker:
@@ -255,6 +273,7 @@ class Editor(QDialog):
 class Window(QDialog):
     def __init__(self,manager):
         super().__init__(manager.host);self.m=manager;self.worker=None;self.editor=None;self.offset=0;self.current=None;self.records=[]
+        self.checked_stores=set()
         self.setWindowTitle('定时补货');self.resize(1150,780);v=QVBoxLayout(self)
         v.addWidget(label('定时准备，人工签发','title'));v.addWidget(label('电脑和软件保持运行。错过时间不自动补跑；有问题只重试失败项，成功结果保留。','muted'))
         self.tabs=QTabWidget();v.addWidget(self.tabs);a=QWidget();b=QWidget();self.tabs.addTab(a,'执行安排');self.tabs.addTab(b,'运行记录')
@@ -269,14 +288,27 @@ class Window(QDialog):
         self.runs=table(['日期 / 安排','状态','当前阶段','完成门店','最新情况']);self.runs.itemSelectionChanged.connect(self.select);bv.addWidget(self.runs,1)
         paging=QHBoxLayout();paging.addWidget(button('上一页',lambda:self.turn(-1)));paging.addWidget(button('下一页',lambda:self.turn(1)));self.page_note=label('');paging.addWidget(self.page_note);bv.addLayout(paging)
         self.detail=label('选择一次任务，查看门店进度。','muted');self.detail.setWordWrap(True);bv.addWidget(self.detail)
-        self.bar=QProgressBar();bv.addWidget(self.bar);self.stores=table(['门店','处理状态','金额','说明']);bv.addWidget(self.stores,1)
+        self.bar=QProgressBar();bv.addWidget(self.bar)
+        self.stores=table(['勾选','门店','处理状态','金额','说明']);bv.addWidget(self.stores,1)
+        self.stores.itemChanged.connect(self.store_checked)
+        self.stores.itemSelectionChanged.connect(self.retry_controls)
+        choices=QHBoxLayout();bv.addLayout(choices)
+        self.check_failures=button('勾选全部未完成门店',lambda:self.check_stores(True));choices.addWidget(self.check_failures)
+        self.clear_failures=button('清空勾选',lambda:self.check_stores(False));choices.addWidget(self.clear_failures)
+        self.retry_count=label('','muted');choices.addWidget(self.retry_count,1)
         actions=QHBoxLayout();bv.addLayout(actions)
         self.run_actions={}
         for text,fn in [('核对已完成门店',self.open_result),('继续原任务',self.resume),('重试所选失败门店',self.retry),('暂停本次',lambda:self.pause(False)),('结束本次',lambda:self.pause(True)),('删除已结束记录',self.delete)]:
             b=button(text,fn,text=='核对已完成门店');self.run_actions[text]=b;actions.addWidget(b)
-        details=QHBoxLayout();details.addWidget(button('查看所选门店当时参数',self.parameters));details.addWidget(button('采用本任务仓资料为默认',self.publish));bv.addLayout(details)
+        details=QHBoxLayout();details.addWidget(button('查看所选门店当时参数',self.parameters));details.addWidget(button('查看本次采用仓资料',self.catalog_details))
+        details.addWidget(button('采用本任务仓资料为默认',self.publish));details.addWidget(button('按新资料另跑',self.repeat_with_current));bv.addLayout(details)
         self.note=label('','muted');v.addWidget(self.note);bottom=QHBoxLayout();bottom.addWidget(button('刷新',self.refresh));bottom.addWidget(button('关闭',self.close));v.addLayout(bottom)
         self.timer=QTimer(self);self.timer.setInterval(2000);self.timer.timeout.connect(self.refresh);self.timer.start();self.refresh()
+
+    def select_run(self,rid):
+        self.current=rid;self.offset=0;self.query.clear()
+        self.group.setCurrentIndex(self.group.findData('all'))
+        self.tabs.setCurrentIndex(1);self.refresh()
 
     def call(self,fn,success=lambda _:None):
         if self.worker:return
@@ -286,22 +318,21 @@ class Window(QDialog):
 
     def refresh(self):
         if self.editor:return
-        selected=self.current
-        ai=self.arrangements.currentRow();store_code=None
-        if self.stores.currentRow()>=0:
-            try:store_code=self.selected()['stores'][self.stores.currentRow()]['code']
-            except (ValueError,IndexError):pass
         # Capture widget values on GUI thread, never read widgets in a background worker.
         q=self.query.text().strip();g=self.group.currentData();offset=self.offset
         def read(_):return self.m.repo.schedules(),self.m.repo.list(offset=offset,limit=50,query=q,group=g)
         def show(value):
-            self.ss,page=value;self.records=page['items'];self.total=page['total']
+            selected=self.current;ai=self.arrangements.currentRow();store_code=self.focused_store()
+            self.ss,page=value;self.total=page['total']
+            current={r['id']:r for r in self.records}
+            self.records=[current[r['id']] if r['id'] in current and current[r['id']]['revision']>r['revision'] else r for r in page['items']]
             fill(self.arrangements,[[s['name'],s.get('plan_name') or '预案待核对',('每周 '+''.join('一二三四五六日'[i] for i in s.get('weekdays',[])) if s['kind']=='weekly' else s['date'])+' '+s['time'],(s.get('next_at') or '—')[:16].replace('T',' '),'已启用' if s['enabled'] else '未启用'] for s in self.ss])
             if ai>=0 and ai<len(self.ss):self.arrangements.selectRow(ai)
             self.runs.blockSignals(True);fill(self.runs,[[r['day']+' / '+r['schedule']['name'],sr.STATES[r['state']],r['stage'],f"{sum(s['state']=='READY' for s in r['stores'])}/{len(r['stores'])}",r['message']] for r in self.records]);self.runs.blockSignals(False)
             self.page_note.setText(f'共{self.total}次 · 每页50次 · 当前第{self.offset//50+1}页')
             index=next((i for i,r in enumerate(self.records) if r['id']==selected),0 if self.records else -1)
-            if index>=0:self.runs.selectRow(index);self.select()
+            if index>=0:self.runs.selectRow(index)
+            self.select()
             if store_code and index>=0:
                 si=next((i for i,s in enumerate(self.records[index]['stores']) if s['code']==store_code),-1)
                 if si>=0:self.stores.selectRow(si)
@@ -319,16 +350,59 @@ class Window(QDialog):
         return self.ss[i]
     def select(self):
         try:r=self.selected()
-        except ValueError:return
+        except ValueError:
+            self.current=None;self.checked_stores.clear();self.stores.setRowCount(0)
+            for b in self.run_actions.values():b.setEnabled(False)
+            self.retry_controls();return
+        if self.current!=r['id']:self.checked_stores.clear()
         self.current=r['id'];done=sum(s['state']=='READY' for s in r['stores'])
         active=r['state'] in ('RUNNING','PAUSING');counted=r['stage'] in ('计算门店','等待人工核对','已安全停止','需要处理')
         self.bar.setRange(0,(len(r['stores']) or 1) if counted or not active else 0);self.bar.setValue(done)
         elapsed=max(0,int((sr.stamp()-datetime.fromisoformat(r['created'])).total_seconds()))
         self.detail.setText(f"{r['stage']} · {'本次已用 '+str(elapsed//60)+'分'+str(elapsed%60)+'秒 · ' if active else ''}最后业务更新 {r['updated'][11:19]} · {r['message']}\n关闭窗口不会停止任务；停止需等运行中的门店安全完成。")
-        allowed={'核对已完成门店':bool(done) and not active,'继续原任务':r['state'] in ('REVIEW','PAUSED'),'重试所选失败门店':r['state'] in ('REVIEW','PAUSED'),'暂停本次':r['state'] in ('RUNNING','QUEUED'),'结束本次':r['state'] not in ('ENDED','MISSED'),'删除已结束记录':r['state'] in ('ENDED','MISSED')}
+        allowed={'核对已完成门店':bool(done) and r['state'] not in sr.ACTIVE,'继续原任务':r['state'] in ('REVIEW','PAUSED'),'重试所选失败门店':False,'暂停本次':r['state'] in ('RUNNING','QUEUED'),'结束本次':r['state'] not in ('ENDED','MISSED'),'删除已结束记录':r['state'] in ('ENDED','MISSED')}
         for name,b in self.run_actions.items():b.setEnabled(allowed[name])
         labels={'PENDING':'等待','READY':'可核对','RUNNING':'计算中','FAILED':'需处理'}
-        fill(self.stores,[[s['name'],labels.get(s['state'],s['state']),f"{s['amount']:,.2f}" if 'amount'in s else '—',s['message']] for s in r['stores']])
+        failures=self.retryable_stores(r)
+        self.checked_stores.intersection_update(s['code'] for s in r['stores'] if s['state']!='READY')
+        self.stores.blockSignals(True)
+        fill(self.stores,[['',s['name'],labels.get(s['state'],s['state']),f"{s['amount']:,.2f}" if 'amount'in s else '—',s['message']] for s in r['stores']])
+        for i,s in enumerate(r['stores']):
+            item=self.stores.item(i,0);code=s['code']
+            item.setData(Qt.ItemDataRole.UserRole,code)
+            if code in failures:
+                item.setFlags(item.flags()|Qt.ItemFlag.ItemIsUserCheckable)
+                item.setCheckState(Qt.CheckState.Checked if code in self.checked_stores else Qt.CheckState.Unchecked)
+            self.stores.item(i,4).setToolTip(s['message'])
+        self.stores.blockSignals(False);self.retry_controls()
+
+    def focused_store(self):
+        row=self.stores.currentRow()
+        item=self.stores.item(row,0) if row>=0 else None
+        return item.data(Qt.ItemDataRole.UserRole) if item else None
+
+    def retryable_stores(self,run):
+        if run['state'] not in ('REVIEW','PAUSED','ENDED'):return []
+        return [s['code'] for s in run['stores'] if s['state']!='READY']
+
+    def store_checked(self,item):
+        if item.column()!=0:return
+        code=item.data(Qt.ItemDataRole.UserRole)
+        if item.checkState()==Qt.CheckState.Checked:self.checked_stores.add(code)
+        else:self.checked_stores.discard(code)
+        self.retry_controls()
+
+    def check_stores(self,select_all):
+        self.checked_stores=set(self.retryable_stores(self.selected())) if select_all else set()
+        self.select()
+
+    def retry_controls(self):
+        try:codes=self.retryable_stores(self.selected())
+        except ValueError:codes=[]
+        count=len(self.checked_stores.intersection(codes))
+        self.check_failures.setEnabled(bool(codes) and count<len(codes));self.clear_failures.setEnabled(bool(count))
+        self.run_actions['重试所选失败门店'].setEnabled(bool(count) or self.focused_store() in codes)
+        self.retry_count.setText(f'已勾选 {count} 家 · 可重试 {len(codes)} 家')
     def edit(self,existing=None):
         if self.editor:return
         self.editor=Editor(self,self.m,existing);self.editor.finished.connect(lambda _:self.editor_done());self.editor.setModal(True);self.editor.show()
@@ -351,16 +425,38 @@ class Window(QDialog):
         def act():
             s=self.schedule()
             if not sr.has_verified_bindings(s):raise ValueError('请编辑安排并保存启用，再执行一次')
-            if ask(self,'今天执行一次','按该预案获取新文件并计算；不签发、不覆盖当前工作台。继续？'):
+            source='固定当前默认仓资料' if s.get('catalog_source')=='default' else '从聚水潭重新采集仓资料'
+            if ask(self,'今天执行一次',f'按该预案获取门店建议，{source}并计算，完成后等待人工核对。继续？'):
                 self.m.repo.manual(s);self.tabs.setCurrentIndex(1);self.refresh();self.m.poll()
         self.guard(act)
-    def resume(self):self.guard(lambda:self.m.repo.resume(self.selected()['id'],self.selected()['revision']));self.refresh()
+
+    def repeat_with_current(self):
+        def act():
+            r=self.selected()
+            if r['state'] in sr.ACTIVE:raise ValueError('请等待原任务到安全点，再按新资料另跑')
+            if not ask(self,'按新资料另跑','按原安排预案建立新任务，采用新任务读取时的默认仓资料。原运行和已保存结果可继续查看。'):return
+            s={**r['schedule'],'catalog_source':'default'}
+            new=self.m.repo.manual(s,repeated_from=r['id'])
+            self.note.setText('新任务 '+new['id']+' 已排队');self.m.poll();self.refresh()
+        self.guard(act)
+    def queue_resume(self,codes=None):
+        r=self.selected()
+        try:saved=self.m.repo.resume(r['id'],r['revision'],codes)
+        except OperationalError as e:
+            if 'locked' not in str(e).lower() and 'busy' not in str(e).lower():raise
+            self.note.setText('数据库正在保存其他作业。本次未排入，请稍后重试。');return
+        self.records[self.runs.currentRow()]=saved
+        self.select();self.note.setText(saved['message']);self.m.poll();self.refresh()
+
+    def resume(self):self.guard(self.queue_resume)
     def retry(self):
         def act():
-            r=self.selected();i=self.stores.currentRow()
-            if i<0:raise ValueError('请选择一个未完成门店')
-            self.m.repo.resume(r['id'],r['revision'],[r['stores'][i]['code']])
-        self.guard(act);self.refresh()
+            possible=self.retryable_stores(self.selected())
+            codes=[code for code in possible if code in self.checked_stores]
+            if not codes and self.focused_store() in possible:codes=[self.focused_store()]
+            if not codes:raise ValueError('请勾选或选中尚未完成的门店')
+            self.queue_resume(codes)
+        self.guard(act)
     def pause(self,end):
         def act():
             r=self.selected()
@@ -408,6 +504,26 @@ class Window(QDialog):
                 self.note.setText(result[0])
                 for catalog in result[1].values():self.m.host.current_warehouse_adopted(catalog)
             self.call(apply,adopted)
+        self.guard(act)
+
+    def catalog_details(self):
+        def act():
+            r=self.selected()
+            def read(_):
+                from scheduled_execution import adopted_catalogs
+                from warehouse_catalog import Repository
+                basis=self.m.repo.value(r['id'],'basis',{});warehouses=basis.get('warehouses',[])
+                used=adopted_catalogs(self.m.repo,r['id'],warehouses)
+                current=Repository(self.m.folder).snapshots(warehouses)[0]
+                receipts=r.get('catalog_adoptions',{})
+                return [[wh,used.get(wh,{}).get('revision','待采用'),current.get(wh,{}).get('revision','未留存'),
+                         receipts.get(wh,{}).get('adopted_at','未留存'),used.get(wh,{}).get('source_path',''),
+                         used.get(wh,{}).get('source_sha256','')] for wh in warehouses]
+            def display(rows):
+                from interaction_ui import show_rows
+                show_rows(self,'本次采用仓资料',['仓库','本次版本','当前默认版本','本次采用时间','原件','原件SHA-256'],rows,
+                          '原任务沿用本次采用的完整仓资料。新运行按自己的采用方式取资料。')
+            self.call(read,display)
         self.guard(act)
     def closeEvent(self,e):
         if self.worker or self.editor and self.editor.worker:self.note.setText('请等待当前读取或核验安全结束');e.ignore()

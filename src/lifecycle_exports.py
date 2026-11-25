@@ -13,6 +13,7 @@ from history_read import repository
 from runtime_support import checkpoint,Cancelled
 from export_progress import RowProgress
 from xlsx_exports import stream_book
+import export_receipts as receipts
 
 
 def retained_versions(path, heads, stage, cancel):
@@ -33,6 +34,28 @@ def retained_versions(path, heads, stage, cancel):
             views.append({'head': head, 'version': version})
     return views
 
+
+def validate_retained(db, views, stage):
+    from archive_orders import require_active
+    import lifecycle_store
+    import warehouse_execution
+    for view in views:
+        head = view['head']
+        require_active(db, head['oid'], head['warehouse'])
+        if warehouse_execution.has_parent(db, head['oid']):
+            warehouse_execution.active_snapshot_source(db, head)
+        else:
+            row = db.execute('SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',
+                             (head['oid'], head['revision'])).fetchone()
+            if not row or row[0] != head['digest']:
+                raise ValueError(head['number'] + '原签发修订已变化')
+        version, digest = view['version']
+        current = db.execute('SELECT digest FROM lifecycle_versions WHERE oid=? AND revision=? '
+                             'AND warehouse=? AND stage=? AND version=?',
+                             (*lifecycle_store.key(head), stage, version)).fetchone()
+        if not current or current[0] != digest:
+            raise ValueError(head['number'] + '原环节版本已变化，请重新核对')
+
 def returned_book(path,view,folder,progress,cancel,stage='return'):
     h=view['head']
     import archive_orders
@@ -51,11 +74,19 @@ def returned_book(path,view,folder,progress,cancel,stage='return'):
             doc = view['documents'][stage]
         order = warehouse_execution.get_order(repo, h, view='export', progress=progress, db=db)
     if order['digest']!=h['digest']:raise ValueError('签发修订校验失败')
-    original=Path(folder)/('original-'+uuid.uuid4().hex+'.xlsx');ne.export(order,original,warehouse=h['warehouse'],progress=progress,cancel=cancel)
-    b=openpyxl.load_workbook(original)
-    original.unlink()
+    b = ne.returned_template(order, h['warehouse'], progress, cancel)
+    if b is None:
+        original=Path(folder)/('original-'+uuid.uuid4().hex+'.xlsx')
+        try:
+            ne.export(order,original,warehouse=h['warehouse'],progress=progress,cancel=cancel)
+            b=openpyxl.load_workbook(original)
+        finally:
+            original.unlink(missing_ok=True)
     rows={r['sku']:r for r in doc['payload']['rows']};raw_rows={r['sku']:r for r in doc['payload'].get('raw_rows',doc['payload']['rows'])};seen=set();last_rows={}
     try:
+        for name in ('签发输出格式', '本月新品可编辑'):
+            if name in b.custom_doc_props.names:
+                del b.custom_doc_props[name]
         for ws in b:
             if ws.title==identity.SHEET:continue
             ws['Q1'].comment=Comment('补货数量为本版'+('门店确认数' if stage=='return' else '运营确认数')+'；原签发与门店回传独立保留在应用中。','补货助手')
@@ -151,18 +182,27 @@ def merge_returns(path, group, temp, stage, numbers, progress, cancel):
     return file, identities
 
 def export_returns(path,views,folder,mode,progress,cancel,*,stage='return'):
-    from export_files import verify_identity
+    from export_files import sha256, verify_identity
+    from purchases import connect
     completed=[]
     groups=[[v] for v in views] if mode=='separate' else [[v for v in views if v['head']['warehouse']==w] for w in dict.fromkeys(v['head']['warehouse'] for v in views)]
+    title='门店回传单' if stage=='return' else '运营签发单'
+    pending=[]
+    for group in groups:
+        head=group[0]['head'];description=head['number'] if mode=='separate' else '多订单'
+        name=f'{title}-{head["warehouse"]}-{description}-{uuid.uuid4().hex[:8]}.xlsx'
+        pending.append({'path':str((Path(folder)/name).resolve()),'heads':[v['head'] for v in group],
+                        'versions':[list(v['version']) for v in group], 'state':'未执行','stage':'准备'})
+    receipt=receipts.begin(path,'lifecycle-stage',pending,stage_kind=stage,mode=mode,signature=title+'按原环节版本导出')
+    item=None
     try:
-        for i,group in enumerate(groups):
+        for i,(group,item) in enumerate(zip(groups,pending)):
             checkpoint(cancel);numbers={}
             for v in group:
                 h=v['head']
                 if h['number'] in numbers:raise ValueError('同一仓单多个修订不能合并为门店表，请分别导出，避免回传关联歧义')
                 numbers[h['number']]=h['revision']
             with tempfile.TemporaryDirectory(prefix='.returned-',dir=folder) as temp:
-                title='门店回传单' if stage=='return' else '运营签发单'
                 if len(group) > 1:
                     temp_file, identities = merge_returns(path, group, temp, stage, numbers, progress, cancel)
                 else:
@@ -173,9 +213,28 @@ def export_returns(path,views,folder,mode,progress,cancel,*,stage='return'):
                         progress('压缩保存'+title+'，完成后响应取消…')
                         book.save(temp_file)
                 verify_identity(temp_file, identities)
-                name=title+'-'+group[0]['head']['warehouse']+'-'+(group[0]['head']['number'] if mode=='separate' else '多订单')+'-'+uuid.uuid4().hex[:8]+'.xlsx';target=Path(folder)/name
-                checkpoint(cancel);os.link(temp_file,target);completed.append(str(target))
+                target=Path(item['path']);digest=sha256(temp_file)
+                item.update(sha256=digest,identities=identities,state='待核发布',stage='等待正式发布',
+                            publish_intent={'path':str(target),'sha256':digest})
+                if not receipts.update(path,receipt):
+                    raise OSError('未能保存原环节导出发布意图')
+                checkpoint(cancel)
+                with closing(connect(path)) as db, db:
+                    db.execute('BEGIN IMMEDIATE')
+                    validate_retained(db,group,stage)
+                    os.link(temp_file,target)
+                completed.append(str(target))
+                item.update(state='已完成',stage='完成')
+                if not receipts.update(path,receipt):
+                    raise OSError('文件已发布，请在原导出任务中补回执')
             progress(RowProgress('已导出'+title,i+1,len(groups)))
-        return {'files':completed,'cancelled':False,'error':None}
-    except Cancelled:return {'files':completed,'cancelled':True,'error':None}
-    except Exception as exc:return {'files':completed,'cancelled':False,'error':str(exc)}
+        receipt['state']='已完成';receipts.update(path,receipt)
+        return {'files':completed,'cancelled':False,'error':None,'task':receipt['id']}
+    except Cancelled:
+        receipt['state']='已停止剩余项';receipts.update(path,receipt)
+        return {'files':completed,'cancelled':True,'error':None,'task':receipt['id']}
+    except Exception as exc:
+        if item is not None:
+            item['error']=str(exc)
+        receipt['state']='导出未全部完成';receipts.update(path,receipt)
+        return {'files':completed,'cancelled':False,'error':str(exc),'task':receipt['id']}

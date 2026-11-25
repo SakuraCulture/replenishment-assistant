@@ -163,18 +163,25 @@ export class StateStore{
   getRun(id){const r=this.db.prepare('SELECT payload FROM runs WHERE id=?').get(id);return r?JSON.parse(r.payload):null;}
   putItem(item){this.requireCollection(item.runId);const old=this.db.prepare('SELECT run_id FROM items WHERE id=?').get(item.id);if(old&&old.run_id!==item.runId)fail('ITEM_ID_CHANGED','原采集明细不能改属其他作业');this.write(()=>this.db.prepare('INSERT OR REPLACE INTO items VALUES(?,?,?)').run(item.id,item.runId,JSON.stringify(item)));}
   getItems(runId){return this.db.prepare('SELECT payload FROM items WHERE run_id=?').all(runId).map(r=>JSON.parse(r.payload));}
-  putAttempt(attempt){
+  putAttempt(attempt,linkedItem){
     this.requireCollection(attempt.runId);
     const old=this.getAttempt(attempt.id);
     if(old){this.requireCollection(old.runId);for(const key of ['runId','itemId','accountId','merchantCode','buyerWarehouseCode','scopeHash'])if(old[key]!==attempt[key])fail('ATTEMPT_ID_CHANGED','原提交身份或门店归属不能更换');}
     if(old?.taskId&&attempt.taskId!==old.taskId)fail('TASK_ID_CHANGED','既有任务身份不能被重写');
     if(old?.stage==='SUBMISSION_UNKNOWN'&&attempt.stage==='SUBMITTING')fail('UNKNOWN_SUBMISSION','未决提交不能再次发送');
-    this.write(()=>this.db.prepare('INSERT OR REPLACE INTO attempts VALUES(?,?,?,?,?,?,?,?)').run(attempt.id,attempt.itemId,tenantKey(attempt),attempt.buyerWarehouseCode,attempt.scopeHash,attempt.stage,attempt.taskId||null,JSON.stringify(attempt)));
+    if(linkedItem&&(linkedItem.id!==attempt.itemId||linkedItem.runId!==attempt.runId||linkedItem.attemptId!==attempt.id))
+      fail('ATTEMPT_ID_CHANGED','新采集意图必须关联原门店');
+    this.write(()=>{
+      this.db.prepare('INSERT OR REPLACE INTO attempts VALUES(?,?,?,?,?,?,?,?)').run(attempt.id,attempt.itemId,tenantKey(attempt),attempt.buyerWarehouseCode,attempt.scopeHash,attempt.stage,attempt.taskId||null,JSON.stringify(attempt));
+      if(linkedItem&&this.db.prepare('UPDATE items SET payload=? WHERE id=? AND run_id=?').run(JSON.stringify(linkedItem),linkedItem.id,linkedItem.runId).changes!==1)
+        fail('ATTEMPT_ID_CHANGED','原门店采集记录缺失，未提交新意图');
+    });
   }
   getAttempt(id){if(!id)return null;const r=this.db.prepare('SELECT payload FROM attempts WHERE id=?').get(id);return r?JSON.parse(r.payload):null;}
   recordReceipt(receipt){
     const a=receipt?.intentId?this.getAttempt(receipt.intentId):null;if(!a)return false;
-    if(this.collectionEnded(a.runId)){
+    const active=this.getItems(a.runId).find(item=>item.id===a.itemId)?.attemptId;
+    if(this.collectionEnded(a.runId)||active&&active!==a.id&&['FAILED_CONFIRMED','DOWNLOADED'].includes(a.stage)){
       const late=[...(a.lateReceipts||[])];
       if(!late.some(r=>r.taskId===receipt.taskId))late.push({...receipt,observedAt:now()});
       this.write(()=>this.db.prepare('UPDATE attempts SET payload=? WHERE id=?').run(JSON.stringify({...a,lateReceipts:late}),a.id));return true;
@@ -183,7 +190,8 @@ export class StateStore{
     const expected=a.semanticVersion==='D13-all-info-1'?'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT':'SAAS-CHAIN-PLAN-REPLENISH-ADVICE-EXPORT-V2',s=receipt.scope;
     const extras=s?.extraKeys||Object.keys(s||{}).filter(k=>k!=='buyerWarehouseCodeList');
     const correct=receipt.code===expected&&JSON.stringify(s?.buyerWarehouseCodeList)===JSON.stringify([a.buyerWarehouseCode])&&!extras.length;
-    this.putAttempt({...a,stage:['SUCCEEDED','ABANDONED'].includes(a.stage)?a.stage:correct?'ACCEPTED':'WRONG_SCOPE_ACCEPTED',taskId:receipt.taskId,receipt});return true;
+    const advanced=correct&&['FINISHED','DOWNLOADED','VALIDATED','PUBLISHING','FAILED_CONFIRMED'].includes(a.stage);
+    this.putAttempt({...a,stage:advanced||['SUCCEEDED','ABANDONED'].includes(a.stage)?a.stage:correct?'ACCEPTED':'WRONG_SCOPE_ACCEPTED',taskId:receipt.taskId,receipt});return true;
   }
   pending(identity,warehouseCode,scope,purpose){
     const key=tenantKey(identity);
