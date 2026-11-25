@@ -143,7 +143,7 @@ async function locateNativeOrder(page,frame,spec,signal){
 
 export async function readImportResult(page,frame,spec,signal){
   const found=await locateNativeOrder(page,frame,spec,signal);
-  if(!found)return {found:false,shop_id:spec.binding.shop_id};
+  if(!found)return {found:false,shop_id:spec.binding.shop_id,online:spec.online,exact_absence:true};
   const {internal,online,shop,native,native_status}=found;
   const [status]=Object.values(statuses).find(([,label])=>label===native_status);
   const result={found:true,internal,online,shop,shop_id:native.shop_id,status,native_status};

@@ -8,6 +8,9 @@ import {bindingRequest,canBind,bindingEligible,checkedBinding} from './purchase-
 import {fileHash} from './workbook-validator.mjs';
 import {errorInfo} from './machine-runtime.mjs';
 import {runKnownPurchase} from './purchase-known-scope.mjs';
+import {markedOrders} from './purchase-manual.mjs';
+import {requireHostFacts} from './purchase-host-guard.mjs';
+import {bindingView} from './purchase-create-ledger.mjs';
 
 async function checkedFile(manifest){
   const bytes=await fs.readFile(await portablePath(manifest.file));
@@ -19,22 +22,28 @@ async function checkedFile(manifest){
 
 export class PurchaseBindingService{
   constructor({state,creates,creationService,progress=()=>{},coordinatorFactory=o=>new PurchaseCoordinator(o)}){Object.assign(this,{state,creates,creationService,progress,coordinatorFactory});}
-  async observe(id,proposal,{signal}){
-    const r=this.creates.get(id);canBind(r);
+  async readProof(r,proposal,{signal,confirming=false}={}){
+    const id=r.id;
     const p=r.intent,request=bindingRequest(proposal.request),context=await this.creationService.context(p,signal);
-    await this.creationService.preflight(p,{forBinding:true});
+    const manual=Boolean(request.operator),requireNote=manual||r.uploadAttempted;
+    await this.creationService.preflight(p,{forBinding:true,...(manual?{manual}: {})});
     const stop=()=>{if(signal?.aborted)fail('PAUSED','已停止核对；原采购任务和已受理导出保留');};stop();
     let marked=[];
-    if(r.uploadAttempted){
+    if(manual){
+      const result=await markedOrders(context.adapter,r);
+      marked=result.marked.filter(c=>!(r.baseline?.orderIds||[]).includes(c.supplyOrderId)).map(c=>c.supplyOrderId);
+    }else if(r.uploadAttempted){
       if(!r.baseline?.from||!Array.isArray(r.baseline.orderIds))fail('BINDING_BASELINE_MISSING','缺少原上传前范围，无法排除旧单和意外多单');
       const current=await context.adapter.queryCreateOrders({identity:p.identity,buyerWarehouseCode:p.basis.store,name:p.target.displayName,from:r.baseline.from,to:businessDate(),dateBasis:'created'});
       stop();
       if(!sameIdentity(current.query?.identity,p.identity))fail('WRONG_IDENTITY','采购候选查询身份变化');
       marked=current.rows.filter(c=>c.buyerMessage===p.note&&!r.baseline.orderIds.includes(c.supplyOrderId)).map(c=>c.supplyOrderId);
-      if(marked.length!==1||marked[0]!==request.order_id)fail('PURCHASE_NOT_UNIQUE','本次上传标记下不是恰好这一张采购单，保留待核，不重传');
     }
+    stop();
+    if(requireNote&&(marked.length!==1||marked[0]!==request.order_id))
+      fail('PURCHASE_NOT_UNIQUE','本次导入标记下不是恰好这一张采购单，保留原任务待核',{orders:marked.slice(0,30)});
     const engine=this.coordinatorFactory({state:this.state,...context,onProgress:e=>{
-      if(e.stage==='PURCHASE_RUNNING'){
+      if(!confirming&&e.stage==='PURCHASE_RUNNING'){
         const current=this.creates.get(id);this.creates.putBindingProposal(id,current.sequence,{...current.bindingProposal,runId:e.runId},'BINDING_DOWNLOAD_BOUND');
       }
       this.progress(e.stage);
@@ -43,10 +52,19 @@ export class PurchaseBindingService{
       await runKnownPurchase(engine,this.state,{target:p.target,orderId:request.order_id,rerun:true,...(proposal.runId?{runId:proposal.runId}:{})});
     stop();
     if(!sameIdentity(run.identity,p.identity)||(request.created_day?(run.from!==request.created_day||run.to!==request.created_day):run.queryMode!=='order_id'))fail('BINDING_PROOF','采购查询日期、单号精查口径或身份不符');
-    const candidate={supplyOrderId:request.order_id,buyerMessage:r.uploadAttempted?p.note:''};
+    const candidate={supplyOrderId:request.order_id,buyerMessage:requireNote?p.note:''};
     const evidence=await nativeCreationEvidence(p,null,candidate,engine,run);
-    const proof={schema:1,operation:'purchase.binding.proof',purchaseId:id,basis:p.basis,request,requireNote:r.uploadAttempted,uniqueMarkedOrders:marked,runId:run.id,evidence,...(!request.created_day?{nativeCreatedDay:run.pairValidation?.createdDay||null}:{})};
-    checkedBinding(this.creates.get(id),proof);stop();
+    stop();
+    return {schema:1,operation:'purchase.binding.proof',purchaseId:id,basis:p.basis,request,requireNote,uniqueMarkedOrders:marked,runId:run.id,evidence,...(!request.created_day?{nativeCreatedDay:run.pairValidation?.createdDay||null}:{})};
+  }
+  async observe(id,proposal,{signal}){
+    const r=this.creates.get(id);canBind(r);
+    const p=r.intent,request=proposal.request;
+    if(request.operator)requireHostFacts(p,request.host_facts);
+    const proof=await this.readProof(r,proposal,{signal});
+    const binding=checkedBinding(this.creates.get(id),proof);
+    if(request.operator)requireHostFacts(p,request.host_facts);
+    const stop=()=>{if(signal?.aborted)fail('PAUSED','核对已停止，保留原采购记录');};
     const folder=path.join(this.state.root,'purchase-binding-proofs');await fs.mkdir(folder,{recursive:true});
     const file=path.join(folder,proposal.id+'.json'),bytes=canonical(proof)+'\n';
     let saved=proof;
@@ -56,27 +74,46 @@ export class PurchaseBindingService{
       if(canonical(stable(saved))!==canonical(stable(proof)))fail('BINDING_PROOF_CHANGED','原核对文件已存在但内容不同，不能覆盖');}
     const manifest={file,sha256:sha256(await fs.readFile(file))};stop();
     const current=this.creates.get(id);
-    return this.creates.putBindingProposal(id,current.sequence,{...current.bindingProposal,state:'READY',manifest,summary:{orderId:request.order_id,status:saved.evidence.main.status,rows:p.rows.length,quantity:p.totalQuantity,amount:p.totalAmount,store:p.basis.store,supplier:p.supplierCode},error:null},'BINDING_PREVIEW_READY');
+    const revision=binding.manualRevision;
+    return this.creates.putBindingProposal(id,current.sequence,{...current.bindingProposal,state:'READY',manifest,summary:{orderId:request.order_id,status:saved.evidence.main.status,rows:revision?.rows.length??p.rows.length,quantity:revision?.totalQuantity??p.totalQuantity,amount:revision?.totalAmount??p.totalAmount,differences:revision?.differences??0,store:p.basis.store,supplier:p.supplierCode},error:null},'BINDING_PREVIEW_READY');
   }
-  async confirm(id,proposalId,sequence,hash){
+  async confirm(id,proposalId,sequence,hash,hostFacts){
     let r=this.creates.get(id),proposal=r.bindingProposal;
     if(r.state==='BOUND'&&r.binding.proposalId===proposalId&&r.binding.proofSha256===hash)return r;
     if(r.sequence!==sequence||proposal?.id!==proposalId||proposal.state!=='READY'||proposal.manifest.sha256!==hash)fail('BINDING_PREVIEW_STALE','关联预览已变化，请重新核对');
     const proof=await checkedFile(proposal.manifest);checkedBinding(r,proof);
-    await this.creationService.preflight(r.intent,{forBinding:true});
-    return this.creates.confirmBinding(id,sequence,proof,proposalId,hash);
+    if(proof.request.operator){
+      try{
+        if(proof.request.host_facts!==hostFacts)fail('BINDING_PREVIEW_STALE','原仓单依据已变化，请重新核对');
+        requireHostFacts(r.intent,hostFacts);
+        const fresh=await this.readProof(r,{...proposal,runId:null},{confirming:true});
+        checkedBinding(this.creates.get(id),fresh);
+        const stable=e=>({main:e.main,rows:e.rows.map(({_sourceRow,...row})=>row).sort((a,b)=>a.sku<b.sku?-1:a.sku>b.sku?1:0)});
+        if(canonical(stable(fresh.evidence))!==canonical(stable(proof.evidence)))
+          fail('BINDING_PREVIEW_STALE','平台状态或采购明细已变化，请查看最新原件后重新核对');
+        requireHostFacts(r.intent,hostFacts);
+      }catch(error){
+        const latest=this.creates.get(id);
+        if(latest.sequence===sequence&&['BINDING_PREVIEW_STALE','PURCHASE_BASIS_CHANGED','PURCHASE_NOT_UNIQUE','PURCHASE_DETAIL_MISMATCH','PURCHASE_CREATED_MISMATCH'].includes(error.code))
+          this.creates.putBindingProposal(id,sequence,{...proposal,state:'STALE',error:errorInfo(error)},'BINDING_CONFIRM_RECHECK_FAILED');
+        throw error;
+      }
+    }else await this.creationService.preflight(r.intent,{forBinding:true});
+    const save=()=>this.creates.confirmBinding(id,sequence,proof,proposalId,hash);
+    return proof.request.operator?requireHostFacts(r.intent,hostFacts,save):save();
   }
 }
 
 export class MachinePurchaseBinding{
   constructor({creates,service,onFatal=()=>{}}){Object.assign(this,{creates,service,onFatal});this.job=null;this.pending=null;}
   get busy(){return !!this.pending;}
-  status(id){const r=this.creates.get(id);return {purchase_id:id,sequence:r.sequence,proposal:r.bindingProposal||null,active:this.busy&&this.job?.id===id,stage:this.job?.id===id?this.job.stage:null};}
+  status(id){const r=this.creates.get(id);return {purchase_id:id,sequence:r.sequence,proposal:bindingView(r.bindingProposal),active:this.busy&&this.job?.id===id,stage:this.job?.id===id?this.job.stage:null};}
   progress(stage){if(this.job)this.job.stage=stage;}
   start(id,request){
     if(this.busy)fail('BINDING_BUSY','当前核对仍在执行或安全结束');
     bindingRequest(request);let r=this.creates.get(id);canBind(r);
-    const previous=r.bindingProposal,same=previous&&canonical(previous.request)===canonical(request);
+    if(!request.operator&&r.receipt)fail('BINDING_NOT_ELIGIBLE','请从本单人工处理入口核对原受理采购');
+    const previous=r.bindingProposal,same=previous&&previous.state!=='STALE'&&canonical(previous.request)===canonical(request);
     if(same&&previous.state==='READY')return this.status(id);
     const proposal=same?{...previous,state:'RUNNING',error:null}:{id:'bind-'+uid(),request,state:'RUNNING',runId:null,manifest:null,summary:null,error:null,createdAt:now()};
     r=this.creates.putBindingProposal(id,r.sequence,proposal,'BINDING_CHECK_STARTED');

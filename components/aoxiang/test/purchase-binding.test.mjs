@@ -14,6 +14,9 @@ import {sha256} from '../src/common.mjs';
 import {PurchaseReceipts} from '../src/purchase-receipt-ledger.mjs';
 import {PurchaseReceiptService} from '../src/purchase-receipt-service.mjs';
 import {validateRequest} from '../src/machine-protocol.mjs';
+import {recordOriginalExport,originalExportSource,takeOverPurchase} from '../src/purchase-manual.mjs';
+import {MachinePurchaseCreate} from '../src/machine-purchase-create.mjs';
+import {importResult} from '../src/purchase-import-result.mjs';
 
 const h='a'.repeat(64),request={order_id:'PO1',created_day:'2026-11-01',reason:'核对已有采购单'};
 const escape=v=>String(v).replaceAll('&','&amp;').replaceAll('<','&lt;');
@@ -31,21 +34,29 @@ function intent(){
     rows:[{sku:'000123456789012345678',name:'甲',quantity:'2',amount:'0.99'},{sku:'0002',name:'乙',quantity:'3',amount:'2.01'}],totalQuantity:'5',totalAmount:'3.00',
     file:{path:path.resolve('sample.xlsx'),sha256:h,bytes:300},template:{recordFile:path.resolve('template.json'),sha256:h,attemptId:'sample'}};
 }
-async function fixture(t,{status='待提交',unknown=false}={}){
+async function fixture(t,{status='待提交',unknown=false,manual=false}={}){
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'ax-binding-')),state=await StateStore.open(root),creates=await PurchaseCreates.open(state),p=intent();
+  if(manual){
+    const file=path.join(root,'source.xlsx'),bytes=Buffer.from('controlled original file bytes'.repeat(10));
+    await fs.writeFile(file,bytes);
+    p.file={path:file,sha256:sha256(bytes),bytes:bytes.length};
+    for(const [i,row] of p.rows.entries())row.unitPrice=i?'0.67':'0.50';
+  }
   t.after(async()=>{state.close();await fs.rm(root,{recursive:true,force:true});});creates.reserve(p,h);
   if(unknown){let r=creates.get(p.id);for(const next of ['PREPARING','READY','SUBMITTING','NEEDS_REVIEW'])r=creates.update(p.id,r.sequence,next,next==='READY'?{baseline:{from:'2026-11-01',orderIds:[]}}:next==='SUBMITTING'?{uploadAttempted:true}:{});}
   const main=Array(25).fill('');Object.assign(main,{0:'PO1',1:status,3:'T',5:p.supplierCode,6:'2',7:'5',8:'3.00'});
-  const rows=p.rows.map(r=>{const a=Array(43).fill('');Object.assign(a,{0:'PO1',1:status,7:'T',9:p.supplierCode,12:r.sku,18:r.quantity,26:r.amount,36:unknown?p.note:''});return a;});
+  const rows=p.rows.map(r=>{const a=Array(43).fill('');Object.assign(a,{0:'PO1',1:status,7:'T',9:p.supplierCode,12:r.sku,15:manual?'件':'',18:r.quantity,22:r.unitPrice||'',26:r.amount,36:unknown||manual?p.note:''});return a;});
   const files={D16:path.join(root,'main.xlsx'),D17:path.join(root,'detail.xlsx')};await workbook(files.D16,'D16',[main]);await workbook(files.D17,'D17',rows);
   const run={id:'run-original',identity:p.identity,from:'2026-11-01',to:'2026-11-01',dateBasis:'created',status:'SUCCEEDED',orderId:'PO1',query:{orderIds:['PO1']},exports:{}};
   for(const s of ['D16','D17'])run.exports[s]={asset:{rows:s==='D16'?1:2,sha256:await fileHash(files[s])}};
-  const marks=[{supplyOrderId:'PO1',buyerMessage:p.note}],calls=[];
-  const creation={context:async()=>({adapter:{queryCreateOrders:async()=>{calls.push('query-markers');return {query:{identity:p.identity},rows:marks};}}}),preflight:async()=>{calls.push('preflight');}};
+  const marks=[{supplyOrderId:'PO1',buyerWarehouseCode:'T',buyerMessage:p.note}],calls=[];
+  const tasks=[];
+  const creation={context:async()=>({adapter:{queryCreateOrders:async()=>{calls.push('query-markers');return {query:{identity:p.identity,warehouseCode:'T',orderIds:marks.map(r=>r.supplyOrderId),total:marks.length},rows:marks};},
+    purchaseImportTask:async({taskId})=>{calls.push('query-task');return tasks.find(r=>r.taskId===taskId);}}}),preflight:async()=>{calls.push('preflight');}};
   const service=new PurchaseBindingService({state,creates,creationService:creation,coordinatorFactory:options=>({
     run:async args=>{calls.push(args);options.onProgress({stage:'PURCHASE_RUNNING',runId:run.id});return run;},sourceFile:async(_,s)=>files[s]})});
   const machine=new MachinePurchaseBinding({creates,service});service.progress=stage=>machine.progress(stage);
-  return {root,state,creates,p,files,run,marks,calls,creation,service,machine};
+  return {root,state,creates,p,files,run,marks,calls,creation,service,machine,main,rows,tasks};
 }
 async function ready(f){f.machine.start(f.p.id,request);await f.machine.pending;const r=f.creates.get(f.p.id);assert.equal(r.bindingProposal.state,'READY',JSON.stringify(r.bindingProposal.error));return r;}
 async function proof(f){const r=await ready(f);return JSON.parse(await fs.readFile(r.bindingProposal.manifest.file,'utf8'));}
@@ -144,4 +155,75 @@ test('restart retires an interrupted preview after receipt without allowing proo
   assert.equal(recovered.bindingProposal.state,'SUPERSEDED');assert.equal(recovered.bindingProposal.runId,'original-download');
   assert.equal(recovered.binding,null);assert.equal(recovered.sequence,accepted.sequence+1);
   f.creates.recover();assert.equal(f.creates.get(r.id).sequence,recovered.sequence);
+});
+
+function accepted(f,counts){
+  const receipt={intentId:f.p.id,taskId:'GEI@'+IMPORT_CODE+'@261101173932@7114',code:IMPORT_CODE,
+    fileSha256:f.p.file.sha256,exactSourceBytesPresent:true,importRequests:1,requestSha256:h};
+  f.creates.accepted(receipt);
+  const observed={taskId:receipt.taskId,code:IMPORT_CODE,status:'部分失败',...counts};
+  f.tasks.push(observed);
+  const r=f.creates.get(f.p.id);
+  f.creates.update(r.id,r.sequence,'NEEDS_REVIEW',{importResult:importResult(observed,receipt.taskId,f.p.rows.length)});
+  return receipt;
+}
+const operator={operator:'隔离经办',reason:'按原任务核实',host_facts:h};
+const manualRequest=f=>({...request,...operator,original_units:Object.fromEntries(f.p.rows.map(r=>[r.sku,'件']))});
+async function refreshSources(f){
+  for(const source of ['D16','D17'])f.files[source]=path.join(f.root,source+'-updated.xlsx');
+  const files=f.files;
+  await workbook(files.D16,'D16',[f.main]);await workbook(files.D17,'D17',f.rows);
+  for(const s of ['D16','D17'])f.run.exports[s]={asset:{rows:s==='D16'?1:f.rows.length,sha256:await fileHash(files[s])}};
+}
+
+test('exact 0-success recheck and no original PO allow original export; autonomous upload stays blocked',async t=>{
+  const f=await fixture(t,{manual:true,unknown:true}),p=f.p;
+  const unknown=f.creates.get(p.id);
+  await assert.rejects(takeOverPurchase(f.creates,f.creation,p.id,{...operator,sequence:unknown.sequence}),{code:'MANUAL_IMPORT_PENDING'});
+  const receipt=accepted(f,{successCount:0,failCount:2});
+  const failed=f.creates.get(p.id);
+  await assert.rejects(takeOverPurchase(f.creates,f.creation,p.id,{...operator,sequence:failed.sequence}),{code:'MANUAL_IMPORT_ORDER_EXISTS'});
+  f.marks.length=0;f.tasks[0].status='RUNNING';
+  await assert.rejects(takeOverPurchase(f.creates,f.creation,p.id,{...operator,sequence:failed.sequence}),{code:'MANUAL_IMPORT_PENDING'});
+  f.tasks[0].status='部分失败';
+  const handed=await takeOverPurchase(f.creates,f.creation,p.id,{...operator,sequence:failed.sequence});
+  assert.equal(handed.state,'MANUAL_HANDOFF');assert.deepEqual(handed.receipt,receipt);
+  assert.equal((await takeOverPurchase(f.creates,f.creation,p.id,{...operator,sequence:failed.sequence})).sequence,handed.sequence);
+  const machine=new MachinePurchaseCreate({ledger:f.creates});
+  assert.throws(()=>machine.start(p.id,{submitOnly:true}),{code:'PURCHASE_MANUAL_HANDOFF'});
+  const source=await originalExportSource(f.creates,p.id,{usage:'manual',host_facts:h});
+  const output=path.join(f.root,'manual-export.xlsx');
+  await fs.copyFile(source.file,output);
+  const args={output,usage:'manual',export_sha256:source.sha256,host_facts:h};
+  assert.deepEqual(await recordOriginalExport(f.creates,p.id,args),await recordOriginalExport(f.creates,p.id,args));
+  await fs.appendFile(output,'changed');
+  await assert.rejects(recordOriginalExport(f.creates,p.id,args),{code:'PURCHASE_FILE_CHANGED'});
+  assert.equal(f.creates.events(p.id).filter(e=>e.kind==='ORIGINAL_FILE_EXPORTED').length,1);
+});
+
+test('manual binding reads exact marked original completed PO and confirms persistent changed rows from a partial import',async t=>{
+  const f=await fixture(t,{manual:true,unknown:true,status:'部分入库'}),p=f.p;
+  const original=accepted(f,{successCount:1,failCount:1});
+  await assert.rejects(takeOverPurchase(f.creates,f.creation,p.id,
+    {...operator,sequence:f.creates.get(p.id).sequence}),{code:'MANUAL_IMPORT_PENDING'});
+  f.rows[0][18]='1';f.rows[0][26]='0.50';f.rows[1][12]='@00003';
+  f.main[7]='4';f.main[8]='2.51';await refreshSources(f);
+  const request=manualRequest(f);
+  f.machine.start(p.id,request);await f.machine.pending;
+  const preview=f.creates.get(p.id);
+  assert.equal(preview.bindingProposal.state,'READY',JSON.stringify(preview.bindingProposal.error));
+  assert.equal(preview.bindingProposal.summary.differences,3);
+  f.marks.push({supplyOrderId:'PO-EXTRA',buyerWarehouseCode:'T',buyerMessage:p.note});
+  await assert.rejects(f.service.confirm(p.id,preview.bindingProposal.id,preview.sequence,preview.bindingProposal.manifest.sha256,h),{code:'PURCHASE_NOT_UNIQUE'});
+  assert.equal(f.creates.get(p.id).bindingProposal.state,'STALE');
+  f.marks.pop();
+  f.machine.start(p.id,request);await f.machine.pending;
+  const ready=f.creates.get(p.id),m=ready.bindingProposal;
+  assert.equal(m.state,'READY',JSON.stringify(m.error));assert.notEqual(m.id,preview.bindingProposal.id);
+  const bound=await f.service.confirm(p.id,m.id,ready.sequence,m.manifest.sha256,h);
+  assert.equal(bound.binding.orderId,'PO1');assert.equal(bound.binding.status,'部分入库');
+  assert.equal(bound.binding.taskId,original.taskId);assert.deepEqual(bound.intent.rows,p.rows);
+  assert.deepEqual(bound.binding.manualRevision.rows.map(x=>x.sku),[p.rows[0].sku,'@00003']);
+  assert.equal((await f.service.confirm(p.id,m.id,ready.sequence,m.manifest.sha256,h)).sequence,bound.sequence);
+  assert.equal(f.creates.events(p.id).filter(e=>e.kind==='OPERATOR_CONFIRMED_NATIVE_BINDING').length,1);
 });

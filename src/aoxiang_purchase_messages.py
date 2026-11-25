@@ -91,6 +91,8 @@ def explain(error, known=None):
 
 
 def item_message(item, kind):
+    if kind=='upload' and (item.get('purchase_observation') or {}).get('state')=='MANUAL_HANDOFF':
+        return '本单人工处理待核。请选择本行打开“人工处理”，导出原件或核对已有采购。'
     if item.get('rebuild_to'):return '旧任务已转入重建批次 '+item['rebuild_to']+'；旧平台单未撤销，原记录保留。'
     if kind=='upload' and item['state']!='BOUND' and import_failure(item.get('purchase_observation')):
         return explain(item.get('error'),item['purchase_observation'])

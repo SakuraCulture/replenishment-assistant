@@ -73,7 +73,7 @@ export class NativeImportGuard{
 
 export class PurchaseCreateUI extends PurchaseUI{
   constructor(page,options){super(page,options);this.createRows=[];this.usedImports=new Set();}
-  async queryAction(action){const r=await super.queryAction(action);this.createRows.push(...r.rows.map(v=>Object.fromEntries(['supplyOrderId','buyerWarehouseCode','sellerMerchantCode','buyerMessage','status','totalSku','count','totalAmount','gmtCreate','outOrderId','executionMainOrderId'].map(k=>[k,v[k]??null]))));return r;}
+  async queryAction(action){const r=await super.queryAction(action);this.createRows.push(...r.rows.map(v=>Object.fromEntries(['supplyOrderId','buyerWarehouseCode','sellerMerchantCode','buyerMessage','status','totalSku','count','totalAmount','gmtCreate','outOrderId','executionMainOrderId'].map(k=>[k,k==='buyerMessage'?v[k]:v[k]??null]))));return r;}
   async queryCreateOrders(input){this.createRows=[];const query=await this.queryPurchase(input);return {query,rows:this.createRows};}
   async preparePurchaseCreate(p){
     const day=businessDate(),result=await this.queryCreateOrders({identity:p.identity,buyerWarehouseCode:p.basis.store,name:p.target.displayName,from:day,to:day,dateBasis:'created'});

@@ -15,13 +15,14 @@ STAGES = {
     'PREVIEWED':'尚未导入',
     'IMPORT_UNKNOWN':'导入结果待核',
     'IMPORT_FAILED':'导入失败',
+    'MANUAL_HANDOFF':'人工处理待核',
     'IMPORTED':'已导入',
     'AUDIT_UNKNOWN':'审核结果待核',
     'AUDITED':'普通审核完成',
     'REVIEW':'异常待处理',
     'CANCELLED':'原单已取消',
 }
-RELEASED = frozenset(('IMPORT_UNKNOWN','IMPORT_FAILED','IMPORTED','AUDIT_UNKNOWN','AUDITED','REVIEW','CANCELLED'))
+RELEASED = frozenset(('IMPORT_UNKNOWN','IMPORT_FAILED','MANUAL_HANDOFF','IMPORTED','AUDIT_UNKNOWN','AUDITED','REVIEW','CANCELLED'))
 UNRESOLVED = ('IMPORT_UNKNOWN','AUDIT_UNKNOWN')
 HISTORY = 'jst_auto_order_history'
 CANCELLATION_HOLDS = 'jst_cancellation_holds'
@@ -189,6 +190,11 @@ def display_stage(stage, receipt):
     return stage
 
 
+def manual_pending(order):
+    proof=order.get('proof') or {}
+    return not order['internal'] and bool(proof.get('manual_handoff') or proof.get('manual_proposal'))
+
+
 def display_reason(stage, reason, receipt):
     if stage != 'IMPORT_FAILED' or not receipt:
         return reason
@@ -293,19 +299,23 @@ def list_orders(path):
             if not exists(db, table):
                 continue
             fields = ('online','stage','sequence','store','name','warehouse','number','shop',
-                      'sku_count','quantity','amount','preview_amount','internal','status','reason','import_receipt')
+                      'sku_count','quantity','amount','preview_amount','internal','status','reason','import_receipt','manual_handoff','manual_proposal')
             for row in db.execute('''SELECT online,stage,sequence,json_extract(payload,'$.head.store'),
                    json_extract(payload,'$.head.name'),warehouse,json_extract(payload,'$.head.number'),
                    json_extract(payload,'$.shop.name'),json_extract(payload,'$.stats.sku_count'),
                    json_extract(payload,'$.stats.quantity'),json_extract(payload,'$.stats.amount'),
                    json_extract(proof,'$.amount'),internal,platform_status,reason,
-                   CASE WHEN stage='IMPORT_UNKNOWN' THEN json_extract(proof,'$.import_receipt') END
+                   json_extract(proof,'$.import_receipt'),json_extract(proof,'$.manual_handoff.id'),
+                   json_extract(proof,'$.manual_proposal.id')
                    FROM '''+table+' ORDER BY created DESC,rowid'):
                 record=dict(zip(fields,row))
                 raw=record.pop('import_receipt')
                 receipt=wr.loads(raw) if raw else None
                 record['stage']=display_stage(record['stage'],receipt)
                 record['reason']=display_reason(record['stage'],record['reason'],receipt)
+                if (record['stage'] in ('IMPORT_UNKNOWN','IMPORT_FAILED') and
+                        not record['internal'] and (record['manual_handoff'] or record['manual_proposal'])):
+                    record['stage']='MANUAL_HANDOFF'
                 rows.append({**record, 'historical':table == HISTORY})
         return rows
 

@@ -283,6 +283,7 @@ class QueueDialog(QDialog):
         row = QHBoxLayout()
         self.preview_btn=button('查看采购预览', self.details);row.addWidget(self.preview_btn)
         self.reason_btn=button('查看原因与下一步', self.failure_reason);row.addWidget(self.reason_btn)
+        self.manual_btn=button('人工处理',self.manual_purchase);row.addWidget(self.manual_btn)
         self.table.itemSelectionChanged.connect(self.detail_controls)
         self.upload_btn = button('确认上传勾选的采购预览', self.upload, True)
         self.resume_btn = button('继续本批原未完任务', self.resume)
@@ -456,6 +457,16 @@ class QueueDialog(QDialog):
         item=self.current['items'][n] if self.current and 0<=n<len(self.current['items']) else None
         self.preview_btn.setEnabled(bool(item and item.get('package')))
         self.reason_btn.setEnabled(bool(item and item.get('error')))
+        self.manual_btn.setEnabled(bool(item and item.get('package') and item.get('head')))
+
+    def manual_purchase(self):
+        n=self.table.currentRow()
+        if not self.current or not 0<=n<len(self.current['items']):
+            return
+        item=self.current['items'][n]
+        if item.get('head') and item.get('package'):
+            from aoxiang_purchase_ui import open_purchase
+            open_purchase(self,self.manager.host,item['head'],original_id=item['package']['id'])
 
     def failure_reason(self):
         n=self.table.currentRow()

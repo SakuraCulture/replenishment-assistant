@@ -76,6 +76,19 @@ export function hostFacts(db,b){
     ...(cancellation?{jstCancellation:cancellation}:{})};
 }
 
+export function requireHostFacts(p,fingerprint,save=null){
+  const file=process.env.REPLENISHMENT_BUSINESS_DB;
+  if(!file)return save?.(); // Standalone controlled component tests have no host database.
+  const db=new DatabaseSync(file,{readOnly:!save});
+  try{
+    // At persistence hold the host writer slot through the short component transaction.
+    db.exec(save?'PRAGMA busy_timeout=1000;BEGIN IMMEDIATE':'PRAGMA busy_timeout=1000;BEGIN');
+    if(!/^[a-f0-9]{64}$/.test(fingerprint||'')||sha256(canonical(hostFacts(db,p.basis)))!==fingerprint)
+      fail('PURCHASE_BASIS_CHANGED','本仓签发、付款或上游依据已变化，请重新核对人工导入');
+    return save?.();
+  }finally{if(db.isTransaction)db.exec('ROLLBACK');db.close();}
+}
+
 // json.dumps(sort_keys=True, ensure_ascii=False) with original numeric lexemes.
 // Only used on a changed catalog file: metadata refreshes must not invalidate the same items.
 function pythonJson(v){

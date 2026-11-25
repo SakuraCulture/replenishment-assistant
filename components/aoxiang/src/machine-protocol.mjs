@@ -3,6 +3,7 @@ import {TextDecoder} from 'node:util';
 import {fail} from './common.mjs';
 import {MAX_FRAME_BYTES} from './machine-commands.mjs';
 import {bindingRequest,taskPattern} from './purchase-create-contract.mjs';
+import {manualAuthor} from './purchase-manual.mjs';
 
 const idPattern=/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 // A valid envelope can receive a correlated validation error without dispatching its body.
@@ -19,8 +20,11 @@ const fields={ping:[],'session.release':[],'session.status':[],'session.health':
   'purchase.reserve':['package_file','package_sha256'],'purchase.start':['purchase_id','expected_task_id'],'purchase.submit':['purchase_id'],'purchase.verify':['purchase_id','original_units'],
   'purchase.rebuild':['purchase_id','sequence','package_file','package_sha256','operation_id','reason','acknowledge_uncertainty'],
   'purchase.status':['purchase_id'],'purchase.pause':['purchase_id'],'purchase.cancel':['purchase_id'],'purchase.list':['offset','limit'],
+  'purchase.handoff':['purchase_id','sequence','operator','reason','host_facts'],
+  'purchase.export_source':['purchase_id','usage','host_facts'],
+  'purchase.exported':['purchase_id','usage','output','export_sha256','host_facts'],
   'binding.start':['purchase_id','binding_request'],'binding.status':['purchase_id'],'binding.pause':['purchase_id'],
-  'binding.confirm':['purchase_id','proposal_id','sequence','manifest_sha256'],
+  'binding.confirm':['purchase_id','proposal_id','sequence','manifest_sha256','host_facts'],
   'receipt.start':['purchase_id'],'receipt.status':['purchase_id'],'receipt.pause':['purchase_id'],
   'receipt.synced':['purchase_id','manifest_sha256','receipt'],'receipt.host_void_conflict':['purchase_id','reason'],'receipt.list':['offset','limit']};
 export function validateRequest(value){
@@ -49,6 +53,15 @@ export function validateRequest(value){
     Object.entries(value.original_units).some(([sku,unit])=>!sku||sku.length>128||typeof unit!=='string'||!unit.trim()||unit.length>128)))
     fail('REQUEST_SCHEMA','原签发商品单位校验资料无效');
   if(value.action==='binding.start')bindingRequest(value.binding_request);
+  if(value.action==='purchase.handoff'){
+    manualAuthor(value.operator,value.reason);
+    if(!Number.isSafeInteger(value.sequence)||value.sequence<1||!/^[a-f0-9]{64}$/.test(value.host_facts||''))fail('REQUEST_SCHEMA','接管任务版本或依据无效');
+  }
+  if(['purchase.export_source','purchase.exported'].includes(value.action)&&
+    (!['check','manual','failure'].includes(value.usage)||
+      value.usage==='manual'&&!/^[a-f0-9]{64}$/.test(value.host_facts||'')||
+      value.action==='purchase.exported'&&(typeof value.output!=='string'||!value.output||value.output.length>2048||!/^[a-f0-9]{64}$/.test(value.export_sha256||''))))
+    fail('REQUEST_SCHEMA','原件导出用途、路径或摘要无效');
   if(value.action==='binding.confirm'&&(!idPattern.test(value.proposal_id||'')||!Number.isSafeInteger(value.sequence)||value.sequence<1||!/^[a-f0-9]{64}$/.test(value.manifest_sha256||'')))fail('REQUEST_SCHEMA','关联预览编号、版本或哈希无效');
   if(value.action==='receipt.synced'&&(!/^[a-f0-9]{64}$/.test(value.manifest_sha256||'')||!value.receipt||Object.keys(value.receipt).some(k=>!['number','revision','stage','version','changed'].includes(k))))fail('REQUEST_SCHEMA','正式实收回执或快照哈希无效');
   if(['purchase.reserve','purchase.rebuild'].includes(value.action)&&(typeof value.package_file!=='string'||!value.package_file||value.package_file.length>2048||!(/^[a-f0-9]{64}$/).test(value.package_sha256||'')))fail('REQUEST_SCHEMA','采购任务文件及哈希无效');

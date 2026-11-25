@@ -37,7 +37,7 @@ export async function nativeCreationEvidence(p,task,candidate,coordinator,run){
   for(const source of ['D16','D17']){
     const file=await coordinator.sourceFile(run,source),contract=purchaseContract(source);
     contract.captureColumns1Based=source==='D16'?{orderId:1,status:2,store:4,supplier:6,skuCount:7,quantity:8,amount:9,externalOrderId:10}:
-      {orderId:1,status:2,store:8,supplier:10,sku:13,unit:16,quantity:19,amount:27,note:37};
+      {orderId:1,status:2,store:8,supplier:10,sku:13,unit:16,quantity:19,price:23,amount:27,note:37};
     contract.captureSourceRow=true;
     values[source]=await validateWorkbook(file,{contract,warehouseCode:p.basis.store,expectedRows:run.exports[source].asset.rows,maxCompressedBytes:67108864});
     if(values[source].sha256!==run.exports[source].asset.sha256)fail('PURCHASE_PROOF_CHANGED','采购核验文件发生变化');
@@ -60,7 +60,7 @@ export class PurchaseCreateService{
     browser.adapter.downloadPurchase=async(...args)=>{const result=await download(...args);captureOwnedFiles(this.state,p.basis.oid,result,p.basis.warehouse);return result;};
     return {config,binding,adapter:browser.adapter,signal,hostOrderId:p.basis.oid,hostPurchaseId:p.id,hostWarehouse:p.basis.warehouse};
   }
-  async preflight(p,{forBinding=false}={}){requireUnretired(this.state.db,p.id,p.basis.oid,p.basis.warehouse);requireHostOrder(p.basis.oid,p.basis.warehouse);checkPurchaseConfiguration(p,await loadConfig(this.root));if(!forBinding)checkHostDispatch(p);return checkPurchaseInput(p,{requireRounded:!forBinding});}
+  async preflight(p,{forBinding=false,manual=false}={}){requireUnretired(this.state.db,p.id,p.basis.oid,p.basis.warehouse);requireHostOrder(p.basis.oid,p.basis.warehouse);checkPurchaseConfiguration(p,await loadConfig(this.root));if(!forBinding)checkHostDispatch(p);return checkPurchaseInput(p,{requireRounded:!forBinding,latest:!manual});}
   async prepare(p,{signal}){const {adapter}=await this.context(p,signal);return adapter.preparePurchaseCreate(p);}
   async upload(p,baseline,{signal,beforeRelease}){
     const {adapter}=await this.context(p,signal);checkHostDispatch(p);

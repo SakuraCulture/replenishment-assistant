@@ -21,6 +21,7 @@ import {PurchaseReceipts} from './purchase-receipt-ledger.mjs';
 import {PurchaseReceiptService} from './purchase-receipt-service.mjs';
 import {MachinePurchaseReceipt} from './machine-purchase-receipt.mjs';
 import {PurchaseBindingService,MachinePurchaseBinding} from './purchase-binding.mjs';
+import {takeOverPurchase,originalExportSource,recordOriginalExport} from './purchase-manual.mjs';
 import {releaseSession} from './machine-session.mjs';
 import {CollectionMaintenance} from './machine-maintenance.mjs';
 import {clientConnectionState} from './browser-connection.mjs';
@@ -81,7 +82,7 @@ async function main(){
       const independent=request.action==='reserve'?independentCollection(request.command):
         !!collectionControl&&independentCollection(collectionControl.request);
       if((configurationActions.includes(request.action)||(!independent&&['reserve','resume'].includes(request.action))||
-          ['purchase.start','purchase.submit','purchase.verify','purchase.rebuild','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&
+          ['purchase.start','purchase.submit','purchase.verify','purchase.rebuild','purchase.cancel','purchase.handoff','receipt.start','binding.start','binding.confirm'].includes(request.action))&&
           (purchase.busy||receiptSync.busy||bindingCheck.busy))fail('PURCHASE_CREATE_BUSY','当前采购、关联核对或收货动作正在运行或安全停止，请等待后再执行其他作业');
       if(configurationActions.includes(request.action)&&(runtime.active||commands.list().some(r=>r.state==='QUEUED')))fail('COMPONENT_BUSY','先暂停或完成当前取数任务，再修改连接与目录');
       if(configurationActions.includes(request.action)&&template.busy)fail('TEMPLATE_BUSY','先完成或停止当前采购模板获取');
@@ -133,6 +134,14 @@ async function main(){
             expectedTaskId:request.expected_task_id,originalUnits:request.original_units});break;
         }
         case 'purchase.status':result=purchase.status(request.purchase_id);break;
+        case 'purchase.handoff':{
+          if(runtime.closing||runtime.active||commands.list().some(r=>r.state==='QUEUED')||setup.busy||template.busy)
+            fail('COMPONENT_BUSY','当前浏览器仍有作业，请稍后核对原任务');
+          result=purchasePublic(await takeOverPurchase(purchases,purchaseService,request.purchase_id,request));
+          break;
+        }
+        case 'purchase.export_source':result=await originalExportSource(purchases,request.purchase_id,request);break;
+        case 'purchase.exported':result=await recordOriginalExport(purchases,request.purchase_id,request);break;
         case 'purchase.pause':result=purchase.pause(request.purchase_id);break;
         case 'purchase.cancel':result=purchase.cancelBeforeUpload(request.purchase_id);break;
         case 'purchase.list':{const all=purchases.list();result={total:all.length,items:all.slice(request.offset||0,(request.offset||0)+(request.limit||50)).map(purchasePublic)};break;}
@@ -153,7 +162,7 @@ async function main(){
         case 'binding.pause':result=bindingCheck.pause(request.purchase_id);break;
         case 'binding.confirm':{
           if(runtime.closing||runtime.active||setup.busy||template.busy)fail('COMPONENT_BUSY','组件当前有未完成作业或正在退出，不能确认关联');
-          result=purchasePublic(await bindingService.confirm(request.purchase_id,request.proposal_id,request.sequence,request.manifest_sha256));break;
+          result=purchasePublic(await bindingService.confirm(request.purchase_id,request.proposal_id,request.sequence,request.manifest_sha256,request.host_facts));break;
         }
         case 'configuration':{
           if(!await exists(path.join(root,'config/portable.config.json'))){result={configured:false};break;}

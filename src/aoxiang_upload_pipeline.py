@@ -112,6 +112,10 @@ def run_upload(runner,job):
         if record['state']=='BOUND':
             update(item,state='BOUND',result={'binding':record['binding']},purchase_observation=observed,error=None)
             return True
+        if record['state']=='MANUAL_HANDOFF' or record.get('manualHandoff'):
+            update(item,state='REVIEW',purchase_observation=observed,error={
+                'code':'PURCHASE_MANUAL_HANDOFF','message':'本单转人工处理，按原任务核对已有采购单'})
+            return True
         if final:=import_failure(observed):
             error=record.get('error') or {'code':final['errorCode'],'message':import_failure_message(final)}
             update(item,state='REVIEW',purchase_observation=observed,error=error)

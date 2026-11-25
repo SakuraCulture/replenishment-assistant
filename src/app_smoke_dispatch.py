@@ -36,6 +36,7 @@ WINDOW_SMOKES = {
     '--deletion-void-smoke': 'deletion_void_smoke',
     '--purchase-recovery-smoke': 'purchase_recovery_smoke',
     '--platform-import-failure-smoke': 'platform_import_failure_smoke',
+    '--platform-import-manual-smoke': 'platform_import_manual_smoke',
     '--payment-preview-smoke': 'payment_preview_smoke',
     '--purchase-pipeline-smoke': 'purchase_pipeline_smoke',
     '--catalog-lifetime-smoke': 'catalog_lifetime_smoke',

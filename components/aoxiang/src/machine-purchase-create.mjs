@@ -27,6 +27,8 @@ export class MachinePurchaseCreate{
     if(this.busy)fail('PURCHASE_CREATE_BUSY','当前采购任务仍在安全结束，请勿重复执行');
     const r=this.ledger.get(id);requireOriginalTask(r,expectedTaskId);
     if(r.state==='BOUND'&&!verifyOnly)return this.status(id);
+    if(r.state==='MANUAL_HANDOFF'||r.manualHandoff)
+      fail('PURCHASE_MANUAL_HANDOFF','本单已转人工处理，请核对已有采购单；未重新上传');
     if(r.state==='RETIRED')fail('SOURCE_ORDER_DELETED','来源订单已删除，任务已退役');
     if(r.state==='SUPERSEDED')fail('PURCHASE_SUPERSEDED','旧任务已结束并重建，请打开后继任务；原平台单未撤销',{successorId:r.successorId});
     if(r.state==='CANCELLED_BEFORE_UPLOAD')fail('PURCHASE_CANCELLED','该任务已在上传前取消');

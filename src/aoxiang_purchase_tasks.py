@@ -3,6 +3,7 @@ import copy
 import json
 import os
 import uuid
+from contextlib import closing
 from decimal import Decimal
 from pathlib import Path
 
@@ -68,7 +69,7 @@ def _prepare(path, head, configuration, suppliers, receipt, directory, contract_
             'plan_sha256': file_hash(target / '付款采购依据.json'), 'file': generated, 'intent': intent}
 
 
-def validate_for_upload(path, package, configuration, suppliers, *, cancel=None, for_binding=False):
+def validate_for_upload(path, package, configuration, suppliers, *, cancel=None, for_binding=False, for_manual=False):
     """Called by the host immediately before dispatch. No automatic resends on timeout."""
     checkpoint(cancel)
     for field in ('package', 'plan'):
@@ -88,6 +89,17 @@ def validate_for_upload(path, package, configuration, suppliers, *, cancel=None,
         if plan.get('admission') is not None and current_admission!=plan['admission']:
             raise ValueError('采购准入依据已变化，请重新核对采购预览；未重新上传')
         return current_admission
+    if for_manual:
+        from purchase_dispatch import facts, _hash
+        from work_repository import read_connection
+        with closing(read_connection(path)) as db:
+            db.execute('BEGIN')
+            if for_binding:
+                from aoxiang_purchase import validate_original_context
+                validate_original_context(db, plan, configuration, suppliers, cancel=cancel)
+            else:
+                validate(db)
+            return _hash(encoded(facts(db,intent['basis'])))
     if for_binding:validate()
     else:
         from purchase_dispatch import authorize
