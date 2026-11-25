@@ -363,11 +363,12 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
                 raise Check(buyer_problem)
             if confirmation.bound_cancelled_order(order, result):
                 identity_basis = 'bound_internal_and_native_status'
-            elif native_status in confirmation.PAYMENT_STATES:
+            elif native_status in confirmation.PAYMENT_STATES or native_status == CANCELLED:
                 order_payment.verify_import_items(order, result, cancel)
                 identity_basis = 'original_preview_and_item_details'
             else:
-                raise Check(buyer_problem+(f" · {result['detail_error']}" if result.get('detail_error') else ''))
+                hint = f'聚水潭原单当前为“{native_status}” · {buyer_problem}'
+                raise Check(hint+(f" · {result['detail_error']}" if result.get('detail_error') else ''))
     state='review' if native_status == CANCELLED else reported_state
     confirmed=identity_only and native_status in confirmation.PAYMENT_STATES
     if confirmed:

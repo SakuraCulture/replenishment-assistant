@@ -95,7 +95,7 @@ async function openFixture(t,{large=[],split=false,shortShop=false,listBuyer=con
   const nativeItem=(sku,qty)=>({sku_id:sku,qty,price:'2',amount:String(Number(qty)*2)});
   const nativeItems=large.length ? large.map(([sku,qty])=>nativeItem(sku,qty)) : [nativeItem('00001','10')];
   const nativeOrder=state=>({o_id:'9001',so_id:online,shop_name:shop,co_id:'55',shop_id:'102',
-    status:{waitconfirm:'已付款待审核',waitfconfirm:'已客审待财审',delivering:'发货中',sent:'已发货'}[state],
+    status:{waitconfirm:'已付款待审核',waitfconfirm:'已客审待财审',delivering:'发货中',sent:'已发货',cancelled:'已取消'}[state],
     item_actual_count:nativeItems.length,shop_buyer_id:listBuyer,pay_amount:'20.00',freight:'0'});
   const server=http.createServer(async (req,res)=>{
     if(req.method==='POST' && req.url===listPath) {
@@ -284,6 +284,23 @@ test('exact import and full payment read work before audit under the frozen nati
   assert.deepEqual(shipped.items,awaiting.items);
   await assert.rejects(flow.run('payment_detail',{spec:{...exact,internal:'9002'}},account),/内部单号与原单不同/);
   assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[1,0,0]);
+});
+
+test('cancelled original with a masked buyer and unbound internal number returns complete quantities',
+  {skip:!fs.existsSync(edge),timeout:60000},async t=>{
+  const {page,account,flow,detailReads}=await openFixture(t,{listBuyer:'0***0',detailBuyer:'',
+    detailOverrides:{items:[{sku_id:'00001',qty:'10',price:null,amount:null,item_status:'Cancelled'}]}});
+  await page.evaluate(()=>{statusValue='cancelled';});
+  const bound={...spec,phase:'IMPORT_UNKNOWN',binding:{warehouse:wh,shop,company:account.expectedCompany,
+    coid:account.expectedCoid,uid:account.expectedUid,version:account.bindingVersion,shop_id:'102'}};
+  const result=await flow.run('lookup',{spec:bound,identity_only:true},account);
+  assert.equal(result.internal,'9001');
+  assert.equal(result.native_status,'已取消');
+  assert.equal(result.buyer_check,'unavailable');
+  assert.equal(result.detail_count,1);
+  assert.deepEqual(result.items.map(({sku,qty})=>[sku,qty]),[['00001','10']]);
+  assert.equal(detailReads.length,1);
+  assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[0,0,0]);
 });
 
 test('masked, missing and conflicting buyers on the exact original order',

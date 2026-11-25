@@ -379,6 +379,8 @@ def _observe_payment(path, order, state, message, native_status, candidate, canc
             if native_status in confirmation.REVERSED:
                 confirmation.record(db, current, native_status)
             sources.observe(db, online, state, message, digest)
+        if native_status in confirmation.PAYMENT_STATES | confirmation.REVERSED:
+            automatic._event(db, current, '聚水潭回读原单状态', {'internal': current['internal'], 'native_status': native_status})
         commit(db, cancel)
         return {'online': online, 'state': state, 'digest': digest, 'message': message, 'order_stage': current['stage']}
 

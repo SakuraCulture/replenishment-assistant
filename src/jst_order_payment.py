@@ -50,7 +50,8 @@ def verify_import_items(order, receipt, cancel=None):
         proof = order['proof']
         if not order.get('file_sha') or proof.get('file_sha') != order['file_sha'] or proof.get('amount') is None:
             raise ValueError('缺少原导入文件或平台预览凭据')
-        expected, items = _read_items(order['payload'], receipt, cancel)
+        expected, items = _read_items(order['payload'], receipt, cancel,
+                                      require_live_lines=receipt.get('native_status') != '已取消')
         for sku, (quantity, _) in expected.items():
             checkpoint(cancel)
             actual = items[sku][0]
@@ -71,7 +72,7 @@ def _verify_frozen_prices(order, expected, verified, totals, cancel):
         raise ValueError(f"平台应付 {totals['payable']} 元与原导入预览 {preview:.2f} 元不同，付款待核")
 
 
-def _read_items(payload, receipt, cancel):
+def _read_items(payload, receipt, cancel, *, require_live_lines=True):
     if receipt.get('detail_error'):
         raise ValueError(receipt['detail_error'])
     expected = {sku: (qty, price) for sku, qty, price in payload['lines']}
@@ -86,7 +87,8 @@ def _read_items(payload, receipt, cancel):
         sku = item.get('sku')
         if not isinstance(sku, str) or sku not in expected or sku in checked:
             raise ValueError('平台明细存在重复编码或原仓单外商品')
-        if item.get('item_status') not in (None, '', 'Normal') or item.get('refund_status') not in (None, '', 'NoRefund'):
+        if require_live_lines and (item.get('item_status') not in (None, '', 'Normal')
+                                   or item.get('refund_status') not in (None, '', 'NoRefund')):
             raise ValueError(f'商品 {sku} 的成交或退款状态待核')
         # The original SKU's native quantity is the submitted inventory unit.
         # An explicit alternate sales unit requires an evidenced 1-to-1 factor.

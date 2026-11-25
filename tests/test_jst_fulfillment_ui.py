@@ -100,6 +100,13 @@ class FulfillmentUI(unittest.TestCase):
         self.addCleanup(widget.deleteLater)
         self.addCleanup(widget.reader.shutdown)
         widget.ready(daily_batch.read(self.fixture.path,cache,request))
+        self.assertEqual(widget.table.rowCount(),0)
+        import jst_auto_order as automatic
+        online, = self.fixture.keys
+        self.fixture.fixture.portal.orders[online]['native_status'] = '发货中(打单拣货)'
+        [verified] = automatic.process(self.fixture.path,[online],self.fixture.fixture.portal,'recover')
+        self.assertTrue(verified['ok'], verified)
+        widget.ready(daily_batch.read(self.fixture.path,cache,request))
         self.assertEqual(widget.table.rowCount(),1)
         self.assertEqual(widget.table.item(0,3).text(),self.fixture.head['day'])
         self.assertEqual(widget.table.item(0,7).text(),'待收货')

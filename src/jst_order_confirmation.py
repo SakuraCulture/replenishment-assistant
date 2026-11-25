@@ -7,7 +7,9 @@ from lifecycle_rules import DOCUMENT_SCHEMA, JST_ORDER
 
 AUDITED = '已客审待财审'
 AWAITING = '已付款待审核'
-SHIPPING = ('发货中(打单拣货)', '已发货')
+DELIVERING = '发货中(打单拣货)'
+SHIPPED = '已发货'
+SHIPPING = (DELIVERING, SHIPPED)
 PAYMENT_STATES = frozenset((AWAITING, AUDITED, *SHIPPING))
 REVERSED = frozenset(('待付款', '已取消', '被合并', '被拆分', '异常', '等供销商|外仓发货'))
 

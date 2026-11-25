@@ -34,7 +34,7 @@ export function buyerEvidence(buyer_check) {
   return {buyer_check,contact_ok:buyer_check==='verified'};
 }
 
-export async function fullOrder(frame,spec,{coid,shop_id,count,payment=false}={},signal){
+export async function fullOrder(frame,spec,{coid,shop_id,count,payment=false,quantitiesOnly=false}={},signal){
   check(signal);
   if(!/^[1-9]\d*$/.test(spec.internal||''))fail('整单明细缺少已核验内部订单号');
   const rows=await frame.evaluate(({internal})=>new Promise((resolve,reject)=>{
@@ -56,7 +56,8 @@ export async function fullOrder(frame,spec,{coid,shop_id,count,payment=false}={}
   const items=row.items.map(r=>({sku:String(r.sku_id||''),qty:String(r.qty),price:String(r.price),amount:String(r.amount),
     item_status:r.item_status||null,refund_status:r.refund_status||null,
     ...(payment?{sales_unit:r.sales_unit||null,per_unit:r.per_unit==null?null:String(r.per_unit)}:{})}));
-  if(items.some(r=>!r.sku||!/^\d+(\.\d+)?$/.test(r.qty)||!/^\d+(\.\d+)?$/.test(r.price)||!/^\d+(\.\d+)?$/.test(r.amount))
+  const decimal=/^\d+(\.\d+)?$/;
+  if(items.some(r=>!r.sku||!decimal.test(r.qty)||!quantitiesOnly&&(!decimal.test(r.price)||!decimal.test(r.amount)))
       ||new Set(items.map(r=>r.sku)).size!==items.length)
     fail('原生整单商品编码、数量或成交价缺失、重复或不明');
   return {internal:spec.internal,online:spec.online,shop:spec.shop,shop_id:String(row.shop_id),coid:String(row.co_id),

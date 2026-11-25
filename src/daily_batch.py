@@ -6,10 +6,11 @@ import lifecycle_home
 from jst_order_store import list_generation_state
 from jst_task_store import latest_statuses
 from lifecycle_rules import JST_ORDER
+from lifecycle_stages import WAITING_SHIPMENT
 from runtime_support import checkpoint
 from query_scope import oid_batches
 
-STATUSES=('待回传','待运营签发','待付款','待收货','已结束')
+STATUSES=('待回传','待运营签发','待付款',WAITING_SHIPMENT,'待收货','已结束')
 GENERATION_FILTERS={'generated':'已生成导入单','missing':'未生成导入单'}
 PURCHASE_FILTER = '可生成采购预览'
 
