@@ -63,7 +63,8 @@ async function main(){
       const binding=await validateConfig('machine.binding',await readJson(path.join(root,'config/machine.binding.json')));
       const browser=await browsers.acquire({state,config,binding,signal,onProgress});
       const result=await new Coordinator({state,config,binding,adapter:browser.adapter,signal,onProgress})
-        .run({runId:item.run_id,phase,independent:collectionPurpose(record.request)==='replenishment'});
+        .run({runId:item.run_id,phase,independent:collectionPurpose(record.request)==='replenishment',
+          retryId:record.selected_retry?.id,retryError:item.previous_error?.code});
       if(result.pending)return {pending:true};
       return await freezeRunAsset({state,binding,commandId:record.id,item});
     }
@@ -187,6 +188,7 @@ async function main(){
         case 'pause':result=publicRecord(runtime.pause(request.command_id));break;
         case 'resume':if(!independent&&(setup.busy||template.busy))fail('COMPONENT_BUSY','先完成或停止连接核验/采购模板获取');result=publicRecord(runtime.resume(request.command_id));kick=true;break;
         case 'retry':if(!independent&&browserBusy())fail('COMPONENT_BUSY','先完成或停止当前平台动作');result=publicRecord(runtime.retry(request.command_id,request.indices,request.sequence));kick=true;break;
+        case 'collection.retry_selected':result=publicRecord(runtime.retrySelected(request.command_id,request.indices,request.sequence,request.retry_id));kick=true;break;
         case 'shutdown':{
           runtime.stop();
           if(purchase.busy)purchase.pause(purchase.job.id);

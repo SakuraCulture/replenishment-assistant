@@ -76,7 +76,7 @@ def configuration_for_new(client, progress, cancel=None):
     return client.request('configuration')
 
 
-def manifest(job, state_root):
+def manifest(job, state_root, *, allow_empty=False):
     """Accept only complete validated files in the command's original order, even after interruption."""
     record, command = job.get('record'), job['command']
     if not record or record['state'] in ACTIVE:
@@ -92,7 +92,10 @@ def manifest(job, state_root):
         if type(item['index']) is not int or item['index'] != index or item['warehouse_code'] != code:
             raise ValueError('门店顺序或编码变化，未采用')
         if item['state'] != 'SUCCEEDED':
-            omitted.append({'index': index, 'warehouse_code': code, 'state': item['state'], 'error': item.get('error')})
+            entry={'index':index,'warehouse_code':code,'state':item['state'],'error':item.get('error')}
+            if allow_empty:
+                entry.update(error=entry['error'] or record.get('error'),task_id=item.get('task_id'))
+            omitted.append(entry)
             continue
         result = item['result']
         if (result['warehouse_code'] != code or result['run_id'] != item['run_id'] or
@@ -108,7 +111,7 @@ def manifest(job, state_root):
         if actual.stat().st_size != result['bytes'] or file_hash(actual) != digest:
             raise ValueError('已验收文件变化，未采用')
         files.append(dict(result, index=index))
-    if not files:
+    if not files and not allow_empty:
         raise ValueError('本次没有可采用的已验收文件')
     return {'schema': 1, 'command_id': job['id'], 'request': command,
             'context': job['context'], 'sequence': record['sequence'], 'files': files, 'omitted': omitted}

@@ -19,6 +19,15 @@ def has_verified_bindings(schedule):
     return schedule.get('reuse_verified_bindings') is True or bool(schedule.get('check_signature'))
 
 
+def check_unsigned(db, day, codes):
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='normal_orders'").fetchone():
+        return
+    signed = {row[0] for row in db.execute('SELECT store FROM normal_orders WHERE day=?', (day,))}
+    conflicts = [code for code in codes if code in signed]
+    if conflicts:
+        raise ValueError('本日已有签发：' + '、'.join(conflicts) + '，请沿原单处理')
+
+
 def schedule_value(value):
     x=copy.deepcopy(value)
     if not isinstance(x.get('plan_id'),str) or not x['plan_id']:raise ValueError('请选择补货预案')
@@ -190,11 +199,29 @@ class Repository:
     def resume(self,rid,expected,codes=None):
         with self.db(True) as db:
             r=self._get(db,rid)
-            if r['revision']!=expected or r['state'] not in ('REVIEW','PAUSED'):raise wr.Conflict('只能继续已暂停或需处理的原任务，请刷新')
             failures=[s['code'] for s in r['stores'] if s['state']!='READY']
-            if codes is not None and (not codes or len(set(codes))!=len(codes) or set(codes)-set(failures)):raise ValueError('只能重试本任务未完成门店，成功门店保持')
-            r.update(state='QUEUED',control=None,retry_codes=codes,viewed=False)
-            return self._save(db,r,'已排入原任务；成功项保持，不更换资料')
+            if codes is not None:
+                if not codes or len(set(codes))!=len(codes) or set(codes)-set(failures):
+                    raise ValueError('请选择本任务尚未完成的门店')
+                codes=[code for code in failures if code in codes]
+                if r['state'] in ACTIVE and r.get('retry_codes')==codes and r.get('retry_id'):
+                    return r
+            allowed=('REVIEW','PAUSED','ENDED') if codes is not None else ('REVIEW','PAUSED')
+            if r['revision']!=expected or r['state'] not in allowed:
+                raise wr.Conflict('任务状态已变化，请刷新后继续')
+            if r['state']=='ENDED' and not db.execute(
+                "SELECT 1 FROM scheduled_values WHERE run_id=? AND name='basis'",(rid,)
+            ).fetchone():
+                raise ValueError('原任务未留下计算依据，请核对执行安排')
+            retry_id=r.get('retry_id')
+            if codes is not None:
+                retry_id=uuid.uuid4().hex
+            elif retry_id:
+                codes=r['retry_codes']
+            check_unsigned(db,r['day'],[code for code in failures if codes is None or code in codes])
+            r.update(state='QUEUED',control=None,retry_codes=codes,retry_id=retry_id,viewed=False)
+            message='已排入原任务'+(f'，重试 {len(codes)} 家门店' if codes is not None else '')+'。已完成结果已保留。'
+            return self._save(db,r,message)
 
     def recover(self):
         if not self.exists():return

@@ -176,6 +176,42 @@ class ExecutionTests(unittest.TestCase):
         old=self.repo.value(r['id'],'result:B');self.repo.resume(r['id'],r['revision'],['A']);self.backend.data=self.catalogs
         se.Runner(self.repo,self.backend,self.root).execute(r['id']);self.assertEqual(self.repo.get(r['id'])['state'],'COMPLETE')
         self.assertEqual(self.repo.value(r['id'],'result:B'),old)
+    def test_ended_partial_run_retries_only_selected_and_persists_scope(self):
+        both=self.backend.manifest
+        self.backend.manifest={**both,'files':both['files'][:1]}
+        first=self.run_one()
+        self.assertEqual([s['state'] for s in first['stores']],['READY','FAILED'])
+        saved=self.repo.value(first['id'],'result:A')
+        self.repo.request_pause(first['id'],True)
+        ended=self.repo.get(first['id'])
+        with self.assertRaises(wr.Conflict):self.repo.resume(ended['id'],ended['revision'])
+        with self.assertRaises(ValueError):self.repo.resume(ended['id'],ended['revision'],['A','B'])
+        queued=self.repo.resume(ended['id'],ended['revision'],['B'])
+        self.assertEqual(queued,self.repo.resume(ended['id'],ended['revision'],['B']))
+        self.repo.claim(ended['id']);self.repo.recover()
+        paused=self.repo.get(ended['id'])
+        resumed=self.repo.resume(paused['id'],paused['revision'])
+        self.assertEqual(resumed['retry_id'],queued['retry_id'])
+        self.assertEqual(resumed['retry_codes'],['B'])
+        self.backend.manifest=both
+        se.Runner(self.repo,self.backend,self.root).execute(ended['id'])
+        self.assertEqual(self.repo.get(ended['id'])['state'],'COMPLETE')
+        self.assertEqual(self.repo.value(ended['id'],'result:A'),saved)
+
+    def test_signed_after_queue_blocks_recollection_before_platform_access(self):
+        import normal_orders
+        self.backend.manifest={**self.backend.manifest,'files':self.backend.manifest['files'][:1]}
+        partial=self.run_one()
+        self.repo.resume(partial['id'],partial['revision'],['B'])
+        normal_orders.Repository(self.work)
+        with self.repo.db(True) as db:
+            db.execute('INSERT INTO normal_orders VALUES(?,?,?,?,?,?)',
+                       (partial['day'],'B','regular','isolated-order','BH-B',1))
+        self.backend.calls.clear()
+        se.Runner(self.repo,self.backend,self.root).execute(partial['id'])
+        self.assertEqual(self.backend.calls,['release'])
+        self.assertIn('已有签发：B',self.repo.get(partial['id'])['message'])
+
     def test_pause_recovers_frozen_profile_and_no_daily_overwrite(self):
         stop=threading.Event();self.backend.cancel=stop;r=self.repo.manual(self.s)
         se.Runner(self.repo,self.backend,self.root,stop).execute(r['id']);r=self.repo.get(r['id']);self.assertEqual(r['state'],'PAUSED')

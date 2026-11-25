@@ -5,6 +5,7 @@ const ordinaryFailures=new Set(['EMPTY_UNVERIFIED','TASK_HAS_FAILURES','QUERY_FI
   'SCHEMA_DRIFT','ENTITY_MISMATCH','ROW_COUNT_MISMATCH','NULL_KEYS','UNSAFE_NATIVE_ID','NOT_XLSX','SHEET_MISMATCH','HEADER_MISSING',
   'INVALID_SHARED_STRING','FILE_SIZE','ASSET_NOT_REUSABLE','EXISTING_ASSET_CHANGED','SAVE_BLOCKED','STAGING_HASH_CHANGED','FINAL_HASH_FAILED']);
 const reviewFailures=new Set(['SUBMISSION_UNKNOWN','WRONG_SCOPE_ACCEPTED','UNRESOLVED_TASK']);
+const settled=new Set(['SUCCEEDED','FAILED','ENDED','NEEDS_REVIEW']);
 export const errorInfo=e=>({code:e.code||'FAILED',message:redact(e.message||'自动化操作失败'),details:redact(e.details||{})});
 
 // Serial browser queue; control requests remain independent of awaited browser I/O.
@@ -50,7 +51,7 @@ export class MachineRuntime{
     const record=this.commands.get(id);
     if(['QUEUED','RUNNING'].includes(record?.state))return record;
     if(!['PAUSED','INTERRUPTED'].includes(record?.state))fail('COMMAND_TRANSITION','请使用核对原回执或重跑失败项，不能直接重派终态作业');
-    return this.change(id,'QUEUED',{error:null});
+    return this.change(id,'QUEUED',{error:null,selectedRetry:null});
   }
   continueReviewed(id){
     if(this.closing)fail('SHUTTING_DOWN','组件正在安全退出');
@@ -62,7 +63,7 @@ export class MachineRuntime{
       // exact receipts already persisted by the component may resume.
       if(!items.some(i=>!['SUCCEEDED','FAILED','ENDED','NEEDS_REVIEW'].includes(i.state)))
         fail('COMMAND_TRANSITION','原任务尚无可靠受理回执，继续时保留待核。需要新文件时可新建独立采集。');
-      return this.change(id,'QUEUED',{kind:'RESUME_WITH_REVIEW_RETAINED',items,error:null});
+      return this.change(id,'QUEUED',{kind:'RESUME_WITH_REVIEW_RETAINED',items,error:null,selectedRetry:null});
     }
     fail('COMMAND_TRANSITION','仅可核对待核原采集，请刷新当前记录');
   }
@@ -74,7 +75,31 @@ export class MachineRuntime{
     if(!Array.isArray(indices)||!indices.length||new Set(indices).size!==indices.length||indices.some(i=>!Number.isInteger(i)||!record.items[i]||record.items[i].state!=='FAILED'))fail('COMMAND_RETRY_SCOPE','仅可选择失败项；结果待核项不能重新提交');
     const items=structuredClone(record.items);
     for(const i of indices){items[i].previous_error=items[i].error;items[i].error=null;items[i].state='PENDING';}
-    return this.change(id,'QUEUED',{kind:'RETRY_ORIGINAL_ITEMS',detail:{indices},items,error:null});
+    return this.change(id,'QUEUED',{kind:'RETRY_ORIGINAL_ITEMS',detail:{indices},items,error:null,selectedRetry:null});
+  }
+  retrySelected(id,indices,sequence,retryId){
+    if(this.closing)fail('SHUTTING_DOWN','组件正在安全退出');
+    const record=this.commands.get(id);
+    if(!record||collectionPurpose(record.request)!=='replenishment')fail('COMMAND_RETRY_SCOPE','只能继续原补货建议采集');
+    if(!indices.length||indices.some(i=>!record.items[i]))fail('COMMAND_RETRY_SCOPE','重试门店不属于原采集');
+    indices=[...indices].sort((a,b)=>a-b);
+    const prior=record.selected_retry,same=prior?.id===retryId;
+    if(same&&JSON.stringify(prior.indices)!==JSON.stringify(indices))fail('COMMAND_RETRY_SCOPE','同一次重试不能变更门店范围');
+    if(same&&!['PAUSED','INTERRUPTED'].includes(record.state))return record;
+    if(record.sequence!==sequence)fail('COMMAND_CONFLICT','作业已变化，请刷新');
+    if(!['PAUSED','INTERRUPTED','NEEDS_REVIEW','COMPLETED_WITH_ERRORS'].includes(record.state))fail('COMMAND_TRANSITION','原采集仍在执行或已经完成，请刷新');
+    const items=structuredClone(record.items);
+    let runnable=0;
+    for(const index of indices){
+      const item=items[index];
+      if(['SUCCEEDED','ENDED'].includes(item.state)||same&&item.state==='FAILED')continue;
+      if(item.state==='NEEDS_REVIEW'&&!this.canResumeReview(item,record))continue;
+      if(item.error)item.previous_error=item.error;
+      item.error=null;item.state='PENDING';runnable++;
+    }
+    if(!runnable)return record;
+    return this.change(id,'QUEUED',{kind:'RETRY_SELECTED_ITEMS',detail:{indices,retry_id:retryId},
+      selectedRetry:{id:retryId,indices},items,error:null});
   }
   kick(){
     if(this.pumping||this.closing)return;
@@ -106,7 +131,8 @@ export class MachineRuntime{
   }
   async run(id){
     const control=new AbortController();this.active={id,control};
-    this.change(id,'RUNNING');
+    const started=this.change(id,'RUNNING'),selected=started.selected_retry?.indices;
+    const inScope=item=>!selected||selected.includes(item.index);
     try{
       const phases=this.pipeline?['submit','collect']:['complete'];
       for(const phase of phases){
@@ -114,7 +140,7 @@ export class MachineRuntime{
       const missing=new Map();
       do{
       for(const initial of this.commands.get(id).items){
-        if(['SUCCEEDED','FAILED','ENDED','NEEDS_REVIEW'].includes(initial.state)||missing.has(initial.index))continue;
+        if(!inScope(initial)||settled.has(initial.state)||missing.has(initial.index))continue;
         if(control.signal.aborted){this.change(id,'PAUSED');return;}
         this.updateItem(id,initial.index,{state:'RUNNING',error:null});
         try{
@@ -161,7 +187,7 @@ export class MachineRuntime{
         }
       }
       if(control.signal.aborted){this.change(id,'PAUSED');return;}
-      const pending=this.commands.get(id).items.some(i=>!['SUCCEEDED','FAILED','ENDED','NEEDS_REVIEW'].includes(i.state)&&!missing.has(i.index));
+      const pending=this.commands.get(id).items.some(i=>inScope(i)&&!settled.has(i.state)&&!missing.has(i.index));
       if(!pending&&missing.size){this.change(id,'INTERRUPTED',{error:missing.values().next().value});return;}
       if(phase!=='collect'||!pending)break;
       if(Date.now()>=deadline){this.change(id,'INTERRUPTED',{error:{code:'TASK_PENDING',message:'平台仍在生成部分文件；已完成文件保留，请继续原采集任务',details:{}}});return;}
@@ -175,7 +201,9 @@ export class MachineRuntime{
       }while(true);
       }
       const items=this.commands.get(id).items;
-      this.change(id,items.some(i=>i.state==='NEEDS_REVIEW')?'NEEDS_REVIEW':items.some(i=>['FAILED','ENDED'].includes(i.state))?'COMPLETED_WITH_ERRORS':'SUCCEEDED',{
+      const next=items.some(i=>i.state==='NEEDS_REVIEW')?'NEEDS_REVIEW':items.some(i=>!settled.has(i.state))?'INTERRUPTED':
+        items.some(i=>['FAILED','ENDED'].includes(i.state))?'COMPLETED_WITH_ERRORS':'SUCCEEDED';
+      this.change(id,next,{
         result:{items,succeeded:items.filter(i=>i.state==='SUCCEEDED').length,failed:items.filter(i=>i.state==='FAILED').length}
       });
     }finally{this.active=null;}

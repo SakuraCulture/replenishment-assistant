@@ -44,8 +44,9 @@ class SavedBindingsTests(unittest.TestCase):
         self.catalog_owner.read_status.assert_not_called()
 
     def test_missing_or_disabled_required_warehouse_stops_new_collection(self):
+        from scheduled_replenishment import stamp
         self.basis['warehouses'].append('河北仓')
-        runner = SimpleNamespace(repo=SimpleNamespace(get=lambda _: {'external': {}}), rid='run')
+        runner = SimpleNamespace(repo=SimpleNamespace(get=lambda _: {'external': {}, 'day': stamp().date().isoformat()}), rid='run')
         with patch('scheduled_platforms.Jobs'):
             with self.assertRaisesRegex(ValueError, '河北仓尚无有效的账号核验'):
                 self.platform.sales(runner, self.basis)

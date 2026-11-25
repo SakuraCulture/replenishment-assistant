@@ -90,14 +90,6 @@ def require_arranged_stores(frozen, schedule):
         raise ValueError('补货预案的门店范围已变化，请编辑安排，确认门店后保存')
 
 
-def check_signed(repo,run,codes):
-    with repo.db() as db:
-        tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        if 'normal_orders' in tables:
-            signed={r[0] for r in db.execute('SELECT store FROM normal_orders WHERE day=?',(run['day'],))}
-            if signed.intersection(codes):raise ValueError('本日已有签发：'+ '、'.join(s for s in codes if s in signed)+'；请人工核对，不自动覆盖')
-
-
 class Runner:
     def __init__(self,repo,backend,folder,cancel=None,progress=lambda _:None):
         self.repo,self.backend,self.folder=repo,backend,Path(folder)
@@ -124,9 +116,12 @@ class Runner:
                     require_arranged_stores(frozen, schedule)
                 elif not matches_check_signature(frozen, schedule.get('check_signature'), self.folder):
                     raise ValueError('旧安排的门店范围无法核对，请编辑安排，确认门店后保存')
-                codes=[i['code'] for i in frozen['plan']['stores']];check_signed(self.repo,run,codes)
                 self.repo.change(rid,epoch=self.epoch,stores=[{**i,'state':'PENDING','message':'等待处理'} for i in frozen['plan']['stores']])
                 self.repo.save_value(rid,'basis',frozen,self.epoch)
+            wanted=run.get('retry_codes')
+            selected=[s['code'] for s in self.repo.get(rid)['stores'] if s['state']!='READY' and (wanted is None or s['code'] in wanted)]
+            with self.repo.db() as db:
+                sr.check_unsigned(db,run['day'],selected)
             from version_info import MODEL_VERSION
             if frozen['model_version']!=MODEL_VERSION:raise ValueError('模型版本变化，原任务仅供查看，请建立新任务')
             checkpoint(self.cancel)
@@ -135,17 +130,27 @@ class Runner:
             manifest=self.backend.sales(self, frozen)
             self.repo.save_value(rid,'sales',manifest,self.epoch)
             checkpoint(self.cancel)
-            self.update('更新仓商品资料','本任务每仓获取一次，不修改聚水潭分配库存')
-            catalogs=self.backend.catalogs(self,frozen)
-            checkpoint(self.cancel)
-            run=self.repo.get(rid);wanted=run.get('retry_codes')
+            available={f['warehouse_code'] for f in manifest['files']}
+            omitted={s['warehouse_code']:s for s in manifest.get('omitted',[])}
+            for s in selected:
+                if s in available:
+                    continue
+                failure=omitted.get(s,{})
+                error=failure.get('error') or {}
+                reason=error.get('message') or '补货建议未取得，请核对原采集任务'
+                if failure.get('task_id'):
+                    reason+=f"（原任务 {failure['task_id']}）"
+                self.repo.store_state(rid,s,'FAILED',reason,self.epoch)
+            selected=[s for s in selected if s in available]
+            catalogs=self.repo.value(rid,'catalogs',{}) if wanted is not None else {}
+            if selected and not set(frozen['warehouses']).issubset(catalogs):
+                self.update('更新仓商品资料','正在核对本次任务的仓资料')
+                catalogs=self.backend.catalogs(self,frozen)
+                checkpoint(self.cancel)
             eligible=[]
-            for item in run['stores']:
-                s=item['code']
-                if item['state']=='READY' or wanted is not None and s not in wanted:continue
+            for s in selected:
                 missing=[w for w in frozen['jobs'][s]['supply_route'].values() if w and w not in catalogs]
                 if missing:self.repo.store_state(rid,s,'FAILED','仓资料未完成：'+'、'.join(missing),self.epoch)
-                elif not any(f['warehouse_code']==s for f in manifest['files']):self.repo.store_state(rid,s,'FAILED','补货建议未取得，请查看原采集任务',self.epoch)
                 else:eligible.append(s)
             if eligible:
                 self.update('检查文件','按原规则检查已验收文件，保留冲突及来源顺序')
@@ -176,7 +181,10 @@ class Runner:
                 if persistence:raise persistence[0]
             checkpoint(self.cancel)
             run=self.repo.get(rid);all_ready=all(s['state']=='READY' for s in run['stores'])
-            self.update('等待人工核对','已完成门店的结果已保存，可进入核对；尚未签发',state='COMPLETE' if all_ready else 'REVIEW')
+            done=sum(s['state']=='READY' for s in run['stores'])
+            message=f'{done}/{len(run["stores"])} 家已计算并保存，等待核对'
+            if not all_ready:message+='。请查看待处理门店的原因'
+            self.update('等待人工核对',message,state='COMPLETE' if all_ready else 'REVIEW',retry_codes=None,retry_id=None)
         except Cancelled:
             run=self.repo.get(rid)
             self.update('已安全停止','成功结果已保存；继续时沿用原任务和冻结依据',state='ENDED' if run.get('control')=='end' else 'PAUSED')

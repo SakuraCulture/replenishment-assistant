@@ -116,17 +116,19 @@ export class MachineCommands{
       return {created:true,record};
     });
   }
-  advance(id,expectedSequence,next,{kind='STATE',detail={},result,error,items,durableQueue=false}={}){
+  advance(id,expectedSequence,next,{kind='STATE',detail={},result,error,items,durableQueue=false,selectedRetry}={}){
     return this.state.write(()=>{
       const current=this.get(id);
       if(!current)fail('COMMAND_NOT_FOUND','未找到自动化作业');
       if(current.sequence!==expectedSequence)fail('STALE_COMMAND','作业状态已更新，请重新读取');
-      const reviewResume=current.state==='NEEDS_REVIEW'&&next==='QUEUED'&&kind==='RESUME_WITH_REVIEW_RETAINED'&&items&&items.length===current.items.length&&
+      const scoped=kind==='RETRY_SELECTED_ITEMS'&&selectedRetry&&collectionPurpose(current.request)==='replenishment';
+      const reviewResume=current.state==='NEEDS_REVIEW'&&next==='QUEUED'&&(kind==='RESUME_WITH_REVIEW_RETAINED'||scoped)&&items&&items.length===current.items.length&&
         items.every((item,index)=>{
           const old=current.items[index];
-          if(old.state!=='NEEDS_REVIEW')return item.state===old.state;
-          if(item.state==='NEEDS_REVIEW')return true;
-          return item.state==='PENDING'&&resumableReview(this.state,old,collectionPurpose(current.request)==='replenishment');
+          if(item.state===old.state)return true;
+          if(item.state!=='PENDING'||scoped&&!selectedRetry.indices.includes(index))return false;
+          if(old.state==='NEEDS_REVIEW')return resumableReview(this.state,old,collectionPurpose(current.request)==='replenishment');
+          return scoped&&!['SUCCEEDED','ENDED'].includes(old.state);
         });
       if(!transitions[current.state]?.includes(next)&&!reviewResume)fail('COMMAND_TRANSITION','该作业状态不能执行此操作');
       const record={...current,state:next,sequence:current.sequence+1,updated_at:now()};
@@ -139,6 +141,8 @@ export class MachineCommands{
       }
       if(result!==undefined)record.result=structuredClone(result);
       if(error!==undefined)record.error=structuredClone(error);
+      if(selectedRetry===null)delete record.selected_retry;
+      else if(selectedRetry)record.selected_retry=structuredClone(selectedRetry);
       this.db.prepare('UPDATE machine_commands SET state=?,sequence=?,payload=? WHERE id=?').run(next,record.sequence,JSON.stringify(record),id);
       const event=this.insertEvent(record,kind,detail);
       return {record,event};

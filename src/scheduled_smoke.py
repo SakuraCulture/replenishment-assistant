@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from scheduled_platforms import Platforms
 
 
-def fixture(root):
+def fixture(root,codes=('A','B'),name='合成早班'):
     from openpyxl import Workbook
     import work_repository as wr,warehouse_catalog as wc,store_parameter_import as spi,replenishment_plans as plans
     work=wr.Repository(root);catalogs={};files=[]
@@ -13,12 +13,14 @@ def fixture(root):
         p=root/(wh+'.xlsx');b=Workbook();w=b.active;w.append(wc.REQUIRED+['商品标签','商品名称'])
         w.append(['0001','饮品',2,6,'启用',100,'必卖清单' if wh=='河北仓' else '','合成饮品']);b.save(p);b.close()
         catalogs[wh]=wc.import_catalog(p,wh);wc.Repository(root).save(catalogs[wh])
-    for code in ('A','B'):
-        r=spi.base();r['ui'].update(mode=1,primary='河北仓' if code=='A' else '山东仓',secondary=None);work.save_stores({code:r})
+    records={}
+    for i,code in enumerate(codes):
+        r=spi.base();r['ui'].update(mode=1,primary='河北仓' if i%2==0 else '山东仓',secondary=None);records[code]=r
         p=root/(code+'.xlsx');b=Workbook();w=b.active;w.append(['仓库/门店编码','仓库/门店名称','商品编码','商品名称','日销','周销','月销','可用库存','在途库存','缺货天数（天）','补货状态']);w.append([code,'测试'+code,'0001','合成饮品',2,14,60,0,0,0,'正常']);b.save(p);b.close()
         from input_adapter import digest
         files.append({'file':str(p),'warehouse_code':code,'sha256':digest(p)})
-    plan=plans.Repository(work.path).save({'name':'合成早班','stores':[{'code':c,'name':'测试'+c} for c in ('A','B')],'config':spi.base()['preset']['config'],'parameter_fields':[]})
+    work.save_stores(records)
+    plan=plans.Repository(work.path).save({'name':name,'stores':[{'code':c,'name':'测试'+c} for c in codes],'config':spi.base()['preset']['config'],'parameter_fields':[]})
     return plan,catalogs,{'files':files}
 
 
@@ -59,6 +61,82 @@ class SyntheticPlatforms(Platforms):
     def release(self,progress):pass
 
 
+class ControlledCollection:
+    """Protocol fixture for the EXE: real scheduling/validation, controlled export receipts."""
+    def __init__(self,folder,manifest):
+        self.folder=folder
+        self.sources={file['warehouse_code']:file for file in manifest['files']}
+        self.codes=list(self.sources)
+        self.unknown,self.failed,self.accepted,self.unsent=self.codes[-4:]
+        self.config={'configured':True,'enabled':True,'account_binding':{'account_id':'test','merchant_code':'test'},
+                     'targets':[{'buyerWarehouseCode':code,'mappingVerifiedAt':'2026-11-25'} for code in self.codes],
+                     'store_mapping_version':'0'*64}
+        self.receipt=None;self.scopes=[];self.submits=[];self.queries=[];self.late_receipt=False
+
+    def succeed(self,item):
+        import shutil
+        code=item['warehouse_code'];source=self.sources[code];original=Path(source['file'])
+        path=self.folder/'component-state'/'command-files'/self.receipt['id']/f"{item['index']}-{source['sha256']}.xlsx"
+        path.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(original,path)
+        item.update(state='SUCCEEDED',error=None,result={**source,'file':str(path),'run_id':item['run_id'],
+                    'account_binding':self.config['account_binding'],'bytes':path.stat().st_size,'task_id':item['task_id']})
+
+    def request(self,action,**values):
+        from aoxiang_jobs import fingerprint
+        if action=='configuration':return self.config
+        if action=='reserve':
+            command=values['command'];codes=command['scope']['warehouse_codes']
+            assert codes==self.codes and self.receipt is None
+            self.receipt={'id':command['command_id'],'fingerprint':fingerprint(command),'request':command,
+                          'sequence':1,'state':'NEEDS_REVIEW','items':[]}
+            for index,code in enumerate(codes):
+                item={'index':index,'warehouse_code':code,'run_id':'run-'+code,'result':None,
+                      'task_id':None if code in (self.unknown,self.unsent) else 'original-'+code}
+                if code!=self.unsent:self.submits.append([code,'original-'+code])
+                if index<25:self.succeed(item)
+                else:
+                    state,key,message={self.unknown:('NEEDS_REVIEW','SUBMISSION_UNKNOWN','原导出受理待核'),
+                        self.failed:('FAILED','TASK_HAS_FAILURES','平台原任务包含失败行'),
+                        self.accepted:('INTERRUPTED','TASK_NOT_FOUND','暂未定位已受理原任务'),
+                        self.unsent:('PENDING','PAUSED','门店尚未提交')}[code]
+                    item.update(state=state,error={'code':key,'message':message})
+                self.receipt['items'].append(item)
+            return {'record':copy.deepcopy(self.receipt)}
+        assert self.receipt is not None and values['command_id']==self.receipt['id'],action
+        if action=='status':return copy.deepcopy(self.receipt)
+        assert action=='collection.retry_selected',action
+        assert values['sequence']==self.receipt['sequence'] and values['retry_id'] not in [r['id'] for r in self.scopes]
+        chosen=[self.receipt['items'][i] for i in values['indices']]
+        self.scopes.append({'id':values['retry_id'],'stores':[i['warehouse_code'] for i in chosen]})
+        for item in chosen:
+            code=item['warehouse_code'];assert item['state']!='SUCCEEDED'
+            if code==self.unknown and not self.late_receipt:continue
+            if code in (self.failed,self.unsent):
+                item['task_id']='retry-'+code;self.submits.append([code,item['task_id']])
+            else:
+                item['task_id']='original-'+code;self.queries.append([code,item['task_id']])
+            self.succeed(item)
+        self.receipt['sequence']+=1
+        self.receipt['state']='SUCCEEDED' if all(i['state']=='SUCCEEDED' for i in self.receipt['items']) else 'NEEDS_REVIEW'
+        return copy.deepcopy(self.receipt)
+
+
+class RetryPlatforms(SyntheticPlatforms):
+    def __init__(self,repo,catalogs,manifest,cancel,bindings,collection):
+        super().__init__(repo,catalogs,manifest,cancel,bindings)
+        self.ax_manager.store=SimpleNamespace(folder=collection.folder)
+        self.ax_manager.session.lease=lambda **_:SimpleNamespace(start=lambda:None,close=lambda **_:True,request=collection.request)
+        self.warehouse_reads=bindings.get('warehouse_reads',[])
+
+    def sales(self,runner,basis):return Platforms.sales(self,runner,basis)
+
+    def catalogs(self,runner,basis):
+        self.warehouse_reads.append(runner.epoch)
+        return super().catalogs(runner,basis)
+
+    def release(self,progress):self.release_ax(progress)
+
+
 def start_smoke(app,win,args):
     from PySide6.QtCore import QTimer,QEventLoop
     from PySide6.QtWidgets import QMessageBox
@@ -68,7 +146,7 @@ def start_smoke(app,win,args):
     if not (out/'synthetic.json').is_file() or Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve()!=out/'user':raise ValueError('需要专用合成验收目录')
     app.setQuitOnLastWindowClosed(False)
     def run():
-        report={'passed':False,'frozen':bool(getattr(sys,'frozen',False)),'version':diagnostic(),'checks':[]};checks=report['checks'];beats=[];dialog=None;phase='test_setup'
+        report={'passed':False,'frozen':bool(getattr(sys,'frozen',False)),'version':diagnostic(),'window_title':win.windowTitle(),'checks':[]};checks=report['checks'];beats=[];dialog=None;phase='test_setup'
         m=win.scheduled;original=m.platform;originalask=ui.ask
         def require(v,text):
             if not v:raise AssertionError(text)
@@ -152,6 +230,44 @@ def start_smoke(app,win,args):
             current=m.repo.get(next_run['id']);m.repo.resume(current['id'],current['revision']);m.platform=lambda c:SyntheticPlatforms(m.repo,catalogs,manifest,c,bindings);m.start(m.repo.get(current['id']))
             wait(lambda:m.worker is None and m.publisher is None and m.reader is None);require(m.repo.get(current['id'])['state']=='COMPLETE','暂停后继续同一任务，取消状态不串入新轮次')
             m.repo.request_pause(current['id'],True)
+            phase='test_setup';codes=tuple(f'R{i:02}' for i in range(1,30))
+            retry_plan,retry_catalogs,retry_manifest=fixture(out/'user',codes,'合成29店重试')
+            selection={**m.repo.schedules()[0],'name':'合成29店重试','plan_id':retry_plan['id'],
+                       'plan_name':retry_plan['name'],'stores':retry_plan['stores']}
+            collection=ControlledCollection(out/'user'/'controlled-aoxiang',retry_manifest)
+            bindings['warehouse_reads']=[];win.job_dirty=True;phase='actual_ui'
+            m.platform=lambda c:RetryPlatforms(m.repo,retry_catalogs,retry_manifest,c,bindings,collection)
+            started=m.repo.manual(selection);run_id=started['id'];m.start(started)
+            wait(lambda:m.repo.get(run_id)['state']=='REVIEW' and not m.worker,90)
+            def run_count():return sum(s['state']=='READY' for s in m.repo.get(run_id)['stores'])
+            def pick_run():
+                wait(lambda:not dialog.worker);dialog.refresh();wait(lambda:not dialog.worker)
+                dialog.tabs.setCurrentIndex(1)
+                dialog.runs.selectRow(next(i for i,r in enumerate(dialog.records) if r['id']==run_id));dialog.select()
+            require(run_count()==25,'同批首次 25/29，另外四店保留不同原回执')
+            saved_results={c:m.repo.value(run_id,'result:'+c) for c in codes[:25]}
+            pick_run();dialog.run_actions['结束本次'].click()
+            wait(lambda:m.repo.get(run_id)['state']=='ENDED');pick_run()
+            dialog.check_failures.click()
+            require(dialog.checked_stores==set(codes[-4:]),'原运行已结束仍能一键勾选四家，已完成门店无需重跑')
+            dialog.grab().save(str(out/'04-原批次勾选四家.png'))
+            action=dialog.run_actions['重试所选失败门店'];action.click();action.click()
+            wait(lambda:run_count()==28 and m.repo.get(run_id)['state']=='REVIEW' and not m.worker,90)
+            require(len(collection.scopes)==1 and collection.scopes[0]['stores']==list(codes[-4:]),'重复点击只登记一次，同原批次带入四个勾选项')
+            remaining=m.repo.get(run_id)['stores'][-4]
+            require(remaining['state']=='FAILED' and '受理待核' in remaining['message'],'无唯一原回执的一店显示原原因，其他三店完成')
+            pick_run();dialog.grab().save(str(out/'05-保留待核.png'))
+            collection.late_receipt=True;dialog.check_failures.click();action.click()
+            wait(lambda:m.repo.get(run_id)['state']=='COMPLETE' and not m.worker,90)
+            require(run_count()==29 and collection.scopes[-1]['stores']==[codes[-4]],'原回执可核后只接着处理该店，原批次完成 29/29')
+            require(all(m.repo.value(run_id,'result:'+c)==v for c,v in saved_results.items()),'原有25家结果逐店完全一致')
+            require(bindings['warehouse_reads']==[1] and len(collection.submits)==30 and len(collection.queries)==2,
+                    '沿用原两仓资料，新增两个受控导出动作，已受理店均按原号查询')
+            require(len(m.repo.value(run_id,'sales')['files'])==29,'原采集编号下的29份已验收文件保持计划顺序')
+            report['retry']={'run_id':run_id,'command_id':collection.receipt['id'],'completed':[25,28,29],
+                             'scopes':collection.scopes,'submits':collection.submits,'original_queries':collection.queries,
+                             'warehouse_reads':bindings['warehouse_reads']}
+            pick_run();dialog.grab().save(str(out/'06-原批次全部完成.png'));win.job_dirty=False
             last=m.repo.manual(m.repo.schedules()[0]);m.platform=lambda c:Waiting(m.repo,catalogs,manifest,c,bindings);m.start(last)
             wait(lambda:m.repo.get(last['id'])['stage']=='获取补货建议');win.close();wait(lambda:m.worker is None and not win.isVisible())
             require(m.repo.get(last['id'])['state']=='PAUSED','实际窗口关闭前安全暂停，保留原任务供重启恢复')

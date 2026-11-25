@@ -9,6 +9,7 @@ from aoxiang_client import ComponentError
 import catalog_sync_validation as validation
 from source_archive import capture
 from catalog_sync import stock_observation
+from scheduled_replenishment import stamp
 
 
 class Platforms:
@@ -82,37 +83,42 @@ class Platforms:
         repo=runner.repo;rid=runner.rid;run=repo.get(rid);external=dict(run['external'])
         jobs=Jobs(self.folder/'aoxiang'/'jobs.sqlite3')
         checkpoint(self.cancel)
-        cid=external.get('ax')
+        cid=external.get('ax');wanted=run.get('retry_codes');retry_id=run.get('retry_id')
+        scope=[i['code'] for i in basis['plan']['stores']]
         if cid is None:
+            if run['day']!=stamp().date().isoformat():
+                raise ValueError('原任务尚未发起采集，已跨日，请按当天资料建立新任务')
+            if wanted is not None and set(wanted)!=set(scope):
+                raise ValueError('原任务尚未发起采集，请勾选全部未完成门店后继续')
             self.check_warehouse_bindings(basis['warehouses'])
         self.ax=self.ax_manager.session.lease(cancelled=self.stopped,control_only=True)
         self.ax.start();client=self.ax
+        may_continue=True
         if cid is None:
             config=configuration_for_new(client,lambda message:runner.update('获取补货建议',message),self.cancel)
-            job=prepare(jobs,config,[i['code'] for i in basis['plan']['stores']],'refresh',day=run['day'])
+            job=prepare(jobs,config,scope,'refresh',day=run['day'])
             cid=job['id'];external['ax']=cid;repo.change(rid,epoch=runner.epoch,external=external)
             # Intent is linked before dispatch; same command has a durable idempotency contract.
-            jobs.dispatch(client,cid)
-        else:
-            job=jobs.get(cid)
-            if job['state']=='PREPARED':jobs.dispatch(client,cid)
-            else:
-                job=jobs.refresh(client,cid)
-                if job['state'] in ('PAUSED','INTERRUPTED'):
-                    jobs.observe(cid,client.request('resume',command_id=cid))
-                elif job['state']=='NEEDS_REVIEW':
-                    try:jobs.observe(cid,client.request('collection.continue',command_id=cid))
-                    except ComponentError as error:
-                        if error.code!='COMMAND_TRANSITION':raise
-                elif job['state']=='COMPLETED_WITH_ERRORS':
-                    wanted=run.get('retry_codes')
-                    ids=[i['index'] for i in job['record']['items'] if i['state']=='FAILED' and (wanted is None or i['warehouse_code'] in wanted)]
-                    if ids:jobs.observe(cid,client.request('retry',command_id=cid,indices=ids,sequence=job['sequence']))
+            jobs.dispatch(client,cid);may_continue=False
+        elif jobs.get(cid)['state']=='PREPARED':
+            try:jobs.refresh(client,cid)
+            except ComponentError as error:
+                if error.code!='COMMAND_NOT_FOUND':raise
+                if run['day']!=stamp().date().isoformat():
+                    raise ValueError('原采集未受理且已跨日，请按当天资料建立新任务') from error
+                if wanted is not None and set(wanted)!=set(scope):
+                    raise ValueError('原采集未受理，请勾选全部未完成门店后继续') from error
+                jobs.dispatch(client,cid);may_continue=False
         self.active_ax=cid;sent_stop=False;deadline=None
         while True:
             job=jobs.refresh(client,cid)
-            if job['state'] not in ACTIVE:break
+            if job['state'] not in ACTIVE:
+                if not may_continue or self.stopped():break
+                may_continue=False
+                if self.continue_sales(client,jobs,job,wanted,retry_id):continue
+                break
             waiting=job['state']=='QUEUED'
+            if not retry_id or job['record'].get('selected_retry',{}).get('id')==retry_id:may_continue=False
             if not waiting and deadline is None:
                 deadline=time.monotonic()+3600
             if (self.stopped() or deadline is not None and time.monotonic()>deadline) and not sent_stop:
@@ -124,9 +130,34 @@ class Platforms:
             time.sleep(.5)
         self.active_ax=None
         if sent_stop or self.stopped():raise Cancelled('取数已安全暂停；继续原任务')
-        value=manifest(job,self.ax_manager.store.folder/'component-state')
+        value=manifest(job,self.ax_manager.store.folder/'component-state',allow_empty=True)
         self.release_ax(runner.progress)
         return value
+
+    @staticmethod
+    def continue_sales(client,jobs,job,wanted,retry_id):
+        cid=job['id'];state=job['state'];items=job['record']['items']
+        if wanted is not None and retry_id:
+            indices=[i['index'] for i in items if i['warehouse_code'] in wanted]
+            if len(indices)!=len(wanted):raise ValueError('原采集缺少所选门店，未派发重试')
+            if all(items[index]['state']=='SUCCEEDED' for index in indices):return False
+            receipt=client.request('collection.retry_selected',command_id=cid,indices=indices,
+                                   sequence=job['sequence'],retry_id=retry_id)
+        elif state in ('PAUSED','INTERRUPTED'):
+            receipt=client.request('resume',command_id=cid)
+        elif state=='NEEDS_REVIEW':
+            try:receipt=client.request('collection.continue',command_id=cid)
+            except ComponentError as error:
+                # The per-store evidence is displayed below, even if no item has a usable receipt.
+                if error.code!='COMMAND_TRANSITION':raise
+                return False
+        elif state=='COMPLETED_WITH_ERRORS':
+            ids=[i['index'] for i in items if i['state']=='FAILED' and (wanted is None or i['warehouse_code'] in wanted)]
+            if not ids:return False
+            receipt=client.request('retry',command_id=cid,indices=ids,sequence=job['sequence'])
+        else:return False
+        jobs.observe(cid,receipt)
+        return True
 
     def catalogs(self,runner,basis):
         repo=runner.repo;rid=runner.rid;run=repo.get(rid);external=dict(run['external']);client=self.jst_client()

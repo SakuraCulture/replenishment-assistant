@@ -90,6 +90,51 @@ test('平台受理不明不可用重跑绕过核对',async t=>{
   assert.equal(r.state,'NEEDS_REVIEW');assert.throws(()=>c.runtime.retry(r.id,[0],r.sequence));assert.throws(()=>c.runtime.resume(r.id));
 });
 
+test('原批次含受理未知和普通失败时，只重试所选可执行项并保留成功结果',async t=>{
+  let failed=true;const visits=[];
+  const c=await context(t, async({record,item,phase})=>{
+    visits.push([item.index,phase]);
+    if(item.index===0)throw new AppError('SUBMISSION_UNKNOWN','原提交仍待核');
+    if(item.index===1&&failed&&phase==='collect')throw new AppError('TASK_HAS_FAILURES','平台已确认失败');
+    if(record.selected_retry)assert.deepEqual(record.selected_retry.indices,[0,1]);
+    return phase==='submit'?{pending:true}:{file:item.warehouse_code};
+  },{pipeline:true,durableQueue:true});
+  await c.reserve();c.runtime.kick();await c.runtime.idle();
+  const before=c.commands.get('job-1');
+  assert.deepEqual(before.items.map(i=>i.state),['NEEDS_REVIEW','FAILED','SUCCEEDED']);
+  assert.throws(()=>c.runtime.continueReviewed(before.id),{code:'COMMAND_TRANSITION'});
+  assert.throws(()=>c.runtime.retry(before.id,[1],before.sequence),{code:'COMMAND_TRANSITION'});
+  failed=false;visits.length=0;
+  const token='1'.repeat(32),queued=c.runtime.retrySelected(before.id,[1,0],before.sequence,token);
+  assert.equal(queued.state,'QUEUED');
+  assert.equal(c.runtime.retrySelected(before.id,[0,1],before.sequence,token).sequence,queued.sequence);
+  await c.runtime.shutdown();
+  assert.deepEqual(c.commands.recoverInterrupted(),[]);
+  const resumed=new MachineRuntime({commands:c.commands,executeItem:c.runtime.executeItem,pipeline:true,durableQueue:true});
+  resumed.kick();await resumed.idle();
+  const done=c.commands.get(before.id);
+  assert.equal(done.state,'NEEDS_REVIEW');
+  assert.deepEqual(done.items.map(i=>i.state),['NEEDS_REVIEW','SUCCEEDED','SUCCEEDED']);
+  assert.deepEqual([done.items[0],done.items[2]],[before.items[0],before.items[2]]);
+  assert.deepEqual(visits,[[1,'submit'],[1,'collect']]);
+  assert.equal(resumed.retrySelected(before.id,[0,1],queued.sequence,token).sequence,done.sequence);
+});
+
+test('暂停原批次后选中间失效项重试，未勾选的待办继续留在原批次',async t=>{
+  const visits=[];
+  const c=await context(t,async({item})=>{visits.push(item.index);return {file:item.warehouse_code};},{pipeline:false});
+  await c.reserve();const paused=c.runtime.pause('job-1');
+  c.runtime.retrySelected(paused.id,[1],paused.sequence,'2'.repeat(32));
+  c.runtime.kick();await c.runtime.idle();
+  assert.deepEqual(visits,[1]);
+  const partial=c.commands.get(paused.id);
+  assert.equal(partial.state,'INTERRUPTED');
+  assert.deepEqual(partial.items.map(i=>i.state),['PENDING','SUCCEEDED','PENDING']);
+  c.runtime.resume(paused.id);c.runtime.kick();await c.runtime.idle();
+  assert.deepEqual(visits,[1,0,2]);
+  assert.equal(c.commands.get(paused.id).state,'SUCCEEDED');
+});
+
 test('菜单明确未提交仅自动恢复一次，其余门店各自提交并收取',async t=>{
   const calls=new Map();
   const c=await context(t,async({item,phase})=>{

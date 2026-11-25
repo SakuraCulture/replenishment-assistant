@@ -21,7 +21,7 @@ from ui_review_amounts import ReviewAmounts
 import engine,priority_list,batch_service
 import warehouse_catalog
 from warehouse_ui import WarehouseUi
-from version_info import VERSION,MODEL_VERSION,diagnostic
+from version_info import DISPLAY_VERSION,MODEL_VERSION,diagnostic
 
 class BatchWindow(WarehouseUi,SessionWindow):
     def __init__(self):
@@ -32,7 +32,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         try:self.catalogs=self.catalog_repository.catalogs()
         except Exception as exc:self.config_warning='仓资料未载入：'+str(exc)
         self.profile=priority_list.catalog_profile(self.catalogs)
-        self.setWindowTitle(f'补货助手 {VERSION} · 多店工作台');self.resize(1380,900);self.setMinimumSize(1080,720)
+        self.setWindowTitle(f'补货助手 {DISPLAY_VERSION} · 多店工作台');self.resize(1380,900);self.setMinimumSize(1080,720)
         root=QWidget();self.setCentralWidget(root);v=QVBoxLayout(root);v.setContentsMargins(16,10,16,10);v.setSpacing(6)
         self.work_header=QWidget();head=QHBoxLayout(self.work_header);head.setContentsMargins(0,0,0,0);head.addWidget(label('补货出单','section'));subtitle=label('多店独立预算 · 必卖优先','muted');subtitle.setWordWrap(False);head.addWidget(subtitle);head.addStretch();self.version_btn=button('版本信息',self.about);head.addWidget(self.version_btn);v.addWidget(self.work_header)
         nav=QHBoxLayout();self.nav=[]
@@ -44,7 +44,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.mode.addItems(['必卖未补足','其他预算暂缓'])
         bottom=QHBoxLayout();self.status=label('先添加补货建议和商品资料，检查后选择本次门店。','muted');bottom.addWidget(self.status,1)
         self.progress=QProgressBar();self.progress.setRange(0,0);self.progress.setMaximumWidth(160);bottom.addWidget(self.progress)
-        self.cancel_btn=button('停止',self.cancel_work);bottom.addWidget(self.cancel_btn);version_label=label(f'应用 {VERSION} · 模型 {MODEL_VERSION}','muted');version_label.setWordWrap(False);bottom.addWidget(version_label);v.addLayout(bottom)
+        self.cancel_btn=button('停止',self.cancel_work);bottom.addWidget(self.cancel_btn);version_label=label(f'应用 {DISPLAY_VERSION} · 模型 {MODEL_VERSION}','muted');version_label.setWordWrap(False);bottom.addWidget(version_label);v.addLayout(bottom)
         self.initializing=False;self.restore_master();self.update_controls()
         self.store_table.verticalHeader().setDefaultSectionSize(56)
         for table in [self.task_table,self.overview,self.file_report]:table.verticalHeader().setDefaultSectionSize(46)
@@ -106,7 +106,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.overview.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);self.overview.setAlternatingRowColors(True);self.overview.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);self.overview.setColumnWidth(0,250);self.overview.setColumnWidth(11,330);self.overview.cellClicked.connect(self.open_overview);self.overview.setMinimumHeight(180);v.addWidget(self.overview,1)
         row=QHBoxLayout();row.addWidget(button('返回门店设置',lambda:self.navigate(1)));row.addStretch();self.batch_export=button('导出本次补货结果',self.export_dialog,True);row.addWidget(self.batch_export);v.addLayout(row)
     def about(self):
-        text=json.dumps(diagnostic(),ensure_ascii=False,indent=2);box=QMessageBox(self);box.setWindowTitle('版本信息');box.setText(f'补货助手 {VERSION}\n模型 {MODEL_VERSION}\n多文件、多店独立预算、并发计算。');box.setDetailedText(text)
+        text=json.dumps(diagnostic(),ensure_ascii=False,indent=2);box=QMessageBox(self);box.setWindowTitle('版本信息');box.setText(f'补货助手 {DISPLAY_VERSION}\n模型 {MODEL_VERSION}\n多文件、多店独立预算、并发计算。');box.setDetailedText(text)
         copy_btn=box.addButton('复制诊断信息',QMessageBox.ButtonRole.ActionRole);box.addButton('关闭',QMessageBox.ButtonRole.AcceptRole);box.exec()
         if box.clickedButton()==copy_btn:QApplication.clipboard().setText(text)
     def restore_master(self):
