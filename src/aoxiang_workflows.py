@@ -117,9 +117,13 @@ class Workflows:
         return self._save(db, job, 'QUEUED')
 
     def prepare(self, heads, *, payments=None):
+        if self.business_path:
+            from platform_order_scope import require_single
+            require_single(self.business_path,heads)
         items = []
         for h in heads:
             head = {k: copy.deepcopy(h[k]) for k in HEAD_FIELDS}
+            if h.get('kind')=='material':head['kind']='material'
             if h['warehouse'] not in ('山东仓', '河北仓') or h.get('deleted'):
                 raise ValueError('只能准备有效且明确供货仓的订单')
             item = {'key': h['number'], 'head': head}

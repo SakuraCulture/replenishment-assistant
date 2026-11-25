@@ -155,7 +155,7 @@ def _build(path,progress,cancel,_db,identity_only,counts):
         heads=[dict(zip(('day','store','oid','number','revision','digest','saved'),r)) for r in db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid AND r.revision=o.current ORDER BY o.day DESC,o.store')]
         effective=[]
         for head in heads:
-            effective.extend(execution.heads(db,[head]) if execution.has_parent(db,head['oid']) else [head])
+            effective.extend(execution.heads(db,[head],include_material=True) if execution.has_parent(db,head['oid']) else [head])
         heads=effective
         active={(oid,wh):(gid,revision,digest) for oid,wh,gid,revision,digest in db.execute('SELECT a.oid,a.warehouse,a.gid,g.revision,g.digest FROM jst_active a JOIN jst_generations g ON a.gid=g.gid')} if 'jst_active' in known else {}
         for i,head in enumerate(heads):

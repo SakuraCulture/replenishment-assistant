@@ -14,6 +14,26 @@ from lifecycle_routes import schema as route_schema
 import signing_row_blocks
 
 RESULT_DIGEST_EXCLUSIONS = ('created', 'task', 'version')
+ORDER_COLUMNS = 'day,store,kind,oid,number,current'
+
+
+def has_legacy_order_key(db):
+    return [row[1] for row in db.execute('PRAGMA table_info(normal_orders)') if row[5]] == ['day', 'store', 'kind']
+
+
+def order_header_schema(db):
+    """Keep legacy uniqueness while allowing multiple material batches per store/day."""
+    definition = ('day TEXT NOT NULL,store TEXT NOT NULL,kind TEXT NOT NULL,'
+                  'oid TEXT NOT NULL PRIMARY KEY,number TEXT NOT NULL UNIQUE,current INTEGER NOT NULL')
+    if has_legacy_order_key(db):
+        db.execute(f'CREATE TABLE normal_orders_upgrade({definition})')
+        db.execute(f'INSERT INTO normal_orders_upgrade({ORDER_COLUMNS}) SELECT {ORDER_COLUMNS} FROM normal_orders')
+        db.execute('DROP TABLE normal_orders')
+        db.execute('ALTER TABLE normal_orders_upgrade RENAME TO normal_orders')
+    else:
+        db.execute(f'CREATE TABLE IF NOT EXISTS normal_orders({definition})')
+    db.execute("CREATE UNIQUE INDEX IF NOT EXISTS normal_orders_standard_key ON normal_orders(day,store,kind) WHERE kind<>'material'")
+    db.execute('CREATE INDEX IF NOT EXISTS normal_orders_business_lookup ON normal_orders(day,store,kind)')
 
 
 def fingerprint(result,new_focus=None):
@@ -90,12 +110,14 @@ class Repository:
         self.work=work
         with closing(work.connect()) as db:
             exists=db.execute("SELECT name FROM sqlite_master WHERE name='normal_orders'").fetchone()
-            if not exists:
+            if not exists or has_legacy_order_key(db):
                 # SQLite backup API also captures an existing WAL consistently.
                 backup=work.path.with_name('workbench.before-normal-orders.'+uuid.uuid4().hex+'.sqlite3')
                 with closing(sqlite3.connect(backup)) as target:db.backup(target)
+            with db:
+                db.execute('BEGIN IMMEDIATE')
+                order_header_schema(db)
             with db:db.executescript('''
-                CREATE TABLE IF NOT EXISTS normal_orders(day TEXT NOT NULL,store TEXT NOT NULL,kind TEXT NOT NULL,oid TEXT NOT NULL UNIQUE,number TEXT NOT NULL UNIQUE,current INTEGER NOT NULL,PRIMARY KEY(day,store,kind));
                 CREATE TABLE IF NOT EXISTS normal_revisions(oid TEXT NOT NULL,revision INTEGER NOT NULL,digest TEXT NOT NULL,saved TEXT NOT NULL,payload BLOB NOT NULL,PRIMARY KEY(oid,revision));
                 CREATE TABLE IF NOT EXISTS normal_events(id INTEGER PRIMARY KEY AUTOINCREMENT,at TEXT NOT NULL,oid TEXT,revision INTEGER,action TEXT NOT NULL,detail TEXT NOT NULL);
                 CREATE INDEX IF NOT EXISTS normal_event_delivery ON normal_events(oid,revision,id) WHERE action='带号导出';
@@ -132,10 +154,12 @@ class Repository:
             row=db.execute("SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE o.day=? AND o.store=? AND o.kind='normal_model'",(day,store)).fetchone()
         return dict(zip(('day','store','oid','number','revision','digest','saved'),row)) if row else None
 
-    def headers(self):
+    def headers(self, *, order_kind='normal_model'):
+        condition = { 'normal_model': "o.kind<>'material'", 'material': "o.kind='material'", 'all': '1' }[order_kind]
         with closing(self.work.connect()) as db:
-            rows=db.execute("SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision ORDER BY o.day DESC,o.store").fetchall()
-        return [dict(zip(('day','store','oid','number','revision','digest','saved'),r)) for r in rows]
+            rows=db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved,o.kind FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE '+condition+' ORDER BY o.day DESC,o.store,o.rowid').fetchall()
+        return [dict(zip(('day','store','oid','number','revision','digest','saved'),r[:7]),
+                     **({'kind':'material'} if r[7]=='material' else {})) for r in rows]
 
     def list(self):
         records=[]

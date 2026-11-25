@@ -22,7 +22,7 @@ def has_verified_bindings(schedule):
 def check_unsigned(db, day, codes):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='normal_orders'").fetchone():
         return
-    signed = {row[0] for row in db.execute('SELECT store FROM normal_orders WHERE day=?', (day,))}
+    signed = {row[0] for row in db.execute("SELECT store FROM normal_orders WHERE day=? AND kind<>'material'", (day,))}
     conflicts = [code for code in codes if code in signed]
     if conflicts:
         raise ValueError('本日已有签发：' + '、'.join(conflicts) + '，请沿原单处理')

@@ -16,14 +16,15 @@ from migration_paths import io_path
 DBS=('workbench.sqlite3','aoxiang/workflows.sqlite3','aoxiang/jobs.sqlite3','aoxiang/component-state/state.sqlite')
 EVENTS={'normal_events','lifecycle_events','jst_events','purchase_events','automation_events','jst_cancellation_reviews'}
 DIRECT={'normal_orders','normal_revisions','normal_events','merchant_feedback','lifecycle_routes','lifecycle_versions','lifecycle_events','followup_notes','archive_visibility','jst_generations','jst_active','jst_locks','jst_events','order_component_packages','warehouse_execution_heads','warehouse_execution_revisions','warehouse_execution_retirements','deleted_warehouse_tokens','warehouse_component_packages'}
-DIRECT.update(('jst_auto_orders','jst_auto_order_history','jst_cancellations','jst_cancellation_reviews','jst_cancellation_holds'))
-MAIN=DIRECT|{'jst_headers','jst_reservations','jst_generation_batches','jst_batches','jst_batch_stock','jst_batch_members','jst_batch_retired','jst_runs','jst_steps','jst_tasks','purchase_documents','purchase_versions','purchase_events','purchase_link_index','automation_tasks','automation_events','scheduled_runs','scheduled_values','scheduled_events','deleted_jst_steps'}
-WEAK={'normal_work_revisions','jst_baselines','retired_stock','source_files','lifecycle_files','jst_files','purchase_files','snapshot_chunks'}
+DIRECT.update(('jst_auto_orders','jst_auto_order_history','jst_cancellations','jst_cancellation_reviews','jst_cancellation_holds','material_claims'))
+MAIN=DIRECT|{'jst_headers','jst_reservations','jst_generation_batches','jst_batches','jst_batch_stock','jst_batch_members','jst_batch_retired','jst_runs','jst_steps','jst_tasks','purchase_documents','purchase_versions','purchase_events','purchase_link_index','automation_tasks','automation_events','scheduled_runs','scheduled_values','scheduled_events','deleted_jst_steps','material_batches'}
+WEAK={'normal_work_revisions','jst_baselines','retired_stock','source_files','lifecycle_files','jst_files','purchase_files','snapshot_chunks','material_requests','material_request_versions'}
 GLOBAL={'jobs','stores','presets','stocking_lists','replenishment_plans','replenishment_plan_events','scheduled_arrangements','settings_history','store_admission','admission_events','global_category_mapping','global_category_mapping_events','lifecycle_mappings','purchase_mappings','maintenance_chunk_refs','snapshot_storage_meta','jst_warehouses','catalog_sync_applies','deleted_order_tokens','deletion_generations','deletion_component_outbox','warehouse_deletion_generations','sqlite_sequence','order_merge_receipts'}
-GLOBAL.add('jst_auto_profiles')
+GLOBAL.update(('jst_auto_profiles','material_retired_stock'))
 NODE={'purchase_creates','purchase_create_events','purchase_receipts','purchase_receipt_events','purchase_runs','retired_host_orders','retired_host_warehouses','retired_purchase_tokens','retired_purchase_runs','retirement_files','order_owned_files','warehouse_owned_files','machine_commands','machine_events','machine_retired','assets'}
 NODE_GLOBAL={'metadata','runs','items','attempts','publishes','imported_pending','migration_imports','conflicts','retired_collections','collection_reexports','collection_consumers','machine_protocol'}
 PARENTS={'normal_orders':('oid',),'jst_generations':('gid','operation'),'jst_batches':('batch_id',),'jst_runs':('runid',),'jst_tasks':('task',),'purchase_documents':('docid','identity'),'automation_tasks':('id','operation_key'),'scheduled_runs':('id',),'ax_workflows':('id',),'ax_jobs':('id',),'purchase_creates':('id',),'purchase_runs':('id',),'purchase_receipts':('id',),'machine_commands':('id',),'runs':('id',),'items':('id',),'attempts':('id',),'publishes':('id',),'assets':('asset_key',)}
+PARENTS['material_batches']=('id',)
 LINKS={'oid','gid','batch_id','runid','docid','task','run_id','id','item_id','command_id','purchase_id','hostOrderId','hostPurchaseId','hostOrderIds','rebuildOf','successorId','operation'}
 ASSETS={'source_files','lifecycle_files','jst_files','purchase_files'}
 ACTIVE={'QUEUED','RUNNING','YIELDED','PAUSING','PAUSE_REQUESTED','PREPARING','READY','VERIFYING','SUBMITTING'}
@@ -157,6 +158,8 @@ class Graph:
         elif table in ('jst_baselines','jst_generations','jst_runs','jst_batches'):
             from jst_orders import decode
             decode((values['payload'],values['digest']))
+        elif table=='material_request_versions' and hashlib.sha256(values['payload'].encode('utf-8')).hexdigest()!=values['digest']:
+            raise ValueError('物料申请修订摘要不一致')
         elif table in ('jst_auto_orders','jst_auto_order_history'):
             from jst_auto_order_store import need
             need(json.loads(values['payload']),values['digest'],values['online'],values['gid'])
@@ -185,7 +188,7 @@ class Graph:
         weak_lookup={}
         for r in self.rows:
             if r.weak:
-                key=r.values.get('sha') or r.values.get('hash') or r.values.get('bid') or (r.values.get('revision') if r.table=='normal_work_revisions' else None)
+                key=r.values.get('sha') or r.values.get('hash') or r.values.get('bid') or (r.values.get('revision') if r.table=='normal_work_revisions' else r.values.get('id') if r.table in ('material_requests','material_request_versions') else None)
                 if key:weak_lookup.setdefault(key,[]).append(r)
         # Frozen work/baseline nodes can share bytes without forcing order groups.
         changed=True
@@ -342,8 +345,24 @@ def _table_contract(db,table,columns):
             'unique':sorted(unique,key=encoded),'foreign':sorted([tuple(r)[1:] for r in db.execute('PRAGMA foreign_key_list('+q(table)+')')],key=encoded)}
 def _contract_issue(src,dst,row):
     key=row.db,row.table
+    if row.table=='normal_orders' and key in dst.contracts and _order_header_contract(src.contracts[key]) and _order_header_contract(dst.contracts[key]):
+        return None
     if key in dst.contracts and src.contracts[key]!=dst.contracts[key]:return '关联表字段类型、主键或唯一约束不兼容：'+row.table
     return None
+
+
+def _order_header_contract(contract):
+    columns = contract['columns']
+    if contract['foreign'] or [(name,datatype,required,default) for name,datatype,required,default,_ in columns] != [
+            (name,'INTEGER' if name=='current' else 'TEXT',1,None) for name in ('day','store','kind','oid','number','current')]:
+        return False
+    pk=tuple(name for name,_,_,_,position in sorted(columns,key=lambda row:row[-1]) if position)
+    keys={tuple(values[0] for values in index) for index, _ in contract['unique']}
+    if keys != {('day','store','kind'),('oid',),('number',)}:
+        return False
+    return all(all(values[1:] == ('BINARY',0) for values in index) and
+               expression == (_sql_contract("kind<>'material'") if pk==('oid',) and len(index)==3 else '')
+               for index,expression in contract['unique']) and pk in (('oid',),('day','store','kind'))
 def _chunk_refs(node):
     if node[0]=='ref':yield node[1]
     elif node[0]=='dict':
@@ -459,10 +478,10 @@ def _inspect(src,dst):
         incoming=src.active_warehouses.get(oid,src.legacy_warehouses.get(oid,set()))
         retired={warehouse for owner,warehouse in dst.deleted_warehouses if owner==oid}
         if incoming & {warehouse for owner,warehouse in src.deleted_warehouses if owner==oid}:reasons.append('来源包同一仓单同时有效与退役，不能自动迁入')
-        if oid in dst.deleted or incoming & retired or (head['day'],head['store']) in dst.deleted_business and (head['day'],head['store']) not in stores:
+        if oid in dst.deleted or incoming & retired or head['kind']!='material' and (head['day'],head['store']) in dst.deleted_business and (head['day'],head['store']) not in stores:
             state='DELETED';reasons.append('本机已删除此订单，旧迁移包不恢复')
         else:
-            collisions=oid in dst.order or (head['day'],head['store'],head['kind']) in matches or head['number'] in numbers
+            collisions=oid in dst.order or head['kind']!='material' and (head['day'],head['store'],head['kind']) in matches or head['number'] in numbers
             if collisions:
                 receipt=dst.receipts.get(oid);same=oid in dst.order and typed(head)==typed(dst.order[oid])
                 target_hash=dst.owner_hash(oid) if oid in dst.order else None
@@ -511,7 +530,7 @@ def _ensure_schema(src,dst,name,db,needed):
     if name==DBS[0]:
         # Readers test a family head table, then expect its companion tables.
         # Import empty schema companions too, without their global/local rows.
-        families=('jst_','purchase_','lifecycle_','normal_','automation_','scheduled_','snapshot_','warehouse_execution_')
+        families=('jst_','purchase_','lifecycle_','normal_','automation_','scheduled_','snapshot_','warehouse_execution_','material_')
         prefixes={prefix for prefix in families if any(t.startswith(prefix) for t in needed)}
         needed.update(t for n,t in src.sql if n==name and any(t.startswith(prefix) for prefix in prefixes))
     for table in needed:
@@ -610,6 +629,9 @@ def merge(source_root,private_target,expected_report=None,progress=lambda _:None
                     if not subset:continue
                     p=target/name;p.parent.mkdir(parents=True,exist_ok=True);db=sqlite3.connect(p);connections[name]=db;db.execute('PRAGMA synchronous=FULL');db.execute('BEGIN IMMEDIATE')
                     _ensure_schema(src,dst,name,db,{r.table for r in subset})
+                    if name==DBS[0] and any(r.table=='normal_orders' and r.values['kind']=='material' for r in subset):
+                        from normal_orders import order_header_schema
+                        order_header_schema(db)
                     for r in subset:
                         checkpoint(cancel);values=_pause(r)
                         if r.table=='machine_commands':values=machines[r.values['id']][0]

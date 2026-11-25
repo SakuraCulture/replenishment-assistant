@@ -112,6 +112,8 @@ def selection(records, chosen):
 
 def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=None, expected_setup=None):
     """Freeze one portable native file per valid local warehouse order."""
+    from platform_order_scope import require_single
+    require_single(path,selected,lambda row:row['head'])
     if order_phone is not None and (len(selected)!=1 or not re.fullmatch(r'[0-9]{11}',order_phone)):
         raise Check('单次测试号码只可用于一张仓单，需填11位数字')
     ready=[];failed=[]
@@ -525,6 +527,11 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
 def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *, approved=None, prepare_payment=None,
             expected_binding=None):
     """Process at most the explicitly confirmed selection, in displayed order."""
+    if action=='submit' and len(keys)>1:
+        from platform_order_scope import require_single
+        with closing(wr.read_connection(path)) as db:
+            heads = [order['payload']['head'] for key in keys if (order := store.read(db,key))]
+        require_single(path,heads)
     responses=[]
     for i,online in enumerate(dict.fromkeys(keys),1):
         checkpoint(cancel)

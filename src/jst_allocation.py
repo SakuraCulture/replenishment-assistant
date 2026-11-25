@@ -2,6 +2,7 @@
 from decimal import Decimal, InvalidOperation, ROUND_CEILING
 
 RULE = 'jst-stock-v3'
+MATERIAL_RULE = 'material-stock-v1'
 ORDERABLE_STATES = ('启用', '正常', '在用', '已启用', '备用')
 
 
@@ -30,11 +31,11 @@ def status_issue(item):
     return ''
 
 
-def allocate(rows, items, balances):
+def allocate(rows, items, balances, *, material=False):
     """Mutate this run's balance only; preserve return row order and raw sources."""
     output = []
     for row in rows:
-        sku = row['sku']; demand = number(row['base_quantity'], '回传数量')
+        sku = row['sku']; demand = number(row['base_quantity'], '物料需求量' if material else '回传数量')
         if not demand:
             continue
         item = items.get(sku)
@@ -48,7 +49,11 @@ def allocate(rows, items, balances):
             if row.get('_admission_error'):raise ValueError(row['_admission_error'])
             if item is None:
                 raise ValueError('该仓资料无商品条目')
-            issue = status_issue(item)
+            if material:
+                from material_requests import eligibility
+                issue = eligibility(item)
+            else:
+                issue = status_issue(item)
             if issue:
                 raise ValueError(issue)
             raw_step = item.get('出库箱规')
@@ -59,7 +64,7 @@ def allocate(rows, items, balances):
             stock = number(item.get('可用数'), '可用库存')
             before = balances.setdefault(sku, stock)
             out.update(step=text(step), price=text(price), stock=text(stock), before=text(before), after=text(before), amount='0')
-            carton_demand = (demand / step).to_integral_value(rounding=ROUND_CEILING) * step
+            carton_demand = demand if material else (demand / step).to_integral_value(rounding=ROUND_CEILING) * step
             increment = carton_demand - demand
             # Keep the original tail's meaning in saved rows; record the upward
             # padding separately instead of turning that tail into a negative.
@@ -73,6 +78,8 @@ def allocate(rows, items, balances):
             balances[sku] = before - qty
             reason = ('无可用库存' if before == 0
                       else '库存不足，按剩余可用库存分配（含不足整箱）' if qty < carton_demand else '按回传分配')
+            if material and qty == demand:
+                reason = '按物料核对需求分配'
             if increment:
                 reason += '；回传按箱规向上规整 '+text(demand)+'→'+text(carton_demand)+'，补齐'+text(increment)
             out.update(quantity=text(qty), amount=text(qty * price), after=text(before-qty), missing=text(max(demand-qty, Decimal(0))), reason=reason)

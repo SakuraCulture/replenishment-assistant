@@ -149,6 +149,10 @@ def export_signed(path,heads,folder,progress=lambda _:None,cancel=None):
     for i,h in enumerate(heads):
         try:
             checkpoint(cancel);progress(RowProgress(f'导出签发单 {i+1}/{len(heads)}',i,len(heads)))
+            if h.get('kind')=='material':
+                from material_exports import export
+                files.append(export(path,repo,h,folder,progress,cancel))
+                continue
             with closing(purchases.connect(path)) as db:
                 db.execute('BEGIN')
                 purchases.validate_head(db,h)

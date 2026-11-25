@@ -49,6 +49,9 @@ def install(host, home_layout, nav):
     nav.insertWidget(2, tracking)
     nav.insertWidget(4, settings)
     host.top_nav.extend([tracking, settings])
+    from material_ui import open_desk
+    host.material_entry = button('物料单',lambda:open_desk(host))
+    nav.insertWidget(nav.indexOf(tracking),host.material_entry)
 
     clear_layout(home_layout, (host.home_status, host.recent))
     home_layout.addWidget(label('今天要完成什么？', 'title'))

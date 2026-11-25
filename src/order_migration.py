@@ -16,6 +16,9 @@ from io_stages import stage as measure
 
 FORMAT='replenishment-orders/1'
 SELECTION_FORMAT='replenishment-order-selection/1'
+MATERIAL_FORMAT='replenishment-orders/2'
+MATERIAL_SELECTION_FORMAT='replenishment-order-selection/2'
+SELECTION_FORMATS=(SELECTION_FORMAT,MATERIAL_SELECTION_FORMAT)
 ROOT_FILES={'workbench.sqlite3','workbench.json','must_sell.json','store_budgets.json','new_product_focus.json','store_supply.json'}
 DERIVED={'archive_index.sqlite3','lifecycle_index.sqlite3'}
 DBS={'workbench.sqlite3','timed_reports.sqlite3','aoxiang/workflows.sqlite3','aoxiang/jobs.sqlite3','aoxiang/component-state/state.sqlite'}
@@ -114,7 +117,7 @@ def verify_originals(db,cancel=None):
 def info(path):
     with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")};counts={}
-        for table in ('normal_orders','normal_revisions','normal_work_revisions','warehouse_execution_heads','warehouse_execution_revisions','warehouse_execution_retirements','jobs','lifecycle_routes','lifecycle_versions','purchase_documents','purchase_versions','jst_generations','jst_baselines','source_files','stores','presets','deleted_order_tokens'):
+        for table in ('normal_orders','normal_revisions','normal_work_revisions','warehouse_execution_heads','warehouse_execution_revisions','warehouse_execution_retirements','jobs','lifecycle_routes','lifecycle_versions','purchase_documents','purchase_versions','jst_generations','jst_baselines','source_files','stores','presets','deleted_order_tokens','material_requests','material_batches','material_retired_stock'):
             if table in tables:counts[table]=db.execute('SELECT count(*) FROM '+table).fetchone()[0]
     return counts
 
@@ -248,8 +251,10 @@ def export(root,destination,progress=lambda _:None,cancel=None,*,catalog_state=N
                 'scope':'全部本地订单、全部修订、关联单据、原件、库存分配、平台关联与防重事实、草稿、参数及清单；不按当前页筛选',
                 'counts':info(work/'workbench.sqlite3'),'entries':entries,'external_map':external,'missing_external':missing,
                 'excluded':'浏览器登录、机器连接配置、凭据、AI密钥、独立缺货率分析、缓存及旧备份'}
+            material=any(manifest['counts'].get(table) for table in ('material_requests','material_batches','material_retired_stock'))
+            if material:manifest['format']=MATERIAL_FORMAT
             if selection is not None:
-                manifest.update(format=SELECTION_FORMAT,selection=selection,scope='指定订单及完整关联单，仅供合并导入')
+                manifest.update(format=MATERIAL_SELECTION_FORMAT if material else SELECTION_FORMAT,selection=selection,scope='指定订单及完整关联单，仅供合并导入')
                 _validate_selection(work/'workbench.sqlite3',manifest)
             progress('正在压缩迁移包…')
             with measure('migration.export.pack'),zipfile.ZipFile(temp,'x',compression=zipfile.ZIP_DEFLATED,compresslevel=3,allowZip64=True) as book:
@@ -294,8 +299,8 @@ def manifest(path):
         if len(names)!=len(set(names)) or len(names)>50001:raise ValueError('迁移包条目重复或数量异常')
         if 'manifest.json' not in names or book.getinfo('manifest.json').file_size>16*1024**2:raise ValueError('迁移包清单缺失或过大')
         value=json.loads(book.read('manifest.json'))
-        if value.get('format') not in (FORMAT,SELECTION_FORMAT) or value.get('storage')!=2:raise ValueError('迁移包格式或存储版本不兼容')
-        if value['format']==SELECTION_FORMAT:_selection_ids(value)
+        if value.get('format') not in (FORMAT,MATERIAL_FORMAT,*SELECTION_FORMATS) or value.get('storage')!=2:raise ValueError('迁移包格式或存储版本不兼容')
+        if value['format'] in SELECTION_FORMATS:_selection_ids(value)
         from version_info import VERSION
         if tuple(map(int,value['app_version'].split('.')))>tuple(map(int,VERSION.split('.'))):raise ValueError('迁移包来自更高版本，请先升级补货助手')
         entries=value['entries'];paths=[e['path'] for e in entries]
@@ -314,7 +319,7 @@ def prepare(root,package,progress=lambda _:None,cancel=None,*,mode='replace'):
     root=validate_root(root);require_closed(root,progress,cancel)
     package=Path(package).resolve()
     with measure('migration.prepare.package'):before=file_hash(package);value=manifest(package)
-    if mode=='replace' and value['format']==SELECTION_FORMAT:raise ValueError('这是所选订单迁移包，请使用「合并导入订单」')
+    if mode=='replace' and value['format'] in SELECTION_FORMATS:raise ValueError('这是所选订单迁移包，请使用「合并导入订单」')
     resource_check(root.parent,sum(e['size'] for e in value['entries'])*2)
     nonce=uuid.uuid4().hex;stage=root.with_name('.'+root.name+'.order-import-'+nonce)
     stage_io=io_path(stage);stage_io.mkdir()
@@ -330,7 +335,7 @@ def prepare(root,package,progress=lambda _:None,cancel=None,*,mode='replace'):
             for entry in value['entries']:
                 if entry['path'] in DBS:
                     verify_database(stage/entry['path'],main=entry['path']=='workbench.sqlite3',cancel=cancel,progress=progress,standalone=True)
-            if value['format']==SELECTION_FORMAT:_validate_selection(stage/'workbench.sqlite3',value)
+            if value['format'] in SELECTION_FORMATS:_validate_selection(stage/'workbench.sqlite3',value)
         with measure('migration.prepare.package'):
             if file_hash(package)!=before:raise ValueError('迁移包在读取期间变化，未准备导入')
         contents={}
@@ -467,7 +472,7 @@ def restore_export_receipts(new,final_root):
 def _apply(plan):
     """Only after accepted GUI close; never deletes the target backup."""
     root=checked_plan(plan);stage=Path(plan['stage']);backup=Path(plan['backup']);new=Path(plan['new'])
-    if plan['manifest']['format']==SELECTION_FORMAT:raise ValueError('所选订单迁移包只能合并导入')
+    if plan['manifest']['format'] in SELECTION_FORMATS:raise ValueError('所选订单迁移包只能合并导入')
     from application_reset import _exclusive,_check_other_processes
     if not stage.is_dir() or backup.exists() or new.exists():raise ValueError('导入准备或目标目录已变化，原资料未替换')
     with measure('migration.apply.revalidate'):verify_stage(stage,plan['manifest']['entries'])

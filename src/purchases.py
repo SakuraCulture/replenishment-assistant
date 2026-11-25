@@ -74,7 +74,7 @@ def targets(path,scopes=None,progress=lambda _:None,cancel=None,*,current_only=F
         legacy=db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.revision,r.digest,r.saved FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid'+where+' ORDER BY o.day DESC,o.store,r.revision DESC',arguments).fetchall()
         managed=execution.managed(db,(h[2] for h in legacy))
         work=[{'legacy':h} for h in legacy if h[2] not in managed and (not scopes or any(s==h[1] for s,w in scopes))]
-        if managed:work.extend(h for h in execution.heads(db,[{'oid':oid} for oid in managed],history=not current_only)
+        if managed:work.extend(h for h in execution.heads(db,[{'oid':oid} for oid in managed],history=not current_only,include_material=True)
                                if numbers is None or h['number'] in numbers)
     for i,entry in enumerate(work):
         checkpoint(cancel)
@@ -94,6 +94,7 @@ def targets(path,scopes=None,progress=lambda _:None,cancel=None,*,current_only=F
             rows=[r for rs in groups.values() for r in rs]
             item={'oid':oid,'day':day,'store':store,'name':result['store_name'],'number':wo.child_number(parent,wh),'parent_number':parent,'warehouse':wh,'revision':rev,'current_revision':cur,'digest':digest,'saved':saved,'visibility_token':visibility.get((oid,wh),{}).get('token',0),'products':{d['E']:{'sku':d['E'],'name':d.get('D'),'quantity':sem.order_quantity(d),'unit':d.get('G'),'price':d.get('V')} for d in rows}}
             if allowed is not None:item.update({k:entry[k] for k in ('child_revision','source_parent_revision','snapshot_digest','execution_epoch')})
+            if entry.get('kind')=='material':item['kind']='material'
             out.append(item)
         progress(RowProgress(f'读取可关联修订 {i+1}/{len(work)}',i+1,len(work)))
     rank={w:i for i,w in enumerate(wo.WAREHOUSES)}

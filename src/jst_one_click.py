@@ -116,6 +116,8 @@ def _prepare_entry(path, db, head, pending, cancel):
 
 def preflight(path, heads, progress=lambda _: None, cancel=None):
     """Freeze the selected signed order, upstream facts and exact setup before confirmation."""
+    from platform_order_scope import require_single
+    require_single(path,heads)
     if not heads or len({_key(h) for h in heads}) != len(heads):
         raise automatic.Check('请明确勾选需要作业的仓单，每张仓单只选一次')
     ready, skipped = [], []

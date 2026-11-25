@@ -143,6 +143,10 @@ def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=N
 
 def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False, *, staged=None,_verified=None,
               aoxiang_payment_review=None):
+    if stage in ('return','operations'):
+        from material_stock import has_material, is_material
+        if has_material(db) and is_material(db, head['oid']):
+            raise ValueError('物料单按已确认的物料需求和分配留存。请从「物料单」处理原申请')
     proofs={}
     basis=upstream(db,head,stage,staged,_proofs=proofs,_verified=_verified)
     if explicit_zero and not basis['ready']:raise ValueError('上游未就绪，不能确认整单为0')
@@ -320,6 +324,10 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
         for p in plan['plans']:
             verified=p.get('_read_proofs')
             checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'],_verified=verified)
+            if p['stage'] in ('return','operations'):
+                from material_stock import has_material, is_material
+                if has_material(db) and is_material(db, p['head']['oid']):
+                    raise ValueError('物料单请沿原申请更正，不能覆盖物料分配依据')
             # Saving store demand leaves the original execution and reservation in place.
             if p['stage']=='operations' and p['changed']:guard_operations(db,p['head'])
             if p['stage']=='payment':guard_payment(db,p)

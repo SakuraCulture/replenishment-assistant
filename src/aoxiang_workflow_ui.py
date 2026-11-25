@@ -739,6 +739,9 @@ def prepare_selected(parent, host, heads, *, saved=False):
     if not heads:
         QMessageBox.information(parent, '先选择范围', '请先勾选已确认付款的仓单。')
         return
+    from platform_order_scope import choose
+    heads=choose(parent,host.work_repository.path,heads)
+    if not heads:return
     from aoxiang_preview_ui import PreviewScope
     dialog = PreviewScope(parent, host, heads, saved=saved)
     try:
