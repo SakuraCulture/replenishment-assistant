@@ -219,21 +219,26 @@ class Repository:
             elif retry_id:
                 codes=r['retry_codes']
             check_unsigned(db,r['day'],[code for code in failures if codes is None or code in codes])
-            r.update(state='QUEUED',control=None,retry_codes=codes,retry_id=retry_id,viewed=False)
+            r.update(state='QUEUED',control=None,retry_codes=codes,retry_id=retry_id,viewed=False,recovering_process=False)
             message='已排入原任务'+(f'，重试 {len(codes)} 家门店' if codes is not None else '')+'。已完成结果已保留。'
             return self._save(db,r,message)
 
-    def recover(self):
+    def recover(self, *, after_process_exit=False):
         if not self.exists():return
+        day=self.clock().astimezone(TZ).date().isoformat()
         with self.db(True) as db:
             for row in db.execute("SELECT payload FROM scheduled_runs WHERE state IN ('RUNNING','PAUSING')").fetchall():
                 r=wr.loads(row[0])
-                if not r.get('control') and r['stage']=='等待浏览器可用' and r['external'].get('ax'):
+                if after_process_exit and r['state']=='RUNNING' and not r.get('control') and r['day']==day:
+                    r.update(state='QUEUED',epoch=r['epoch']+1,recovering_process=True)
+                    self._save(db,r,'软件已从异常退出恢复，正在排队核对原任务和已保存结果')
+                elif not after_process_exit and not r.get('control') and r['stage']=='等待浏览器可用' and r['external'].get('ax'):
                     r.update(state='QUEUED',epoch=r['epoch']+1)
                     self._save(db,r,'继续等待浏览器可用，沿用原采集编号')
                 else:
                     r.update(state='ENDED' if r.get('control')=='end' else 'PAUSED',epoch=r['epoch']+1)
-                    self._save(db,r,'上次中断；继续前核对原平台任务，不重新提交')
+                    message='原任务已跨业务日，请先核对原平台回执和资料日期' if after_process_exit and r['day']!=day and not r.get('control') else '上次中断；继续前核对原平台任务，不重新提交'
+                    self._save(db,r,message)
 
     def save_value(self,rid,name,value,epoch,*,store=None):
         # Encode outside the write transaction; immutable blocks deduplicate shared data.

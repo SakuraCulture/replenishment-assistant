@@ -60,6 +60,22 @@ def install(host):
     menu.addAction('轻量性能日志（近24小时）…',lambda:__import__('performance_log_ui').show(host))
     menu.addAction('恢复并继续原操作…',lambda:__import__('lifecycle_recovery_ui').show(host,host))
     menu.addAction('核对聚水潭组件文件…',lambda:__import__('catalog_bundle_ui').inspect_installation(host))
+    from application_runtime import current
+    recovery_session=getattr(current(),'process_recovery',None)
+    if recovery_session:
+        restart=menu.addAction('崩溃后自动重启')
+        restart.setCheckable(True);restart.setChecked(recovery_session.enabled())
+        def set_restart(enabled):
+            try:recovery_session.set_enabled(enabled)
+            except OSError as exc:
+                restart.setChecked(recovery_session.enabled())
+                host.status.setText('自动重启设置未完成：'+str(exc))
+        restart.triggered.connect(set_restart)
+        def open_restart_log():
+            from PySide6.QtCore import QUrl
+            from PySide6.QtGui import QDesktopServices
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(recovery_session.folder)))
+        menu.addAction('打开自动重启记录',open_restart_log)
     menu.addSeparator()
     menu.addAction('数据保存位置…',lambda:__import__('data_location_ui').show(host))
     from table_readability import fit_window

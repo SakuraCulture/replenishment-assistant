@@ -42,9 +42,12 @@ class Manager(QObject):
         self.host.import_page.layout().insertWidget(1,button('定时补货 · 设置与运行记录',self.open))
         from catalog_session_ui import manager
         self.catalog_owner=manager(host).session
+        from application_runtime import current
+        recovery=getattr(current(),'process_recovery',None)
+        self.recover_after_exit=bool(recovery and recovery.restarted)
+        self.recovered=not self.owner
         self.timer=QTimer(self);self.timer.setInterval(2000);self.timer.timeout.connect(self.poll)
         host.destroyed.connect(self.shutdown)
-        if self.owner:self.repo.recover()
         self.timer.start();QTimer.singleShot(0,self.poll)
 
     def platform(self,cancel):return Platforms(self.folder,self.repo.path,self.host.aoxiang_workflows,self.catalog_owner,cancel)
@@ -66,6 +69,9 @@ class Manager(QObject):
         if (pending is not None and not pending._completed) or getattr(manager,'maintenance_depth',0):
             self.status.setText('定时检查等待当前保存、签发或数据维护结束；不会启动新作业');return
         def read(_):
+            if not self.recovered:
+                self.repo.recover(after_process_exit=self.recover_after_exit)
+                self.recovered=True
             if not self.repo.exists():return None
             if self.owner:self.repo.due()
             return self.repo.schedules(),self.repo.list(limit=50)['items'],self.repo.next_queued()

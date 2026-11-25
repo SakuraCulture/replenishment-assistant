@@ -47,6 +47,7 @@ WINDOW_SMOKES = {
     '--coverage-smoke': 'coverage_smoke',
     '--analytics-smoke': 'analytics_smoke',
     '--scheduled-smoke': 'scheduled_smoke',
+    '--app-recovery-smoke': 'application_recovery_smoke',
     '--business-flow-acceptance': 'business_flow_acceptance',
     '--automation-smoke': 'automation_smoke',
     '--parameter-workspace-smoke': 'parameter_workspace_smoke',

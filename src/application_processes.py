@@ -3,9 +3,11 @@ import ctypes,json,os,subprocess,time
 from contextlib import contextmanager
 from datetime import datetime,timezone
 from pathlib import PureWindowsPath,Path
+from application_recovery import WATCH_FLAG
 
 STATUS_VIEWERS={'--data-location-progress','--order-migration-progress'}
-HELPERS={'--catalog-validate','--storage-copy','--catalog-lifetime-helper','--multiprocessing-fork'}|STATUS_VIEWERS
+DETACHED_HELPERS=STATUS_VIEWERS|{WATCH_FLAG}
+HELPERS={'--catalog-validate','--storage-copy','--catalog-lifetime-helper','--multiprocessing-fork'}|DETACHED_HELPERS
 
 def source_identity(argv):
     for arg in argv[1:]:
@@ -97,6 +99,43 @@ def _handle_state(kernel,handle):
     wait=kernel.WaitForSingleObject(handle,0)
     return {'state':'EXITED' if wait==0 else 'RUNNING' if wait==258 else 'UNKNOWN','wait':wait}
 
+def _creation_time(kernel,handle):
+    from ctypes import wintypes as w
+    kernel.GetProcessTimes.argtypes=[w.HANDLE]+[ctypes.POINTER(w.FILETIME)]*4
+    kernel.GetProcessTimes.restype=w.BOOL
+    created,exited,cpu_kernel,cpu_user=(w.FILETIME() for _ in range(4))
+    if not kernel.GetProcessTimes(handle,ctypes.byref(created),ctypes.byref(exited),ctypes.byref(cpu_kernel),ctypes.byref(cpu_user)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    return created.dwHighDateTime<<32|created.dwLowDateTime
+
+def process_creation():
+    kernel,handle=_open_process(os.getpid())
+    if not handle:raise ctypes.WinError(ctypes.get_last_error())
+    try:return _creation_time(kernel,handle)
+    finally:kernel.CloseHandle(handle)
+
+def wait_for_owned_exit(pid,created,attached):
+    """Watch a specific process object, including when its PID is later reused."""
+    from ctypes import wintypes as w
+    kernel,handle=_open_process(pid)
+    if not handle:
+        error=ctypes.get_last_error()
+        if error==87:return None
+        raise ctypes.WinError(error)
+    try:
+        if _creation_time(kernel,handle)!=created:
+            raise ValueError('原主进程身份已变化')
+        attached()
+        if kernel.WaitForSingleObject(handle,0xffffffff)!=0:
+            raise ctypes.WinError(ctypes.get_last_error())
+        code=w.DWORD()
+        kernel.GetExitCodeProcess.argtypes=[w.HANDLE,ctypes.POINTER(w.DWORD)]
+        kernel.GetExitCodeProcess.restype=w.BOOL
+        if not kernel.GetExitCodeProcess(handle,ctypes.byref(code)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return code.value
+    finally:kernel.CloseHandle(handle)
+
 def kernel_state(pid):
     """A signaled process is exited even if its exit code happens to be 259."""
     kernel,handle=_open_process(pid)
@@ -159,7 +198,7 @@ def discover(*,guarded=False):
         identified=row['name']=='补货助手.exe' or row['pid'] in windows or source_identity(row['argv'])
         if not value['application'] or not identified:continue
         # These early-dispatch entrypoints have no repository or writer.
-        if STATUS_VIEWERS.intersection(row['argv']):continue
+        if DETACHED_HELPERS.intersection(row['argv']):continue
         state=kernel_state(row['pid'])
         if state['state']=='EXITED':continue
         if state['state']=='UNKNOWN' and row.get('threads')==0 and row.get('handles')==0:

@@ -54,12 +54,18 @@ class Runtime:
             except BaseException:pass
     def transition(self,phase):
         self.phase=phase
+        if phase=='SHUTTING_DOWN':self.expect_exit()
         if phase in ('EVENT_LOOP_EXIT','UI_TEARDOWN','FINALIZING'):
             monitor=getattr(self,'performance',None)
             try:
                 if monitor is not None:monitor.stop()
             except Exception:pass
         self.emit('PHASE')
+    def expect_exit(self):
+        recovery=getattr(self,'process_recovery',None)
+        if recovery is not None:
+            try:recovery.expect_exit()
+            except OSError:self.exception(*sys.exc_info(),event='PROCESS_RECOVERY_CLOSE_FAILED',blocking=False)
     def exception(self,t,v,tb,*,event='EXCEPTION',blocking=True):
         if blocking and self.phase!='RUNNING':
             self.shutdown_errors+=1

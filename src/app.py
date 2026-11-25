@@ -15,9 +15,11 @@ def _main():
     icon=Path(__file__).parent/'app.ico'
     if icon.exists():app.setWindowIcon(QIcon(str(icon)))
     from application_runtime import Runtime,settings_root
+    from application_recovery import Session,TICKET_ENV
     import data_location
     default_data=data_location.default_base()
     overridden=bool(os.environ.get('REPLENISHMENT_DATA_DIR'))
+    supervised=bool(os.environ.get(TICKET_ENV))
     logs=data_location.hint(default_data)
     runtime=Runtime(logs,folder=None if overridden else data_location.control()/'diagnostics');runtime.bind_qt(app)
     if smokes.install_startup(app,sys.argv):
@@ -31,6 +33,8 @@ def _main():
     try:
         if not primary.acquire():return 0
     except Exception as exc:
+        if supervised:
+            runtime.exception(*sys.exc_info(),event='PROCESS_RESTART_BLOCKED');return 1
         from data_location_progress import show_pending
         code=show_pending(app)
         if code is not None:return code
@@ -42,6 +46,10 @@ def _main():
             recover_location()
         logs=settings_root(default_data)
         runtime.route(logs.parent/('.'+logs.name+'.diagnostics'),root=logs)
+        try:runtime.process_recovery=Session.prepare(logs,sys.argv)
+        except OSError:
+            if supervised:raise
+            runtime.exception(*sys.exc_info(),event='PROCESS_RECOVERY_SETUP_FAILED')
         recover(logs)
         from order_migration import recover as recover_orders
         recover_orders(logs)
@@ -50,6 +58,8 @@ def _main():
         instance_lease=InstanceLease(logs)
         runtime.lease=instance_lease
     except Exception as exc:
+        if supervised:
+            runtime.exception(*sys.exc_info(),event='PROCESS_RESTART_BLOCKED');return 1
         QMessageBox.warning(None,'资料目录未打开',str(exc));return 1
     app.data_root=logs
     logs.mkdir(parents=True,exist_ok=True);logging.basicConfig(filename=runtime.folder/'app.log',level=logging.INFO,encoding='utf-8',force=True,format='%(asctime)s %(levelname)s %(message)s')
@@ -63,6 +73,13 @@ def _main():
     runtime.window=win
     win.show()
     primary.bind(win)
+    recovery=getattr(runtime,'process_recovery',None)
+    if recovery:
+        try:recovery.start()
+        except OSError:runtime.exception(*sys.exc_info(),event='PROCESS_RECOVERY_START_FAILED')
+        if recovery.restarted:
+            runtime.emit('PROCESS_RESTARTED',attempt=recovery.owner['attempt'])
+            win.status.setText('软件已在异常退出后重新启动。原定时任务可在运行记录查看。')
     # GUI acceptance installs isolated transports before explicitly exercising
     # startup; normal launches always attempt connection after the first paint.
     from browser_startup_ui import start_application_connections
@@ -72,6 +89,7 @@ def _main():
     QTimer.singleShot(0,win,lambda:notice(win,logs))
     smokes.start_window_smokes(app,win,sys.argv)
     code=app.exec()
+    if code==0:runtime.expect_exit()
     from application_exit import finish
     return finish(runtime,code)
 
@@ -121,6 +139,10 @@ def __getattr__(name):
 if __name__=="__main__":
     import multiprocessing
     multiprocessing.freeze_support()
+    from application_recovery import WATCH_FLAG
+    if len(sys.argv)>1 and sys.argv[1]==WATCH_FLAG:
+        from application_recovery import watch
+        sys.exit(watch(sys.argv[2:]))
     if '--data-location-progress' in sys.argv:
         from data_location_progress import main as progress_main
         sys.exit(progress_main(sys.argv[sys.argv.index('--data-location-progress')+1:]))

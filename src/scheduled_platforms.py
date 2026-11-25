@@ -115,7 +115,7 @@ class Platforms:
             if job['state'] not in ACTIVE:
                 if not may_continue or self.stopped():break
                 may_continue=False
-                if self.continue_sales(client,jobs,job,wanted,retry_id):continue
+                if self.continue_sales(client,jobs,job,wanted,retry_id,after_process_exit=run.get('recovering_process',False)):continue
                 break
             waiting=job['state']=='QUEUED'
             if not retry_id or job['record'].get('selected_retry',{}).get('id')==retry_id:may_continue=False
@@ -135,7 +135,7 @@ class Platforms:
         return value
 
     @staticmethod
-    def continue_sales(client,jobs,job,wanted,retry_id):
+    def continue_sales(client,jobs,job,wanted,retry_id,*,after_process_exit=False):
         cid=job['id'];state=job['state'];items=job['record']['items']
         if wanted is not None and retry_id:
             indices=[i['index'] for i in items if i['warehouse_code'] in wanted]
@@ -152,6 +152,7 @@ class Platforms:
                 if error.code!='COMMAND_TRANSITION':raise
                 return False
         elif state=='COMPLETED_WITH_ERRORS':
+            if after_process_exit:return False
             ids=[i['index'] for i in items if i['state']=='FAILED' and (wanted is None or i['warehouse_code'] in wanted)]
             if not ids:return False
             receipt=client.request('retry',command_id=cid,indices=ids,sequence=job['sequence'])

@@ -119,7 +119,12 @@ class Runner:
                 self.repo.change(rid,epoch=self.epoch,stores=[{**i,'state':'PENDING','message':'等待处理'} for i in frozen['plan']['stores']])
                 self.repo.save_value(rid,'basis',frozen,self.epoch)
             wanted=run.get('retry_codes')
-            selected=[s['code'] for s in self.repo.get(rid)['stores'] if s['state']!='READY' and (wanted is None or s['code'] in wanted)]
+            stores=self.repo.get(rid)['stores']
+            if run.get('recovering_process') and stores and all(s['state']=='READY' for s in stores):
+                self.update('等待人工核对',f'{len(stores)}/{len(stores)} 家已计算并保存，等待核对',
+                            state='COMPLETE',retry_codes=None,retry_id=None,recovering_process=False)
+                return
+            selected=[s['code'] for s in stores if s['state']!='READY' and (wanted is None or s['code'] in wanted)]
             with self.repo.db() as db:
                 sr.check_unsigned(db,run['day'],selected)
             from version_info import MODEL_VERSION
@@ -142,7 +147,7 @@ class Runner:
                     reason+=f"（原任务 {failure['task_id']}）"
                 self.repo.store_state(rid,s,'FAILED',reason,self.epoch)
             selected=[s for s in selected if s in available]
-            catalogs=self.repo.value(rid,'catalogs',{}) if wanted is not None else {}
+            catalogs=self.repo.value(rid,'catalogs',{}) if wanted is not None or run.get('recovering_process') else {}
             if selected and not set(frozen['warehouses']).issubset(catalogs):
                 self.update('更新仓商品资料','正在核对本次任务的仓资料')
                 catalogs=self.backend.catalogs(self,frozen)
@@ -184,7 +189,7 @@ class Runner:
             done=sum(s['state']=='READY' for s in run['stores'])
             message=f'{done}/{len(run["stores"])} 家已计算并保存，等待核对'
             if not all_ready:message+='。请查看待处理门店的原因'
-            self.update('等待人工核对',message,state='COMPLETE' if all_ready else 'REVIEW',retry_codes=None,retry_id=None)
+            self.update('等待人工核对',message,state='COMPLETE' if all_ready else 'REVIEW',retry_codes=None,retry_id=None,recovering_process=False)
         except Cancelled:
             run=self.repo.get(rid)
             self.update('已安全停止','成功结果已保存；继续时沿用原任务和冻结依据',state='ENDED' if run.get('control')=='end' else 'PAUSED')

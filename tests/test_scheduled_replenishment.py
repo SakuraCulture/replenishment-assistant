@@ -70,6 +70,36 @@ class ScheduleTests(unittest.TestCase):
         r=self.repo.manual(self.s);running=self.repo.claim(r['id']);self.repo.recover()
         with self.assertRaises(wr.Conflict):self.repo.change(r['id'],epoch=running['epoch'],state='COMPLETE')
         with self.assertRaises(wr.Conflict):self.repo.resume(r['id'],running['revision'])
+    def test_process_restart_recovers_only_active_same_day_originals(self):
+        old=self.repo.claim(self.repo.manual(self.s)['id'])
+        self.now+=timedelta(days=1)
+        active=self.repo.claim(self.repo.manual(self.s)['id'])
+        self.repo.change(active['id'],epoch=active['epoch'],external={'ax':'original'},retry_codes=['B'],retry_id='selected')
+        self.repo.save_value(active['id'],'checkpoint',{'store':'A','quantity':12},active['epoch'])
+        paused=self.repo.claim(self.repo.manual(self.s)['id']);self.repo.request_pause(paused['id'])
+        ended=self.repo.claim(self.repo.manual(self.s)['id']);self.repo.request_pause(ended['id'],True)
+        self.repo.recover(after_process_exit=True)
+        recovered=self.repo.get(active['id'])
+        self.assertEqual(recovered['state'],'QUEUED')
+        self.assertEqual((recovered['external'],recovered['retry_codes'],recovered['retry_id']),({'ax':'original'},['B'],'selected'))
+        self.assertTrue(recovered['recovering_process'])
+        self.assertEqual(self.repo.value(active['id'],'checkpoint'),{'store':'A','quantity':12})
+        self.assertEqual([self.repo.get(run['id'])['state'] for run in (old,paused,ended)],['PAUSED','PAUSED','ENDED'])
+        self.assertIn('跨业务日',self.repo.get(old['id'])['message'])
+        self.repo.recover(after_process_exit=True)
+        self.assertEqual(recovered,self.repo.get(active['id']))
+
+    def test_process_restart_does_not_reissue_a_completed_failed_export(self):
+        from scheduled_platforms import Platforms
+        from unittest.mock import Mock
+        client,jobs=Mock(),Mock()
+        job={'id':'original','state':'COMPLETED_WITH_ERRORS','sequence':2,
+             'record':{'items':[{'index':0,'state':'FAILED','warehouse_code':'A'}]}}
+        self.assertFalse(Platforms.continue_sales(client,jobs,job,None,None,after_process_exit=True))
+        client.request.assert_not_called()
+        self.assertTrue(Platforms.continue_sales(client,jobs,job,['A'],'selected',after_process_exit=True))
+        client.request.assert_called_once_with('collection.retry_selected',command_id='original',indices=[0],sequence=2,retry_id='selected')
+
     def test_chunk_copy_and_garbage_collection_keep_run(self):
         import normal_orders,storage_maintenance,data_maintenance
         normal_orders.Repository(self.work)
