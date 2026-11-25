@@ -36,7 +36,9 @@ def _arguments(args, root):
         return []
     if len(args) == 2 and args[0] == SMOKE_FLAG and os.environ.get('REPLENISHMENT_DATA_DIR'):
         out = Path(args[1]).resolve()
-        if root == out / 'settings' and _read(out / 'synthetic.json').get('synthetic') is True:
+        marker = _read(out / 'synthetic.json')
+        if (root == out / 'settings' and Path(os.environ.get('LOCALAPPDATA', '')).resolve() == out / 'localappdata'
+                and marker.get('synthetic') is True and marker.get('live_platform') is False):
             return [SMOKE_FLAG, str(out)]
     return None
 
@@ -47,6 +49,8 @@ def _spawn(args, *, ticket=None):
         command.append(str(Path(__file__).with_name('app.py')))
     env = dict(os.environ)
     env.pop(TICKET_ENV, None)
+    if env.get('REPLENISHMENT_DATA_DIR'):
+        env['REPLENISHMENT_DATA_DIR'] = str(Path(env['REPLENISHMENT_DATA_DIR']).resolve())
     if ticket:
         env[TICKET_ENV] = ticket
     if getattr(sys, 'frozen', False):

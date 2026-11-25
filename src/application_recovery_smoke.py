@@ -8,12 +8,25 @@ from pathlib import Path
 from stockout_common import atomic_json, read_json
 
 
+def _interrupt_current_fixture():
+    """Simulate abrupt death without running Qt or CRT shutdown callbacks."""
+    import ctypes
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel.TerminateProcess.argtypes = (wintypes.HANDLE, wintypes.UINT)
+    kernel.TerminateProcess.restype = wintypes.BOOL
+    if not kernel.TerminateProcess(kernel.GetCurrentProcess(), 23):
+        raise ctypes.WinError(ctypes.get_last_error())
+
+
 class RecordedCollection:
-    def __init__(self, out, manifest):
+    def __init__(self, out, manifest, pending):
         self.folder = out / 'controlled-aoxiang'
         self.path = out / 'platform-command.json'
         self.trace = out / 'platform-actions.json'
         self.sources = manifest['files']
+        self.pending = pending
         self.account = {'account_id': 'isolated', 'merchant_code': 'isolated'}
 
     def request(self, action, **values):
@@ -32,6 +45,10 @@ class RecordedCollection:
             items = []
             for index, source in enumerate(self.sources):
                 code, digest = source['warehouse_code'], source['sha256']
+                if self.pending and code == 'B':
+                    items.append({'index': index, 'warehouse_code': code, 'state': 'NEEDS_REVIEW', 'run_id': 'run-' + code,
+                                  'result': None, 'error': {'code': 'SUBMISSION_UNKNOWN', 'message': '原导出受理待核'}})
+                    continue
                 path = folder / f'{index}-{digest}.xlsx'
                 shutil.copyfile(source['file'], path)
                 result = {**source, 'file': str(path), 'run_id': 'run-' + code, 'account_binding': self.account,
@@ -39,13 +56,16 @@ class RecordedCollection:
                 items.append({'index': index, 'warehouse_code': code, 'state': 'SUCCEEDED',
                               'run_id': result['run_id'], 'task_id': result['task_id'], 'result': result})
             record = {'id': cid, 'request': command, 'fingerprint': fingerprint(command), 'sequence': 1,
-                      'state': 'SUCCEEDED', 'items': items}
+                      'state': 'NEEDS_REVIEW' if self.pending else 'SUCCEEDED', 'items': items}
             atomic_json(self.path, record)
             return {'record': record}
         if action == 'status':
             record = read_json(self.path)
             assert record['id'] == values['command_id']
             return record
+        if action == 'collection.continue' and self.pending:
+            from aoxiang_client import ComponentError
+            raise ComponentError('COMMAND_TRANSITION', '原导出仍缺可靠回执')
         raise AssertionError(action)
 
 
@@ -63,6 +83,7 @@ def start_smoke(app, win, args):
             or Path(os.environ.get('LOCALAPPDATA', '')).resolve() != out / 'localappdata'):
         raise ValueError('进程恢复验收必须使用独立资料目录')
     mode = marker['mode']
+    pending = mode == 'receipt-pending'
     session = current().process_recovery
     manager = win.scheduled
     win.jst_generator.timer.stop()
@@ -84,26 +105,32 @@ def start_smoke(app, win, args):
         win.close()
 
     def set_backend(catalogs, manifest):
-        collection = RecordedCollection(out, manifest)
+        collection = RecordedCollection(out, manifest, pending)
         manager.platform = lambda cancel: RetryPlatforms(manager.repo, catalogs, manifest, cancel, {'calls': []}, collection)
 
     def complete():
         try:
             prior = read_json(out / 'checkpoint.json')
             run = manager.repo.get(prior['run_id'])
-            if manager.worker or run['state'] != 'COMPLETE':
+            if not pending and not manager.worker and run['state']=='REVIEW':
+                raise AssertionError(run['message'])
+            if manager.worker or run['state'] != ('REVIEW' if pending else 'COMPLETE'):
                 return
             timer.stop()
             stores = [entry['state'] for entry in run['stores']]
-            assert stores == ['READY', 'READY'] and run['external']['ax'] == prior['command_id']
+            assert stores == ['READY', 'FAILED' if pending else 'READY'] and run['external']['ax'] == prior['command_id']
             assert signature(manager.repo.value(run['id'], 'result:A')) == prior['result_a']
-            assert manager.repo.value(run['id'], 'result:B') is not None
+            assert (manager.repo.value(run['id'], 'result:B') is None) == pending
             actions = read_json(out / 'platform-actions.json')
             assert actions.count('reserve') == 1 and actions.count('configuration') == 1
             assert actions.count('status') > prior['status_count']
+            if pending:
+                assert actions.count('collection.continue') == 1
+                assert '受理待核' in run['stores'][1]['message']
             assert win.work_repository.list_jobs() == [] and win.orders.list() == []
             report.update(original_main_pid=prior['pid'], run_id=run['id'], platform_command=run['external']['ax'],
-                          completed=[1, 2], reserve_calls=actions.count('reserve'), original_result_preserved=True)
+                          completed=[1, 1 if pending else 2], reserve_calls=actions.count('reserve'),
+                          original_result_preserved=True, pending_receipt_retained=pending)
             win.grab().save(str(out / '恢复后的工作台.png'))
             finish()
         except Exception:
@@ -127,7 +154,7 @@ def start_smoke(app, win, args):
                     atomic_json(out / 'checkpoint.json', {'run_id': rid, 'command_id': original['external']['ax'],
                                 'result_a': signature(manager.repo.value(rid, 'result:A')), 'pid': os.getpid(),
                                 'status_count': read_json(out / 'platform-actions.json').count('status')})
-                    os._exit(23)
+                    _interrupt_current_fixture()
             manager.repo.save_value = crash_after_first_result
             manager.start(run)
             def unexpected_finish():
@@ -146,21 +173,22 @@ def start_smoke(app, win, args):
         if mode == 'normal-close':
             finish()
         elif mode == 'crash-loop':
-            os._exit(23)
+            _interrupt_current_fixture()
         elif mode == 'disabled':
             action = next(a for bar in win.menuBar().actions() if bar.menu()
                           for a in bar.menu().actions() if a.text() == '崩溃后自动重启')
             action.trigger()
             assert not session.enabled()
-            os._exit(23)
-        elif mode == 'scheduled':
+            _interrupt_current_fixture()
+        elif mode in ('scheduled', 'receipt-pending'):
             first_run()
 
     timer = QTimer(win)
     timer.setInterval(100)
+    QTimer.singleShot(75000,win,lambda:finish('进程恢复验收超时'))
     if session.restarted:
         if mode == 'crash-loop':
-            QTimer.singleShot(200, lambda: os._exit(23))
+            QTimer.singleShot(200, _interrupt_current_fixture)
         else:
             frozen = wr.loads((out / 'frozen.txt').read_text('utf-8'))
             set_backend(frozen['catalogs'], frozen['manifest'])

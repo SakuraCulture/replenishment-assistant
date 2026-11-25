@@ -9,7 +9,8 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CASES = {'normal-close': 'CLOSED', 'scheduled': 'CLOSED', 'disabled': 'DISABLED', 'crash-loop': 'LIMIT_REACHED'}
+CASES = {'normal-close': 'CLOSED', 'scheduled': 'CLOSED', 'receipt-pending': 'CLOSED',
+         'disabled': 'DISABLED', 'crash-loop': 'LIMIT_REACHED'}
 
 
 def read(path):
@@ -42,16 +43,16 @@ def verify(mode, out, command):
     code = process.wait(timeout=10)
     assert code == (0 if mode == 'normal-close' else 23), code
     attempts = [event for event in state['events'] if event['state'] == 'RESTARTING']
-    assert len(attempts) == {'normal-close': 0, 'scheduled': 1, 'disabled': 0, 'crash-loop': 3}[mode], state
+    assert len(attempts) == {'normal-close': 0, 'scheduled': 1, 'receipt-pending': 1, 'disabled': 0, 'crash-loop': 3}[mode], state
     result = {'mode': mode, 'original_exit_code': code, 'watchdog_pid': state['watchdog_pid'],
               'original_pid': owner['pid'], 'restart_attempts': len(attempts), 'watchdog_final_state': state['state'],
               'elapsed_seconds': round(time.monotonic() - started, 2), 'watchdog_log': str(state_path)}
-    if mode in ('normal-close', 'scheduled'):
+    if state['state'] == 'CLOSED':
         report = read(out / 'report.json')
         assert report['passed'], report
-        if mode == 'scheduled':
+        if mode != 'normal-close':
             assert report['original_main_pid'] == owner['pid'] != report['pid']
-            assert report['completed'] == [1, 2] and report['reserve_calls'] == 1
+            assert report['completed'] == [1, 1 if mode == 'receipt-pending' else 2] and report['reserve_calls'] == 1
         result['desktop'] = report
     return result
 
