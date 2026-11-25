@@ -18,6 +18,7 @@ from stockout_common import today
 from timed_exports import DATABASE, KINDS, STATES, Repository, Runner, plan_value, preview
 from timed_report_services import Reports
 from ui_controls import button, label
+from unattended_resources import configured
 
 
 def _date(value):
@@ -75,7 +76,9 @@ class Manager(QObject):
     def _start(self, rid):
         self.cancel = threading.Event()
         self.active = rid
-        task = Call(lambda _: Runner(self.repo, self.backend, self.cancel).execute(rid), self)
+        from catalog_session_ui import manager as catalog_manager
+        resources = catalog_manager(self.host).resources if configured(self.root) else None
+        task = Call(lambda _: Runner(self.repo, self.backend, self.cancel, resources=resources).execute(rid), self)
         self.worker = task
         def done():
             self.worker = self.active = None
@@ -102,10 +105,12 @@ class Manager(QObject):
         self.reader = task
         def take(rid):
             pending = getattr(self.host, '_large_io_dialog', None)
+            parallel = configured(self.root)
             busy = (getattr(self.host, '_data_location_preparing', False)
-                    or self.host.scheduled.worker or self.host.stockout_hub.worker
-                    or any(child.worker for child in self.host.stockout_hub.children.values())
-                    or pending and not pending._completed)
+                    or getattr(self.host.aoxiang_workflows,'maintenance_depth',0)
+                    or not parallel and (self.host.scheduled.worker or self.host.stockout_hub.worker
+                                         or any(child.worker for child in self.host.stockout_hub.children.values()))
+                    or pending and not pending._completed and not getattr(pending,'scoped_collection',False))
             if rid and not self.worker and not busy and not self.closing:
                 self._start(rid)
         def done():
@@ -297,6 +302,10 @@ class Workbench(QDialog):
         shortcuts.addStretch()
         shortcuts.addWidget(button('刷新', self.refresh))
         layout.addLayout(shortcuts)
+        parallel = QCheckBox('资源充足时允许独立浏览器与本地作业并行')
+        parallel.setChecked(configured(manager.root))
+        parallel.toggled.connect(lambda value:self.guard(lambda:self.set_parallel(parallel,value)))
+        layout.addWidget(parallel)
         self.tabs = QTabWidget()
         layout.addWidget(self.tabs)
         run_page, plan_page = QWidget(), QWidget()
@@ -337,6 +346,17 @@ class Workbench(QDialog):
             fn()
         except Exception as exc:
             self.note.setText(str(exc))
+
+    def set_parallel(self, checkbox, value):
+        from unattended_resources import configure
+        if not self.manager.host.scheduled.owner or getattr(self.manager.host,'readonly',False):
+            checkbox.blockSignals(True)
+            checkbox.setChecked(configured(self.manager.root))
+            checkbox.blockSignals(False)
+            raise ValueError('请在持有定时执行权的窗口修改并行设置')
+        configure(self.manager.root,value)
+        self.note.setText('新作业将按机器余量领取资源。当前作业继续安全完成。' if value else
+                          '新作业恢复串行。已领取的作业继续安全完成。')
 
     def refresh(self):
         self.run_rows = self.manager.repo.runs(offset=self.offset)

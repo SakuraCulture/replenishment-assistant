@@ -56,19 +56,23 @@ class Manager(QObject):
         h=self.host
         pending=getattr(h,'_large_io_dialog',None)
         maintenance=getattr(getattr(h,'aoxiang_workflows',None),'maintenance_depth',0)
-        return bool(getattr(h,'_data_location_preparing',False) or getattr(h,'worker',None) or pending is not None and not pending._completed or
+        from unattended_resources import configured
+        parallel=configured(self.folder)
+        return bool(getattr(h,'_data_location_preparing',False) or getattr(h,'worker',None) or pending is not None and not pending._completed and not getattr(pending,'scoped_collection',False) or
                     maintenance or
                     getattr(getattr(h,'browser_startup',None),'workers',None) or
-                    h.catalog_sessions.session.lease or
-                    h.jst_generator.worker or getattr(getattr(h,'stockout',None),'worker',None) or getattr(h,'closing',False))
+                    not parallel and (h.catalog_sessions.session.lease or getattr(getattr(h,'stockout',None),'worker',None)) or
+                    h.jst_generator.worker or getattr(h,'closing',False))
 
     def poll(self):
         if self.reader or self.closing or getattr(self.host,'_data_location_preparing',False):return
         pending=getattr(self.host,'_large_io_dialog',None)
         manager=getattr(self.host,'aoxiang_workflows',None)
-        if (pending is not None and not pending._completed) or getattr(manager,'maintenance_depth',0):
+        if (pending is not None and not pending._completed and not getattr(pending,'scoped_collection',False)) or getattr(manager,'maintenance_depth',0):
             self.status.setText('定时检查等待当前保存、签发或数据维护结束；不会启动新作业');return
         def read(_):
+            resources=getattr(self.catalog_owner,'resources',None)
+            if resources:resources.check()
             if not self.recovered:
                 self.repo.recover(after_process_exit=self.recover_after_exit)
                 self.recovered=True
@@ -81,7 +85,8 @@ class Manager(QObject):
             self.schedules,self.recent,queued=value
             self.queued_for_execution=bool(queued)
             stockout=getattr(self.host,'stockout',None)
-            if queued and stockout and stockout.worker:stockout.pause('定时补货已排队，分析安全让行；可稍后继续原分析任务')
+            from unattended_resources import configured
+            if queued and stockout and stockout.worker and not configured(self.folder):stockout.pause('定时补货已排队，分析安全让行；可稍后继续原分析任务')
             active=next((r for r in self.recent if r['state'] in ('RUNNING','PAUSING','REVIEW','COMPLETE') and not r['viewed']),None)
             future=[s['next_at'] for s in self.schedules if s['enabled'] and s.get('next_at')]
             self.status.setText(('另一个窗口负责定时执行 · ' if not self.owner else '')+

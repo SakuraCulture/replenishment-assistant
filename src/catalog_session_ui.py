@@ -3,13 +3,16 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QTimer
 from aoxiang_ui_common import Call
 from catalog_sync_session import SessionOwner
+from unattended_resources import Resources
 
 
 class Manager(QObject):
     def __init__(self, host):
         super().__init__(host)
         self.host = host
-        self.session = SessionOwner(Path(host.repository.folder) / 'jst_catalog_sync')
+        root = Path(host.repository.folder)
+        self.resources = Resources(root)
+        self.session = SessionOwner(root / 'jst_catalog_sync', resources=self.resources)
         self.worker = None
         self._shutdown_done=False
         host.destroyed.connect(self.shutdown)

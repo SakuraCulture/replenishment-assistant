@@ -140,6 +140,7 @@ class Runner:
 
     def execute(self,rid):
         run=self.repo.claim(rid);self.rid=rid;self.epoch=run['epoch']
+        resources=getattr(self.backend,'resources',None)
         try:
             frozen=self.repo.value(rid,'basis')
             if frozen is None:
@@ -202,6 +203,14 @@ class Runner:
                 if missing:self.repo.store_state(rid,s,'FAILED','仓资料未完成：'+'、'.join(missing),self.epoch)
                 else:eligible.append(s)
             if eligible:
+                workers=frozen['workers']
+                if resources:
+                    from unattended_resources import configured
+                    if configured(self.folder):
+                        workers=min(workers,2)
+                        while not resources.try_heavy(self,self.repo.path.parent):
+                            self.update('等待本地作业','计算等待本地名额、内存和资料卷余量')
+                            self.cancel.wait(.5);checkpoint(self.cancel)
                 self.update('检查文件','按原规则检查已验收文件，保留冲突及来源顺序')
                 paths=[f['file'] for f in manifest['files']]
                 loaded=batch_service.load(paths,catalogs,lambda m:self.update('检查文件',m),self.cancel)
@@ -215,7 +224,7 @@ class Runner:
                 jobs={s:frozen['jobs'][s] for s in eligible if s in loaded['stores']}
                 for s in eligible:
                     if s not in jobs:self.repo.store_state(rid,s,'FAILED','文件没有该门店记录',self.epoch)
-                self.update('计算门店',f'同时计算最多{frozen["workers"]}家；运行中的门店安全完成后暂停')
+                self.update('计算门店',f'同时计算最多{workers}家；运行中的门店安全完成后暂停')
                 persistence=[]
                 def notify(s,state,result,error):
                     if result is not None:
@@ -226,7 +235,8 @@ class Runner:
                 profile=frozen['profile']
                 if priority_list.is_catalog_profile(profile):
                     profile=priority_list.catalog_profile(catalogs)
-                batch_service.run(loaded,jobs,profile,frozen['workers'],notify,self.cancel)
+                batch_service.run(loaded,jobs,profile,workers,notify,self.cancel)
+                if resources:resources.release_heavy(self)
                 if persistence:raise persistence[0]
             checkpoint(self.cancel)
             run=self.repo.get(rid);all_ready=all(s['state']=='READY' for s in run['stores'])
@@ -242,7 +252,9 @@ class Runner:
             import logging
             logging.exception('定时补货运行未完成 %s',rid)
             self.update('需要处理',str(exc),state='REVIEW')
-        finally:self.backend.release(self.progress)
+        finally:
+            if resources:resources.release_heavy(self)
+            self.backend.release(self.progress)
 
 
 def workbench_record(repo,rid):

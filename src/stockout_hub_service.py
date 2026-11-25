@@ -160,8 +160,7 @@ def end(journal,rid,rpc,cancel):
     if row['external'].get('catalog_operation'):
         state=Client(rpc,'jst').request('sync.status')
         batch=next((b for b in state.get('batches',[]) if b.get('operation_id')==row['external']['catalog_operation']),None)
-        if batch and state.get('running'):
-            Client(rpc,'jst').request('sync.stop',batch_id=batch['id'])
+        if batch and state.get('running') and Client(rpc,'jst').request('sync.status',batch_id=batch['id']).get('running'):
             raise ValueError('已请求仓采集安全停止，请稍后再次结束；原任务保留')
     if row['store_run']:
         from stockout_repository import Repository

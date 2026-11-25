@@ -276,8 +276,9 @@ class NoRecords(ValueError):
 
 
 class Runner:
-    def __init__(self, repo, backend, cancel):
+    def __init__(self, repo, backend, cancel, *, resources=None):
         self.repo, self.backend, self.cancel = repo, backend, cancel
+        self.resources = resources
 
     def execute(self, rid):
         run = self.repo.claim(rid)
@@ -305,6 +306,8 @@ class Runner:
                     self.repo.confirmed(rid, epoch, artifact)
                     return
             checkpoint(self.cancel)
+            if self.resources and not self.resources.try_heavy(self, directory):
+                raise PendingInputs(['等待本地计算或写表名额、内存及输出卷；15 秒后检查'])
             temporary.unlink(missing_ok=True)
             try:
                 with self.backend.lock(run):
@@ -339,3 +342,6 @@ class Runner:
             self.repo.change(rid, epoch, state='EMPTY', message=str(exc))
         except Exception as exc:
             self.repo.change(rid, epoch, state='REVIEW', message=explain_error(exc))
+        finally:
+            if self.resources:
+                self.resources.release_heavy(self)

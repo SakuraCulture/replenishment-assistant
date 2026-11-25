@@ -1,5 +1,6 @@
 """In-process browser-session handoff. The component's process lock remains authoritative."""
 import threading
+import time
 
 
 class ForegroundTicket:
@@ -44,6 +45,20 @@ class SessionGate:
                 return None
             self.background = threading.Event()
             return self.background
+
+    def wait_background(self, cancel, progress):
+        from runtime_support import checkpoint
+        deadline = time.monotonic() + 900
+        with self.condition:
+            while True:
+                checkpoint(cancel)
+                token = self.claim_background()
+                if token is not None:
+                    return token
+                if time.monotonic() >= deadline:
+                    raise ValueError('翱象浏览器仍由原作业占用，可继续本次任务')
+                progress('等待翱象浏览器可用 · 原作业仍在执行')
+                self.condition.wait(.5)
 
     def release_background(self, token):
         with self.condition:

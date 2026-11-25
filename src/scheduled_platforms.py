@@ -16,6 +16,7 @@ class Platforms:
     def __init__(self,folder,path,ax_manager,catalog_owner,cancel):
         self.folder,self.path=Path(folder),Path(path)
         self.ax_manager,self.catalog_owner=ax_manager,catalog_owner
+        self.resources=getattr(catalog_owner,'resources',None)
         self.cancel=cancel;self.ax=None;self.jst=None;self.token=None;self.active_ax=None;self.active_jst=None
 
     def acquire(self):checkpoint(self.cancel)
@@ -25,14 +26,19 @@ class Platforms:
     def ax_client(self):
         checkpoint(self.cancel)
         if self.ax is None:
-            self.token=self.ax_manager.gate.claim_background()
+            from unattended_resources import configured
+            self.token=(self.ax_manager.gate.wait_background(self.cancel,lambda m:self.progress(m))
+                        if configured(self.folder) else self.ax_manager.gate.claim_background())
             if self.token is None:raise ValueError('翱象正在人工操作或处理原任务，请稍后继续')
             self.ax=self.ax_manager.session.lease(cancelled=self.stopped);self.ax.start()
         return self.ax
 
-    def jst_client(self):
+    def jst_client(self,warehouses=None,progress=None):
         checkpoint(self.cancel)
-        if self.jst is None:self.jst=self.catalog_owner.acquire();self.jst.start()
+        if self.jst is None:
+            self.jst=(self.catalog_owner.acquire_wait(warehouses,self.cancel,progress)
+                      if self.resources and warehouses else self.catalog_owner.acquire())
+            self.jst.start()
         return self.jst
 
     def release_ax(self,progress):
@@ -83,6 +89,7 @@ class Platforms:
         self.check_warehouse_bindings(basis['warehouses'])
 
     def sales(self,runner,basis):
+        self.progress=lambda message:runner.update('获取补货建议',message)
         repo=runner.repo;rid=runner.rid;run=repo.get(rid);external=dict(run['external'])
         jobs=Jobs(self.folder/'aoxiang'/'jobs.sqlite3')
         checkpoint(self.cancel)
@@ -164,13 +171,15 @@ class Platforms:
         return True
 
     def catalogs(self,runner,basis):
-        repo=runner.repo;rid=runner.rid;run=repo.get(rid);external=dict(run['external']);client=self.jst_client()
+        repo=runner.repo;rid=runner.rid;run=repo.get(rid);external=dict(run['external'])
         if not external.get('catalog_operation'):
             if run.get('day') and run['day']!=stamp().date().isoformat():
                 raise ValueError('仓资料原采集尚未发起且已跨日，请建立当天任务')
             external['catalog_operation']=uuid.uuid4().hex
             external['catalog_items']=[{'warehouse':w,'expected_catalog_digest':basis['catalog_digests'][w]} for w in basis['warehouses']]
             repo.change(rid,epoch=runner.epoch,external=external)
+        client=(self.jst_client([i['warehouse'] for i in external['catalog_items']],
+                                lambda m:runner.update('更新仓商品资料',m)) if self.resources else self.jst_client())
         # A stable operation_id replays only the original durable intention, not a fresh export.
         response=client.request('sync.start',operation_id=external['catalog_operation'],purpose='scheduled_replenishment',items=external['catalog_items'])
         bid=response['batch_id'];self.active_jst=bid;state=client.request('sync.status',batch_id=bid)

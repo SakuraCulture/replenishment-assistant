@@ -75,11 +75,13 @@ class Entry(QObject):
         h=self.host;scheduled=getattr(h,'scheduled',None);ax=getattr(h,'aoxiang_workflows',None)
         io=getattr(h,'_large_io_dialog',None);generator=getattr(h,'jst_generator',None)
         other=any(e is not self and getattr(e,'worker',None) for e in (getattr(h,'stockout',None),getattr(h,'warehouse_stockout',None)) if e is not None)
+        from unattended_resources import configured
+        parallel=configured(h.repository.folder)
         return bool(other or getattr(h,'worker',None) or getattr(h,'closing',False)
-                    or io is not None and not getattr(io,'_completed',False)
+                    or io is not None and not getattr(io,'_completed',False) and not getattr(io,'scoped_collection',False)
                     or getattr(h,'_aoxiang_dialog',None)
-                    or scheduled and (scheduled.worker or scheduled.publisher or getattr(scheduled,'queued_for_execution',False))
-                    or ax and (ax.worker or ax.maintenance_depth or ax.gate.foreground is not None)
+                    or scheduled and not parallel and (scheduled.worker or scheduled.publisher or getattr(scheduled,'queued_for_execution',False))
+                    or ax and (ax.maintenance_depth or not parallel and (ax.worker or ax.gate.foreground is not None))
                     or generator and generator.worker and getattr(generator,'active_work',True))
 
     @property
@@ -91,7 +93,7 @@ class Entry(QObject):
     def blocked(self,operation):
         h=self.host;io=getattr(h,'_large_io_dialog',None)
         if (getattr(h,'closing',False) or getattr(h,'_data_location_preparing',False)
-                or io is not None and not getattr(io,'_completed',False)
+                or io is not None and not getattr(io,'_completed',False) and not getattr(io,'scoped_collection',False)
                 or getattr(getattr(h,'aoxiang_workflows',None),'maintenance_depth',0)):return True
         if operation not in LOCAL_READS:return self.busy()
         # Local reads use their analysis snapshot/lock, never a platform lease.
