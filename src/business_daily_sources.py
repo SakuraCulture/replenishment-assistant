@@ -3,7 +3,10 @@ from collections import defaultdict
 from contextlib import closing
 from datetime import date, datetime
 import hashlib
+from io import BytesIO
+import json
 from pathlib import Path
+import sqlite3
 import tempfile
 
 from openpyxl import load_workbook
@@ -11,7 +14,7 @@ from openpyxl import load_workbook
 from business_daily import PendingInputs, VERSION, WAREHOUSES, decimal
 from export_files import publish_new, sha256
 from runtime_support import checkpoint
-from stockout_common import atomic_json, encoded, now, read_json
+from stockout_common import TZ, atomic_json, digest, encoded, now, read_json, today
 from stockout_facts import identifier
 
 
@@ -22,6 +25,7 @@ SUPPLEMENTS = {
     'owners': '采购负责人',
     'weeks': '已发布周值及目标',
 }
+RULE_FILES = {'stores', 'blacklist', 'owners', 'weeks'}
 SALES_COLUMNS = {
     'store': ('仓库/门店编码', '门店编码'), 'sku': ('商品编码',), 'name': ('商品名称', '商品名'),
     'month': ('月销',), 'stock': ('可用库存',), 'inbound': ('在途库存',), 'status': ('补货状态',),
@@ -98,6 +102,42 @@ def save_profile(root, value):
     atomic_json(profile_path(root, value['day']), value)
 
 
+def supplement_refs(root, selected):
+    """Reuse an explicitly adopted rule from its effective day onward."""
+    day = selected['day']
+    refs = dict(selected['files'])
+    pending = RULE_FILES - refs.keys()
+    if pending:
+        for path in sorted(profile_path(root, day).parent.glob('????-??-??.json'), reverse=True):
+            if path.stem >= day:
+                continue
+            prior = profile(root, path.stem)
+            for key in pending & prior['files'].keys():
+                ref = prior['files'][key]
+                if ref.get('effective_day') != path.stem:
+                    continue
+                if key in ('owners', 'weeks') and path.stem[:7] != day[:7]:
+                    continue
+                refs[key] = ref
+            pending -= refs.keys()
+            if not pending:
+                break
+    return refs
+
+
+def register_supplement(root, day, key, source, *, as_rule=False):
+    if key not in SUPPLEMENTS or as_rule and key not in RULE_FILES:
+        raise ValueError('该资料类型不能以此方式登记')
+    ref = file_source(root, source)
+    if as_rule:
+        if key == 'weeks':
+            published_weeks(path_for(root, ref), day)
+        ref['effective_day'] = day
+    selected = profile(root, day)
+    selected['files'][key] = ref
+    save_profile(root, selected)
+
+
 def import_profile(root, day, manifest, cancel=None):
     """Adopt a local manifest explicitly scoped to the selected business date."""
     path = Path(manifest).resolve(strict=True)
@@ -145,13 +185,14 @@ def path_for(root, ref):
     return path
 
 
-def sheet_rows(path, columns, *, sheets=(), multiple=False, optional=None, cancel=None):
+def sheet_rows(path, columns, *, sheets=(), multiple=False, optional=None, cancel=None, source_name=None):
     """Project named columns and keep original worksheet name, row and order."""
+    source_name = source_name or path.name
     with closing(load_workbook(path, read_only=True, data_only=True, keep_links=False)) as book:
         matched = 0
         for name in (sheets or book.sheetnames):
             if name not in book.sheetnames:
-                raise ValueError(f'{path.name} 找不到工作表 {name}')
+                raise ValueError(f'{source_name} 找不到工作表 {name}')
             sheet = book[name]
             sheet.reset_dimensions()
             rows = iter(sheet.values)
@@ -169,7 +210,7 @@ def sheet_rows(path, columns, *, sheets=(), multiple=False, optional=None, cance
                     raise ValueError(f'{name} 第 {line} 行有重复的业务表头')
                 matched += 1
                 if matched > 1 and not multiple:
-                    raise ValueError(f'{path.name} 有多张匹配工作表，请指定来源页')
+                    raise ValueError(f'{source_name} 有多张匹配工作表，请指定来源页')
                 for row_id, row in enumerate(rows, line + 1):
                     checkpoint(cancel)
                     if any(v not in (None, '') for v in row):
@@ -177,7 +218,7 @@ def sheet_rows(path, columns, *, sheets=(), multiple=False, optional=None, cance
                                for key, pos in positions.items()}, f'{name}!{row_id}'
                 break
         if matched == 0 or sheets and matched != len(sheets):
-            raise ValueError(f'{path.name} 未找到所需表头：' + '、'.join(names[0] for names in columns.values()))
+            raise ValueError(f'{source_name} 未找到所需表头：' + '、'.join(names[0] for names in columns.values()))
 
 
 def text(value):
@@ -216,6 +257,80 @@ def roster(path, ref, cancel=None):
     return result
 
 
+def store_rules(root, day):
+    """Read the existing adopted scope and the appropriate saved supply routes."""
+    from stockout_repository import Repository
+    from stockout_settings import supply_snapshot
+
+    repo = Repository(root)
+    if not repo.path.exists():
+        return None
+    if day == today():
+        settings = repo.settings()
+        if not settings:
+            return None
+        supply = supply_snapshot(repo.root, settings['stores'])
+        source = '门店缺货已采用范围及参数设置已保存主从仓'
+    else:
+        with repo.connect() as db:
+            row = db.execute('''
+                SELECT r.basis,p.id FROM current_days d JOIN publications p ON p.id=d.publication
+                JOIN runs r ON r.id=p.run WHERE d.day=? AND p.day=d.day
+            ''', (day,)).fetchone()
+        if not row:
+            return None
+        settings = repo.settings(row['basis'])
+        if not settings:
+            raise PendingInputs(['该业务日已发布的门店规则版本已缺失'])
+        supply = settings
+        source = f'业务日已发布门店分析 · 发布号 {row["id"]}'
+    return {
+        'source': source, 'version': settings['version'], 'adopted_at': settings.get('adopted_at'),
+        'stores': settings['stores'], 'routes': supply.get('routes', {}),
+        'route_source': supply.get('route_source', {}).get('digest') or digest(supply.get('routes', {})),
+    }
+
+
+def resolved_roster(root, ref, rules, cancel=None):
+    """Take operational labels by exact store code; routes remain with their rule source."""
+    if ref and not ref.get('effective_day'):
+        return roster(path_for(root, ref), ref, cancel), None
+    if not rules:
+        raise PendingInputs(['缺已采用的门店范围及主从仓，请核对缺货设置或登记该日完整门店清单'])
+    if not ref:
+        raise PendingInputs(['已引用门店范围和主从仓，缺门店标签和运营负责人规则表'])
+    from business_daily import EXCLUDED_TAGS
+
+    labels = {}
+    columns = {'code': ('门店编码',), 'tag': ('标签', '门店标签'), 'owner': ('运营负责人',)}
+    for row, line in sheet_rows(path_for(root, ref), columns, sheets=ref['sheets'], cancel=cancel):
+        code = identifier(row['code'])
+        if code in labels:
+            raise ValueError(f'{line} 门店分组规则重复：{code}')
+        labels[code] = row
+    result, missing = {}, []
+    for store in rules['stores']:
+        code = store['code']
+        if code not in labels:
+            missing.append(f'{code} 缺门店标签和运营负责人规则')
+            continue
+        tag = text(labels[code]['tag'])
+        if tag in EXCLUDED_TAGS:
+            continue
+        route = rules['routes'].get(code)
+        owner = text(labels[code]['owner'])
+        if not route or not owner:
+            missing.append(f'{code} 缺' + ('主从仓' if not route else '运营负责人'))
+            continue
+        result[code] = {**store, **route, 'tag': tag, 'owner': owner}
+    if missing:
+        raise PendingInputs(missing)
+    if not result:
+        raise PendingInputs(['门店规则没有可计入门店'])
+    provenance = {key: rules[key] for key in ('source', 'version', 'adopted_at', 'route_source')}
+    return result, provenance
+
+
 def native_stores(root, day, stores):
     from stockout_repository import Repository
     repo = Repository(root)
@@ -227,7 +342,7 @@ def native_stores(root, day, stores):
             FROM current_days d JOIN publications p ON p.id=d.publication
             JOIN run_stores r ON r.run=p.run JOIN store_snapshots s ON s.id=r.snapshot
             WHERE d.day=? AND s.day=d.day AND s.state='READY' ORDER BY r.rowid
-        ''', (day,)) if r['store'] in stores]
+        ''', (day,)) if stores is None or r['store'] in stores]
 
 
 def native_catalogs(root, day):
@@ -257,24 +372,84 @@ def native_catalogs(root, day):
     return {r['warehouse']:r for r in rows}
 
 
+def adopted_catalogs(root, day, warehouses):
+    """Find same-day warehouse originals already verified and adopted by catalog sync."""
+    from warehouse_catalog import Repository
+
+    path = (Path(root) / 'workbench.sqlite3').resolve()
+    if not path.is_file() or not warehouses:
+        return {}
+    repo = Repository(root)
+    result = {}
+    with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True, timeout=5)) as db:
+        db.row_factory = sqlite3.Row
+        tables = {r[0] for r in db.execute("SELECT name FROM sqlite_schema WHERE type='table'")}
+        if not {'catalog_sync_applies', 'source_files'} <= tables:
+            return result
+        catalogs, versions = repo.snapshots(warehouses)
+        for wh, catalog in catalogs.items():
+            proof = catalog.get('source_observation') or {}
+            observed = proof.get('queriedAt')
+            if (catalog.get('kind') != 'jst_full_archive' or not isinstance(observed, str) or not observed
+                    or proof.get('warehouse') != wh or not proof.get('company')):
+                continue
+            stamp = datetime.fromisoformat(observed)
+            if stamp.tzinfo is None or stamp.astimezone(TZ).date().isoformat() != day:
+                continue
+            for row in db.execute('''
+                SELECT a.*,s.name FROM catalog_sync_applies a JOIN source_files s ON s.sha=a.source_sha
+                WHERE a.state='APPLIED' AND a.warehouse=? AND a.new_digest=? AND a.source_sha=?
+                ORDER BY a.updated DESC,a.rowid DESC
+            ''', (wh, versions[wh], catalog['source_sha256'])):
+                payload = json.loads(row['payload'])
+                account, receipt, ack = (payload.get(key, {}) for key in ('account', 'receipt', 'ack'))
+                ids = [account.get(key) for key in ('expectedCoid', 'expectedUid')]
+                if (account.get('warehouse') != wh or not all(ids)
+                        or not payload.get('native_task_id') or receipt.get('status') != 'VALIDATED'
+                        or (receipt.get('warehouse'), receipt.get('source_sha256'), receipt.get('revision'))
+                        != (wh, row['source_sha'], catalog['revision'])
+                        or (receipt.get('rows'), receipt.get('raw_rows')) != (len(catalog['items']), catalog['source_rows'])
+                        or (ack.get('apply_id'), ack.get('warehouse'), ack.get('source_sha256'))
+                        != (row['id'], wh, row['source_sha'])):
+                    continue
+                result[wh] = {'adopted': row['id'], 'warehouse': wh, 'name': row['name'], 'sheet': catalog['sheet'],
+                              'source_sha': row['source_sha'], 'observed': stamp.astimezone(TZ).isoformat(),
+                              'account': digest(ids), 'acquisition_batch': row['batch_id'],
+                              'acquisition_item': row['item_id'], 'revision': catalog['revision'],
+                              'rows': receipt['rows'], 'raw_rows': receipt['raw_rows'],
+                              'quarantined': [item['商品编码'] for item in catalog['quarantined']]}
+                break
+    return result
+
+
+def catalog_refs(root, day, selected):
+    refs = native_catalogs(root, day)
+    needed = [wh for wh in WAREHOUSES if wh not in selected['catalogs'] and not refs.get(wh, {}).get('account')]
+    refs.update(adopted_catalogs(root, day, needed))
+    return {wh: {'file': selected['catalogs'][wh]} if wh in selected['catalogs'] else refs.get(wh) for wh in WAREHOUSES}
+
+
 def freeze(root, day, *, stores=None, partial=False, cancel=None):
     """Freeze source identifiers and order cutoff. Supplemental files are immutable copies."""
     selected = profile(root, day)
-    files = selected['files']
-    issues = [label for key, label in SUPPLEMENTS.items() if key not in files]
-    if issues:
-        raise PendingInputs(['缺资料：' + label for label in issues])
+    files = supplement_refs(root, selected)
+    issues = ['缺资料：' + label for key, label in SUPPLEMENTS.items() if key != 'stores' and key not in files]
     checkpoint(cancel)
-    all_stores = roster(path_for(root, files['stores']), files['stores'], cancel)
+    ref = files.get('stores')
+    rules = store_rules(root, day) if not ref or ref.get('effective_day') else None
+    try:
+        all_stores, provenance = resolved_roster(root, ref, rules, cancel)
+    except PendingInputs as exc:
+        raise PendingInputs([*exc.issues, *issues]) from exc
+    if issues:
+        raise PendingInputs(issues)
     if stores and set(stores) - set(all_stores):
         raise PendingInputs(['已选门店在该日清单中缺失：' + '、'.join(sorted(set(stores) - set(all_stores)))])
     scope = {code: row for code, row in all_stores.items() if not stores or code in stores}
     if stores and set(scope) != set(all_stores) and not partial:
         raise ValueError('所选门店是部分范围，请使用参考口径')
     store_snapshots = [] if selected['sales'] else native_stores(root, day, scope)
-    warehouses = native_catalogs(root, day)
-    catalogs = {name: ({'file': selected['catalogs'][name]} if name in selected['catalogs'] else warehouses.get(name))
-                for name in WAREHOUSES}
+    catalogs = catalog_refs(root, day, selected)
     issues = [day + ' 缺' + wh + '库存快照' for wh, ref in catalogs.items() if ref is None]
     if not selected['sales']:
         missing = set(scope) - {r['store'] for r in store_snapshots}
@@ -292,7 +467,8 @@ def freeze(root, day, *, stores=None, partial=False, cancel=None):
         scope = {code: store for code, store in scope.items() if code not in missing}
     return {'template': VERSION, 'day': day, 'frozen_at': now(), 'files': files, 'stores': list(scope.values()),
             'expected_stores': list(all_stores), 'sales': selected['sales'], 'store_snapshots': store_snapshots,
-            'catalogs': catalogs, 'partial': partial, 'order_cutoff': selected.get('order_cutoff') or now()}
+            'catalogs': catalogs, 'partial': partial, 'order_cutoff': selected.get('order_cutoff') or now(),
+            **({'store_rules': provenance} if provenance else {})}
 
 
 def published_weeks(path, day):
@@ -356,9 +532,21 @@ def sales_rows(root, basis, cancel):
 
 
 def load_catalog(root, wh, ref, cancel):
+    adopted = 'adopted' in ref
     if 'file' in ref:
         src = ref['file']
         rows = sheet_rows(path_for(root, src), CATALOG_COLUMNS, sheets=src['sheets'], cancel=cancel)
+    elif adopted:
+        from source_archive import read
+        if ref['warehouse'] != wh:
+            raise ValueError('冻结的同步原件仓别不符：' + wh)
+        path = (Path(root) / 'workbench.sqlite3').resolve()
+        with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True, timeout=5)) as db:
+            original = read(db, ref['source_sha'])
+        if not original:
+            raise PendingInputs([wh + ' 库存原件已缺失，请恢复原快照'])
+        rows = sheet_rows(BytesIO(original[1]), CATALOG_COLUMNS, sheets=(ref['sheet'],),
+                          source_name=ref['name'], cancel=cancel)
     else:
         from warehouse_stockout import Repository
         def snapshots():
@@ -368,13 +556,22 @@ def load_catalog(root, wh, ref, cancel):
                     yield dict(r), ref['id']
         rows = snapshots()
     products = {}
+    excluded = set(ref['quarantined']) if adopted else set()
+    skipped = set()
     for row, location in rows:
         checkpoint(cancel)
         sku = identifier(row.pop('sku'))
-        if sku in products:
+        if sku in products or sku in skipped:
             raise ValueError(f'{wh} 商品编码重复：{sku}（{location}）')
+        if sku in excluded:
+            skipped.add(sku)
+            continue
         products[sku] = {'status': text(row['status']), 'stock': decimal(row['stock']),
                          'virtual': text(row['virtual']), 'category': text(row['category']), 'supplier': text(row['supplier'])}
+        if adopted and products[sku]['category'] == '分类-未设置':
+            products[sku]['category'] = ''
+    if adopted and (len(products) + len(skipped) != ref['raw_rows'] or skipped != excluded):
+        raise PendingInputs([wh + ' 冻结同步原件的待核商品或原行数不一致'])
     if not products or 'file' not in ref and len(products) != ref['rows']:
         raise PendingInputs([wh + ' 冻结库存快照不可读取'])
     return products

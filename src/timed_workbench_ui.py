@@ -1,5 +1,6 @@
 """Desktop entry points for report plans, prerequisites and persistent runs."""
 from pathlib import Path
+import sqlite3
 import threading
 import uuid
 
@@ -448,18 +449,21 @@ class Materials(QDialog):
         super().__init__(parent)
         self.root, self.day = root, day
         self.setWindowTitle('经营日报资料 · ' + day)
-        self.resize(820, 440)
+        self.resize(950, 475)
         layout = QVBoxLayout(self)
-        layout.addWidget(label('业务日 ' + day + '。门店建议和两仓资料优先采用该日已发布的快照。'))
+        guidance = label('业务日 ' + day + '。自动读取已采用的门店规则和本业务日快照。补充的规则表可沿用到后续日期。')
+        guidance.setWordWrap(True)
+        layout.addWidget(guidance)
         form = QFormLayout()
         layout.addLayout(form)
-        self.files = {}
+        self.files, self.actions, self.reusable = {}, {}, set()
         for key, title in sources.SUPPLEMENTS.items():
             row = QHBoxLayout()
             name = self.files[key] = label('', 'muted')
             name.setWordWrap(True)
             row.addWidget(name, 1)
-            row.addWidget(button('选择原件', lambda checked=False, role=key:self.choose(role)))
+            action = self.actions[key] = button('选择当日原件', lambda checked=False, role=key:self.choose(role))
+            row.addWidget(action)
             form.addRow(title, row)
         self.coverage = label('', 'muted')
         self.coverage.setWordWrap(True)
@@ -473,19 +477,54 @@ class Materials(QDialog):
         self.refresh()
 
     def refresh(self):
-        profile = sources.profile(self.root, self.day)
-        for key, name in self.files.items():
-            ref = profile['files'].get(key)
-            name.setText(f'{ref["name"]} · {ref["sha256"][:12]}' if ref else '待登记')
-        catalogs = sources.native_catalogs(self.root, self.day)
-        lines = []
-        for warehouse in sources.WAREHOUSES:
-            ref = profile['catalogs'].get(warehouse) or catalogs.get(warehouse)
-            lines.append(warehouse + ' · ' + (f'{ref["observed"]} · {(ref.get("sha256") or ref["source_sha"])[:12]}'
-                                              if ref else '等待已发布资料'))
-        lines.append(f'已登记门店建议原件 {len(profile["sales"])} 份' if profile['sales'] else
-                     '门店建议使用所选业务日的已发布快照')
-        self.coverage.setText('\n'.join(lines))
+        try:
+            profile = sources.profile(self.root, self.day)
+            refs = sources.supplement_refs(self.root, profile)
+            rules = sources.store_rules(self.root, self.day)
+            self.reusable = set(sources.RULE_FILES) if self.day == today() else set()
+            if not rules:
+                self.reusable.discard('stores')
+            for key, label_widget in self.files.items():
+                ref = refs.get(key)
+                note = '需登记该日必卖清单·剔除大仓缺货率' if key == 'must_sell' else '待登记规则原件'
+                if ref:
+                    date_note = f' · {ref["effective_day"]} 起采用' if ref.get('effective_day') else ' · 当日原件'
+                    note = f'{ref["name"]} · {ref["sha256"][:12]}' + date_note
+                if key == 'stores' and (not ref or ref.get('effective_day')):
+                    if rules:
+                        if ref:
+                            try:
+                                sources.resolved_roster(self.root, ref, rules)
+                            except (ValueError, OSError) as exc:
+                                note += '\n' + str(exc)
+                        note = (f'已引用门店 {len(rules["stores"])} 家、主从仓 {len(rules["routes"])} 家'
+                                f' · {rules["version"][:12]}\n'
+                                + (note if ref else '待补门店标签和运营负责人'))
+                    else:
+                        note = '未找到该日采用的门店范围和主从仓，需登记当日完整清单'
+                label_widget.setText(note)
+                self.actions[key].setText('采用标签与负责人' if key == 'stores' and key in self.reusable else
+                                          '采用规则原件' if key in self.reusable else '选择当日原件')
+            catalogs = sources.catalog_refs(self.root, self.day, profile)
+            lines = []
+            for warehouse, ref in catalogs.items():
+                if not ref:
+                    lines.append(warehouse + ' · 所选业务日无可采用的库存快照')
+                    continue
+                source = ref.get('file', ref)
+                kind = '已登记' if 'file' in ref else '已核验的仓资料同步' if 'adopted' in ref else '缺货率已发布快照'
+                proof = '' if source.get('account') else ' · 仓账号待核'
+                lines.append(f'{warehouse} · {kind} · {source["observed"]} · '
+                             f'{(source.get("sha256") or source["source_sha"])[:12]}{proof}')
+            if profile['sales']:
+                lines.append(f'已登记门店建议原件 {len(profile["sales"])} 份')
+            else:
+                stores = {s['code'] for s in rules['stores']} if rules and (not refs.get('stores') or refs['stores'].get('effective_day')) else None
+                count = len(sources.native_stores(self.root, self.day, stores))
+                lines.append(f'采用该日已发布门店建议 {count} 家' if count else '所选业务日暂无已发布门店建议')
+            self.coverage.setText('\n'.join(lines))
+        except (OSError, ValueError, sqlite3.Error) as exc:
+            self.coverage.setText('暂不能核对日报资料 · ' + str(exc))
 
     def choose(self, key):
         formats = '日报资料清单 (*.json)' if key is None else '表格 (*.xlsx);;周值 (*.json)' if key == 'weeks' else '表格 (*.xlsx)'
@@ -496,9 +535,7 @@ class Materials(QDialog):
             if key is None:
                 sources.import_profile(self.root, self.day, selected)
             else:
-                current = sources.profile(self.root, self.day)
-                current['files'][key] = sources.file_source(self.root, selected)
-                sources.save_profile(self.root, current)
+                sources.register_supplement(self.root, self.day, key, selected, as_rule=key in self.reusable)
             self.refresh()
         except (OSError, ValueError) as exc:
             QMessageBox.warning(self, '资料未登记', str(exc))

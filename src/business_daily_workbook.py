@@ -311,11 +311,17 @@ def _about(sheet, basis, daily, orders, must, blacklist_outside_scope):
         ('明细行数', daily['details']),
     ]
     for role, ref in basis['files'].items():
-        info.append((role, f'{ref["name"]} · SHA-256 {ref["sha256"]}'))
+        effective = f' · {ref["effective_day"]} 起采用' if ref.get('effective_day') else ''
+        info.append((role, f'{ref["name"]} · SHA-256 {ref["sha256"]}{effective}'))
+    if rules := basis.get('store_rules'):
+        info.append(('门店范围依据', f'{rules["source"]} · 版本 {rules["version"]}'))
+        info.append(('主从仓依据', '保存的路由版本 ' + rules['route_source']))
     for warehouse, ref in basis['catalogs'].items():
         v = ref.get('file', ref)
         info.append((warehouse, f'{v.get("observed")} · {v.get("sha256") or v.get("source_sha")} · '
                                  f'账号 {v.get("account") or "未留存"} · 采集 {v.get("acquisition_batch") or ref.get("run") or "手工登记"}'))
+        if 'adopted' in ref:
+            info.append((warehouse + '原采用记录', f'{ref["adopted"]} · 仓资料版本 {ref["revision"]}'))
     for ref in basis['store_snapshots']:
         info.append(('门店快照 ' + ref['store'], f'{ref["observed"]} · {ref["id"]} · {ref["source_sha"]}'))
     for ref in basis['sales']:

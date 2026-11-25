@@ -154,6 +154,10 @@ def start_smoke(app, win, args):
                 page = visible(manual)
                 page.grab().save(str(root/'waiting.png'))
                 def supply(materials):
+                    if settings.get('verify_added_sources'):
+                        assert '已引用门店' in materials.files['stores'].text()
+                        for key in ('stores', 'blacklist', 'owners'):
+                            assert '起采用' in materials.files[key].text(), key
                     with patch.object(QFileDialog,'getOpenFileName',return_value=(settings['weeks'], '')):
                         materials.choose('weeks')
                     assert '待登记' != materials.files['weeks'].text()
@@ -177,6 +181,23 @@ def start_smoke(app, win, args):
                 assert len([r for r in manager.repo.runs() if r['requested_by']=='timer'])==1
                 assert all(timed_run['frozen'][k]==v for k,v in manual_run['frozen'].items() if k!='frozen_at')
                 compare(manual_artifact,timed_artifact)
+                if settings.get('verify_added_sources'):
+                    source_report = {'store_rules': manual_run['frozen']['store_rules'],
+                                     'effective_days': {key: manual_run['frozen']['files'][key]['effective_day']
+                                                        for key in ('stores', 'blacklist', 'owners')}}
+                    for preview in settings['source_previews']:
+                        preview_day = preview['day']
+                        dialog = Materials(page, manager.root, preview_day)
+                        dialog.show()
+                        coverage = dialog.coverage.text()
+                        assert coverage.count(preview['catalog_status']) == 2, coverage
+                        if preview.get('has_store_rules'):
+                            assert '已引用门店' in dialog.files['stores'].text()
+                        dialog.grab().save(str(root/('daily-sources-' + preview_day + '.png')))
+                        dialog.close()
+                        dialog.deleteLater()
+                        source_report[preview_day] = coverage
+                    report['automatic_sources'] = source_report
                 page.showNormal()
                 page.tabs.setCurrentIndex(1)
                 page.plans.selectRow(0)

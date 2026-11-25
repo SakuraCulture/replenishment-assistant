@@ -1,13 +1,17 @@
 """Operating report rules, workbook formulas and frozen source identity."""
 from contextlib import closing
+import json
 from pathlib import Path
+import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 from zipfile import ZipFile
 
 import openpyxl
 
 from business_daily import PendingInputs, aggregate, classify
+import business_daily_sources as sources
 from business_daily_sources import file_source, path_for, sales_rows
 from business_daily_workbook import SHEETS, write
 
@@ -118,3 +122,127 @@ class DailyRules(unittest.TestCase):
             path_for(folder, refs[0]).write_bytes(b'invalid')
             with self.assertRaisesRegex(ValueError, '摘要已变化'):
                 path_for(folder, refs[0])
+
+
+class DailySourceRules(unittest.TestCase):
+    def test_rule_reuse_respects_effective_day_month_and_explicit_original(self):
+        with tempfile.TemporaryDirectory() as folder:
+            days = '2026-11-20', '2026-11-23', '2026-11-25', '2026-12-01'
+            first = sources.profile(folder, days[0])
+            first['files'] = {key: {'effective_day': days[0], 'name': key + '-v1'} for key in sources.RULE_FILES}
+            first['files']['must_sell'] = {'name': '该日指标'}
+            sources.save_profile(folder, first)
+            archived = sources.profile(folder, days[1])
+            archived['files']['blacklist'] = {'name': '历史登记原件'}
+            sources.save_profile(folder, archived)
+            updated = sources.profile(folder, days[2])
+            updated['files']['blacklist'] = {'effective_day': days[2], 'name': 'blacklist-v2'}
+            sources.save_profile(folder, updated)
+            resolve = lambda day: sources.supplement_refs(folder, sources.profile(folder, day))
+            self.assertEqual(resolve('2026-11-19'), {})
+            self.assertEqual(resolve(days[1])['blacklist']['name'], '历史登记原件')
+            self.assertEqual(resolve('2026-11-24')['blacklist']['name'], 'blacklist-v1')
+            self.assertEqual(resolve('2026-11-26')['blacklist']['name'], 'blacklist-v2')
+            self.assertEqual(set(resolve('2026-11-26')), sources.RULE_FILES)
+            self.assertEqual(set(resolve(days[3])), {'stores', 'blacklist'})
+
+    def test_store_scope_reads_saved_routes_for_today_and_published_routes_for_history(self):
+        from stockout_repository import Repository
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = Repository(root)
+            repo.initialize()
+            old_day, new_day = '2026-11-24', '2026-11-25'
+            stores = [{'code': '0001', 'name': '同名测试店'}, {'code': '0002', 'name': '同名测试店'}]
+            old = repo.save_settings({'stores': stores, 'routes': {
+                '0001': {'primary': '河北仓', 'secondary': None},
+                '0002': {'primary': '山东仓', 'secondary': None}}})
+            run = repo.new_run(day=old_day)
+            with repo.connect(write=True) as db:
+                publication = db.execute('INSERT INTO publications(day,run,created) VALUES(?,?,?)',
+                                         (old_day, run['id'], old_day)).lastrowid
+                db.execute('INSERT INTO current_days VALUES(?,?)', (old_day, publication))
+            with closing(sqlite3.connect(root/'workbench.sqlite3')) as db, db:
+                db.execute('CREATE TABLE stores(code TEXT PRIMARY KEY,data TEXT)')
+                db.executemany('INSERT INTO stores VALUES(?,?)', (
+                    ('0001', json.dumps({'ui': {'primary': '河北仓', 'secondary': '山东仓'}})),
+                    ('0002', json.dumps({'ui': {'primary': '山东仓', 'secondary': None}}))))
+            book = openpyxl.Workbook()
+            book.active.append(('运营负责人', '主仓', '门店编码', '门店标签'))
+            book.active.append(('测试甲', '山东仓', '0001', '河北-新店'))
+            book.active.append(('测试乙', '河北仓', '0002', '山东-维稳型'))
+            labels = root/'labels.xlsx'
+            book.save(labels)
+            sources.register_supplement(root, old_day, 'stores', labels, as_rule=True)
+            frozen = sources.supplement_refs(root, sources.profile(root, new_day))['stores']
+            with patch.object(sources, 'today', return_value=new_day):
+                active = sources.store_rules(root, new_day)
+                history = sources.store_rules(root, old_day)
+                self.assertIsNone(sources.store_rules(root, '2026-11-23'))
+            current, proof = sources.resolved_roster(root, frozen, active)
+            historical, _ = sources.resolved_roster(root, frozen, history)
+            self.assertEqual(proof['version'], old['version'])
+            self.assertEqual(current['0001']['secondary'], '山东仓')
+            self.assertIsNone(historical['0001']['secondary'])
+            self.assertEqual((current['0001']['primary'], current['0002']['primary']), ('河北仓', '山东仓'))
+            self.assertEqual((current['0001']['owner'], current['0002']['owner']), ('测试甲', '测试乙'))
+            with self.assertRaisesRegex(PendingInputs, '缺门店标签和运营负责人'):
+                sources.resolved_roster(root, None, active)
+            with self.assertRaisesRegex(PendingInputs, '缺已采用的门店范围'):
+                sources.resolved_roster(root, frozen, None)
+
+    def test_adopted_warehouse_original_is_bound_to_day_warehouse_and_content(self):
+        from source_archive import capture
+        from warehouse_catalog import Repository, revision, REQUIRED
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root/'archive.xlsx'
+            book = openpyxl.Workbook()
+            book.active.append(('商品编码', '启用', '可用数', '虚拟分类', '产品分类', '供应商'))
+            book.active.append(('00001', '启用', 3, '', '食品', '测试供应商'))
+            book.active.append(('00002', '备用', 0, '', '', ''))
+            book.save(path)
+            wh, day = '河北仓', '2026-11-25'
+            dbpath = root/'workbench.sqlite3'
+            checksum = sources.sha256(path)
+            capture(dbpath, path, checksum)
+            items = {'00001': dict.fromkeys(REQUIRED) | {'商品编码': '00001'}}
+            catalog = {'schema': 1, 'warehouse': wh, 'revision': revision(items), 'items': items,
+                       'source_sha256': checksum, 'source_rows': 2, 'kind': 'jst_full_archive',
+                       'sheet': book.active.title, 'first_inbound_column': True, 'quarantine_count': 1,
+                       'quarantined': [{'商品编码': '00002', 'reason': '测试待核'}],
+                       'source_observation': {'warehouse': wh, 'company': '测试河北公司',
+                                              'queriedAt': '2026-11-24T23:30:00+00:00'}}
+            repo = Repository(root)
+            repo.save(catalog)
+            payload = {'account': {'warehouse': wh, 'expectedCoid': '01', 'expectedUid': '01'},
+                       'receipt': {'status': 'VALIDATED', 'warehouse': wh, 'source_sha256': checksum,
+                                   'revision': catalog['revision'], 'rows': 1, 'raw_rows': 2},
+                       'ack': {'apply_id': 'adopt1', 'warehouse': wh, 'source_sha256': checksum},
+                       'native_task_id': 'original'}
+            with closing(sqlite3.connect(dbpath)) as db, db:
+                db.execute('''CREATE TABLE catalog_sync_applies(id,batch_id,item_id,warehouse,purpose,state,
+                              old_digest,new_digest,source_sha,payload,updated)''')
+                db.execute('INSERT INTO catalog_sync_applies VALUES(?,?,?,?,?,?,?,?,?,?,?)',
+                           ('adopt1', 'batch1', 'a', wh, 'default_catalog', 'APPLIED', None,
+                            repo.current_digest(wh), checksum, json.dumps(payload), day))
+            preferred = sources.catalog_refs(root, day, sources.profile(root, day))
+            ref = preferred[wh]
+            self.assertIsNone(preferred['山东仓'])
+            self.assertEqual(ref['observed'][:10], day)
+            self.assertEqual(list(sources.load_catalog(root, wh, ref, None)), ['00001'])
+            self.assertEqual(sources.adopted_catalogs(root, '2026-11-24', (wh,)), {})
+            with self.assertRaisesRegex(ValueError, '仓别不符'):
+                sources.load_catalog(root, '山东仓', ref, None)
+            payload['account']['warehouse'] = '山东仓'
+            with closing(sqlite3.connect(dbpath)) as db, db:
+                db.execute('UPDATE catalog_sync_applies SET payload=?', (json.dumps(payload),))
+            self.assertEqual(sources.adopted_catalogs(root, day, (wh,)), {})
+            path.unlink()
+            self.assertIn('00001', sources.load_catalog(root, wh, ref, None))
+            with closing(sqlite3.connect(dbpath)) as db, db:
+                db.execute('UPDATE source_files SET content=?', (b'invalid',))
+            with self.assertRaisesRegex(ValueError, '原文件快照校验失败'):
+                sources.load_catalog(root, wh, ref, None)
