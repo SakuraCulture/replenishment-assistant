@@ -44,6 +44,9 @@ class Platforms:
 
     def release(self,progress):
         self.release_ax(progress)
+        self.release_jst(progress)
+
+    def release_jst(self,progress):
         if self.jst:
             while not self.jst.close(timeout=.5):
                 progress('等待商品资料当前动作安全结束，保留原任务编号');time.sleep(.5)
@@ -163,6 +166,8 @@ class Platforms:
     def catalogs(self,runner,basis):
         repo=runner.repo;rid=runner.rid;run=repo.get(rid);external=dict(run['external']);client=self.jst_client()
         if not external.get('catalog_operation'):
+            if run.get('day') and run['day']!=stamp().date().isoformat():
+                raise ValueError('仓资料原采集尚未发起且已跨日，请建立当天任务')
             external['catalog_operation']=uuid.uuid4().hex
             external['catalog_items']=[{'warehouse':w,'expected_catalog_digest':basis['catalog_digests'][w]} for w in basis['warehouses']]
             repo.change(rid,epoch=runner.epoch,external=external)
@@ -202,6 +207,8 @@ class Platforms:
             if prior is not None:
                 from catalog_binding_guard import adoption_guard
                 with adoption_guard(client.folder,batch,item,self.cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
+                    if (item.get('receipt') or {}).get('source_sha256')!=prior.get('source_sha256'):
+                        raise ValueError(wh+'留存资料和原仓项回执不一致')
                     if not item.get('adoption'):
                         client.request('sync.acknowledge_adoption',batch_id=bid,item_id=item['id'],receipt={'warehouse':wh,'source_sha256':prior['source_sha256'],'purpose':'scheduled_replenishment','run_id':rid})
                 catalogs[wh]=prior;states[wh]='本任务资料已留存';continue
@@ -215,9 +222,13 @@ class Platforms:
             from catalog_binding_guard import adoption_guard
             with adoption_guard(client.folder,batch,item,self.cancel,state_reader=lambda bid:client.request('sync.status',batch_id=bid)):
                 capture(repo.path,catalog['source_path'],catalog['source_sha256'],runner.progress,self.cancel)
-                repo.save_value(rid,name,catalog,runner.epoch)
+                from scheduled_replenishment import signature
+                repo.save_value(rid,name,catalog,runner.epoch,adoption={
+                    'source':'refresh','operation_id':external['catalog_operation'],'batch_id':bid,'item_id':item['id'],
+                    'coid':account['expectedCoid'],'uid':account['expectedUid'],'binding_digest':signature(account.get('binding',{}))})
                 ack={'warehouse':wh,'source_sha256':catalog['source_sha256'],'purpose':'scheduled_replenishment','run_id':rid}
                 client.request('sync.acknowledge_adoption',batch_id=bid,item_id=item['id'],receipt=ack)
             catalogs[wh]=catalog;states[wh]='本任务资料已留存，工作台空闲时发布为当前仓资料'
         repo.change(rid,epoch=runner.epoch,warehouses=states)
+        self.release_jst(lambda message:runner.update('更新仓商品资料',message))
         return catalogs

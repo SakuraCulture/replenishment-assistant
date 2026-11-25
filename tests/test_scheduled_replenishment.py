@@ -284,6 +284,49 @@ class ExecutionTests(unittest.TestCase):
         self.assertEqual(self.repo.get(r['id'])['publication']['state'],'PUBLISHED')
         self.assertEqual(self.repo.value(r['id'],'result:A'),before)
 
+    def test_continue_original_without_new_warehouse_read(self):
+        before=copy.deepcopy(self.catalogs)
+        run=self.repo.manual(self.s);rid=run['id']
+        older=LocalBackend(before,{'files':self.manifest['files'][:1]})
+        se.Runner(self.repo,older,self.root).execute(rid)
+        partial=self.repo.get(rid);self.assertEqual(partial['state'],'REVIEW')
+        done=self.repo.value(rid,'result:A')
+        newer=copy.deepcopy(before)
+        newer['山东仓']['items']['0001']['可用数']=60
+        newer['山东仓']['revision']=wc.revision(newer['山东仓']['items'])
+        wc.Repository(self.root).save(newer['山东仓'])
+        self.repo.resume(rid,partial['revision'])
+        still_original=LocalBackend(newer,self.manifest)
+        se.Runner(self.repo,still_original,self.root).execute(rid)
+        self.assertNotIn('catalogs',still_original.calls)
+        self.assertEqual(self.repo.get(rid)['state'],'COMPLETE')
+        self.assertEqual(self.repo.value(rid,'catalogs'),before)
+        self.assertEqual(self.repo.value(rid,'result:A'),done)
+
+    def test_publication_recovers_replace_without_receipt(self):
+        run=self.run_one();rid=run['id']
+        master=wc.Repository(self.root)
+        actual=master.save_locked
+        saved=[]
+        def replace_then_interrupt(instance,data,**kw):
+            actual(data,**kw);saved.append(data['warehouse'])
+            raise OSError('synthetic interruption after replace')
+        candidates=copy.deepcopy(self.repo.value(rid,'catalogs'))
+        for c in candidates.values():c['imported_at']='2026-11-04T10:00:00'
+        get_value=self.repo.value
+        with patch.object(self.repo,'value',side_effect=lambda run_id,key,*args:
+                          candidates if key=='catalogs' else get_value(run_id,key,*args)):
+            with patch.object(wc.Repository,'save_locked',replace_then_interrupt):
+                with self.assertRaisesRegex(OSError,'after replace'):
+                    se.publish_catalogs(self.repo,rid,self.root)
+            publication=self.repo.get(rid)['publication'];wh=saved[0]
+            self.assertEqual(publication['state'],'PUBLISHING')
+            self.assertEqual(master.current_digest(wh),publication['intents'][wh])
+            def save_other(instance,data,**kw):
+                self.assertNotEqual(data['warehouse'],wh);actual(data,**kw)
+            with patch.object(wc.Repository,'save_locked',save_other):se.publish_catalogs(self.repo,rid,self.root)
+        self.assertEqual(self.repo.get(rid)['publication']['state'],'PUBLISHED')
+
     def test_publication_holds_invalid_stock_and_publishes_valid_sibling(self):
         run=self.run_one();rid=run['id']
         catalogs=self.repo.value(rid,'catalogs')

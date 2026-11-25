@@ -90,6 +90,27 @@ def require_arranged_stores(frozen, schedule):
         raise ValueError('补货预案的门店范围已变化，请编辑安排，确认门店后保存')
 
 
+def adopted_catalogs(repo,rid,warehouses):
+    from warehouse_catalog import validate
+    previous=repo.value(rid,'catalogs',{})
+    receipts=repo.get(rid).get('catalog_adoptions',{})
+    catalogs={}
+    for wh in warehouses:
+        catalog=repo.value(rid,'catalog:'+wh)
+        legacy=previous.get(wh)
+        if catalog and legacy and catalog!=legacy:raise wr.Conflict(wh+'原任务仓资料留存互相冲突，请核对原件')
+        catalog=catalog or legacy
+        if not catalog:
+            if wh in receipts:raise wr.Conflict(wh+'缺少原采用快照，请核对原任务')
+            continue
+        validate(catalog)
+        if catalog['warehouse']!=wh or wh in receipts and any(
+                catalog[key]!=receipts[wh].get(key) for key in ('revision','source_sha256')):
+            raise wr.Conflict(wh+'仓资料与原采用回执不符，请核对原任务')
+        catalogs[wh]=catalog
+    return catalogs
+
+
 class Runner:
     def __init__(self,repo,backend,folder,cancel=None,progress=lambda _:None):
         self.repo,self.backend,self.folder=repo,backend,Path(folder)
@@ -102,6 +123,20 @@ class Runner:
         if key!=self.last or fields:
             self.repo.change(self.rid,epoch=self.epoch,stage=stage,message=str(message),**fields)
             self.last=key;self.progress(str(message))
+
+    def defaults(self,warehouses,day):
+        from warehouse_catalog import Repository
+        from source_archive import capture
+        if self.repo.clock().astimezone(sr.TZ).date().isoformat()!=day:
+            raise ValueError('原任务未采用'+ '、'.join(warehouses)+'资料且已跨日，请建立当天任务')
+        catalogs,digests=Repository(self.folder).snapshots(warehouses)
+        for wh,catalog in catalogs.items():
+            checkpoint(self.cancel)
+            if Path(catalog['source_path']).is_file():
+                capture(self.repo.path,catalog['source_path'],catalog['source_sha256'],self.progress,self.cancel)
+            self.repo.save_value(self.rid,'catalog:'+wh,catalog,self.epoch,
+                                 adoption={'source':'default','default_digest':digests[wh]})
+        return catalogs
 
     def execute(self,rid):
         run=self.repo.claim(rid);self.rid=rid;self.epoch=run['epoch']
@@ -132,8 +167,10 @@ class Runner:
             checkpoint(self.cancel)
             self.backend.acquire()
             self.update('获取补货建议','按预案门店顺序获取；成功文件留存，失败项单独处理')
-            manifest=self.backend.sales(self, frozen)
-            self.repo.save_value(rid,'sales',manifest,self.epoch)
+            manifest=self.repo.value(rid,'sales')
+            if not manifest or not set(selected)<={f['warehouse_code'] for f in manifest['files']}:
+                manifest=self.backend.sales(self, frozen)
+                self.repo.save_value(rid,'sales',manifest,self.epoch)
             checkpoint(self.cancel)
             available={f['warehouse_code'] for f in manifest['files']}
             omitted={s['warehouse_code']:s for s in manifest.get('omitted',[])}
@@ -147,10 +184,17 @@ class Runner:
                     reason+=f"（原任务 {failure['task_id']}）"
                 self.repo.store_state(rid,s,'FAILED',reason,self.epoch)
             selected=[s for s in selected if s in available]
-            catalogs=self.repo.value(rid,'catalogs',{}) if wanted is not None or run.get('recovering_process') else {}
-            if selected and not set(frozen['warehouses']).issubset(catalogs):
+            catalogs=adopted_catalogs(self.repo,rid,frozen['warehouses'])
+            missing=[wh for wh in frozen['warehouses'] if wh not in catalogs]
+            if selected and missing:
                 self.update('更新仓商品资料','正在核对本次任务的仓资料')
-                catalogs=self.backend.catalogs(self,frozen)
+                if run['schedule'].get('catalog_source')=='default':
+                    catalogs.update(self.defaults(missing,run['day']))
+                else:
+                    acquired=self.backend.catalogs(self,frozen)
+                    if any(wh in catalogs and catalogs[wh]!=data for wh,data in acquired.items()):
+                        raise wr.Conflict('新返回仓资料与本次已采用版本不同，请核对原仓项')
+                    catalogs.update(acquired)
                 checkpoint(self.cancel)
             eligible=[]
             for s in selected:
@@ -189,7 +233,8 @@ class Runner:
             done=sum(s['state']=='READY' for s in run['stores'])
             message=f'{done}/{len(run["stores"])} 家已计算并保存，等待核对'
             if not all_ready:message+='。请查看待处理门店的原因'
-            self.update('等待人工核对',message,state='COMPLETE' if all_ready else 'REVIEW',retry_codes=None,retry_id=None,recovering_process=False)
+            fields={'publication':{'state':'USING_DEFAULT'}} if run['schedule'].get('catalog_source')=='default' else {}
+            self.update('等待人工核对',message,state='COMPLETE' if all_ready else 'REVIEW',retry_codes=None,retry_id=None,recovering_process=False,**fields)
         except Cancelled:
             run=self.repo.get(rid)
             self.update('已安全停止','成功结果已保存；继续时沿用原任务和冻结依据',state='ENDED' if run.get('control')=='end' else 'PAUSED')
@@ -236,9 +281,13 @@ def publish_catalogs(repo,rid,folder):
     from contextlib import ExitStack
     run=repo.get(rid)
     if run['state'] not in ('COMPLETE','REVIEW','PAUSED'):raise ValueError('请等待本次计算安全结束后采用资料')
+    if run['schedule'].get('catalog_source')=='default':
+        return '本任务已固定当时的默认仓资料，供本次计算使用',{}
     basis=repo.value(rid,'basis');catalogs=repo.value(rid,'catalogs',{})
     if not basis or not catalogs:raise ValueError('没有可采用的资料')
-    master=Repository(folder);done=dict(run.get('publication',{}).get('digests',{}))
+    master=Repository(folder);publication=run.get('publication',{})
+    done=dict(publication.get('digests',{}));intents=dict(publication.get('intents',{}))
+    desired={wh:master.publication_digest(data) for wh,data in catalogs.items()}
     issues={wh:warning for wh,data in catalogs.items() if wh not in done
             and (warning:=stock_publication_warning(data))}
     with ExitStack() as locks:
@@ -246,12 +295,19 @@ def publish_catalogs(repo,rid,folder):
             if wh in catalogs:locks.enter_context(acquire(folder,wh,None))
         for wh in catalogs:
             current=master.current_digest(wh)
+            if wh not in done and intents.get(wh)==desired[wh] and current==desired[wh]:
+                done[wh]=current
             if current!=done.get(wh,basis['catalog_digests'][wh]):
-                raise ValueError(wh+'当前仓资料已变化，请从资料维护核对，本次未覆盖')
+                error=wh+'当前仓资料已变化，请从资料维护核对，本次原资料已保留'
+                repo.change(rid,publication={'state':'NEEDS_REVIEW','digests':done,'intents':intents,'errors':{wh:error}},message=error)
+                raise wr.Conflict(error)
         for wh,data in catalogs.items():
             if wh not in done and wh not in issues:
-                master.save_locked(data,expected_digest=basis['catalog_digests'][wh]);done[wh]=master.current_digest(wh)
-                repo.change(rid,publication={'state':'PUBLISHING','digests':done})
+                intents[wh]=desired[wh]
+                repo.change(rid,publication={'state':'PUBLISHING','digests':done,'intents':intents})
+                if master.current_digest(wh)!=desired[wh]:
+                    master.save_locked(data,expected_digest=basis['catalog_digests'][wh])
+                done[wh]=desired[wh]
     if issues:
         message=('、'.join(done)+'已更新。' if done else '')+'仓资料发布待核：'+ '；'.join(wh+' '+error for wh,error in issues.items())
         repo.change(rid,publication={'state':'NEEDS_REVIEW','digests':done,'errors':issues},message=message)

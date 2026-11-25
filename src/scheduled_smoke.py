@@ -5,13 +5,13 @@ from types import SimpleNamespace
 from scheduled_platforms import Platforms
 
 
-def fixture(root,codes=('A','B'),name='合成早班'):
+def fixture(root,codes=('A','B'),name='合成早班',stocks=None):
     from openpyxl import Workbook
     import work_repository as wr,warehouse_catalog as wc,store_parameter_import as spi,replenishment_plans as plans
     work=wr.Repository(root);catalogs={};files=[]
     for wh in ('山东仓','河北仓'):
         p=root/(wh+'.xlsx');b=Workbook();w=b.active;w.append(wc.REQUIRED+['商品标签','商品名称'])
-        w.append(['0001','饮品',2,6,'启用',100,'必卖清单' if wh=='河北仓' else '','合成饮品']);b.save(p);b.close()
+        w.append(['0001','饮品',2,6,'启用',(stocks or {}).get(wh,100),'必卖清单' if wh=='河北仓' else '','合成饮品']);b.save(p);b.close()
         catalogs[wh]=wc.import_catalog(p,wh);wc.Repository(root).save(catalogs[wh])
     records={}
     for i,code in enumerate(codes):
@@ -148,6 +148,10 @@ def start_smoke(app,win,args):
     def run():
         report={'passed':False,'frozen':bool(getattr(sys,'frozen',False)),'version':diagnostic(),'window_title':win.windowTitle(),'checks':[]};checks=report['checks'];beats=[];dialog=None;phase='test_setup'
         m=win.scheduled;original=m.platform;originalask=ui.ask
+        isolation='--catalog-isolation' in args
+        original_compute=execution.batch_service.run;computations=[]
+        def observed_compute(loaded,jobs,*args,**kwargs):
+            computations.append(list(jobs));return original_compute(loaded,jobs,*args,**kwargs)
         def require(v,text):
             if not v:raise AssertionError(text)
             checks.append(text)
@@ -223,6 +227,8 @@ def start_smoke(app,win,args):
                     while not self.cancel.wait(.05):pass
                     checkpoint(self.cancel)
             win.loaded=None;win._discard_close=True;win.job_dirty=False;phase='actual_ui'
+            if isolation:
+                win.store_widgets.clear();win.states.clear();win.results.clear()
             beats.append((phase,time.monotonic()))
             m.platform=lambda c:Waiting(m.repo,catalogs,manifest,c,bindings);next_run=m.repo.manual(m.repo.schedules()[0]);m.start(next_run)
             wait(lambda:m.repo.get(next_run['id'])['stage']=='获取补货建议');m.pause(next_run['id'])
@@ -231,12 +237,13 @@ def start_smoke(app,win,args):
             wait(lambda:m.worker is None and m.publisher is None and m.reader is None);require(m.repo.get(current['id'])['state']=='COMPLETE','暂停后继续同一任务，取消状态不串入新轮次')
             m.repo.request_pause(current['id'],True)
             phase='test_setup';codes=tuple(f'R{i:02}' for i in range(1,30))
-            retry_plan,retry_catalogs,retry_manifest=fixture(out/'user',codes,'合成29店重试')
+            retry_plan,retry_catalogs,retry_manifest=fixture(out/'user',codes,'合成29店重试',{'河北仓':175} if isolation else None)
             selection={**m.repo.schedules()[0],'name':'合成29店重试','plan_id':retry_plan['id'],
                        'plan_name':retry_plan['name'],'stores':retry_plan['stores']}
             collection=ControlledCollection(out/'user'/'controlled-aoxiang',retry_manifest)
             bindings['warehouse_reads']=[];win.job_dirty=True;phase='actual_ui'
             m.platform=lambda c:RetryPlatforms(m.repo,retry_catalogs,retry_manifest,c,bindings,collection)
+            if isolation:execution.batch_service.run=observed_compute
             started=m.repo.manual(selection);run_id=started['id'];m.start(started)
             wait(lambda:m.repo.get(run_id)['state']=='REVIEW' and not m.worker,90)
             def run_count():return sum(s['state']=='READY' for s in m.repo.get(run_id)['stores'])
@@ -246,6 +253,9 @@ def start_smoke(app,win,args):
                 dialog.runs.selectRow(next(i for i,r in enumerate(dialog.records) if r['id']==run_id));dialog.select()
             require(run_count()==25,'同批首次 25/29，另外四店保留不同原回执')
             saved_results={c:m.repo.value(run_id,'result:'+c) for c in codes[:25]}
+            if isolation:
+                from scheduled_catalog_smoke import refresh_in_fixture,finish_scenario
+                evidence=refresh_in_fixture(app,win,dialog,out,retry_catalogs,next(iter(saved_results.values())),wait,require)
             pick_run();dialog.run_actions['结束本次'].click()
             wait(lambda:m.repo.get(run_id)['state']=='ENDED');pick_run()
             dialog.check_failures.click()
@@ -267,6 +277,9 @@ def start_smoke(app,win,args):
             report['retry']={'run_id':run_id,'command_id':collection.receipt['id'],'completed':[25,28,29],
                              'scopes':collection.scopes,'submits':collection.submits,'original_queries':collection.queries,
                              'warehouse_reads':bindings['warehouse_reads']}
+            if isolation:
+                report['catalog_isolation']=finish_scenario(win,dialog,run_id,selection,retry_catalogs,bindings,evidence,
+                                                            computations,pick_run,wait,require,out)
             pick_run();dialog.grab().save(str(out/'06-原批次全部完成.png'));win.job_dirty=False
             last=m.repo.manual(m.repo.schedules()[0]);m.platform=lambda c:Waiting(m.repo,catalogs,manifest,c,bindings);m.start(last)
             wait(lambda:m.repo.get(last['id'])['stage']=='获取补货建议');win.close();wait(lambda:m.worker is None and not win.isVisible())
@@ -278,7 +291,7 @@ def start_smoke(app,win,args):
                 scope='真实Qt、spawn及本地持久化；平台仅使用明确合成适配器，无真实导出')
         except Exception:report['error']=traceback.format_exc()
         finally:
-            ui.ask=originalask;m.platform=original;timer.stop()
+            ui.ask=originalask;m.platform=original;execution.batch_service.run=original_compute;timer.stop()
             if dialog:dialog.timer.stop()
             (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
             win._discard_close=True;win.close();QTimer.singleShot(700,lambda:app.exit(0 if report['passed'] else 1))

@@ -105,6 +105,7 @@ def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda 
     versions={};current_catalogs=None
     if catalogs is None:
         current_catalogs,versions=wc.Repository(Path(path).parent).snapshots()
+        versions={wh:versions[wh] for wh in warehouses}
         catalogs=current_catalogs
     if stock_receipts is not None:
         if current_catalogs is None or set(stock_receipts) != set(warehouses):

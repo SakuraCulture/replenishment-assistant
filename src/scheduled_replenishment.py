@@ -43,6 +43,7 @@ def schedule_value(value):
         if date.fromisoformat(x.get('date','')).isoformat()!=x['date']:raise ValueError('执行日期无效')
     if type(x.get('workers',2)) is not int or not 1<=x.get('workers',2)<=4:raise ValueError('同时计算门店数须为1至4')
     x['workers']=x.get('workers',2);x['timezone']='Asia/Shanghai'
+    if x.get('catalog_source','refresh') not in ('refresh','default'):raise ValueError('仓资料采用方式无效')
     x['name']=str(x.get('name','')).strip()
     if not x['name'] or len(x['name'])>80:raise ValueError('安排名称须为1至80字')
     if type(x.get('enabled',False)) is not bool:raise ValueError('启用状态无效')
@@ -131,9 +132,18 @@ class Repository:
         db.execute('INSERT INTO scheduled_runs VALUES(?,?,?,?,?)',(r['id'],key,r['day'],r['state'],wr.dumps(r)))
         return self._save(db,r,r['message'])
 
-    def manual(self,s):
+    def manual(self,s,*,request_id=None,repeated_from=None):
         self.ensure();s=schedule_value(s)
-        with self.db(True) as db:return self._create(db,s,'manual:'+uuid.uuid4().hex,self.clock())
+        with self.db(True) as db:
+            if repeated_from:
+                original=self._get(db,repeated_from)
+                if original['state'] in ACTIVE or original['schedule']['plan_id']!=s['plan_id']:
+                    raise wr.Conflict('请等待原任务安全结束，再按新资料另跑')
+            run=self._create(db,s,'manual:'+(request_id or uuid.uuid4().hex),self.clock())
+            if repeated_from and 'repeated_from' not in run:
+                run['repeated_from']=repeated_from
+                self._save(db,run,'已建立独立任务，采用本次确认的当前仓资料')
+            return run
 
     def due(self):
         if not self.exists():return []
@@ -240,14 +250,32 @@ class Repository:
                     message='原任务已跨业务日，请先核对原平台回执和资料日期' if after_process_exit and r['day']!=day and not r.get('control') else '上次中断；继续前核对原平台任务，不重新提交'
                     self._save(db,r,message)
 
-    def save_value(self,rid,name,value,epoch,*,store=None):
+    def save_value(self,rid,name,value,epoch,*,store=None,adoption=None):
         # Encode outside the write transaction; immutable blocks deduplicate shared data.
         with self.db() as db:known=chunks.known(db)
         p=chunks.prepare(value,known)
         with self.db(True) as db:
             r=self._get(db,rid)
             if r['epoch']!=epoch or r['state'] not in ('RUNNING','PAUSING'):raise wr.Conflict('本次执行已退出，未采用迟到结果')
+            if name.startswith('catalog:'):
+                warehouse=name.removeprefix('catalog:')
+                if value.get('warehouse')!=warehouse:raise ValueError('采用资料与原仓不一致')
+                previous=db.execute('SELECT digest FROM scheduled_values WHERE run_id=? AND name=?',(rid,name)).fetchone()
+                if previous and previous['digest']!=p.digest:
+                    raise wr.Conflict(warehouse+'原任务已有不同仓资料，保留原采用版本')
+                if adoption is not None:
+                    receipts=r.setdefault('catalog_adoptions',{})
+                    if warehouse not in receipts:
+                        receipts[warehouse]={**adoption,'warehouse':warehouse,'run_id':rid,'day':r['day'],
+                                             'revision':value['revision'],'source_sha256':value['source_sha256'],
+                                             'snapshot_digest':p.digest,'adopted_at':self.clock().isoformat()}
+                        self._save(db,r,warehouse+'已固定本次采用资料')
+                if previous:return
             if store and name=='result:'+store:
+                if any(i['code']==store and i['state']=='READY' for i in r['stores']):
+                    previous=db.execute('SELECT digest FROM scheduled_values WHERE run_id=? AND name=?',(rid,name)).fetchone()
+                    if previous and previous['digest']==p.digest:return
+                    raise wr.Conflict('门店已完成，未覆盖原计算结果：'+store)
                 import deletion_barrier
                 row=db.execute("SELECT digest,payload FROM scheduled_values WHERE run_id=? AND name='basis'",(rid,)).fetchone()
                 basis=chunks.load(row['payload'],db,expected=row['digest']) if row else {}

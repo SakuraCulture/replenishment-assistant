@@ -87,7 +87,8 @@ class Manager(QObject):
             self.status.setText(('另一个窗口负责定时执行 · ' if not self.owner else '')+
                 (active['schedule']['name']+' · '+sr.STATES[active['state']] if active else '下次：'+min(future)[5:16].replace('T',' ')+'（北京时间）' if future else '定时补货：未启用安排'))
             if self.owner and not self.worker and not self.publisher and not self.busy():
-                pending=next((r for r in reversed(self.recent) if r['state']=='COMPLETE' and not r.get('publication')),None)
+                pending=next((r for r in reversed(self.recent) if r['state']=='COMPLETE' and
+                              r.get('publication',{}).get('state') in (None,'PUBLISHING')),None)
                 if pending and not self.host.loaded and not self.host.job_dirty:self.publish(pending)
                 elif queued:self.start(queued)
         def failed(error):
@@ -179,6 +180,8 @@ class Editor(QDialog):
             c=QCheckBox('周'+n);c.setChecked(i<5);days.addWidget(c);self.days.append(c)
         form.addRow('执行星期',days);self.date=QDateEdit();self.date.setCalendarPopup(True);self.date.setDate(self.date.date().currentDate());form.addRow('指定日期',self.date)
         self.workers=QSpinBox();self.workers.setRange(1,4);self.workers.setValue(2);form.addRow('同时计算门店数',self.workers)
+        self.catalog_source=QComboBox();self.catalog_source.addItem('本次从聚水潭重新采集','refresh');self.catalog_source.addItem('固定当前默认仓资料','default')
+        form.addRow('仓资料采用方式',self.catalog_source)
         self.note=label('保存并启用时复用已核验的翱象门店和聚水潭仓账号。计算完成后进入人工核对。','muted');self.note.setWordWrap(True);v.addWidget(self.note)
         self.progress=QProgressBar();self.progress.hide();v.addWidget(self.progress)
         self.stop=button('取消本次保存',self.reject);self.stop.hide();v.addWidget(self.stop)
@@ -186,6 +189,7 @@ class Editor(QDialog):
         if existing:
             self.name.setText(existing['name']);self.plan.setCurrentIndex(self.plan.findData(existing['plan_id']));self.clock.setTime(self.clock.time().fromString(existing['time'],'HH:mm'));self.kind.setCurrentIndex(self.kind.findData(existing['kind']))
             self.date.setDate(self.date.date().fromString(existing.get('date',sr.stamp().date().isoformat()),'yyyy-MM-dd'));self.workers.setValue(existing['workers'])
+            self.catalog_source.setCurrentIndex(self.catalog_source.findData(existing.get('catalog_source','refresh')))
             for i,c in enumerate(self.days):c.setChecked(i in existing.get('weekdays',[]))
         else:self.name.setText(self.plan.currentText().split(' · ')[0] or '补货安排')
         self.kind.currentIndexChanged.connect(self.kind_changed);self.kind_changed()
@@ -198,7 +202,8 @@ class Editor(QDialog):
         plan=next((p for p in self.plans if p['id']==self.plan.currentData()),None)
         return sr.schedule_value({'name':self.name.text(),'plan_id':self.plan.currentData(),'plan_name':plan['name'] if plan else '', 'stores':plan['stores'] if plan else [],
             'time':self.clock.time().toString('HH:mm'),'kind':self.kind.currentData(),'date':self.date.date().toString('yyyy-MM-dd'),
-            'weekdays':[i for i,c in enumerate(self.days) if c.isChecked()],'workers':self.workers.value(),'enabled':False})
+            'weekdays':[i for i,c in enumerate(self.days) if c.isChecked()],'workers':self.workers.value(),
+            'catalog_source':self.catalog_source.currentData(),'enabled':False})
 
     def save(self,enabled):
         if self.worker:
@@ -289,7 +294,8 @@ class Window(QDialog):
         self.run_actions={}
         for text,fn in [('核对已完成门店',self.open_result),('继续原任务',self.resume),('重试所选失败门店',self.retry),('暂停本次',lambda:self.pause(False)),('结束本次',lambda:self.pause(True)),('删除已结束记录',self.delete)]:
             b=button(text,fn,text=='核对已完成门店');self.run_actions[text]=b;actions.addWidget(b)
-        details=QHBoxLayout();details.addWidget(button('查看所选门店当时参数',self.parameters));details.addWidget(button('采用本任务仓资料为默认',self.publish));bv.addLayout(details)
+        details=QHBoxLayout();details.addWidget(button('查看所选门店当时参数',self.parameters));details.addWidget(button('查看本次采用仓资料',self.catalog_details))
+        details.addWidget(button('采用本任务仓资料为默认',self.publish));details.addWidget(button('按新资料另跑',self.repeat_with_current));bv.addLayout(details)
         self.note=label('','muted');v.addWidget(self.note);bottom=QHBoxLayout();bottom.addWidget(button('刷新',self.refresh));bottom.addWidget(button('关闭',self.close));v.addLayout(bottom)
         self.timer=QTimer(self);self.timer.setInterval(2000);self.timer.timeout.connect(self.refresh);self.timer.start();self.refresh()
 
@@ -408,8 +414,19 @@ class Window(QDialog):
         def act():
             s=self.schedule()
             if not sr.has_verified_bindings(s):raise ValueError('请编辑安排并保存启用，再执行一次')
-            if ask(self,'今天执行一次','按该预案获取新文件并计算；不签发、不覆盖当前工作台。继续？'):
+            source='固定当前默认仓资料' if s.get('catalog_source')=='default' else '从聚水潭重新采集仓资料'
+            if ask(self,'今天执行一次',f'按该预案获取门店建议，{source}并计算，完成后等待人工核对。继续？'):
                 self.m.repo.manual(s);self.tabs.setCurrentIndex(1);self.refresh();self.m.poll()
+        self.guard(act)
+
+    def repeat_with_current(self):
+        def act():
+            r=self.selected()
+            if r['state'] in sr.ACTIVE:raise ValueError('请等待原任务到安全点，再按新资料另跑')
+            if not ask(self,'按新资料另跑','按原安排预案建立新任务，采用新任务读取时的默认仓资料。原运行和已保存结果可继续查看。'):return
+            s={**r['schedule'],'catalog_source':'default'}
+            new=self.m.repo.manual(s,repeated_from=r['id'])
+            self.note.setText('新任务 '+new['id']+' 已排队');self.m.poll();self.refresh()
         self.guard(act)
     def queue_resume(self,codes=None):
         r=self.selected()
@@ -476,6 +493,26 @@ class Window(QDialog):
                 self.note.setText(result[0])
                 for catalog in result[1].values():self.m.host.current_warehouse_adopted(catalog)
             self.call(apply,adopted)
+        self.guard(act)
+
+    def catalog_details(self):
+        def act():
+            r=self.selected()
+            def read(_):
+                from scheduled_execution import adopted_catalogs
+                from warehouse_catalog import Repository
+                basis=self.m.repo.value(r['id'],'basis',{});warehouses=basis.get('warehouses',[])
+                used=adopted_catalogs(self.m.repo,r['id'],warehouses)
+                current=Repository(self.m.folder).snapshots(warehouses)[0]
+                receipts=r.get('catalog_adoptions',{})
+                return [[wh,used.get(wh,{}).get('revision','待采用'),current.get(wh,{}).get('revision','未留存'),
+                         receipts.get(wh,{}).get('adopted_at','未留存'),used.get(wh,{}).get('source_path',''),
+                         used.get(wh,{}).get('source_sha256','')] for wh in warehouses]
+            def display(rows):
+                from interaction_ui import show_rows
+                show_rows(self,'本次采用仓资料',['仓库','本次版本','当前默认版本','本次采用时间','原件','原件SHA-256'],rows,
+                          '原任务沿用本次采用的完整仓资料。新运行按自己的采用方式取资料。')
+            self.call(read,display)
         self.guard(act)
     def closeEvent(self,e):
         if self.worker or self.editor and self.editor.worker:self.note.setText('请等待当前读取或核验安全结束');e.ignore()
