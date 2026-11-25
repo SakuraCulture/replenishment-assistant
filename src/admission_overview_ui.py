@@ -129,7 +129,7 @@ class Overview(QDialog):
             self.search=QLineEdit();self.search.setPlaceholderText('搜索门店名称 / 编码 / 核验人');row.addWidget(self.search,1)
         self.state=QComboBox();self.state.addItems(['全部','待核验','无资质','有效','已到期'] if kind=='qualification' else ['拒收中','全部','已到期','已解除']);row.addWidget(self.state)
         if kind=='refusals':
-            self.batch_filter_btn=button('批量筛选',self.batch_filter);row.addWidget(self.batch_filter_btn)
+            row.addWidget(button('批量筛选',self.batch_filter))
             row.addWidget(button('清空筛选',self.reset_filters));row.addStretch()
         row.addWidget(button('查询 / 刷新',self.reload));self.clear_focus=button('显示全部记录',self.show_all);row.addWidget(self.clear_focus);v.addLayout(row)
         self.scope_note=label('','muted');self.scope_note.setWordWrap(True);v.addWidget(self.scope_note)
@@ -188,7 +188,11 @@ class Overview(QDialog):
         counts=' · '.join(f'{s} {sum(r[col]==s for r in allrows)}'+(' 家' if self.kind=='qualification' else ' 条') for s in states)
         self.summary.setText(counts)
         scope='本次导入涉及记录' if self.focus is not None else '全部已知门店' if self.kind=='qualification' else '全部拒收记录'
-        self.scope_note.setText(f'查询日 {self.data["day"]} · {scope} · 当前显示 {len(self.filtered)} / {len(allrows)} 条。'+(' 未登记按待核验展示。' if self.kind=='qualification' else ' 默认只看拒收中，可切换已到期、已解除。')+'\n'+'\n'.join(self.data['warnings']))
+        limits=[]
+        if self.kind=='refusals':
+            limits=[f'{len(codes)} 个{title}' for codes,title in zip(self.match_codes,('门店编码','商品编码')) if codes]
+        batch_note=' · 批量限定 '+ '、'.join(limits) if limits else ''
+        self.scope_note.setText(f'查询日 {self.data["day"]} · {scope} · 当前显示 {len(self.filtered)} / {len(allrows)} 条{batch_note}。'+(' 未登记按待核验展示。' if self.kind=='qualification' else ' 默认只看拒收中，可切换已到期、已解除。')+'\n'+'\n'.join(self.data['warnings']))
 
     def update_selection(self):
         keys=self.model.keys();self.selection_note.setText(f'已勾选 {len(keys)} 条 · {len({s for s,_ in keys})} 家门店；筛选或刷新后清空勾选。')
@@ -232,18 +236,13 @@ class Overview(QDialog):
     def batch_filter(self):
         dialog=BulkRefusalFilters(self,self.match_codes)
         if dialog.exec()==QDialog.DialogCode.Accepted:
-            self.set_batch_codes(dialog.codes)
+            self.match_codes=dialog.codes
             self.filter()
-
-    def set_batch_codes(self,codes):
-        self.match_codes=codes
-        stores,products=map(len,codes)
-        self.batch_filter_btn.setText(f'批量筛选（{stores} 店 / {products} 品）' if stores or products else '批量筛选')
 
     def clear_queries(self):
         if self.kind=='refusals':
             for field in self.search_fields:field.clear()
-            self.set_batch_codes((frozenset(),frozenset()))
+            self.match_codes=(frozenset(),frozenset())
         else:self.search.clear()
         self.debounce.stop()
 
