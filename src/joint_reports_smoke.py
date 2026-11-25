@@ -124,7 +124,7 @@ def start_smoke(app, win, args):
                 poll()
                 row = manager.repo.inspect(rid)[0]
                 state = row['state']
-                if mode=='parallel' and state=='WAITING' and '本地计算或写表' in row['message']:
+                if mode=='parallel' and state=='WAITING' and expected!='WAITING':
                     # Preserve the frozen business day while allowing the real wait clock to advance.
                     clock[0]=max(clock[0],datetime.fromisoformat(row['retry_at']))
                     QTest.qWait(300)

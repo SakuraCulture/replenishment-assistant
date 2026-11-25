@@ -65,9 +65,11 @@ class Repository:
     def db(self,write=False):
         db=sqlite3.connect(self.path,timeout=1);db.row_factory=sqlite3.Row
         try:
-            if write:db.execute('BEGIN IMMEDIATE')
+            if write:
+                from sqlite_write import begin,commit
+                begin(db,None)
             yield db
-            if write:db.commit()
+            if write:commit(db,None)
         except BaseException:db.rollback();raise
         finally:db.close()
 

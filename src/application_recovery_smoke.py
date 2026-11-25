@@ -201,8 +201,9 @@ def start_smoke(app, win, args):
                                        'stores': plan['stores'], 'kind': 'weekly', 'weekdays': list(range(7)),
                                        'time': '06:00', 'workers': 1, 'enabled': False, 'reuse_verified_bindings': True})
             save = manager.repo.save_value
-            def crash_after_first_result(rid, name, value, epoch, *, store=None):
-                save(rid, name, value, epoch, store=store)
+            def crash_after_first_result(rid, name, value, epoch, **options):
+                save(rid, name, value, epoch, **options)
+                store=options.get('store')
                 if rid == run['id'] and store == 'A':
                     original = manager.repo.get(rid)
                     assert original['state'] == 'RUNNING' and manager.repo.value(rid, 'result:B') is None

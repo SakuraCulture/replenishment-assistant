@@ -52,6 +52,26 @@ class ScheduleTests(unittest.TestCase):
         self.repo=sr.Repository(self.work.path,lambda:self.now)
         self.s={'name':'早班','plan_id':'p','time':'06:30','kind':'weekly','weekdays':[2],'workers':2,'enabled':True,'check_signature':'verified'}
     def tearDown(self):self.tmp.cleanup()
+    def test_busy_commit_keeps_original_transaction_and_one_registration(self):
+        repo=self.repo;repo.ensure();opened=threading.Event();committing=threading.Event()
+        with repo.db() as db:
+            db.execute('BEGIN');db.execute('SELECT id FROM scheduled_runs').fetchall()
+            outcomes=[]
+            def write():
+                try:
+                    with repo.db(True) as transaction:
+                        transaction.execute("INSERT INTO scheduled_arrangements VALUES('busy-probe','{}')")
+                        committing.set()
+                    outcomes.append('saved')
+                except Exception as exc:outcomes.append(exc)
+                finally:opened.set()
+            writer=threading.Thread(target=write);writer.start()
+            self.assertTrue(committing.wait(2))
+            self.assertFalse(opened.wait(1.2))
+            db.commit()
+        writer.join(5)
+        self.assertEqual(outcomes,['saved'])
+        with repo.db() as db:self.assertEqual(db.execute("SELECT count(*) FROM scheduled_arrangements WHERE id='busy-probe'").fetchone()[0],1)
     def test_once_trigger_and_no_duplicate_after_restart(self):
         self.repo.save_schedule(self.s);self.now+=timedelta(minutes=1)
         r=self.repo.due();self.assertEqual(len(r),1);self.assertEqual(r[0]['day'],'2026-11-04');self.assertEqual(self.repo.due(),[])
