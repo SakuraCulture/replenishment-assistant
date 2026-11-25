@@ -75,7 +75,11 @@ export class PurchaseBindingService{
     const manifest={file,sha256:sha256(await fs.readFile(file))};stop();
     const current=this.creates.get(id);
     const revision=binding.manualRevision;
-    return this.creates.putBindingProposal(id,current.sequence,{...current.bindingProposal,state:'READY',manifest,summary:{orderId:request.order_id,status:saved.evidence.main.status,rows:revision?.rows.length??p.rows.length,quantity:revision?.totalQuantity??p.totalQuantity,amount:revision?.totalAmount??p.totalAmount,differences:revision?.differences??0,store:p.basis.store,supplier:p.supplierCode},error:null},'BINDING_PREVIEW_READY');
+    const summary={orderId:request.order_id,status:saved.evidence.main.status,rows:revision?.rows.length??p.rows.length,
+      quantity:revision?.totalQuantity??p.totalQuantity,amount:revision?.totalAmount??p.totalAmount,
+      differences:revision?.differences??0,unverifiedUnits:revision?.unverifiedUnits??0,
+      store:p.basis.store,supplier:p.supplierCode};
+    return this.creates.putBindingProposal(id,current.sequence,{...current.bindingProposal,state:'READY',manifest,summary,error:null},'BINDING_PREVIEW_READY');
   }
   async confirm(id,proposalId,sequence,hash,hostFacts){
     let r=this.creates.get(id),proposal=r.bindingProposal;

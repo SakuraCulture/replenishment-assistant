@@ -36,9 +36,9 @@ export class PurchaseReceiptService{
     const revision=c.binding.manualRevision;
     const purchase=revision?{...c.intent,rows:revision.rows,totalQuantity:revision.totalQuantity,totalAmount:revision.totalAmount}:c.intent;
     const observation=receiptObservation(purchase,c.binding,run.id,sources);
-    if(revision?.differences&&observation.disposition==='RECEIPT'){
+    if((revision?.differences||revision?.unverifiedUnits)&&observation.disposition==='RECEIPT'){
       observation.eligible=false;
-      observation.issues.push({code:'RECEIPT_MANUAL_PURCHASE_REVIEW',message:'人工关联的采购明细与原付款预览有差异，原采购收货待人工核对'});
+      observation.issues.push({code:'RECEIPT_MANUAL_PURCHASE_REVIEW',message:'人工关联的采购明细有调整或原基础单位未留存，收货待人工核对'});
     }
     const directory=path.join(this.state.root,'receipt-observations');await fs.mkdir(directory,{recursive:true});
     let file=path.join(directory,run.id+'.json');

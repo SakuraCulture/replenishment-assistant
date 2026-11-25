@@ -132,22 +132,24 @@ function manualRevision(intent,e,request){
   if(!['待提交','待入库','部分入库','已完成','已作废'].includes(e.main?.status)||!Array.isArray(e.rows)||!e.rows.length)
     fail('PURCHASE_STATUS_UNSUPPORTED','采购状态或明细缺失，保留原任务待核');
   const before=new Map(intent.rows.map(r=>[r.sku,r]));
-  const units=Object.create(null);
   const rows=e.rows.map(r=>{
     if(!text(r.sku,128)||!text(r.unit,128)||decimal(r.quantity)==='0')
       fail('PURCHASE_DETAIL_MISMATCH','采购商品编码、基础单位或数量无效：'+r.sku);
-    units[r.sku]=before.has(r.sku)?(Object.hasOwn(request.original_units,r.sku)?request.original_units[r.sku]:''):r.unit;
     return {sku:r.sku,unit:r.unit,quantity:decimal(r.quantity),price:decimal(r.price),amount:decimal(r.amount)};
   });
   const totalQuantity=sum(rows.map(r=>r.quantity)),totalAmount=sum(rows.map(r=>r.amount));
-  checkNativePurchase({...intent,rows,totalQuantity,totalAmount},e,{status:e.main.status,requireNote:true,originalUnits:units});
-  const differences=rows.filter(row=>{
+  checkNativePurchase({...intent,rows,totalQuantity,totalAmount},e,{status:e.main.status,requireNote:true});
+  let differences=0,unverifiedUnits=0;
+  for(const row of rows){
     const old=before.get(row.sku);
+    if(!old){differences++;continue;}
     before.delete(row.sku);
-    return !old||decimal(old.quantity)!==row.quantity||
-      old.unitPrice!==undefined&&decimal(old.unitPrice)!==row.price||decimal(old.amount)!==row.amount;
-  }).length+before.size;
-  return {version:1,operator:request.operator,rows,totalQuantity,totalAmount,differences};
+    const oldUnit=Object.hasOwn(request.original_units,row.sku)?request.original_units[row.sku]:null;
+    if(oldUnit===null)unverifiedUnits++;
+    if((oldUnit!==null&&oldUnit!==row.unit)||decimal(old.quantity)!==row.quantity||
+      (old.unitPrice!==undefined&&decimal(old.unitPrice)!==row.price)||decimal(old.amount)!==row.amount)differences++;
+  }
+  return {version:1,operator:request.operator,rows,totalQuantity,totalAmount,differences:differences+before.size,unverifiedUnits};
 }
 export function checkedBinding(r,proof){
   canBind(r);bindingRequest(proof?.request);
