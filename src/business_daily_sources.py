@@ -122,7 +122,7 @@ def supplement_refs(root, selected):
             pending -= refs.keys()
             if not pending:
                 break
-    return refs
+    return dict(sorted(refs.items()))
 
 
 def register_supplement(root, day, key, source, *, as_rule=False):
