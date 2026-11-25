@@ -118,7 +118,96 @@ class BulkUiTests(Fixture,unittest.TestCase):
         self.assertEqual(self.path.read_bytes(),before);self.assertEqual(len(d.model.keys()),1);d.close()
     def test_readonly_cannot_check_or_commit(self):
         d=self.window();d.host.readonly=True;d.update_controls();d.select_all(True);self.assertFalse(d.model.keys())
-        with patch('admission_overview_ui.run') as run:d.release_checked();run.assert_not_called()
+        self.assertFalse(d.release_import_btn.isEnabled())
+        with patch('admission_overview_ui.run') as run, patch('import_ui.choose') as choose:
+            d.release_checked();d.import_release();run.assert_not_called();choose.assert_not_called()
         d.close()
+
+
+class ReleaseImportTests(Fixture, unittest.TestCase):
+    def sheet(self, rows):
+        from openpyxl import Workbook
+        book = Workbook()
+        for row in rows:
+            book.active.append(row)
+        path = self.root/'release.xlsx'
+        book.save(path)
+        book.close()
+        return path
+
+    def test_preview_matches_pairs_and_explains_skips(self):
+        from openpyxl import load_workbook
+        long_code = '@0001234567890123456789'
+        other = {'refusals': {sku: {'reason': '乙店', 'active': True} for sku in ('001', '1', long_code)}}
+        admission.save(self.path, {'0002': other}, {'0002': {}})
+        path = self.sheet([
+            ['操作清单'], ['商品编码', '门店名称', '门店编码'],
+            ['001', '名称不参与匹配', 'A'], ['001', None, 'A'],
+            ['003', None, 'A'], ['001', None, 'UNKNOWN'], [None, None, 'A'],
+            [1, None, '0002'], [long_code, None, '0002'], ['=1+1', None, '0002'],
+        ])
+        with closing(load_workbook(path)) as book:
+            book.active['A8'].number_format = '000'
+            book.save(path)
+        before = self.path.read_bytes()
+        plan = service.prepare_release_import(self.path, path)
+        self.assertEqual(plan['keys'], [('A','001'), ('0002',long_code)])
+        self.assertEqual([(r[0], r[3]) for r in plan['rows']], [
+            (3,'将解除'), (4,'跳过 · 表内重复'), (5,'跳过 · 已解除'),
+            (6,'跳过 · 未找到拒收记录'), (7,'跳过 · 编码无效（商品编码）'),
+            (8,'跳过 · 编码无效（商品编码）'), (9,'将解除'), (10,'跳过 · 编码无效（商品编码）'),
+        ])
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertEqual(service.commit_release_import(self.path, plan)['count'], 2)
+        expected = copy.deepcopy(self.values['A'])
+        expected['refusals']['001']['active'] = False
+        self.assertEqual(admission.snapshot(self.path,'A')['record'], expected)
+        other['refusals'][long_code]['active'] = False
+        self.assertEqual(admission.snapshot(self.path,'0002')['record'], other)
+        after = self.path.read_bytes()
+        replay = service.prepare_release_import(self.path, path)
+        self.assertEqual(replay['keys'], [])
+        with self.assertRaisesRegex(ValueError, '没有可解除'):
+            service.commit_release_import(self.path, replay)
+        self.assertEqual(self.path.read_bytes(), after)
+
+    def test_export_can_be_used_for_release_by_exact_row(self):
+        path = self.root/'refusals.xlsx'
+        source = self.load()['refusals'][1:2]
+        service.export(path, 'refusals', source, {'条数': 1})
+        plan = service.prepare_release_import(self.path, path)
+        self.assertEqual(plan['sheet'], '门店拒收清单')
+        self.assertEqual(plan['keys'], [('A','002')])
+        self.assertEqual(plan['rows'][0][4], '已到期')
+        service.commit_release_import(self.path, plan)
+        saved = admission.snapshot(self.path,'A')['record']['refusals']
+        self.assertTrue(saved['001']['active'])
+        self.assertFalse(saved['002']['active'])
+
+    def test_changed_file_or_store_keeps_entire_import_uncommitted(self):
+        other = {'refusals': {'001': {'reason': '原原因', 'active': True}}}
+        admission.save(self.path, {'B': other}, {'B': {}})
+        path = self.sheet([['门店编码','商品编码'], ['A','001'], ['B','001']])
+        plan = service.prepare_release_import(self.path, path)
+        self.sheet([['门店编码','商品编码'], ['A','002'], ['B','001']])
+        before = self.path.read_bytes()
+        with self.assertRaisesRegex(ValueError, '预览后文件已变化'):
+            service.commit_release_import(self.path, plan)
+        self.assertEqual(self.path.read_bytes(), before)
+        self.sheet([['门店编码','商品编码'], ['A','001'], ['B','001']])
+        plan = service.prepare_release_import(self.path, path)
+        changed = {'refusals': {'001': {'reason': '已在其他窗口更新', 'active': True}}}
+        admission.save(self.path, {'B': changed}, {'B': other})
+        before = self.path.read_bytes()
+        with self.assertRaises(Conflict):
+            service.commit_release_import(self.path, plan)
+        self.assertEqual(self.path.read_bytes(), before)
+
+    def test_rejects_missing_or_duplicate_key_headers(self):
+        for headers, message in [(['门店编码','商品名称'],'两列表头'),
+                                 (['门店编码','商品编码','门店编码'],'表头重复')]:
+            path = self.sheet([headers, ['A','001']])
+            with self.assertRaisesRegex(ValueError, message):
+                service.prepare_release_import(self.path, path)
 
 if __name__=='__main__':unittest.main()

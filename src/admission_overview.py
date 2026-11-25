@@ -1,6 +1,7 @@
 """Current eligibility views and confirmed changes to exact refusal records."""
 import copy,json,os,re,sqlite3,tempfile
 from contextlib import closing
+from itertools import islice
 from pathlib import Path
 import admission
 from runtime_support import checkpoint
@@ -8,9 +9,11 @@ from runtime_support import checkpoint
 QUAL_HEADERS=['门店编码','门店名称','当前有效状态','登记状态','核验人','核验日期','到期日','拒收中款数','备注']
 REF_HEADERS=['门店编码','门店名称','商品编码','商品名称','拒收原因','到期日','当前状态']
 QUAL_REPORT='二类医疗资质'
+REFUSAL_REPORT='门店拒收清单'
 REFUSAL_ACTIONS={'release':'解除','edit':'修改','delete':'删除'}
 REFUSAL_EDIT_HEADERS=[*REF_HEADERS[:4],'原拒收原因','新拒收原因','原到期日','新到期日','原状态','新状态']
 REFUSAL_END_HEADERS=[*REF_HEADERS[:6],'原状态','操作结果']
+REFUSAL_RELEASE_IMPORT_HEADERS=['原表行号','门店编码','商品编码','核对结果','当前状态','门店名称','商品名称','拒收原因','到期日']
 
 
 def qualification_state(value,day):
@@ -134,6 +137,96 @@ def commit_release(path, prepared, progress=lambda _: None, cancel=None):
     return commit_refusal_change(path, prepared, progress, cancel)
 
 
+def prepare_release_import(path, source, known=None, progress=lambda _: None, cancel=None):
+    """Read exact store/SKU pairs and freeze only the matched changes for review."""
+    from openpyxl import load_workbook
+    from import_templates import TEMPLATES
+    from store_parameter_import import code_value, digest
+
+    _, template_sheet, required, _ = TEMPLATES['store_refusal_release']
+    progress('正在读取批量解除文件…')
+    sha = digest(source)
+    book = load_workbook(source, read_only=True, data_only=False)
+    try:
+        sheets = {ws.title: ws for ws in book.worksheets}
+        sheet = sheets.get(template_sheet) or sheets.get(REFUSAL_REPORT) or next(iter(sheets.values()), None)
+        if sheet is None:
+            raise ValueError('文件没有可读工作表')
+        sheet.reset_dimensions()
+        rows = enumerate(sheet.iter_rows(), 1)
+        for number, cells in islice(rows, 20):
+            checkpoint(cancel)
+            headers = [str(cell.value or '').strip() for cell in cells]
+            if all(name in headers for name in required):
+                if any(headers.count(name) > 1 for name in required):
+                    raise ValueError(f'「{sheet.title}」第 {number} 行的编码表头重复，请保留各一列')
+                indices = [headers.index(name) for name in required]
+                break
+        else:
+            raise ValueError(f'「{sheet.title}」前 20 行内需要「门店编码」和「商品编码」两列表头')
+
+        data = load(path, known, progress, cancel)
+        preview, keys, seen = [], [], set()
+        for number, cells in rows:
+            checkpoint(cancel)
+            if all(cell.value in (None, '') for cell in cells):
+                continue
+            codes, invalid = [], []
+            for name, index in zip(required, indices):
+                cell = cells[index] if index < len(cells) else None
+                value = cell.value if cell is not None else None
+                try:
+                    if cell is None or cell.data_type == 'e' or (
+                        isinstance(value, (int, float)) and cell.number_format not in ('General', '0', '@')
+                    ):
+                        raise ValueError()
+                    codes.append(code_value(cell))
+                except ValueError:
+                    codes.append('' if value is None else str(value))
+                    invalid.append(name)
+
+            store, sku = key = tuple(codes)
+            item = {} if invalid else data['records'].get(store, {}).get('refusals', {}).get(sku, {})
+            state = refusal_state(item, data['day']) if item else ''
+            if invalid:
+                result = '跳过 · 编码无效（' + '、'.join(invalid) + '）'
+            elif key in seen:
+                result = '跳过 · 表内重复'
+            elif not item:
+                result = '跳过 · 未找到拒收记录'
+            elif state == '已解除':
+                result = '跳过 · 已解除'
+            else:
+                keys.append(key)
+                result = '将解除'
+            if not invalid:
+                seen.add(key)
+            preview.append([number, store, sku, result, state, data['names'].get(store, ''),
+                            item.get('name', ''), item.get('reason', ''),
+                            (item.get('expires') or '手动解除') if item else ''])
+            if len(preview) % 200 == 0:
+                progress(f'已核对 {len(preview)} 条文件记录…')
+    finally:
+        book.close()
+    if digest(source) != sha:
+        raise ValueError('读取期间文件已变化，请重新导入')
+    if not preview:
+        raise ValueError('表头下没有需要核对的记录，请填写编码')
+    prepared = prepare_release(data, keys, progress, cancel) if keys else None
+    return {'source': source, 'sha': sha, 'sheet': sheet.title, 'rows': preview, 'keys': keys, 'prepared': prepared}
+
+
+def commit_release_import(path, plan, progress=lambda _: None, cancel=None):
+    from store_parameter_import import digest
+
+    checkpoint(cancel)
+    if not plan['prepared']:
+        raise ValueError('没有可解除的拒收记录')
+    if digest(plan['source']) != plan['sha']:
+        raise ValueError('预览后文件已变化，请重新导入')
+    return commit_release(path, plan['prepared'], progress, cancel)
+
+
 def select_rows(rows,kind,state='全部',text='',focus=None):
     terms=text.lower().split();status_col=2 if kind=='qualification' else 6
     return [r for r in rows if (state=='全部' or r[status_col]==state)
@@ -182,7 +275,7 @@ def export(path,kind,rows,scope,progress=lambda _:None,cancel=None):
     else:
         wb=Workbook()
         ws=wb.active
-        ws.title='门店拒收清单'
+        ws.title=REFUSAL_REPORT
     ws.append(QUAL_HEADERS if qualification else REF_HEADERS)
     ws.freeze_panes='C2'
     for index,row in enumerate(rows,1):
@@ -203,7 +296,7 @@ def export(path,kind,rows,scope,progress=lambda _:None,cancel=None):
     for k,v in scope.items():
         note.append([k,str(v)])
         for cell in note[note.max_row]:cell.data_type='s'
-    detail='修改门店资质页后可直接导回；二类医疗资质页记录本次查询现状。' if qualification else '该文件用于核对现状，不是导入模板。'
+    detail='修改门店资质页后可直接导回；二类医疗资质页记录本次查询现状。' if qualification else '文件中只保留需要解除的行后，可从「导入批量解除」读取。隐藏的行也会被读取。'
     note.append(['说明','当前状态按查询日判断；到期当天仍有效。'+detail])
     note.column_dimensions['A'].width=22;note.column_dimensions['B'].width=90
     fd,tmp=tempfile.mkstemp(dir=target.parent,suffix='.xlsx');os.close(fd)

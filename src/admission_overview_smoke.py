@@ -91,6 +91,7 @@ def start_smoke(app,win,args):
                 wb.close();dialog.show_all();require(len(dialog.filtered)>1,'清除导入范围可回到全部：'+kind);dialog.hide()
             require(admission.snapshot(win.work_repository.path,'ORPHAN')['record']==before['ORPHAN'],'未选门店准入不变')
             require(win.work_repository.stores()=={},'查看和准入维护不复活已删除门店参数配置')
+            verify_release_import(win,out,drive,require,click)
             if '--bulk' in args:
                 from bulk_refusal_smoke import verify
                 verify(app,win,out,report,drive,require)
@@ -101,3 +102,82 @@ def start_smoke(app,win,args):
             for d in dialogs:d.close()
             sys.excepthook=oldhook;(out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2,default=str),'utf-8');win._discard_close=True;app.exit(0 if report['passed'] else 1)
     QTimer.singleShot(300,execute)
+
+
+def verify_release_import(win, out, drive, require, click):
+    from contextlib import closing
+    from unittest.mock import patch
+    from openpyxl import load_workbook
+    from PySide6.QtWidgets import QTableView
+    from admission_overview_ui import Overview
+    from import_ui import ImportDialog
+    import admission
+
+    path = win.work_repository.path
+    source = out/'批量解除拒收模板.xlsx'
+    long_code = '@0001234567890123456789'
+    original = {
+        'REL-A': {'refusals': {long_code: {'name': '合成商品', 'reason': '合成拒收', 'active': True,
+                                          'source': {'original': {'门店名称': '甲店'}}},
+                              '000003': {'reason': '先前已解除', 'active': False}}},
+        'REL-B': {'refusals': {long_code: {'reason': '另一门店继续拒收', 'active': True},
+                              '000002': {'reason': '本次解除', 'active': True}}},
+    }
+    admission.save(path, original, {s: {} for s in original})
+    expected = copy.deepcopy(original)
+    expected['REL-A']['refusals'][long_code]['active'] = False
+    expected['REL-B']['refusals']['000002']['active'] = False
+
+    def exercise(action):
+        def handle(d):
+            if isinstance(d, Overview):
+                d.search_fields[0].setText('测试筛选无结果')
+                d.filter()
+                require(not d.filtered and d.release_import_btn.isEnabled(), '导入批量解除可在无勾选和空筛选时进入')
+                click(d, '导入批量解除')
+                if action == 'confirm':
+                    require(d.state.currentText() == '已解除' and {(r[0], r[2]) for r in d.filtered} ==
+                            {('REL-A', long_code), ('REL-B', '000002')}, '确认后定位两条实际解除记录')
+                    d.grab().save(str(out/'14-导入批量解除结果.png'))
+                d.reject()
+            elif isinstance(d, ImportDialog):
+                if not source.exists():
+                    with patch('export_locations.save_file',return_value=(str(source),'Excel')), \
+                            patch('import_ui.QMessageBox.information'):
+                        click(d, '下载批量解除拒收模板')
+                    with closing(load_workbook(source)) as book:
+                        ws = book.active
+                        require([c.value for c in ws[1]] == ['门店编码', '商品编码'] and ws['B2'].number_format == '@',
+                                '从导入窗口下载的模板含两个文本编码列')
+                        entries = [('REL-A', long_code), ('REL-B', '000002'), ('REL-A', long_code),
+                                   ('REL-A', '000003'), ('UNKNOWN', long_code), ('REL-B', None)]
+                        for i, (store, sku) in enumerate(entries, 2):
+                            ws.cell(i, 1, store)
+                            ws.cell(i, 2, sku)
+                        book.save(source)
+                with patch('import_ui.QFileDialog.getOpenFileName',return_value=(str(source),'Excel')):
+                    click(d, '选择文件')
+                click(d, '读取并校验')
+            elif d.objectName() == 'interactionReview':
+                preview = d.findChild(QTableView).model().rows
+                require([r[3] for r in preview] == ['将解除', '将解除', '跳过 · 表内重复', '跳过 · 已解除',
+                                                   '跳过 · 未找到拒收记录', '跳过 · 编码无效（商品编码）'],
+                        '导入预览按原文件行序列出应解除和跳过原因')
+                if action == 'confirm':
+                    d.grab().save(str(out/'13-导入批量解除预览.png'))
+                click(d, '取消' if action == 'cancel' else '确认批量解除')
+            elif d.windowTitle() == '没有可解除的拒收':
+                require(action == 'replay' and d.findChild(QTableView).model().rowCount() == 6,
+                        '重复导入只显示核对结果，不能再次保存')
+                click(d, '关闭')
+        drive(lambda: click(win.parameter_scene, '门店拒收清单'), handle)
+
+    before = path.read_bytes()
+    exercise('cancel')
+    require(path.read_bytes() == before, '取消导入预览未写入拒收库')
+    exercise('confirm')
+    require({s: admission.snapshot(path,s)['record'] for s in original} == expected,
+            '逐店逐SKU对账仅解除两条，保留另店同码拒收及原资料')
+    after = path.read_bytes()
+    exercise('replay')
+    require(path.read_bytes() == after, '重复导入未登记额外变更')

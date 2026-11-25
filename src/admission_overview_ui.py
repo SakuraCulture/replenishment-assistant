@@ -1,4 +1,5 @@
 """Two focused business views for current qualifications and refusal lists."""
+from pathlib import Path
 from PySide6.QtCore import QDate,QTimer,Qt,Signal
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QDateEdit,QFormLayout,QLineEdit,QMessageBox,QPlainTextEdit
 from ui_controls import label,button
@@ -156,7 +157,8 @@ class Overview(QDialog):
             self.selection_note=label('');self.selection_note.setWordWrap(True);line.addWidget(self.selection_note,1)
             self.edit_checked_btn=button('批量修改',lambda:self.change_checked('edit'));line.addWidget(self.edit_checked_btn)
             self.delete_btn=button('批量删除',lambda:self.change_checked('delete'));line.addWidget(self.delete_btn)
-            self.release_btn=button('批量解除勾选拒收',self.release_checked);line.addWidget(self.release_btn);v.insertLayout(v.count()-1,line)
+            self.release_btn=button('批量解除勾选拒收',self.release_checked);line.addWidget(self.release_btn)
+            self.release_import_btn=button('导入批量解除',self.import_release);line.addWidget(self.release_import_btn);v.insertLayout(v.count()-1,line)
             self.model.checked_changed.connect(self.update_selection);self.update_selection()
 
     def reload(self):
@@ -200,12 +202,53 @@ class Overview(QDialog):
         self.edit_checked_btn.setEnabled(enabled);self.delete_btn.setEnabled(enabled)
         can_release=all(row[6]!='已解除' for row in self.filtered if (row[0],row[2]) in self.model.checked)
         self.release_btn.setEnabled(enabled and can_release)
+        self.release_import_btn.setEnabled(not self.host.worker and not self.host.readonly)
 
     def select_all(self,checked):
         self.debounce.stop();self.filter();self.model.select_all(checked)
 
     def release_checked(self):
         self.change_checked('release')
+
+    def import_release(self):
+        if self.host.worker or self.host.readonly:
+            return
+        from import_ui import choose
+        from interaction_ui import review_rows, show_rows
+        from admission_ui import invalidate
+        from runtime_support import Cancelled
+
+        paths = choose(self, 'store_refusal_release', title='导入批量解除拒收')
+        if not paths:
+            return
+        path = self.host.work_repository.path
+        try:
+            plan = run(self, overview.prepare_release_import, (path, paths[0], known_names(self.host)), '核对解除文件')
+            count = len(plan['keys'])
+            stores = len({store for store, _ in plan['keys']})
+            skipped = len(plan['rows']) - count
+            note = f'{Path(paths[0]).name} · {plan["sheet"]}\n将解除 {count} 条，涉及 {stores} 家门店，跳过 {skipped} 条。'
+            headers = overview.REFUSAL_RELEASE_IMPORT_HEADERS
+            if not count:
+                show_rows(self, '没有可解除的拒收', headers, plan['rows'], note)
+                return
+            if not review_rows(self, '核对导入批量解除', headers, plan['rows'], note, '确认批量解除',
+                               widths=(75, 126, 165, 210, 95, 150, 155, 160, 100)):
+                return
+            if self.host.worker or self.host.readonly or self.host.work_repository.path != path:
+                raise ValueError('当前已不能保存，请回到原资料目录重新核对')
+            result = run(self, overview.commit_release_import, (path, plan), '保存批量解除', cancellable=False)
+        except Cancelled:
+            return
+        except Exception as exc:
+            QMessageBox.warning(self, '未完成导入批量解除', str(exc))
+            return
+        invalidate(self.host, result['stores'])
+        self.focus = set(plan['keys'])
+        self.clear_queries()
+        self.state.setCurrentText('已解除')
+        self.reload()
+        self.selection_note.setText(f'本次解除 {result["count"]} 条 · {stores} 家门店，跳过 {skipped} 条。')
 
     def change_checked(self, action):
         if self.host.worker or self.host.readonly:return
