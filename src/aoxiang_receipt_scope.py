@@ -11,6 +11,7 @@ from purchase_io import number
 
 PAYMENT_REVIEW = '待人工核对：正式付款金额已更正，请对照原采购与现款后沿原采购保存实收。'
 PAYMENT_CHANGED = '原付款版本已变化，暂停沿用原采购关联'
+PAYMENT_SCOPE_REVIEW = '付款商品或数量已手动更正。原采购单和实收待办保留，请按实际收货单核对登记。'
 
 
 def _payment_rows(document):
@@ -159,6 +160,11 @@ def assess(path, items, *, require_payment=True):
                         if review:
                             out[key]={'eligible':True,'head':head,'payment_review':review,'reason':PAYMENT_REVIEW}
                             continue
+                        original=version_row(db,head,'payment',pv)
+                        latest=decode(version_row(db,head,'payment',payment[0]))
+                        if original and original[2]==pd and latest and latest['payload'].get('manual_correction'):
+                            out[key]={'eligible':False,'head':head,'retain_receipt':True,'reason':PAYMENT_SCOPE_REVIEW}
+                            continue
                         raise ValueError(PAYMENT_CHANGED)
             except (KeyError,TypeError,IndexError):reason='原关联身份资料不完整，请核对原任务，不能按同号新单继续'
             except ValueError as exc:reason=str(exc)
@@ -185,7 +191,7 @@ def latest(record, receipt=None):
 
 def formal_receipt_exists(path,basis):
     state=assess(path,[{'key':'item','basis':basis}]).get('item')
-    if not state or not state['eligible']:return False
+    if not state or not (state['eligible'] or state.get('retain_receipt')):return False
     h=state['head'];path=Path(path).resolve()
     with closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True,timeout=.2)) as db:
         return db.execute("SELECT 1 FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage='receipt' LIMIT 1",(h['oid'],h['revision'],h['warehouse'])).fetchone() is not None

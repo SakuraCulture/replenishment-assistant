@@ -40,12 +40,29 @@ def frozen_purchase(package):
     return intent, frozen
 
 
+def _posted_document(db, head, record):
+    acknowledged = (record.get('hostReceipt') or {}).get('version') if record['state']=='SYNCED' else None
+    document = lifecycle.current(db, head, 'receipt', version=acknowledged)
+    if acknowledged is not None:
+        return document
+    # A later operator correction retains the exact receipt from which it was
+    # made. Interrupted acknowledgement must refer to that original version.
+    while document and (audit := document['payload'].get('manual_correction')):
+        prior = audit['prior']
+        if prior['version'] != document['version']-1:
+            raise ValueError('实收更正缺少连续的原版本依据')
+        document = lifecycle.current(db, head, 'receipt', version=prior['version'])
+        if not document or document['digest'] != prior['digest']:
+            raise ValueError('实收更正与留存的原单摘要不一致')
+    return document
+
+
 def existing_receipt(path, head, index, record, *, cancel=None):
     """Read back a posted receipt for acknowledgement only."""
     checkpoint(cancel)
     with closing(wr.read_connection(path)) as db:
         db.execute('BEGIN')
-        old = lifecycle.current(db, head, 'receipt')
+        old = _posted_document(db, head, record)
         if not old:
             return None
         error = '已保存的实收与本次原采购或收货原件无法唯一对应，请核对原任务。'

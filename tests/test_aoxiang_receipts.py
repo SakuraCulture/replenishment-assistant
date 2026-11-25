@@ -122,6 +122,46 @@ class ReceiptTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '已有人工收货'): self.sync(m)
         self.assertEqual(self.f.f.view()['documents']['receipt'], old)
 
+    def test_correction_preserves_original_receipt_and_interrupted_acknowledgement(self):
+        import order_amendments as corrections
+        from aoxiang_receipt_scope import assess, formal_receipt_exists
+
+        path, head = self.f.f.path, self.f.f.h
+        manifest = self.manifest(self.observation())
+        original = self.sync(manifest)
+        source = self.f.root / 'package-index.json'
+        atomic_json(source, {k: self.package[k] for k in (
+            'id','package_file','package_sha256','plan_file','plan_sha256')})
+        basis = self.p['basis']
+        record = {'id': self.p['id'], 'scope': {'orderId':'PO1'}, 'basis': basis,
+                  'manifest': manifest, 'state':'READY'}
+        sku = self.p['rows'][0]['sku']
+        snapshot = corrections.read(path,head,'receipt')
+        plan = corrections.prepare(path,head,'receipt',snapshot['token'],[
+            {'action':'set','sku':sku,'quantity':'4','amount':'0.56'}],
+            '隔离经办','按原收货记录修正实收数量')
+        lc.commit(path,plan['write'])
+        amended = self.f.f.view()['documents']['receipt']
+        self.assertEqual(amended['version'],2)
+        self.assertIsNone(amended['payload']['raw_rows'][0]['document_date'])
+        self.assertEqual(amended['payload']['raw_rows'][0]['document_number'],'PO1')
+        self.assertEqual(amended['payload']['raw_rows'][0]['base_quantity'],'4')
+        self.assertEqual(receipts.existing_receipt(path,head,source,record)['version'],original['version'])
+
+        snapshot = corrections.read(path,head,'payment')
+        plan = corrections.prepare(path,head,'payment',snapshot['token'],[
+            {'action':'set','sku':sku,'quantity':'8','amount':'1.20'}],
+            '隔离经办','核对付款后更正数量')
+        lc.commit(path,plan['write'])
+        states = assess(path,[{'key':'p','basis':basis}])
+        self.assertFalse(states['p']['eligible'])
+        self.assertTrue(states['p']['retain_receipt'])
+        self.assertTrue(formal_receipt_exists(path,basis))
+        confirmed = {**record,'state':'SYNCED','hostReceipt':original}
+        retained = receipts.existing_receipt(path,head,source,confirmed)
+        receipts.verify_acknowledgement(confirmed, record, retained)
+        self.assertEqual(len(lc.history(path,head,'receipt')),2)
+
     def test_changed_files_and_cancel_do_not_write_formal_receipt(self):
         m = self.manifest(self.observation())
         plan = self.prepare(m)

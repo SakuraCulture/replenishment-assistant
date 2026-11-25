@@ -29,6 +29,10 @@ def exercise(app,win,root,phase,fixture):
     import order_lifecycle as lifecycle
     from lifecycle_ui import LifecycleDialog
     from order_amendments_ui import Editor
+    from lifecycle_io import TITLES
+    import normal_orders
+    import purchases
+    import warehouse_execution
     from version_info import diagnostic
     from jst_order_store import active, read_generation
     import work_repository as wr
@@ -69,8 +73,9 @@ def exercise(app,win,root,phase,fixture):
             dialog=LifecycleDialog(win,win,head);dialog.show();app.processEvents()
             assert dialog.manual_edit.isEnabled()
             timer.timeout.connect(watch);timer.start(30)
-            title='库存分配' if stage=='allocation' else '门店实际收货单' if stage=='receipt' else '门店付款单'
+            title=TITLES.get(stage,{'allocation':'库存分配','signed':'本地签发'}.get(stage))
             with (patch.object(QInputDialog,'getItem',return_value=(title,True)),
+                  patch.object(QMessageBox,'information'),
                   patch.object(QMessageBox,'warning',side_effect=warning)):
                 dialog.manual_edit.click()
             assert not errors and entered=={'editor','review'},errors
@@ -83,6 +88,16 @@ def exercise(app,win,root,phase,fixture):
             assert gid!=fixture['prior_id'] and sibling==fixture['other_id'] and event==1
             assert row['quantity']==fixture['quantity']
             report.update(previous=fixture['prior_id'],current=gid,sibling=sibling,digest=digest,rows=current['manual_correction']['changes'])
+        elif stage=='signed':
+            live={h['warehouse']:h for h in purchases.targets(path,current_only=True)}
+            after=live[head['warehouse']]
+            assert after['revision']==head['revision']+1 and live[other['warehouse']]['digest']==fixture['other_id']
+            assert lifecycle.full_head(path,after)['products'][fixture['sku']]['quantity']==int(fixture['quantity'])
+            assert lifecycle.full_head(path,head)['digest']==fixture['prior_id']
+            saved=warehouse_execution.get_order(normal_orders.read_repository(path),after)['payload']['result']['signed_correction']
+            assert saved['operator']=='隔离经办'
+            report.update(previous=fixture['prior_id'],current=after['revision'],sibling=fixture['other_id'],
+                          digest=after['digest'],rows=saved['changes'])
         else:
             docs=lifecycle.history(path,head,stage)
             assert len(docs)==2 and docs[1]['digest']==fixture['prior_id']

@@ -15,6 +15,7 @@ def seed(root, stage):
     import jst_batches
     import jst_orders
     import order_lifecycle
+    import warehouse_catalog
     import work_repository as wr
     from test_jst import catalog
     from test_lifecycle import LifecycleTests
@@ -27,22 +28,32 @@ def seed(root, stage):
     heads=order_lifecycle.current_targets(sample.path)
     hb,sd=(next(h for h in heads if h['warehouse']==warehouse) for warehouse in ('河北仓','山东仓'))
     heads=(sd,hb) if stage=='allocation' else (hb,sd)
-    for head in heads:
-        sample.h=head
-        row={'供货仓':head['warehouse'],'商品编码':'0001'}
-        sample.save('return',[{**row,'门店确认数量':20 if head is hb else 16}])
-        if stage!='allocation':
-            sample.save('operations',[row]);sample.save('payment',[row]);sample.save('receipt',[row])
-    if stage=='allocation':
+    if stage=='signed':
+        data=catalog()
+        data['items']['00123']={**data['items']['0001'],'商品编码':'00123','商品名称':'隔离新增商品','_row':3}
+        data['revision']=warehouse_catalog.revision(data['items'])
+        warehouse_catalog.Repository(sample.path.parent).save(data)
+        ids=[head['digest'] for head in heads]
+    elif stage=='allocation':
+        for head,quantity in zip(heads,(16,20)):
+            sample.h=head
+            sample.save('return',[{'供货仓':head['warehouse'],'商品编码':'0001','门店确认数量':quantity}])
         result=jst_batches.execute(sample.path,jst_batches.preview_new(sample.path,heads,
             {'河北仓':catalog('河北仓',100),'山东仓':catalog('山东仓',145)}))
         assert not result['errors'],result
         with closing(wr.read_connection(sample.path)) as db:
             ids=[jst_orders.active(db,head) for head in heads]
     else:
+        for head in heads:
+            sample.h=head
+            row={'供货仓':head['warehouse'],'商品编码':'0001'}
+            for document in ('return','operations','payment','receipt'):
+                sample.save(document,[row])
+                if document==stage:break
         ids=[order_lifecycle.history(sample.path,head,stage)[0]['digest'] for head in heads]
     write(root/'amendment-fixture.json',{'synthetic':True,'stage':stage,'head':heads[0],'other':heads[1],
-          'sku':'0001','quantity':'12' if stage=='allocation' else '3','prior_id':ids[0],'other_id':ids[1]})
+          'sku':'00123' if stage=='signed' else '0001','quantity':'12' if stage=='allocation' else '3',
+          'prior_id':ids[0],'other_id':ids[1]})
 
 
 def launch(exe,case,phase):
@@ -73,7 +84,7 @@ def main():
             archive.extractall(root/'unpacked')
         app=root/'unpacked/补货助手';exe=app/'补货助手.exe';files=contents(app)
     reports={}
-    for stage in ('allocation','receipt','payment'):
+    for stage in ('signed','return','operations','allocation','receipt','payment'):
         case=root/stage;seed(case,stage)
         one,two=(launch(exe,case,phase) for phase in ('exercise','reopen'))
         assert one==two

@@ -89,11 +89,10 @@ def _comparison(row):
     return {field: row.get(field) for field in ('name', 'quantity', 'base_quantity', 'unit', 'amount', 'currency')}
 
 
-def _apply(raw, products, changes, head, stage):
+def _apply(raw, products, changes, head, stage, reference):
     rows = {row['sku']: dict(row) for row in raw}
     if len(rows) != len(raw):
         raise ValueError('原单商品编码重复，请先核对原件')
-    reference = raw[0] if raw else {}
     differences = []
     for sku, edit in changes.items():
         before = rows.get(sku)
@@ -117,11 +116,9 @@ def _apply(raw, products, changes, head, stage):
             document_date = old.get('document_date') or reference.get('document_date')
             if stage in ('payment', 'receipt') and not document_number:
                 raise ValueError('原单未留存外部单号，请先核对并登记实际单据')
-            if stage == 'receipt' and not document_date:
-                raise ValueError('原单未留存收货日期，请先核对实际收货单')
             after = {'sku': sku, 'name': name, 'quantity': quantity, 'base_quantity': quantity,
                      'unit': '库存单位', 'factor': None, 'conversion_basis': None, 'amount': amount,
-                     'currency': old.get('currency', reference.get('currency', '')),
+                     'currency': old.get('currency', reference.get('currency') or ''),
                      'signed_number': head['number'], 'store': head['store'], 'warehouse': head['warehouse'],
                      'revision': head['revision'], 'document_number': document_number, 'document_date': document_date,
                      'note': old.get('note'), 'raw_headers': [], 'raw_values': [], 'sources': [],
@@ -156,7 +153,9 @@ def prepare(path, head, stage, expected, changes, operator, reason, evidence=Non
         doc = _target(db, head, stage)
         if _token(db, head, stage, doc) != expected:
             raise wr.Conflict('本环节版本或原执行已变化，请重新读取')
-        raw, differences = _apply(_raw_rows(doc), head['products'], changed, head, stage)
+        original = _raw_rows(doc)
+        reference = original[0] if original else doc['payload'].get('manual_correction', {}).get('document_reference', {})
+        raw, differences = _apply(original, head['products'], changed, head, stage, reference)
         if not differences:
             raise ValueError('本次没有商品或数量变化')
         plan = lifecycle.make_plan(db, head, stage, raw, files, explicit_zero=not raw)
@@ -164,6 +163,7 @@ def prepare(path, head, stage, expected, changes, operator, reason, evidence=Non
             raise wr.Conflict('上游单据尚未就绪，请先核对本次适用的上游依据')
         metadata = {**audit, 'id': uuid.uuid4().hex, 'at': wr.now(), 'expected': expected,
                     'prior': {'version': doc['version'], 'digest': doc['digest']}, 'changes': differences,
+                    'document_reference': {k: reference.get(k) for k in ('document_number', 'document_date', 'currency')},
                     'generation': jst_order_store.active(db, head), 'kind':head.get('kind','normal_model')}
         plan['payload']['manual_correction'] = metadata
         plan['payload'].pop('payment_source', None)

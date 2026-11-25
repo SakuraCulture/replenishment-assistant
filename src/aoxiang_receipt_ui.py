@@ -51,6 +51,7 @@ class ReceiptDialog(ComponentDialog):
         self.pending_save = self.local_saving = False
         self.payment_review = None
         self.posted_receipt = None
+        self.correction_block = None
         self.local_cancel = threading.Event()
         self.poll = QTimer(self)
         self.poll.setInterval(1000)
@@ -107,8 +108,8 @@ class ReceiptDialog(ComponentDialog):
         state = (self.current or {}).get('state')
         self.save_btn.setText('补发原实收确认' if self.posted_receipt else
                               '人工核对并保存原采购实收' if self.payment_review else '重试保存已验收实收')
-        self.sync_btn.setEnabled(idle and not active and bool(self.current) and state not in ('READY', 'SYNCED', 'VOIDED', 'VOIDED_REVIEW') and not self.head.get('deleted'))
-        self.save_btn.setEnabled(idle and not active and state == 'READY' and not self.head.get('deleted'))
+        self.sync_btn.setEnabled(idle and not active and bool(self.current) and state not in ('READY', 'SYNCED', 'VOIDED', 'VOIDED_REVIEW') and not self.head.get('deleted') and not self.correction_block)
+        self.save_btn.setEnabled(idle and not active and state == 'READY' and not self.head.get('deleted') and (not self.correction_block or bool(self.posted_receipt)))
         self.stop_btn.setEnabled((idle and active) or (self.local_saving and not self.local_cancel.is_set()))
         self.reload_btn.setEnabled(idle and not active)
         self.orders.setEnabled(idle and not active)
@@ -143,6 +144,7 @@ class ReceiptDialog(ComponentDialog):
         self.current = None
         self.payment_review = None
         self.posted_receipt = None
+        self.correction_block = None
         self.basis_note.setText('正在核对原采购依据与当前付款…' if self.records else '尚无已关联采购记录。')
         self.model.replace([])
         if self.records:
@@ -157,6 +159,7 @@ class ReceiptDialog(ComponentDialog):
             self.current = None
             self.payment_review = None
             self.posted_receipt = None
+            self.correction_block = None
             self.basis_note.setText('正在核对原采购依据与当前付款…')
             self.pending_read = self.records[index]['id']
             self.on_idle()
@@ -174,7 +177,7 @@ class ReceiptDialog(ComponentDialog):
         local = assess(path,[{'key':id,'basis':record['basis']}])[id]
         context = self.folder / 'purchase-packages' / id / '本地任务索引.json'
         posted = None
-        if local['eligible'] and record['state'] in ('READY','SYNCED'):
+        if (local['eligible'] or local.get('retain_receipt')) and record['state'] in ('READY','SYNCED'):
             posted = existing_receipt(path,local['head'],context,record)
         verified = record['state'] == 'SYNCED'
         if verified:
@@ -185,7 +188,9 @@ class ReceiptDialog(ComponentDialog):
         observation = checked_json(manifest['file'],manifest['sha256']) if manifest and (
             not posted or Path(manifest['file']).is_file()) else None
         payment = None if record['state'] in ('SYNCED','VOIDED','VOIDED_REVIEW') else local.get('payment_review')
-        state = {'payment_review':payment,'posted_receipt':posted if record['state']=='READY' else None}
+        blocked = local['reason'] if local.get('retain_receipt') else None
+        state = {'payment_review':payment,'posted_receipt':posted if record['state']=='READY' else None,
+                 'correction_block':blocked}
         if record['state']=='SYNCED':
             state['message']='原采购正式实收已保存。'
         elif posted:
@@ -194,6 +199,8 @@ class ReceiptDialog(ComponentDialog):
             state['message'] = (f"待人工核对 · 原付款 V{payment['original']['version']:03d} ¥{payment['old_amount']} · "
                                 f"当前 V{payment['current']['version']:03d} ¥{payment['new_amount']} · "
                                 f"差额 ¥{payment['difference']}")
+        elif blocked:
+            state['message']=blocked
         elif check_basis:
             try:
                 package = json.loads(context.read_text(encoding='utf-8'))
@@ -221,6 +228,7 @@ class ReceiptDialog(ComponentDialog):
         if len(data)>2 and data[2] is not None:
             self.payment_review = data[2].get('payment_review')
             self.posted_receipt = data[2].get('posted_receipt')
+            self.correction_block = data[2].get('correction_block')
             if data[2].get('message'):
                 self.basis_note.setText(data[2]['message'])
         summary = record.get('summary') or {}
@@ -262,7 +270,7 @@ class ReceiptDialog(ComponentDialog):
         id = self.current['id']
         def received(data):
             self.render(data)
-            if self.current and self.current['state'] == 'READY' and not self._closing and not self.payment_review:
+            if self.current and self.current['state'] == 'READY' and not self._closing and not self.payment_review and (self.posted_receipt or not self.correction_block):
                 self.pending_save = True
         self.run(lambda _: self.status_data(id), received)
 
@@ -336,6 +344,8 @@ class ReceiptDialog(ComponentDialog):
             context = self.folder / 'purchase-packages' / id / '本地任务索引.json'
             receipt = state['posted_receipt']
             if not receipt:
+                if state['correction_block']:
+                    raise ValueError(state['correction_block'])
                 if not context.is_file():
                     raise ValueError('原采购付款依据未找到；保留终态及原件，不能猜测写入实收')
                 package = json.loads(context.read_text(encoding='utf-8'))
