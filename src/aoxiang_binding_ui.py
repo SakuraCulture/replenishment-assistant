@@ -35,7 +35,12 @@ class BindingActions:
         self.binding_details_btn=button('查看逐商品核对',self.binding_details)
         self.binding_confirm_btn=button('确认关联已核对采购单',self.binding_confirm)
         for b in (self.binding_start_btn,self.binding_read_btn,self.binding_details_btn,self.binding_confirm_btn):row.addWidget(b)
-        v.addLayout(row);self.binding_note=label('尚无关联核对；正常上传成功不需要此操作。','muted');self.binding_note.setWordWrap(True);v.addWidget(self.binding_note);layout.addWidget(group)
+        v.addLayout(row)
+        row=QHBoxLayout()
+        self.amend_payment_btn=button('手动更正付款依据',self.amend_payment)
+        self.remainder_btn=button('核对平台差额',self.compare_remainder)
+        row.addWidget(self.amend_payment_btn);row.addWidget(self.remainder_btn);v.addLayout(row)
+        self.binding_note=label('尚无关联核对；正常上传成功不需要此操作。','muted');self.binding_note.setWordWrap(True);v.addWidget(self.binding_note);layout.addWidget(group)
 
     def binding_active(self):return bool((self.binding_record or {}).get('active'))
 
@@ -72,6 +77,9 @@ class BindingActions:
         self.binding_read_btn.setEnabled(idle and not r.get('active') and bool(r))
         self.binding_details_btn.setEnabled(idle and bool(self.package) and p.get('state') in ('READY','CONFIRMED'))
         self.binding_confirm_btn.setEnabled(idle and not active and eligible and available and p.get('state')=='READY')
+        self.amend_payment_btn.setEnabled(idle and not active and not self.head.get('deleted'))
+        self.remainder_btn.setEnabled(idle and not active and available and p.get('state')=='CONFIRMED'
+                                      and bool((r.get('binding') or {}).get('manualRevision')))
         text=BINDING_STATES.get(p.get('state'),'尚无关联核对；正常上传成功不需要此操作。')
         if p.get('request'):
             request=p['request'];text+=' · '+request['order_id']+' · '+str(request['created_day'] or '按单号精查')+'\n核对依据 '+request['reason']
@@ -82,6 +90,20 @@ class BindingActions:
                 text+=f" · {summary['unverifiedUnits']} 款原基础单位未留存"
         if p.get('error'):text+='\n'+p['error']['message']
         self.binding_note.setText(text)
+
+    def amend_payment(self):
+        from order_amendments_ui import open_editor
+        if open_editor(self,self.host,self.head,'payment'):
+            self.load()
+
+    def compare_remainder(self):
+        import platform_remainders as service
+        from platform_remainders_ui import show
+        package=self.package;purchase_id=self.current['id']
+        def operation(cancel):
+            record=self.client.request('purchase.status',purchase_id=purchase_id)
+            return service.aoxiang(self.host.work_repository.path,self.head,package,record,cancel=cancel)
+        self.run(operation,lambda report:show(self,self.host,report))
 
     def binding_start(self):
         dialog=QDialog(self);dialog.setWindowTitle('核对已有翱象采购单');dialog.resize(590,280)

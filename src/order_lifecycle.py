@@ -320,10 +320,20 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
             payment_match_commit.validate(
                 path, db, plan['payment_matching'], plan.get('payment_matching_digest'), plan['plans'],
             )
-        staged={}
+        staged={};replayed=set()
         for p in plan['plans']:
             verified=p.get('_read_proofs')
-            checkpoint(cancel); purchases.validate_head(db, p['head']); old = current(db, p['head'], p['stage'],_verified=verified)
+            checkpoint(cancel); purchases.validate_head(db, p['head'])
+            identity=(*key(p['head']),p['stage'])
+            if identity in staged:raise ValueError('同一订单同一环节只能保存一份完整单据')
+            if p['payload'].get('manual_correction'):
+                target=staged_document(p)
+                saved=store.version_row(db,p['head'],p['stage'],target['version'])
+                if saved and saved[2]==target['digest']:
+                    replayed.add(identity);staged[identity]=target;continue
+                from order_amendments import validate
+                validate(db,p)
+            old = current(db, p['head'], p['stage'],_verified=verified)
             if p['stage'] in ('return','operations'):
                 from material_stock import has_material, is_material
                 if has_material(db) and is_material(db, p['head']['oid']):
@@ -334,8 +344,6 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
             if p['stage']=='receipt' and p['payload'].get('aoxiang_payment_review'):
                 from aoxiang_receipt_scope import validate_review
                 validate_review(db,p['head'],p['payload']['aoxiang_payment_review'])
-            identity=(*key(p['head']),p['stage'])
-            if identity in staged:raise ValueError('同一订单同一环节只能保存一份完整单据')
             if (old['version'] if old else None) != p['expected']: raise wr.Conflict('单据在预览后被更新，请重新核对')
             if p['payload']['basis'] != upstream(db,p['head'],p['stage'],staged,_verified=verified):raise wr.Conflict('上游单据在预览后变化，请重新核对')
             if p['changed'] != (not old or old['digest']!=p['digest']):raise ValueError('预览更新状态变化')
@@ -345,6 +353,10 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
         for f, raw in contents: store.retain_file(db, f, raw)
         for p, (offset,length) in zip(plan['plans'], positions):
             v = p['expected'] or 0; h = p['head']
+            identity=(*key(h),p['stage'])
+            if identity in replayed:
+                receipts.append(store.save_receipt(h,p['stage'],staged[identity]['version'],p['changed'],p['digest']))
+                continue
             if p['changed']:
                 encoded.seek(offset)
                 data=encoded.read(length)
@@ -355,6 +367,9 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
                 if p['stage']==flow.demand_stage(db,h):
                     enqueue(db,h,{'version':v,'digest':p['digest']})
                 store.insert_event(db, wr.now(), h, p['stage'], v, '确认完整单据', wr.dumps({'number': h['number'], 'rows': len(p['payload']['rows']), 'missing': p['payload']['missing'], 'extra': p['payload']['extra']}))
+                if audit:=p['payload'].get('manual_correction'):
+                    detail={k:audit[k] for k in ('id','operator','reason','prior','generation')}
+                    store.insert_event(db,wr.now(),h,p['stage'],v,'手动更正',wr.dumps(detail))
             evidence=p.get('source_evidence')
             if evidence:
                 if p['changed'] or any(f not in [{k:f[k] for k in ('name','sha')} for f,_ in contents] for f in evidence['files']):raise ValueError('原件留存范围与核对文件不一致')

@@ -241,7 +241,9 @@ def validate_member(db, p, *, replay=False):
     bid = p['batch_id']; row = db.execute('SELECT status,epoch FROM jst_batches WHERE batch_id=?',(bid,)).fetchone()
     member = db.execute('SELECT status FROM jst_batch_members WHERE batch_id=? AND oid=? AND warehouse=?', (bid,p['head']['oid'],p['head']['warehouse'])).fetchone()
     if not row or not member or member[0]=='cancelled': raise wr.Conflict('本批任务已撤销或不存在')
-    if not replay and (row[0]!='active' or row[1]!=p['batch_epoch']): raise wr.Conflict('本批已暂停或任务状态变化，请继续原批次')
+    amendment=p.get('manual_correction') and member[0]=='done' and row[0] in ('active','paused','complete')
+    if not replay and (row[1]!=p['batch_epoch'] or (row[0]!='active' and not amendment)):
+        raise wr.Conflict('本批已暂停或任务状态变化，请继续原批次')
     if not replay and member[0] in ('pending','failed') and db.execute("SELECT 1 FROM jst_batch_members WHERE batch_id=? AND warehouse=? AND position<? AND status IN ('pending','failed')",(bid,p['head']['warehouse'],p['position'])).fetchone():
         raise wr.Conflict('该仓前序任务未完成，请按原顺序重试')
 

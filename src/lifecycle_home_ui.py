@@ -116,7 +116,17 @@ class LifecycleWidget(QWidget):
         if stage:er.addWidget(button('查看本环节全部',lambda:self.status.setCurrentText('本环节全部')))
         er.addStretch();self.empty_actions.hide();v.insertWidget(5,self.empty_actions)
         self.selection_label();self.setAcceptDrops(True)
-        self.recovery_btn=button('恢复并继续原操作',self.recover_operation);v.addWidget(self.recovery_btn)
+        actions=QHBoxLayout();self.recovery_btn=button('恢复并继续原操作',self.recover_operation);actions.addWidget(self.recovery_btn)
+        if self.stage in TITLES:actions.addWidget(button('手动更正勾选单',self.correct_stage))
+        v.addLayout(actions)
+
+    def correct_stage(self):
+        selected=list(self.checked.values())
+        if len(selected)!=1:
+            QMessageBox.information(self,'手动更正','请勾选一张仓单。')
+            return
+        from order_amendments_ui import open_editor
+        if open_editor(self,self.host,selected[0],self.stage):self.query(keep_page=True)
 
     def recover_operation(self):
         from lifecycle_recovery_ui import show

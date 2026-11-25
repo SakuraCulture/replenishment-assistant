@@ -209,7 +209,15 @@ class ResultsPage(QWidget):
             d=QDialog(self);d.setProperty('jstResults',True);d.setWindowTitle('聚水潭导入单 · 商品明细');d.resize(1220,800);v=QVBoxLayout(d)
             v.addWidget(label('当时保存的分配结果；需核对的旧结果不会计入普通批量导出。','muted'));review_widget=AllocationReview(d);review_widget.replace(values,'所选门店已保存结果');v.addWidget(review_widget,1)
             if len(review_widget.groups)==1:review_widget.open_store(review_widget.store_model.index(0,0))
-            v.addWidget(button('返回结果页',d.accept));d.exec();d.deleteLater()
+            actions=QHBoxLayout();actions.addWidget(button('返回结果页',d.reject))
+            if len(rs)==1 and len(gids)==1:
+                def amend():
+                    from order_amendments_ui import open_editor
+                    if open_editor(d,self.host,rs[0]['head'],'allocation'):d.accept()
+                actions.addWidget(button('手动更正本仓分配',amend))
+            v.addLayout(actions)
+            changed=d.exec()==QDialog.DialogCode.Accepted;d.deleteLater()
+            if changed:self.refresh()
         except Exception as exc:self.status.setText(str(exc))
 
     def stock_evidence_records(self):

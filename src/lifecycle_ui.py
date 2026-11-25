@@ -218,11 +218,22 @@ class Document(QDialog):
     def __init__(self,parent,host,head,stage):
         super().__init__(parent); self.host=host; self.head=head; self.stage=stage; self.setWindowTitle(io.TITLES[stage]+' · '+head['number']); self.resize(1200,730); v=QVBoxLayout(self)
         v.addWidget(label(head_text(head),'section')); self.versions=QComboBox(); v.addWidget(self.versions); self.table,self.model=grid(self,['商品编码','商品名称','本版数量（库存单位）','源单数量','源单单位','实际金额','币种','外部单号','日期','源表 / 行','备注']); v.addWidget(self.table,1); self.files=QComboBox(); v.addWidget(self.files); row=QHBoxLayout(); row.addWidget(button('下载此版本原文件',self.download)); row.addWidget(button('关闭',self.reject)); v.addLayout(row)
-        self.docs=run(self,service.history,(host.work_repository.path,head,stage),'读取单据版本')
-        for d in self.docs:self.versions.addItem(f"第{d['version']}版 · {d['saved']}",d)
-        self.versions.currentIndexChanged.connect(self.show_version); self.show_version()
+        self.edit_btn=button('手动更正本环节',self.correct);row.insertWidget(0,self.edit_btn)
+        self.correction_note=label('','muted');self.correction_note.setWordWrap(True);v.insertWidget(2,self.correction_note)
+        self.changed=False
         self.duplicate_audit=button('查看重复商品采用记录',self.show_duplicate_audit)
-        row.insertWidget(0,self.duplicate_audit);self.versions.currentIndexChanged.connect(self.update_duplicate_audit);self.update_duplicate_audit()
+        row.insertWidget(0,self.duplicate_audit);self.versions.currentIndexChanged.connect(self.update_duplicate_audit)
+        self.versions.currentIndexChanged.connect(self.show_version);self.reload_versions()
+    def reload_versions(self):
+        self.docs=run(self,service.history,(self.host.work_repository.path,self.head,self.stage),'读取单据版本')
+        self.versions.clear()
+        for d in self.docs:
+            self.versions.addItem(f"第{d['version']}版 · {d['saved']}"+(' · 手动更正' if d['payload'].get('manual_correction') else ''),d)
+        self.show_version();self.update_duplicate_audit()
+    def correct(self):
+        from order_amendments_ui import open_editor
+        if open_editor(self,self.host,self.head,self.stage):
+            self.changed=True;self.reload_versions()
     def update_duplicate_audit(self):
         d=self.versions.currentData()
         self.duplicate_audit.setVisible(bool(d and any(r.get('duplicate_resolution') for r in d['payload'].get('raw_rows',[]))))
@@ -233,6 +244,11 @@ class Document(QDialog):
         if d:details(self,'重复商品采用记录',['商品编码','采用结果','原文件','工作表','Excel行号','原数量','原单位','原金额','币种'],audit_rows(d['payload'].get('raw_rows',[])),'数量和金额整行采用；未采用行不累加。原始文件仍完整保留，可从单据版本下载。')
     def show_version(self):
         d=self.versions.currentData(); self.files.clear()
+        self.edit_btn.setEnabled(bool(d) and self.versions.currentIndex()==0 and not self.head.get('deleted')
+                                 and not (self.head.get('kind')=='material' and self.stage in ('return','operations')))
+        audit=d['payload'].get('manual_correction') if d else None
+        self.correction_note.setText(f"经办人 {audit['operator']} · 原版本 {audit['prior']['version']} · {audit['reason']}" if audit else '')
+        self.correction_note.setVisible(bool(audit))
         self.model.replace([[r['sku'],r['name'],r['base_quantity'],r['quantity'],r['unit'],r['amount'],r['currency'],r['document_number'],r['document_date'],'；'.join(s['file']+'/'+s['sheet']+':'+str(s['row']) for s in r['sources']), '；'.join(str(x) for x in (r.get('processing_note'),r.get('note')) if x)] for r in d['payload']['rows']] if d else [])
         if d:
             for f in d.get('attachments',d['payload']['files']):self.files.addItem(f['name'],f)
@@ -259,6 +275,7 @@ class LifecycleDialog(QDialog):
         for s in io.ALL_STAGES:self.exports[s]=button('导出'+io.TITLES[s],lambda checked=False,k=s:export_selected(self,host,[head],k));row.addWidget(self.exports[s])
         row.addWidget(button('导出生命周期对照',lambda:export_selected(self,host,[head])));v.addWidget(exports)
         corrections=QGroupBox('重新核对（保留原版本）');row=QHBoxLayout(corrections);self.rechecks={}
+        self.manual_edit=button('手动更正',self.correct);row.addWidget(self.manual_edit)
         for s in io.ALL_STAGES:self.rechecks[s]=button('重新核对'+io.TITLES[s],lambda checked=False,k=s:self.recheck(k));row.addWidget(self.rechecks[s])
         v.addWidget(corrections);zeros=QGroupBox('特殊情况：明确确认本环节整单为0');row=QHBoxLayout(zeros);self.zeros={}
         for s in io.ALL_STAGES:self.zeros[s]=button('确认'+io.TITLES[s]+'整单为0',lambda checked=False,k=s:self.recheck(k,True));row.addWidget(self.zeros[s])
@@ -274,6 +291,7 @@ class LifecycleDialog(QDialog):
         self.payment_reference_btn.setEnabled(not self.head.get('deleted') and bool(self.view['documents']['payment']))
         self.ax_purchase.setEnabled(not self.head.get('deleted') and bool(self.view['documents']['payment']))
         self.ax_receipt.setEnabled(not self.head.get('deleted') and bool(self.view['documents']['payment']))
+        self.manual_edit.setEnabled(not self.head.get('deleted') and self.head['revision']==self.head.get('current_revision',self.head['revision']))
     def payment_references(self):
         from payment_references_ui import edit_reference
         receipt=edit_reference(self,self.host,self.head)
@@ -288,7 +306,16 @@ class LifecycleDialog(QDialog):
     def open_ax_receipt(self):
         from aoxiang_receipt_ui import open_receipts
         if open_receipts(self,self.host,self.head):self.refresh()
-    def document(self,stage):Document(self,self.host,self.head,stage).exec()
+    def document(self,stage):
+        d=Document(self,self.host,self.head,stage);d.exec()
+        if d.changed:self.refresh()
+    def correct(self):
+        from order_amendments_ui import choose_stage
+        saved=choose_stage(self,self.host,self.head,self.view)
+        if isinstance(saved,dict) and saved.get('signed'):
+            QMessageBox.information(self,'签发更正已保存',f"本仓单已保存 V{saved['revision']:03d}，可从订单跟踪打开新版本。")
+            self.accept()
+        elif saved:self.refresh()
     def recheck(self,stage,zero=False):
         if review_again(self,self.host,self.head,stage,zero):self.refresh()
     def legacy_returns(self):

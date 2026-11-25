@@ -214,6 +214,8 @@ def coverage(d):
 
 def _execution_explanation(d):
     if exclusion_reason(d):return '默认不补：'+exclusion_reason(d)+'；计算结果仅供参考'
+    if correction:=d.get('_signed_correction'):
+        return f"手动更正签发 · 数量 {fmt(correction['quantity'])} · {correction['reason']}"
     if issue_text(d):return issue_text(d)
     adjustment=d.get('_preissue',{})
     if adjustment.get('delta') or adjustment.get('kind')=='manual' and adjustment.get('quantity')==0:

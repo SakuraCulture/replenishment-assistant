@@ -242,6 +242,9 @@ def validate_plan(db, p, catalog_revisions=None):
         raise wr.Conflict('付款依据已变化，请重新预览分配：'+h['number'])
     if active(db,h) != p['old']:
         raise wr.Conflict('生成记录已变化：'+h['number'])
+    if increases:=(p.get('manual_correction') or {}).get('material_increase'):
+        from allocation_amendments import validate_material_claims
+        validate_material_claims(db,h,p['old'],increases)
     if material_stock.has_material(db):
         base = decode(db.execute('SELECT payload,digest FROM jst_baselines WHERE bid=?',(p['bid'],)).fetchone())
         seen = material_stock.cross_reservations(db,h['warehouse'],base,{r['sku'] for r in p['rows']},
@@ -329,7 +332,9 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                         put_generation(db,p)
                     else:
                         if v['correction'] and p['old']:db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(p['head']['oid'],p['head']['warehouse']))
-                        event(db,p['head'],'库存不足未生成',{'rows':p['rows'],'runid':v['runid'],'batch_id':p.get('batch_id')})
+                        event(db,p['head'],'手动确认为零分配' if p.get('manual_correction') else '库存不足未生成',{'rows':p['rows'],'runid':v['runid'],'batch_id':p.get('batch_id')})
+                    if audit:=p.get('manual_correction'):
+                        event(db,p['head'],'手动更正分配',{**audit,'gid':p['gid'] if p['summary']['positive'] else None})
                     db.execute('INSERT INTO jst_steps VALUES(?,?,?)',(p['operation'],v['runid'],wr.dumps({'gid':p['gid'] if p['summary']['positive'] else None,'number':p['head']['number']})))
                     jst_batches.record(db,p)
                 for w in whs:
