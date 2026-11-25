@@ -11,6 +11,54 @@ from runtime_support import Cancelled
 
 
 class BulkTests(Fixture,unittest.TestCase):
+    def test_independent_search_fields_and_exact_pasted_codes(self):
+        rows = [
+            ['001','北甲店','0001','原味饼干','包装破损','手动解除','拒收中'],
+            ['002','北乙店','0001','原味饼干','包装破损','手动解除','拒收中'],
+            ['001','北甲店','00010','原味饼干','包装破损','手动解除','拒收中'],
+            ['001','北甲店','0002','原味饼干','缺资质','手动解除','拒收中'],
+            ['003','南丙店','0002','原味饼干','北甲店包装破损','手动解除','拒收中'],
+            ['001','北甲店','@000000123456789012345','原味饼干','包装破损','手动解除','已到期'],
+        ]
+        stores = service.selection_codes('001，002\n001')
+        items = service.selection_codes('0001; @000000123456789012345')
+        self.assertEqual(service.select_refusals(rows,'拒收中',None,'北甲','饼干','破损',stores,items), [rows[0]])
+        self.assertEqual(service.select_refusals(rows,'全部',None,'北甲','饼干','破损',stores,items), [rows[0],rows[5]])
+        self.assertEqual(service.select_refusals(rows,'拒收中',{('002','0001')},'北','饼干','破损',stores,items), [rows[1]])
+
+    def test_edit_expires_without_reactivating_released_and_delete_retains_audit(self):
+        before = copy.deepcopy(self.values['A'])
+        edit = service.prepare_refusal_change(self.load(), [('A','002'),('A','003')], 'edit',
+                                              {'reason': '  本店新原因  ', 'expires': None})
+        self.assertEqual([r[-2:] for r in edit['rows']], [['已到期','拒收中'],['已解除','已解除']])
+        service.commit_refusal_change(self.path, edit)
+        edited = admission.snapshot(self.path, 'A')['record']
+        self.assertEqual(edited['refusals']['001'], before['refusals']['001'])
+        self.assertEqual(edited['refusals']['002']['reason'], '本店新原因')
+        self.assertFalse(edited['refusals']['003']['active'])
+        self.assertIsNone(edited['refusals']['002']['expires'])
+        self.assertEqual(edited['qualification'], before['qualification'])
+        removed = service.prepare_refusal_change(self.load(), [('A','001'),('A','003')], 'delete')
+        service.commit_refusal_change(self.path, removed)
+        self.assertEqual([r[2] for r in self.load()['refusals']], ['002'])
+        with closing(sqlite3.connect(self.path)) as db:
+            raw_before,raw_after = db.execute('SELECT before_value,after_value FROM admission_events ORDER BY id DESC LIMIT 1').fetchone()
+        self.assertEqual(json.loads(raw_before), edited)
+        self.assertEqual(json.loads(raw_after)['refusals'], {'002':edited['refusals']['002']})
+
+    def test_edit_or_delete_stale_selection_cannot_partially_commit(self):
+        before = {'refusals': {'001': {'reason': '另一门店'}}}
+        admission.save(self.path, {'B':before}, {'B':{}})
+        chosen = [('A','001'),('B','001')]
+        pending = [service.prepare_refusal_change(self.load(), chosen, 'edit', {'reason':'重新核对'}),
+                   service.prepare_refusal_change(self.load(), chosen, 'delete')]
+        changed = {'refusals': {'001': {'reason': '其他窗口已更新'}}}
+        admission.save(self.path, {'B':changed}, {'B':before})
+        for batch in pending:
+            with self.assertRaises(Conflict):service.commit_refusal_change(self.path, batch)
+        self.assertEqual(admission.snapshot(self.path,'A')['record'], self.values['A'])
+        self.assertEqual(admission.snapshot(self.path,'B')['record'], changed)
+
     def test_exact_store_sku_only_and_preserved_evidence(self):
         before=copy.deepcopy(self.values);data=self.load();p=service.prepare_release(data,[('A','001'),('A','001')])
         self.assertEqual(p['count'],1);self.assertEqual(data['records'],before);service.commit_release(self.path,p)
@@ -57,10 +105,11 @@ class BulkUiTests(Fixture,unittest.TestCase):
         d=Overview(None,host,'refusals');d.data=self.load();d.filter();return d
     def test_checkbox_identity_and_all_filter(self):
         from PySide6.QtCore import Qt
-        d=self.window();d.state.setCurrentText('全部');d.select_all(True);self.assertEqual(d.model.keys(),[('A','001'),('A','002')])
-        d.model.setData(d.model.index(0,0),Qt.CheckState.Unchecked,Qt.ItemDataRole.CheckStateRole);self.assertEqual(d.model.keys(),[('A','002')]);d.close()
+        d=self.window();d.state.setCurrentText('全部');d.select_all(True);self.assertEqual(d.model.keys(),[('A','001'),('A','002'),('A','003')])
+        self.assertTrue(d.delete_btn.isEnabled());self.assertFalse(d.release_btn.isEnabled())
+        d.model.setData(d.model.index(0,0),Qt.CheckState.Unchecked,Qt.ItemDataRole.CheckStateRole);self.assertEqual(d.model.keys(),[('A','002'),('A','003')]);d.close()
     def test_changed_filter_clears_hidden_selection(self):
-        d=self.window();d.select_all(True);self.assertEqual(len(d.model.keys()),1);d.search.setText('临时');d.filter();self.assertFalse(d.model.keys());d.close()
+        d=self.window();d.select_all(True);self.assertEqual(len(d.model.keys()),1);d.search_fields[2].setText('临时');d.filter();self.assertFalse(d.model.keys());d.close()
     def test_same_filter_preserves_checks_for_action_and_clear_all(self):
         d=self.window();d.select_all(True);d.filter();self.assertEqual(len(d.model.keys()),1);d.select_all(False);self.assertFalse(d.model.keys());d.close()
     def test_cancel_preview_no_commit(self):

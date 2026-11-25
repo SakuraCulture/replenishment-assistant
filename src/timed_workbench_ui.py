@@ -490,6 +490,8 @@ class Materials(QDialog):
                 if ref:
                     date_note = f' · {ref["effective_day"]} 起采用' if ref.get('effective_day') else ' · 当日原件'
                     note = f'{ref["name"]} · {ref["sha256"][:12]}' + date_note
+                elif key == 'weeks' and (defaults := sources.template_weeks(self.day)):
+                    note = f'{defaults["month"]} 目标已采用 · {defaults["source"]["name"]}\n可补已发布周实际'
                 if key == 'stores' and (not ref or ref.get('effective_day')):
                     if rules:
                         if ref:

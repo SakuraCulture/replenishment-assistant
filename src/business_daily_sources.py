@@ -1,6 +1,7 @@
 """Read daily report evidence by source identity, including published analysis revisions."""
 from collections import defaultdict
 from contextlib import closing
+from copy import deepcopy
 from datetime import date, datetime
 import hashlib
 from io import BytesIO
@@ -26,6 +27,16 @@ SUPPLEMENTS = {
     'weeks': '已发布周值及目标',
 }
 RULE_FILES = {'stores', 'blacklist', 'owners', 'weeks'}
+NOVEMBER_TARGETS = {
+    'month': '2026-11',
+    'source': {'name': '门店缺货率20261123.xlsx',
+               'sha256': '452acbb01f7d10cf75365cd3bbf4abd84ed9e52ae31c513a60922733da558dec'},
+    'metrics': {
+        '全量缺货率': {'previous': 0.1385, 'target': 0.10, 'weekly_targets': ['≤12.5%', '≤11.5%', '≤10.5%', '≤10%']},
+        '原始缺货率': {'previous': 0.0977, 'target': 0.07, 'weekly_targets': ['≤9%', '≤8.5%', '≤8%', '≤7%']},
+        '必采缺货率': {'previous': 0.087, 'target': 0.05, 'weekly_targets': ['≤8%', '≤7%', '≤6%', '≤5%']},
+    },
+}
 SALES_COLUMNS = {
     'store': ('仓库/门店编码', '门店编码'), 'sku': ('商品编码',), 'name': ('商品名称', '商品名'),
     'month': ('月销',), 'stock': ('可用库存',), 'inbound': ('在途库存',), 'status': ('补货状态',),
@@ -44,6 +55,13 @@ def business_day(value):
     if date.fromisoformat(value).isoformat() != value:
         raise ValueError('业务日应为 YYYY-MM-DD')
     return value
+
+
+def template_weeks(day):
+    """The supplied monthly target block includes the reported previous-month baselines."""
+    if day[:7] == NOVEMBER_TARGETS['month']:
+        return deepcopy(NOVEMBER_TARGETS)
+    return None
 
 
 def file_source(root, selected, *, observed=None, sheets=None, account=None, cancel=None):
@@ -433,7 +451,9 @@ def freeze(root, day, *, stores=None, partial=False, cancel=None):
     """Freeze source identifiers and order cutoff. Supplemental files are immutable copies."""
     selected = profile(root, day)
     files = supplement_refs(root, selected)
-    issues = ['缺资料：' + label for key, label in SUPPLEMENTS.items() if key != 'stores' and key not in files]
+    defaults = template_weeks(day) if 'weeks' not in files else None
+    issues = ['缺资料：' + label for key, label in SUPPLEMENTS.items()
+              if key != 'stores' and key not in files and (key != 'weeks' or defaults is None)]
     checkpoint(cancel)
     ref = files.get('stores')
     rules = store_rules(root, day) if not ref or ref.get('effective_day') else None
@@ -468,7 +488,8 @@ def freeze(root, day, *, stores=None, partial=False, cancel=None):
     return {'template': VERSION, 'day': day, 'frozen_at': now(), 'files': files, 'stores': list(scope.values()),
             'expected_stores': list(all_stores), 'sales': selected['sales'], 'store_snapshots': store_snapshots,
             'catalogs': catalogs, 'partial': partial, 'order_cutoff': selected.get('order_cutoff') or now(),
-            **({'store_rules': provenance} if provenance else {})}
+            **({'store_rules': provenance} if provenance else {}),
+            **({'week_defaults': defaults} if defaults else {})}
 
 
 def published_weeks(path, day):
@@ -621,7 +642,9 @@ def prepare(root, basis, progress, cancel, *, order_report=None):
         if code in must_sell:
             raise ValueError(f'{line} 必卖外表门店重复：{code}')
         must_sell[code] = {**row, 'tag': text(row.get('tag')), 'rate': decimal(row['rate'])}
-    weeks = published_weeks(files['weeks'], basis['day'])
+    weeks = published_weeks(files['weeks'], basis['day']) if 'weeks' in files else basis.get('week_defaults')
+    if not weeks or weeks['month'] != basis['day'][:7]:
+        raise PendingInputs(['缺当月已发布周值及目标'])
     catalogs = {w: load_catalog(root, w, ref, cancel) for w, ref in basis['catalogs'].items()}
     progress('按冻结截至时间读取仓单原修订')
     if order_report is None:

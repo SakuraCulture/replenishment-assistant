@@ -16,6 +16,7 @@ from openpyxl import load_workbook
 from export_files import sha256
 from joint_export_smoke import isolated, press, wait, write
 from timed_workbench_ui import Materials, PlanEditor
+from business_daily_sources import template_weeks
 
 
 def business_facts(path):
@@ -149,23 +150,42 @@ def start_smoke(app, win, args):
                 modal(lambda:press(hub,'门店缺货率日报（经营版）'),PlanEditor,
                       lambda editor:configure(editor,'business_daily'))
                 manual = manager.selected_run
-                waiting,_ = run_result(manual,'WAITING')
-                assert '周值' in waiting['message'] and not waiting['frozen']
+                defaults = template_weeks(day)
+                if defaults:
+                    manual_run, manual_artifact = run_result(manual,'PARTIAL')
+                else:
+                    waiting,_ = run_result(manual,'WAITING')
+                    assert '周值' in waiting['message'] and not waiting['frozen']
                 page = visible(manual)
-                page.grab().save(str(root/'waiting.png'))
+                if not defaults:
+                    page.grab().save(str(root/'waiting.png'))
                 def supply(materials):
                     if settings.get('verify_added_sources'):
                         assert '已引用门店' in materials.files['stores'].text()
                         for key in ('stores', 'blacklist', 'owners'):
                             assert '起采用' in materials.files[key].text(), key
-                    with patch.object(QFileDialog,'getOpenFileName',return_value=(settings['weeks'], '')):
-                        materials.choose('weeks')
-                    assert '待登记' != materials.files['weeks'].text()
+                    if defaults:
+                        assert '目标已采用' in materials.files['weeks'].text()
+                    else:
+                        with patch.object(QFileDialog,'getOpenFileName',return_value=(settings['weeks'], '')):
+                            materials.choose('weeks')
+                        assert '待登记' != materials.files['weeks'].text()
                     materials.grab().save(str(root/'daily-sources.png'))
                     press(materials,'完成')
                 modal(lambda:press(page,'补日报资料'),Materials,supply)
                 clock[0] += timedelta(seconds=17)
-                manual_run, manual_artifact = run_result(manual,'PARTIAL')
+                if not defaults:
+                    manual_run, manual_artifact = run_result(manual,'PARTIAL')
+                else:
+                    assert manual_run['frozen']['week_defaults'] == defaults
+                    with closing(load_workbook(manual_artifact['path'], read_only=True, data_only=True)) as workbook:
+                        summary = workbook['汇总']
+                        for row, metric in zip((3,8,13), defaults['metrics'].values()):
+                            assert summary[f'C{row}'].value == metric['previous']
+                            assert summary[f'D{row}'].value == metric['target']
+                            assert [summary.cell(row+2, col).value for col in range(2,6)] == metric['weekly_targets']
+                            assert all(summary.cell(row+3, col).value is None for col in range(2,6))
+                    report['template_targets_applied'] = defaults
                 page = visible(manual)
                 page.tabs.setCurrentIndex(1)
                 modal(lambda:press(page,'新建计划'),PlanEditor,lambda editor:configure(editor,'business_daily',True))

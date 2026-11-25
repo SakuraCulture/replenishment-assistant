@@ -125,6 +125,28 @@ class DailyRules(unittest.TestCase):
 
 
 class DailySourceRules(unittest.TestCase):
+    def test_november_template_goals_are_frozen_only_without_an_adopted_monthly_source(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            day = '2026-11-25'
+            data = fixture()
+            selected = sources.profile(root, day)
+            selected['files'] = {key: {'name': key} for key in sources.SUPPLEMENTS if key != 'weeks'}
+            selected['sales'] = [{'name': '隔离原件'}]
+            sources.save_profile(root, selected)
+            wh_refs = {wh: {'account': wh} for wh in data['catalogs']}
+            with patch.object(sources, 'resolved_roster', return_value=(data['stores'],None)), \
+                    patch.object(sources, 'catalog_refs', return_value=wh_refs):
+                basis = sources.freeze(root, day)
+                targets = basis['week_defaults']['metrics']
+                self.assertEqual([m['target'] for m in targets.values()], [0.10,0.07,0.05])
+                self.assertEqual(targets['必采缺货率']['weekly_targets'], ['≤8%','≤7%','≤6%','≤5%'])
+                self.assertTrue(all('weekly_values' not in m for m in targets.values()))
+                selected['files']['weeks'] = {'name': '当期另行发布目标'}
+                sources.save_profile(root, selected)
+                self.assertNotIn('week_defaults', sources.freeze(root, day))
+            self.assertIsNone(sources.template_weeks('2026-12-01'))
+
     def test_rule_reuse_respects_effective_day_month_and_explicit_original(self):
         with tempfile.TemporaryDirectory() as folder:
             days = '2026-11-20', '2026-11-23', '2026-11-25', '2026-12-01'

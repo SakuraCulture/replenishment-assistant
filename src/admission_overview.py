@@ -1,5 +1,5 @@
-"""Read-only current eligibility overview; does not rewrite admission evidence."""
-import copy,json,os,sqlite3,tempfile
+"""Current eligibility views and confirmed changes to exact refusal records."""
+import copy,json,os,re,sqlite3,tempfile
 from contextlib import closing
 from pathlib import Path
 import admission
@@ -8,6 +8,9 @@ from runtime_support import checkpoint
 QUAL_HEADERS=['门店编码','门店名称','当前有效状态','登记状态','核验人','核验日期','到期日','拒收中款数','备注']
 REF_HEADERS=['门店编码','门店名称','商品编码','商品名称','拒收原因','到期日','当前状态']
 QUAL_REPORT='二类医疗资质'
+REFUSAL_ACTIONS={'release':'解除','edit':'修改','delete':'删除'}
+REFUSAL_EDIT_HEADERS=[*REF_HEADERS[:4],'原拒收原因','新拒收原因','原到期日','新到期日','原状态','新状态']
+REFUSAL_END_HEADERS=[*REF_HEADERS[:6],'原状态','操作结果']
 
 
 def qualification_state(value,day):
@@ -64,27 +67,71 @@ def load(path,known=None,progress=lambda _:None,cancel=None,*,day=None):
     return {'day':day,'names':names,'qualification':qualifications,'refusals':refusals,'warnings':warnings,'records':records}
 
 
-def prepare_release(data,keys,progress=lambda _:None,cancel=None):
-    """Freeze an exact store/SKU selection against the displayed read snapshot."""
-    selected=list(dict.fromkeys(tuple(k) for k in keys));old={};new={};rows=[]
-    if not selected:raise ValueError('请先勾选要解除的门店商品')
-    for n,(store,sku) in enumerate(selected,1):
+def prepare_refusal_change(data, keys, action, fields=None, progress=lambda _: None, cancel=None):
+    """Preview and freeze exact store/SKU changes against the displayed snapshot."""
+    label = REFUSAL_ACTIONS[action]
+    selected = list(dict.fromkeys(tuple(key) for key in keys))
+    if not selected:
+        raise ValueError(f'请先勾选要{label}的门店商品')
+    if action == 'edit':
+        fields = dict(fields or {})
+        if not fields or set(fields) - {'reason', 'expires'}:
+            raise ValueError('请选择要修改的拒收原因或到期日')
+        if 'reason' in fields:
+            fields['reason'] = str(fields['reason'] or '').strip()
+            if not fields['reason']:
+                raise ValueError('请填写门店拒收原因')
+        if 'expires' in fields:
+            fields['expires'] = admission.date_value(fields['expires'])
+    old, new, rows = {}, {}, []
+    day = data['day']
+    for n, (store, sku) in enumerate(selected, 1):
         checkpoint(cancel)
-        record=data['records'].get(store,{})
-        item=record.get('refusals',{}).get(sku)
-        if not item or not item.get('active',True):raise ValueError('记录已不存在或已解除，请刷新后重选：'+store+' / '+sku)
-        if store not in old:old[store]=copy.deepcopy(record);new[store]=copy.deepcopy(record)
-        new[store]['refusals'][sku]['active']=False
-        rows.append([store,data['names'].get(store,''),sku,item.get('name',''),item['reason'],item.get('expires') or '手动解除',refusal_state(item,data['day']),'已解除'])
-        if n%200==0:progress(f'正在核对解除范围 {n}/{len(selected)} 条…')
-    return {'expected':old,'values':new,'rows':rows,'count':len(selected),'stores':list(old)}
+        record = data['records'].get(store, {})
+        item = record.get('refusals', {}).get(sku)
+        if not item or action == 'release' and not item.get('active', True):
+            raise ValueError(f'记录已不存在或当前状态无法{label}，请刷新后重选：{store} / {sku}')
+        if action == 'edit' and all(item.get(key) == value for key, value in fields.items()):
+            continue
+        if store not in old:
+            old[store] = copy.deepcopy(record)
+            new[store] = copy.deepcopy(record)
+        changed = new[store]['refusals'][sku]
+        identity = [store, data['names'].get(store, ''), sku, item.get('name', '')]
+        expiry = item.get('expires') or '手动解除'
+        if action == 'edit':
+            changed.update(fields)
+            rows.append([*identity, item['reason'], changed['reason'], expiry, changed.get('expires') or '手动解除',
+                         refusal_state(item, day), refusal_state(changed, day)])
+        else:
+            if action == 'delete':
+                del new[store]['refusals'][sku]
+            else:
+                changed['active'] = False
+            rows.append([*identity, item['reason'], expiry, refusal_state(item, day),
+                         '从清单删除' if action == 'delete' else '已解除'])
+        if n % 200 == 0:
+            progress(f'正在核对{label}范围 {n}/{len(selected)} 条…')
+    return {'action': action, 'expected': old, 'values': new, 'rows': rows, 'count': len(rows), 'stores': list(old)}
 
 
-def commit_release(path,prepared,progress=lambda _:None,cancel=None):
-    checkpoint(cancel);progress(f'正在提交 {prepared["count"]} 条解除记录（{len(prepared["stores"])} 家门店），请等待提交结束…')
-    admission.save(path,prepared['values'],prepared['expected'])
-    progress(f'已解除 {prepared["count"]} 条；正在刷新列表…')
-    return {'count':prepared['count'],'stores':prepared['stores']}
+def commit_refusal_change(path, prepared, progress=lambda _: None, cancel=None):
+    checkpoint(cancel)
+    result = {key: prepared[key] for key in ('count', 'stores')}
+    if result['count']:
+        label = REFUSAL_ACTIONS[prepared['action']]
+        progress(f'正在提交 {result["count"]} 条{label}记录，涉及 {len(result["stores"])} 家门店…')
+        admission.save(path, prepared['values'], prepared['expected'])
+        progress(f'已{label} {result["count"]} 条，正在刷新列表…')
+    return result
+
+
+def prepare_release(data, keys, progress=lambda _: None, cancel=None):
+    return prepare_refusal_change(data, keys, 'release', progress=progress, cancel=cancel)
+
+
+def commit_release(path, prepared, progress=lambda _: None, cancel=None):
+    return commit_refusal_change(path, prepared, progress, cancel)
 
 
 def select_rows(rows,kind,state='全部',text='',focus=None):
@@ -92,6 +139,25 @@ def select_rows(rows,kind,state='全部',text='',focus=None):
     return [r for r in rows if (state=='全部' or r[status_col]==state)
             and (focus is None or (r[0],None if kind=='qualification' else r[2]) in focus)
             and all(t in ' '.join(str(v) for v in r).lower() for t in terms)]
+
+
+def selection_codes(raw):
+    """Parse pasted codes as text, preserving @ and all leading zeros."""
+    from purchase_io import code
+    return frozenset(code(term) for term in re.split(r'[\s,，;；、]+', raw.strip()) if term)
+
+
+def select_refusals(rows, state, focus, store='', product='', reason='', store_codes=(), sku_codes=()):
+    store_terms, product_terms, reason_terms = (value.casefold().split() for value in (store, product, reason))
+    result = []
+    for row in select_rows(rows, 'refusals', state, focus=focus):
+        if (store_codes and row[0] not in store_codes) or (sku_codes and row[2] not in sku_codes):
+            continue
+        if (all(term in f'{row[0]} {row[1]}'.casefold() for term in store_terms)
+                and all(term in f'{row[2]} {row[3]}'.casefold() for term in product_terms)
+                and all(term in str(row[4]).casefold() for term in reason_terms)):
+            result.append(row)
+    return result
 
 
 def export(path,kind,rows,scope,progress=lambda _:None,cancel=None):

@@ -313,6 +313,10 @@ def _about(sheet, basis, daily, orders, must, blacklist_outside_scope):
     for role, ref in basis['files'].items():
         effective = f' · {ref["effective_day"]} 起采用' if ref.get('effective_day') else ''
         info.append((role, f'{ref["name"]} · SHA-256 {ref["sha256"]}{effective}'))
+    if defaults := basis.get('week_defaults'):
+        ref = defaults['source']
+        info.append(('月度目标模板', f'{defaults["month"]} · {ref["name"]} · SHA-256 {ref["sha256"]}'))
+        info.append(('模板采用范围', '采用上月结果、月目标和 W1–W4 周目标。周实际沿用本次实算或已登记的发布值。'))
     if rules := basis.get('store_rules'):
         info.append(('门店范围依据', f'{rules["source"]} · 版本 {rules["version"]}'))
         info.append(('主从仓依据', '保存的路由版本 ' + rules['route_source']))

@@ -158,9 +158,10 @@ class OverviewUITests(Fixture,unittest.TestCase):
         self.assertEqual(d.state.currentText(),'全部');self.assertEqual([r[2] for r in d.filtered],['002']);d.show_all();self.assertEqual(len(d.filtered),3);d.close()
     def test_export_flushes_pending_search(self):
         from admission_overview_ui import Overview
-        d=Overview(None,self.host,'refusals');d.data=self.load();d.state.setCurrentText('全部');d.search.setText('003')
+        d=Overview(None,self.host,'refusals');d.data=self.load();d.state.setCurrentText('全部');d.search_fields[1].setText('003')
         with patch('export_locations.save_file',return_value=(str(self.root/'out.xlsx'),'Excel')),patch('admission_overview_ui.run') as run:
             d.export_filtered();self.assertEqual([r[2] for r in run.call_args.args[2][2]],['003'])
+            self.assertEqual(run.call_args.args[2][3]['商品搜索'],'003')
         d.close()
     def test_qualification_import_only_writes_edited_store(self):
         from admission_ui import import_records
