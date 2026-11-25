@@ -260,6 +260,8 @@ class Orders(QDialog):
         row.addWidget(self.export)
         self.redo_btn=button('核对取消并重做',self.redo)
         row.addWidget(self.redo_btn)
+        self.manual_btn=button('人工处理',self.open_manual)
+        row.addWidget(self.manual_btn)
         row.addStretch()
         row.addWidget(button('关闭',self.reject))
         pane.addLayout(row)
@@ -289,7 +291,8 @@ class Orders(QDialog):
                     'MATCHES_PAYMENT':'沿用已确认付款'}
             values=(r['name'] or r['store'],r['warehouse'],r['number'],r['shop'],r['sku_count'],r['quantity'],
                     r['amount'],r['preview_amount'],r['online'],r['internal'],STAGES[r['stage']],
-                    labels.get((state or {}).get('state'),'尚未拉取'),(state or {}).get('message') or r['reason'])
+                    labels.get((state or {}).get('state'),'尚未拉取'),
+                    r['reason'] if r['stage']=='IMPORT_FAILED' else (state or {}).get('message') or r['reason'])
             for j,value in enumerate(values,1):
                 cell=QTableWidgetItem(str(value if value is not None else '—'))
                 cell.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsSelectable)
@@ -311,14 +314,23 @@ class Orders(QDialog):
         rows=self.selected()
         stages={r['stage'] for r in rows}
         free=not self.busy and bool(rows)
-        self.buttons['probe'].setEnabled(free and not any(r.get('historical') for r in rows))
+        self.buttons['probe'].setEnabled(free and 'MANUAL_HANDOFF' not in stages and not any(r.get('historical') for r in rows))
         self.buttons['preview'].setEnabled(free and not stages&RELEASED)
         self.buttons['submit'].setEnabled(free and stages=={'PREVIEWED'})
-        self.buttons['recover'].setEnabled(free and stages<=RELEASED)
+        self.buttons['recover'].setEnabled(free and stages<=RELEASED and 'MANUAL_HANDOFF' not in stages)
         self.export.setEnabled(free and len(rows)==1 and not stages&RELEASED)
         self.allocation.setEnabled(free and all(r['internal'] and r['stage']!='CANCELLED' for r in rows))
         self.payment_history.setEnabled(free and len(rows)==1 and bool(rows[0]['internal']))
-        self.redo_btn.setEnabled(free and len(rows)==1 and stages<=RELEASED and not rows[0].get('historical'))
+        self.redo_btn.setEnabled(free and len(rows)==1 and stages<=RELEASED
+                                  and 'MANUAL_HANDOFF' not in stages and not rows[0].get('historical'))
+        self.manual_btn.setEnabled(free and len(rows)==1)
+
+    def open_manual(self):
+        rows=self.selected()
+        if not self.busy and len(rows)==1:
+            from jst_manual_order_ui import open_manual_order
+            open_manual_order(self,self.host,[rows[0]['online']])
+            self.reload()
 
     def redo(self):
         rows = self.selected()

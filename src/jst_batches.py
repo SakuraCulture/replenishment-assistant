@@ -120,6 +120,11 @@ def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda 
         if c['warehouse'] != wh: raise ValueError('选用资料与供货仓不一致')
         stocks[wh] = dict(bid=bid, warehouse=wh, catalog=c, included=[], created=wr.now(), batch_id=batch_id)
         states[wh] = (bid, 0)
+    from material_stock import has_material, included
+    with closing(wr.read_connection(path)) as db:
+        if has_material(db):
+            for wh, base in stocks.items():
+                base['included'] = sorted(included(db,wh,base))
     spec = dict(batch_id=batch_id, created=wr.now(), epoch=0, stocks=stocks, states=states, members=[], new=True)
     if versions:spec['current_versions']=versions
     if stock_receipts is not None:spec['keep_other_batches']=True
@@ -299,6 +304,8 @@ def deleting_order(db,oid,warehouse=None,executed=()):
         owns_allocation = gid and generation_batch(db, gid) == bid
         keep = owns_allocation and ((oid, wh) in executed or orders.locked(db,h))
         if keep:
+            from material_stock import retain_retired
+            retain_retired(db,oid,wh,gid)
             for sku,qty in db.execute('SELECT sku,quantity FROM jst_reservations WHERE gid=?',(gid,)):
                 old=db.execute('SELECT quantity FROM jst_batch_retired WHERE batch_id=? AND warehouse=? AND sku=?',(bid,wh,sku)).fetchone()
                 db.execute('INSERT OR REPLACE INTO jst_batch_retired VALUES(?,?,?,?)',(bid,wh,sku,str(Decimal(qty)+(Decimal(old[0]) if old else 0))))
@@ -333,6 +340,8 @@ def deleting_orders(db, selection, cancel=None, *, executed=()):
                 baseline = None if generation_batch(db,gid) else orders.state(db,wh)
                 if not baseline or not orders.locked(db,{'oid':oid,'warehouse':wh}):
                     continue
+                from material_stock import retain_retired
+                retain_retired(db,oid,wh,gid)
                 bid = baseline[0]
                 raw = db.execute('SELECT payload FROM jst_baselines WHERE bid=?',(bid,)).fetchone()[0]
                 if gid in wr.loads(raw).get('included',[]):

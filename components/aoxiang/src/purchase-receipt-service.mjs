@@ -33,7 +33,13 @@ export class PurchaseReceiptService{
     if(run.status!=='SUCCEEDED')fail('RECEIPT_ORDER_NOT_FOUND','指定采购单本次没有可见完整数据；不记作收货为0');
     const sources=[];
     for(const source of ['D16','D17'])sources.push(await readReceiptSource(await engine.sourceFile(run,source),source,record.scope,run.exports[source].asset.rows,run.exports[source].asset.sha256));
-    const observation=receiptObservation(c.intent,c.binding,run.id,sources);
+    const revision=c.binding.manualRevision;
+    const purchase=revision?{...c.intent,rows:revision.rows,totalQuantity:revision.totalQuantity,totalAmount:revision.totalAmount}:c.intent;
+    const observation=receiptObservation(purchase,c.binding,run.id,sources);
+    if(revision?.differences&&observation.disposition==='RECEIPT'){
+      observation.eligible=false;
+      observation.issues.push({code:'RECEIPT_MANUAL_PURCHASE_REVIEW',message:'人工关联的采购明细与原付款预览有差异，原采购收货待人工核对'});
+    }
     const directory=path.join(this.state.root,'receipt-observations');await fs.mkdir(directory,{recursive:true});
     let file=path.join(directory,run.id+'.json');
     try{const old=JSON.parse(await fs.readFile(file,'utf8'));if(!Object.hasOwn(old,'terminalKind'))file=path.join(directory,run.id+'-status-v2.json');}catch(e){if(e.code!=='ENOENT')throw e;}

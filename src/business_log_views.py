@@ -17,7 +17,7 @@ def attach_names(path,records,cancel=None):
             if key not in cache:
                 oid=r.get('oid')
                 if not oid:
-                    parent=db.execute('SELECT oid,current FROM normal_orders WHERE day=? AND store=?',key[2:4]).fetchone()
+                    parent=db.execute("SELECT oid,current FROM normal_orders WHERE day=? AND store=? AND kind='normal_model'",key[2:4]).fetchone()
                     oid=parent[0] if parent else None
                 if oid and r.get('warehouse') and execution.has_parent(db,oid):
                     revision=r.get('revision') or (execution.state(db,oid,r['warehouse']) or {}).get('source_revision')
@@ -28,7 +28,7 @@ def attach_names(path,records,cancel=None):
                 elif r.get('oid') and r.get('revision'):
                     raw=db.execute('SELECT payload FROM normal_revisions WHERE oid=? AND revision=?',key[:2]).fetchone()
                 else:
-                    raw=db.execute('SELECT r.payload FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid AND r.revision=o.current WHERE o.day=? AND o.store=?',key[2:4]).fetchone()
+                    raw=db.execute("SELECT r.payload FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid AND r.revision=o.current WHERE o.day=? AND o.store=? AND o.kind='normal_model'",key[2:4]).fetchone()
                 cache[key]=storage_chunks.load(raw[0],db,paths=[('result','store_name')]).get(('result','store_name')) if raw else None
             r['display_name']=cache[key] or r.get('store') or '历史名称未留存'
     return records

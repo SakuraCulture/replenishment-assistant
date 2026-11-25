@@ -79,7 +79,7 @@ def return_token(db,h,p=None):
     return None
 
 
-def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=None,date_end=None,*,platform_tracking=False):
+def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=None,date_end=None,*,platform_tracking=False,order_kind='normal_model'):
     date.fromisoformat(day);checkpoint(cancel)
     cache=Path(cache);cache.parent.mkdir(parents=True,exist_ok=True)
     def home_progress(p):progress(RowProgress('读取本批订单',p['done'],p['total']))
@@ -89,7 +89,7 @@ def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=N
         batch_members={key(m['head']):m for m in batch_context['members']}
         days=[m['head']['day'] for m in batch_context['members']];day=min(days);date_end=max(days)
     date_end=date_end or day;date.fromisoformat(date_end)
-    base=lifecycle_home.read(path,cache,{'from':day,'to':date_end,'all_records':True,'platform_tracking':platform_tracking},cancel,home_progress)
+    base=lifecycle_home.read(path,cache,{'from':day,'to':date_end,'all_records':True,'platform_tracking':platform_tracking,'order_kind':order_kind},cancel,home_progress)
     selected={tuple(k) for k in scope} if scope is not None else None
     heads=[h for h in base['records'] if (selected is None or key(h) in selected) and (batch_members is None or key(h) in batch_members)]
     source_id=identity(path);records=[]

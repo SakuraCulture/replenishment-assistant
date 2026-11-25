@@ -317,22 +317,29 @@ class OrderPayment(unittest.TestCase):
         lifecycle.commit(self.path,plan)
         receipt_request = {'stage_view':'receipt','stage_filter':'待处理','all_matched':True}
         cache = self.base.f.f.root/'progress.sqlite'
-        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待发货')
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
         self.assertEqual(daily_batch.read(self.path,cache,receipt_request)['records'],[])
+        delay = datetime.fromisoformat(wr.now()) + timedelta(minutes=2)
+        self.assertEqual(jobs.due_payment_locks(self.path,now=delay),self.keys)
         for state in (confirmation.AUDITED, confirmation.SHIPPED):
             self.portal.orders[self.online]['native_status'] = state
             result, = service.pull_order_payment(self.path,self.keys,self.portal)
             self.assertEqual(result['state'],'MATCHES_PAYMENT')
-            self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待发货')
+            self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
             self.assertEqual(daily_batch.read(self.path,cache,receipt_request)['records'],[])
 
         self.portal.orders[self.online]['native_status'] = confirmation.DELIVERING
         self.portal.detail_buyer_check = 'mismatch'
         service.pull_order_payment(self.path,self.keys,self.portal)
-        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待发货')
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
         self.portal.detail_buyer_check = 'verified'
-        service.pull_order_payment(self.path,self.keys,self.portal)
+        [reply] = automatic.process(self.path,self.keys,self.portal,'recover')
+        self.assertTrue(reply['ok'], reply)
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
+        self.assertTrue(service.pull_order_payment(self.path,self.keys,self.portal)[0]['payment_locked'])
         self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待收货')
+        self.assertFalse(service.pull_order_payment(self.path,self.keys,self.portal)[0]['payment_locked'])
+        self.assertEqual(jobs.due_payment_locks(self.path,now=delay),[])
         self.portal.orders[self.online]['native_status'] = confirmation.SHIPPED
         service.pull_order_payment(self.path,self.keys,self.portal)
         self.assertEqual([r['number'] for r in daily_batch.read(self.path,cache,receipt_request)['records']], [head['number']])
@@ -348,6 +355,41 @@ class OrderPayment(unittest.TestCase):
         self.assertTrue(current['health']['receipt'])
         self.assertEqual(current['status'],'已收齐')
         self.assertEqual(len(lifecycle.history(self.path,head,lifecycle.JST_ORDER)),1)
+
+    def test_payment_lock_requires_current_matching_payment_and_never_creates_one(self):
+        from jst_shipping import read
+        from lifecycle_rules import basis_token
+        from order_keys import warehouse_revision
+
+        head = self.base.head
+        self.submit()
+        self.portal.orders[self.online]['native_status'] = confirmation.DELIVERING
+        self.assertFalse(service.pull_order_payment(self.path,self.keys,self.portal)[0]['payment_locked'])
+        self.assertFalse(lifecycle.snapshot(self.path,head)['present']['payment'])
+        plan, _ = service.prepare_review(self.path,self.keys)
+        lifecycle.commit(self.path,plan)
+        [matched] = service.pull_order_payment(self.path,self.keys,self.portal)
+        self.assertTrue(matched['payment_locked'])
+        with closing(wr.read_connection(self.path)) as db:
+            token = basis_token(lifecycle.current(db,head,'payment'))
+            self.assertEqual(read(db,[head['oid']])[warehouse_revision(head)]['payment_lock'],token)
+
+        self.portal.price, self.portal.total = '2.50','32.00'
+        [changed] = service.pull_order_payment(self.path,self.keys,self.portal)
+        self.assertEqual(changed['state'],'READY')
+        self.assertFalse(changed['payment_locked'])
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
+        self.assertEqual(len(lifecycle.history(self.path,head,'payment')),1)
+        plan, _ = service.prepare_review(self.path,self.keys)
+        lifecycle.commit(self.path,plan)
+        self.assertEqual(lifecycle.snapshot(self.path,head)['status'],'待付款')
+        self.assertTrue(service.pull_order_payment(self.path,self.keys,self.portal)[0]['payment_locked'])
+        after = lifecycle.snapshot(self.path,head)
+        self.assertEqual((after['status'],after['documents']['payment']['version']),('待收货',2))
+        with closing(wr.read_connection(self.path)) as db:
+            locks = db.execute("""SELECT json_extract(detail,'$.payment_lock.version') FROM jst_events
+                WHERE json_extract(detail,'$.online')=? AND json_type(detail,'$.payment_lock')='object' ORDER BY id""",(self.online,)).fetchall()
+            self.assertEqual(locks,[(1,),(2,)])
 
     def test_normal_status_progression_can_save_same_original_candidate(self):
         first = self.submit()['payment']
@@ -517,9 +559,10 @@ class OrderPayment(unittest.TestCase):
                            p['total_quantity'],p['payment_total_amount']) for p in both],
                          [('QA-HB','0001','6001','12','33'),('QA-SD','0002','6002','9','24.75')])
         self.assertEqual([lifecycle.snapshot(self.path,h)['present']['receipt'] for h in heads],[False,False])
-        self.assertEqual([lifecycle.snapshot(self.path,h)['status'] for h in heads],['待发货','待发货'])
-        for online, statuses in zip(keys, (['待收货','待发货'], ['待收货','待收货'])):
+        self.assertEqual([lifecycle.snapshot(self.path,h)['status'] for h in heads],['待付款','待付款'])
+        for online, qty, amount, statuses in zip(keys, ('12','9'), ('35','26.75'), (['待收货','待付款'], ['待收货','待收货'])):
+            self.portal.qty,self.portal.total = qty,amount
             self.portal.orders[online]['native_status'] = confirmation.DELIVERING
-            [verified] = automatic.process(self.path,[online],self.portal,'recover')
-            self.assertTrue(verified['ok'], verified)
+            [verified] = service.pull_order_payment(self.path,[online],self.portal)
+            self.assertTrue(verified['payment_locked'], verified)
             self.assertEqual([lifecycle.snapshot(self.path,h)['status'] for h in heads],statuses)

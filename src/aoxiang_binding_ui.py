@@ -4,17 +4,31 @@ from ui_controls import button, label
 from aoxiang_directory import Directory
 from aoxiang_purchase_tasks import validate_for_upload
 from aoxiang_receipts import checked_json
+import aoxiang_manual_import as manual
+from platform_import_ui import export_target, operator_input
 
-BINDING_STATES = {'RUNNING':'正在核对原采购单', 'READY':'核对一致，尚未确认关联', 'PAUSED':'核对已停止，可恢复原任务',
+BINDING_STATES = {'RUNNING':'正在核对原采购单', 'READY':'核对完成，尚未确认关联', 'PAUSED':'核对已停止，可恢复原任务',
                   'FAILED':'核对未通过，原件与任务保留', 'CONFIRMED':'已确认关联原采购单',
+                  'STALE':'平台明细或本地依据已变化，请重新核对',
                   'SUPERSEDED':'原采购任务已更新；请点击“刷新本单记录”继续原任务'}
 
 
 class BindingActions:
     def setup_binding(self, layout):
         self.binding_record = None
-        group=QGroupBox('已有平台采购单 · 核对并关联')
-        v=QVBoxLayout(group);v.addWidget(label('仅建立本地关系，不上传、提交或修改平台采购；无回执时必须核对本次标记下唯一采购单。','muted'))
+        group=QGroupBox('人工处理 · 原导入单与平台采购关联')
+        v=QVBoxLayout(group)
+        self.manual_note=label('导出核对用原件，或确认接管后导出供业务手工导入。','muted')
+        self.manual_note.setWordWrap(True);v.addWidget(self.manual_note)
+        row=QHBoxLayout()
+        self.check_export_btn=button('导出本次导入单（核对用）',lambda:self.export_import('check'))
+        self.handoff_btn=button('接管本次导入',self.take_over_import)
+        self.manual_export_btn=button('导出手工导入文件',lambda:self.export_import('manual'))
+        self.failure_rows_btn=button('查看失败明细',self.show_failure_rows)
+        self.failure_export_btn=button('导出失败原件',lambda:self.export_import('failure'))
+        for b in (self.check_export_btn,self.handoff_btn,self.manual_export_btn,self.failure_rows_btn,self.failure_export_btn):
+            row.addWidget(b)
+        v.addLayout(row)
         row=QHBoxLayout()
         self.binding_start_btn=button('核对已有采购单',self.binding_start)
         self.binding_read_btn=button('读取原关联核对状态',self.binding_refresh)
@@ -34,36 +48,83 @@ class BindingActions:
         idle=not self.worker and not self._closing
         r=self.current or {};p=(self.binding_record or {}).get('proposal') or {}
         active=self.binding_active() or bool(r.get('active')) or bool(self.template_id)
-        eligible=r.get('state') in ('RESERVED','PAUSED','FAILED_PRECHECK','NEEDS_REVIEW') and not r.get('taskId') and not r.get('additionalTaskIds') and p.get('state')!='SUPERSEDED'
+        result=r.get('importResult') or {}
+        settled=result.get('taskId')==r.get('taskId') and result.get('kind') in ('failed','partial','complete')
+        unattempted=r.get('state') in ('RESERVED','PAUSED','FAILED_PRECHECK') and not r.get('taskId') and not r.get('uploadAttempted')
+        handoff=r.get('manualHandoff')
+        eligible=not r.get('binding') and not r.get('additionalTaskIds') and (p.get('state')!='SUPERSEDED' or settled) and (
+            r.get('state')=='MANUAL_HANDOFF' or
+            r.get('state') in ('RESERVED','PAUSED','FAILED_PRECHECK','NEEDS_REVIEW','ACCEPTED') and (not r.get('taskId') or settled))
         available=bool(self.package) and not self.head.get('deleted')
+        self.check_export_btn.setEnabled(idle and not active and bool(r.get('originalFile')) and not self.head.get('deleted'))
+        self.handoff_btn.setEnabled(idle and not active and available and eligible and not handoff
+                                    and p.get('state')!='READY' and (unattempted or settled and result['kind']=='failed'))
+        self.manual_export_btn.setEnabled(idle and not active and available and eligible and bool(handoff)
+            and r.get('state')=='MANUAL_HANDOFF' and p.get('state') not in ('RUNNING','READY','STALE'))
+        for btn in (self.failure_rows_btn,self.failure_export_btn):
+            btn.setEnabled(idle and not active and bool(result.get('failureFile')))
+        detail=''
+        if handoff:detail=f"人工接管 · {handoff['operator']} · {handoff['at']}\n{handoff['reason']}"
+        if result.get('kind') in ('partial','failed') and not result.get('failureFile'):
+            detail+='\n平台失败行原件未留存，可在原任务核对计数与原因。'
+        self.manual_note.setText(detail.strip() or '平台结果待核时可导出原件核对。接管需确认原范围内未建单。')
         self.binding_start_btn.setEnabled(idle and not active and eligible and available)
         self.binding_read_btn.setEnabled(idle and not r.get('active') and bool(r))
         self.binding_details_btn.setEnabled(idle and bool(self.package) and p.get('state') in ('READY','CONFIRMED'))
         self.binding_confirm_btn.setEnabled(idle and not active and eligible and available and p.get('state')=='READY')
         text=BINDING_STATES.get(p.get('state'),'尚无关联核对；正常上传成功不需要此操作。')
         if p.get('request'):
-            request=p['request'];text+=' · '+request['order_id']+' · 平台制单日 '+request['created_day']+'\n核对原因：'+request['reason']
-        if p.get('summary'):text+='\n平台状态：'+p['summary']['status']+'；逐商品数量金额一致。'
+            request=p['request'];text+=' · '+request['order_id']+' · '+str(request['created_day'] or '按单号精查')+'\n核对依据 '+request['reason']
+        if p.get('summary'):
+            summary=p['summary'];differences=summary.get('differences',0)
+            text+='\n平台状态 '+summary['status']+f' · {differences} 款与原预览不同'
         if p.get('error'):text+='\n'+p['error']['message']
         self.binding_note.setText(text)
 
     def binding_start(self):
         dialog=QDialog(self);dialog.setWindowTitle('核对已有翱象采购单');dialog.resize(590,280)
         v=QVBoxLayout(dialog);v.addWidget(label('填写准确采购单号即可精查，无需填写店名或日期；本次只查询原件，核对后确认关联。'))
-        form=QFormLayout();order=QLineEdit();day=QLineEdit();reason=QLineEdit()
+        form=QFormLayout();order=QLineEdit();day=QLineEdit();reason=QLineEdit();operator=QLineEdit()
         order.setPlaceholderText('必填，精确采购单号');day.setPlaceholderText('可留空；仅平台要求时填已核对的原生制单日');reason.setPlaceholderText('必填，例如上传回执丢失，已在平台核实')
-        for text,field in [('采购单号（必填）',order),('制单日（选填）',day),('核对原因（必填）',reason)]:form.addRow(text,field)
+        for text,field in [('采购单号（必填）',order),('制单日（选填）',day),('经办人（必填）',operator),('核对依据（必填）',reason)]:form.addRow(text,field)
         v.addLayout(form);row=QHBoxLayout();row.addWidget(button('开始核对',dialog.accept));cancel=button('取消',dialog.reject);cancel.setDefault(True);row.addWidget(cancel);v.addLayout(row)
-        accepted=dialog.exec();request={'order_id':order.text().strip(),'created_day':day.text().strip(),'reason':reason.text().strip()};dialog.deleteLater()
+        accepted=dialog.exec();request={'order_id':order.text().strip(),'created_day':day.text().strip(),'operator':operator.text().strip(),'reason':reason.text().strip()};dialog.deleteLater()
         if accepted!=QDialog.DialogCode.Accepted:return
         self.start_binding_request(request)
 
     def start_binding_request(self, request):
-        package=self.package;id=self.current['id']
+        package=self.package;record=self.current;id=record['id']
         def operation(_):
-            validate_for_upload(self.host.work_repository.path,package,self.client.request('configuration'),Directory(self.folder).suppliers(),for_binding=True)
+            if 'operator' in request:
+                from aoxiang_upload_pipeline import original_units
+                from platform_import_files import author
+                author(request['operator'],request['reason'])
+                units=original_units(self.host.work_repository.path,{'head':self.head,'package':package},record)
+                request.update(original_units={sku:unit.strip() for sku,unit in units.items()},host_facts=manual.basis(self,binding=True))
+            else:
+                validate_for_upload(self.host.work_repository.path,package,self.client.request('configuration'),Directory(self.folder).suppliers(),for_binding=True)
             return self.client.request('binding.start',purchase_id=id,binding_request=request)
         self.run(operation,self.binding_status)
+
+    def take_over_import(self):
+        values=operator_input(self,'接管翱象导入','先查原任务和本次来源标记。核实尚未建采购后，操作人可从本单导出手工导入文件。')
+        if values:
+            _,operator,reason=values
+            self.run(lambda _:manual.handoff(self,self.current,operator,reason),self.purchase_status)
+
+    def export_import(self, usage):
+        target=export_target(self,self.head['number'],'翱象','.xlsx',usage)
+        if target:
+            def exported(receipt):
+                self.status.setText('原件已保存 '+receipt['path'])
+                self.pending_binding_refresh=True
+            self.run(lambda _:manual.export_original(self,self.current['id'],usage,target),exported)
+
+    def show_failure_rows(self):
+        from platform_import_ui import rows_dialog
+        self.run(lambda _:manual.failure_rows(self.client,self.current['id']),lambda rows: rows_dialog(
+            self,'翱象失败明细',f"原任务 {self.current.get('taskId')} · {len(rows)} 行",
+            ['工作表','原行号','平台原始字段'],rows))
 
     def binding_refresh(self):
         if self.current:self.run(lambda _:self.client.request('binding.status',purchase_id=self.current['id']),self.binding_status)
@@ -74,7 +135,10 @@ class BindingActions:
         self.binding_record=result
         self.status.setText(result.get('stage') or BINDING_STATES.get((result.get('proposal') or {}).get('state'),'原关联状态已读取'))
         if result.get('active'):self.poll.start()
-        else:self.poll.stop()
+        else:
+            self.poll.stop()
+            if ((result.get('proposal') or {}).get('request') or {}).get('operator'):
+                self.pending_binding_refresh=True
         self.update_buttons()
 
     def binding_details(self):
@@ -83,22 +147,36 @@ class BindingActions:
             from business_ui import run,grid
             proof=run(self,lambda progress,cancel:checked_json(manifest['file'],manifest['sha256']),(),'读取已核对采购原件')
             expected={r['sku']:r for r in self.package['intent']['rows']}
-            rows=[[r['sku'],expected[r['sku']]['name'],expected[r['sku']]['quantity'],r['quantity'],expected[r['sku']]['amount'],r['amount'],r['status']] for r in proof['evidence']['rows']]
+            actual={r['sku']:r for r in proof['evidence']['rows']}
+            rows=[]
+            from decimal import Decimal
+            def differs(old,new):
+                fields=(('quantity','quantity'),('unitPrice','price'),('amount','amount'))
+                return any(Decimal(old[a])!=Decimal(new[b]) for a,b in fields if old.get(a) is not None and new.get(b) is not None)
+            for sku in dict.fromkeys([*expected,*actual]):
+                old,new=expected.get(sku,{}),actual.get(sku,{})
+                rows.append([sku,old.get('name'),new.get('unit'),old.get('quantity'),new.get('quantity'),
+                             old.get('unitPrice'),new.get('price'),old.get('amount'),new.get('amount'),
+                             '新增' if not old else '缺行' if not new else '变化' if differs(old,new) else '一致'])
             d=QDialog(self);d.resize(1260,650);d.setWindowTitle('逐商品关联核对 · '+p['request']['order_id']);v=QVBoxLayout(d)
             v.addWidget(label(self.head['name']+' · '+self.head['warehouse']+' · '+self.head['number'],'section'))
-            v.addWidget(label('平台制单日 '+p['request']['created_day']+'；原件观察时间 '+proof['evidence']['observedAt']+'。只读核对，不调整付款或采购。','muted'))
+            v.addWidget(label('平台制单日 '+str(p['request']['created_day'] or proof.get('nativeCreatedDay') or '未留存')+' · 原件观察时间 '+proof['evidence']['observedAt'],'muted'))
             search=QLineEdit();search.setPlaceholderText('查找商品编码或名称');v.addWidget(search)
-            table,model=grid(d,['商品编码','商品名称','预览基础数量','采购基础数量','预览采购金额','平台采购金额','平台状态'],rows)
-            for column,width in enumerate((220,240,130,130,130,130,140)):table.setColumnWidth(column,width)
+            table,model=grid(d,['商品编码','商品名称','基础单位','预览数量','采购数量','预览采购价','平台采购价','预览金额','平台金额','差异'],rows)
+            for column,width in enumerate((170,200,82,92,92,105,105,105,105,75)):table.setColumnWidth(column,width)
             search.textChanged.connect(model.filter);v.addWidget(table,1);v.addWidget(button('关闭',d.accept));d.exec();d.deleteLater()
         except Exception as exc:QMessageBox.warning(self,'未打开关联核对',str(exc))
 
     def binding_confirm(self):
         record=self.binding_record;p=record['proposal'];package=self.package
         id,proposal_id,sequence,sha=record['purchase_id'],p['id'],record['sequence'],p['manifest']['sha256']
-        text=f"{self.head['name']} · {self.head['warehouse']}\n本地补货单：{self.head['number']}\n关联翱象采购单：{p['request']['order_id']}\n平台状态：{p['summary']['status']}\n{p['summary']['rows']}款 · 数量{p['summary']['quantity']} · 金额{p['summary']['amount']}元\n原因：{p['request']['reason']}\n\n只建立本地关联，不代表重新下单或已收货；不会修改原签发及付款。"
+        text=f"{self.head['name']} · {self.head['warehouse']}\n本地仓单 {self.head['number']}\n关联翱象采购单 {p['request']['order_id']}\n平台状态 {p['summary']['status']}\n{p['summary']['rows']} 款 · 数量 {p['summary']['quantity']} · 金额 {p['summary']['amount']} 元\n与预览不同 {p['summary'].get('differences',0)} 款\n核对依据 {p['request']['reason']}\n\n确认后保存平台采购实际明细与本地关联。"
         if QMessageBox.question(self,'确认关联已有采购单',text,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return
         def operation(_):
-            validate_for_upload(self.host.work_repository.path,package,self.client.request('configuration'),Directory(self.folder).suppliers(),for_binding=True)
-            return self.client.request('binding.confirm',purchase_id=id,proposal_id=proposal_id,sequence=sequence,manifest_sha256=sha)
+            if p['request'].get('operator'):
+                extra={'host_facts':manual.basis(self,binding=True),'timeout':240}
+            else:
+                validate_for_upload(self.host.work_repository.path,package,self.client.request('configuration'),Directory(self.folder).suppliers(),for_binding=True)
+                extra={}
+            return self.client.request('binding.confirm',purchase_id=id,proposal_id=proposal_id,sequence=sequence,manifest_sha256=sha,**extra)
         self.run(operation,self.purchase_status)

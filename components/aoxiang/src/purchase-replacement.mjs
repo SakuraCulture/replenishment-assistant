@@ -17,7 +17,7 @@ function hasLocalReceipt(basis){
 
 export function requireReplaceable(db, original){
   const {id,intent,state,uploadAttempted,receipt,binding,additionalTaskIds}=original;
-  if(unsentStates.has(state)&&uploadAttempted===false&&!receipt&&!binding&&!additionalTaskIds?.length)return;
+  if(unsentStates.has(state)&&uploadAttempted===false&&!receipt&&!binding&&!additionalTaskIds?.length&&!original.manualHandoff)return;
   if(binding?.orderId&&!additionalTaskIds?.length&&exists(db,'purchase_receipts')){
     const row=db.prepare('SELECT payload FROM purchase_receipts WHERE id=?').get(id);
     const observed=row?JSON.parse(row.payload):null;

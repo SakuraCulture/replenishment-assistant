@@ -21,7 +21,7 @@ from runtime_support import Cancelled
 
 KINDS = {'prepare': '采购预览', 'upload': '采购上传与核对', 'receipt': '收货同步'}
 from aoxiang_workflow_state import can_end_local,local_preparation,summary as task_summary,counts,recoverable
-from aoxiang_purchase_messages import waiting, item_message, voided, PAYMENT_PREPARATION_CODES
+from aoxiang_purchase_messages import waiting, item_message, voided, PAYMENT_PREPARATION_CODES, import_failure
 STATES = {'QUEUED': '排队', 'RUNNING': '正在处理', 'YIELDED': '等待人工操作结束', 'PAUSED': '已停止，可继续原任务',
           'FAILED': '批次未完成', 'READY': '预览完成，尚未上传', 'COMPLETED': '完成', 'COMPLETED_WITH_ERRORS': '已处理，有待核项', 'CANCELLED': '剩余任务已取消',
           'PENDING': '未处理', 'ACCEPTED':'平台处理中，未重传', 'PREPARED': '预览就绪，未上传', 'BOUND': '已关联采购单', 'OBSERVED': '已观察，尚未完成', 'SYNCED': '正式实收已保存', 'VOIDED':'平台已作废，常规同步已停止', 'REVIEW': '待核，可继续核对或重建', 'SKIPPED': '本项已结束／跳过'}
@@ -283,6 +283,7 @@ class QueueDialog(QDialog):
         row = QHBoxLayout()
         self.preview_btn=button('查看采购预览', self.details);row.addWidget(self.preview_btn)
         self.reason_btn=button('查看原因与下一步', self.failure_reason);row.addWidget(self.reason_btn)
+        self.manual_btn=button('人工处理',self.manual_purchase);row.addWidget(self.manual_btn)
         self.table.itemSelectionChanged.connect(self.detail_controls)
         self.upload_btn = button('确认上传勾选的采购预览', self.upload, True)
         self.resume_btn = button('继续本批原未完任务', self.resume)
@@ -421,6 +422,8 @@ class QueueDialog(QDialog):
                 summary = i.get('summary') or {}
                 state_text='本地准备未通过，未生成采购预览' if local_preparation(i,job['kind']) and i['state'] in ('FAILED','REVIEW') else '本地准备已结束' if i.get('ended_locally') else STATES.get(i['state'], i['state'])
                 if i.get('rebuild_to'):state_text='已结束并转入新预览'
+                elif job['kind']=='upload' and i['state']!='BOUND' and (failure:=import_failure(i.get('purchase_observation'))):
+                    state_text='导入失败' if failure['kind']=='failed' else '部分成功'
                 elif waiting(i,job['kind']):state_text='已受理，等待核对'
                 elif job['kind']=='upload' and i['state'] in ('FAILED','REVIEW'):state_text='采购结果需核对'
                 elif voided(i):state_text='平台已作废；常规同步已停止'
@@ -454,6 +457,16 @@ class QueueDialog(QDialog):
         item=self.current['items'][n] if self.current and 0<=n<len(self.current['items']) else None
         self.preview_btn.setEnabled(bool(item and item.get('package')))
         self.reason_btn.setEnabled(bool(item and item.get('error')))
+        self.manual_btn.setEnabled(bool(item and item.get('package') and item.get('head')))
+
+    def manual_purchase(self):
+        n=self.table.currentRow()
+        if not self.current or not 0<=n<len(self.current['items']):
+            return
+        item=self.current['items'][n]
+        if item.get('head') and item.get('package'):
+            from aoxiang_purchase_ui import open_purchase
+            open_purchase(self,self.manager.host,item['head'],original_id=item['package']['id'])
 
     def failure_reason(self):
         n=self.table.currentRow()
@@ -739,6 +752,9 @@ def prepare_selected(parent, host, heads, *, saved=False):
     if not heads:
         QMessageBox.information(parent, '先选择范围', '请先勾选已确认付款的仓单。')
         return
+    from platform_order_scope import choose
+    heads=choose(parent,host.work_repository.path,heads)
+    if not heads:return
     from aoxiang_preview_ui import PreviewScope
     dialog = PreviewScope(parent, host, heads, saved=saved)
     try:

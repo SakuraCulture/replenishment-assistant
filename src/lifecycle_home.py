@@ -10,7 +10,7 @@ from lifecycle_facts import current, legacy_return
 from app_defaults import WAREHOUSES
 from result_semantics import SIGNED_GROUPS, order_quantity, signed_rows
 from lifecycle_rules import JST_ORDER, basis_token, document_summary
-from lifecycle_stages import CURRENT as ALL_STAGES, STATUSES, WAITING_SHIPMENT, progress_state
+from lifecycle_stages import CURRENT as ALL_STAGES, STATUSES, progress_state
 from jst_shipping import read as read_shipments
 from order_keys import warehouse_revision
 import warehouse_execution as execution
@@ -48,7 +48,8 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
     for value in (start, end):
         if value: date.fromisoformat(value)
     if start and end and start > end: raise ValueError('起始日期不能晚于结束日期')
-    repo = repository(path); heads = repo.headers(); cache = Path(cache); cache.parent.mkdir(parents=True, exist_ok=True)
+    order_kind = request.get('order_kind','normal_model')
+    repo = repository(path); heads = repo.headers(order_kind=order_kind); cache = Path(cache); cache.parent.mkdir(parents=True, exist_ok=True)
     records = [];basis_tokens={};source=str(Path(path).resolve())
     track_platform=request.get('platform_tracking',False)
     if track_platform:import order_tracking_refs
@@ -58,7 +59,7 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
     with closing(sqlite3.connect(cache)) as idx, closing(wr.read_connection(path, timeout=10)) as db:
         db.execute('BEGIN'); visibility = ao.states(db)
         managed=execution.managed(db,(h['oid'] for h in selected))
-        managed_heads=execution.heads(db,[h for h in selected if h['oid'] in managed]) if managed else []
+        managed_heads=execution.heads(db,[h for h in selected if h['oid'] in managed],include_material=order_kind!='normal_model') if managed else []
         by_parent={}
         for h in managed_heads:by_parent.setdefault(h['oid'],[]).append(h)
         selected=[child for h in selected for child in (by_parent.get(h['oid'],[]) if h['oid'] in managed else [h])]
@@ -158,12 +159,12 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
         if track_platform:
             order_tracking_refs.attach(path,db,records,cancel)
             if terms:records=[r for r in records if order_tracking_refs.matches(r,terms)]
-        if heads != repo.headers(): raise wr.Conflict('签发修订在查询期间变化，请刷新')
+        if heads != repo.headers(order_kind=order_kind): raise wr.Conflict('签发修订在查询期间变化，请刷新')
         with closing(wr.read_connection(path, timeout=10)) as fresh:
             now_managed=execution.managed(fresh,(h['oid'] for h in selected_parents))
-            if now_managed!=managed or (managed and execution.heads(fresh,[h for h in selected_parents if h['oid'] in managed])!=managed_heads):raise wr.Conflict('仓单签发范围在查询期间变化，请刷新')
+            if now_managed!=managed or (managed and execution.heads(fresh,[h for h in selected_parents if h['oid'] in managed],include_material=order_kind!='normal_model')!=managed_heads):raise wr.Conflict('仓单签发范围在查询期间变化，请刷新')
         idx.commit()
-    counts = {s: sum(r['status'] == s for r in records) for s in (*STATUSES,'待运营签发',WAITING_SHIPMENT)}
+    counts = {s: sum(r['status'] == s for r in records) for s in (*STATUSES,'待运营签发')}
     for i, r in enumerate(records): r['list_position'] = i
     if request.get('all_records'):return {'records':records,'counts':counts,'scope':len(records),**({'_basis_tokens':basis_tokens} if request.get('_with_tokens') else {})}
     kind = request.get('status', '')

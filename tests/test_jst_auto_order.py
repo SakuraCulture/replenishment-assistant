@@ -269,6 +269,29 @@ class AutoOrders(unittest.TestCase):
         self.assertEqual(restarted.calls,[('lookup',keys[0])])
         self.assertEqual(self.read(keys[0])['internal'],'6001')
 
+    def test_exact_rejection_is_visible_after_multiple_lookups_and_never_resubmits(self):
+        key,=self.prepared()
+        service.process(self.path,[key],self.portal,'preview')
+        original=self.read(key,workbook=True)
+        def reject(operation,*,online,**kwargs):
+            self.portal.calls.append((operation,online))
+            return {'dispatched':True,'receipt':{'online':online,'binding':original['proof']['binding'],
+                'success_count':0,'fail_count':1,'text':'成功条数：0，失败条数：1',
+                'observed_at':'2026-11-25T12:15:17.000Z'}}
+        self.portal.request=reject
+        result=service.process(self.path,[key],self.portal,'submit')[0]
+        self.assertEqual(result['stage'],'IMPORT_FAILED')
+        self.assertFalse(result['ok'])
+        for _ in range(2):
+            self.assertIn('导入失败',service.process(self.path,[key],self.portal,'recover')[0]['reason'])
+            service.process(self.path,[key],self.portal,'submit')
+        actual=self.read(key,workbook=True)
+        self.assertEqual(actual['stage'],'IMPORT_UNKNOWN')  # persisted replay guard is understood by the old EXE
+        self.assertEqual(store.list_orders(self.path)[0]['stage'],'IMPORT_FAILED')
+        self.assertEqual(actual['proof']['import_receipt']['fail_count'],1)
+        self.assertEqual(actual['workbook'],original['workbook'])
+        self.assertEqual([op for op,_ in self.portal.calls].count('import'),1)
+
     def test_audit_rejected_can_continue_on_original_internal_order(self):
         keys=self.prepared()
         service.process(self.path,keys,self.portal,'preview')

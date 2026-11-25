@@ -2,7 +2,6 @@
 import sqlite3
 
 from analytics_identifiers import external,registrations
-from lifecycle_stages import SHIPMENT_CHECK, WAITING_SHIPMENT
 from runtime_support import checkpoint
 
 
@@ -46,7 +45,7 @@ def attach(path,db,records,cancel=None):
             elif status=='已作废':statuses.append('已作废')
             elif p['receipt_state'] in ('NEEDS_REVIEW','VOIDED_REVIEW'):statuses.append('实收待核')
             elif status=='已完成':statuses.append('已完成待同步')
-            elif p['observed_at']:statuses.append(WAITING_SHIPMENT if head.get('next')==SHIPMENT_CHECK else '待收货')
+            elif p['observed_at']:statuses.append('付款单待核' if head.get('shipment') and head.get('next')=='payment' else '待收货')
             else:statuses.append(status if status=='待提交' else '尚未查询')
             notes.append(p['number']+' · '+status+(' · 观察 '+p['observed_at'] if p['observed_at'] else ''))
         if tracking['receipt_saved']:

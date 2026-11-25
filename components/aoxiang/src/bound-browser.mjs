@@ -20,7 +20,7 @@ export class BoundBrowser{
   constructor({state,config,binding,signal,onProgress=()=>{},Client=BrowserClient,discoverEnvironment=discover}){
     Object.assign(this,{state,config,binding,signal,onProgress,Client,discoverEnvironment});
     this.client=null;this.adapter={onReceipt:null};
-    for(const method of ['verifyIdentity','querySingle','warehouseOptions','prepareExport','submitOnce','findTask','downloadPurchaseTemplate','preparePurchaseCreate','uploadPurchaseOnce','purchaseImportTask','queryCreateOrders','queryPurchase','preparePurchase','submitPurchase','purchaseTask','downloadPurchase']){
+    for(const method of ['verifyIdentity','querySingle','warehouseOptions','prepareExport','submitOnce','findTask','downloadPurchaseTemplate','preparePurchaseCreate','uploadPurchaseOnce','purchaseImportTask','purchaseImportFailureFile','queryCreateOrders','queryPurchase','preparePurchase','submitPurchase','purchaseTask','downloadPurchase']){
       this.adapter[method]=async(...args)=>{
         this.check();await this.ensure();this.check();
         if(method==='uploadPurchaseOnce')return this.client.uploadPurchaseOnce(args[0],this.adapter.beforePurchaseImport);

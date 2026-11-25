@@ -8,11 +8,12 @@ import {requireAbortedDispatch} from './purchase-host-guard.mjs';
 import {requireReplaceable} from './purchase-replacement.mjs';
 
 const transitions={
-  RESERVED:['PREPARING','PAUSED','CANCELLED_BEFORE_UPLOAD'],PREPARING:['READY','PAUSED','FAILED_PRECHECK'],
-  READY:['SUBMITTING','PAUSED','FAILED_PRECHECK'],PAUSED:['PREPARING','CANCELLED_BEFORE_UPLOAD'],
-  FAILED_PRECHECK:['PREPARING','CANCELLED_BEFORE_UPLOAD'],SUBMITTING:['ACCEPTED','NEEDS_REVIEW'],
-  ACCEPTED:['VERIFYING','NEEDS_REVIEW'],VERIFYING:['VERIFYING','ACCEPTED','BOUND','NEEDS_REVIEW'],
-  NEEDS_REVIEW:['ACCEPTED','VERIFYING','NEEDS_REVIEW'],BOUND:['BOUND','NEEDS_REVIEW'],CANCELLED_BEFORE_UPLOAD:[]
+  RESERVED:['PREPARING','PAUSED','CANCELLED_BEFORE_UPLOAD','MANUAL_HANDOFF'],PREPARING:['READY','PAUSED','FAILED_PRECHECK'],
+  READY:['SUBMITTING','PAUSED','FAILED_PRECHECK'],PAUSED:['PREPARING','CANCELLED_BEFORE_UPLOAD','MANUAL_HANDOFF'],
+  FAILED_PRECHECK:['PREPARING','CANCELLED_BEFORE_UPLOAD','MANUAL_HANDOFF'],SUBMITTING:['ACCEPTED','NEEDS_REVIEW'],
+  ACCEPTED:['VERIFYING','NEEDS_REVIEW','MANUAL_HANDOFF'],VERIFYING:['VERIFYING','ACCEPTED','BOUND','NEEDS_REVIEW'],
+  NEEDS_REVIEW:['ACCEPTED','VERIFYING','NEEDS_REVIEW','MANUAL_HANDOFF'],BOUND:['BOUND','NEEDS_REVIEW'],
+  MANUAL_HANDOFF:['NEEDS_REVIEW'],CANCELLED_BEFORE_UPLOAD:[]
 };
 export class PurchaseCreates{
   static async open(state){
@@ -107,6 +108,9 @@ export class PurchaseCreates{
     });
   }
   event(r,kind){this.db.prepare('INSERT INTO purchase_create_events VALUES(?,?,?)').run(r.id,r.sequence,JSON.stringify({id:r.id,sequence:r.sequence,state:r.state,at:r.updatedAt,kind,error:r.error,taskId:r.receipt?.taskId||null,orderId:r.binding?.orderId||null,
+    ...(kind==='ORIGINAL_IMPORT_OBSERVED'?{importResult:r.importResult}:{}),
+    ...(kind==='OPERATOR_IMPORT_HANDOFF'?{manualHandoff:r.manualHandoff}:{}),
+    ...(kind==='ORIGINAL_FILE_EXPORTED'?{export:r.originalExports.at(-1)}:{}),
     ...(r.rebuildOperationId?{rebuildOperationId:r.rebuildOperationId,rebuildOf:r.rebuildOf,successorId:r.successorId,reason:r.rebuildReason}:{}),
     ...(r.bindingProposal?{proposalId:r.bindingProposal.id,proposalState:r.bindingProposal.state,proofSha256:r.bindingProposal.manifest?.sha256||null,proposalError:r.bindingProposal.error}:{} )}));}
   update(id,sequence,next,changes={},kind=next){
@@ -115,15 +119,29 @@ export class PurchaseCreates{
       requireUnretired(this.db,id,old.intent?.basis?.oid);
       if(!transitions[old.state]?.includes(next))fail('PURCHASE_STATE_TRANSITION','采购任务不允许从 '+old.state+' 进入 '+next);
       if(next==='SUBMITTING'){
+        if(old.manualHandoff||old.bindingProposal?.request?.operator&&old.bindingProposal.state==='READY')
+          fail('PURCHASE_MANUAL_HANDOFF','本单已转人工处理，自动采购未提交');
         // Also protect successors reserved by an older build and recheck
         // late receipts immediately before recording this request's dispatch.
         for(const previous of this.previousAttempts(old.intent))requireReplaceable(this.db,previous);
       }
-      if(Object.keys(changes).some(k=>!['baseline','uploadAttempted','receipt','binding','error','evidence','additionalTaskIds','uploadWarning','verification'].includes(k)))fail('PURCHASE_STATE_IMMUTABLE','不能修改采购冻结依据');
+      if(Object.keys(changes).some(k=>!['baseline','uploadAttempted','receipt','binding','error','evidence','additionalTaskIds','uploadWarning','verification','importResult','manualHandoff'].includes(k)))fail('PURCHASE_STATE_IMMUTABLE','不能修改采购冻结依据');
+      if(changes.importResult&&(!old.receipt||changes.importResult.taskId!==old.receipt.taskId||changes.importResult.code!==old.receipt.code))
+        fail('IMPORT_TASK_SCOPE','导入结果与原受理回执不符');
       if(old.uploadAttempted&&changes.uploadAttempted===false)fail('PURCHASE_STATE_IMMUTABLE','已进入上传边界，不能清除提交事实');
       if(old.receipt&&changes.receipt?.taskId&&old.receipt.taskId!==changes.receipt.taskId)fail('PURCHASE_RECEIPT_CONFLICT','原导入任务号不能覆盖');
       const r={...old,...structuredClone(changes),state:next,sequence:sequence+1,updatedAt:now()};
       this.db.prepare('UPDATE purchase_creates SET state=?,sequence=?,platform_order=?,payload=? WHERE id=?').run(r.state,r.sequence,r.binding?.orderId||null,JSON.stringify(r),id);this.event(r,kind);return r;
+    });
+  }
+  recordExport(id,sequence,receipt){
+    return this.state.write(()=>{
+      const r=this.get(id);
+      requireUnretired(this.db,id,r.intent?.basis?.oid,r.intent?.basis?.warehouse);
+      if(r.sequence!==sequence)fail('PURCHASE_STATE_CONFLICT','原件所属采购已变化，请按同一文件重试');
+      const next={...r,sequence:sequence+1,updatedAt:now(),originalExports:[...(r.originalExports||[]),receipt]};
+      this.db.prepare('UPDATE purchase_creates SET sequence=?,payload=? WHERE id=?').run(next.sequence,JSON.stringify(next),id);
+      this.event(next,'ORIGINAL_FILE_EXPORTED');return next;
     });
   }
   accepted(receipt){
@@ -172,8 +190,9 @@ export class PurchaseCreates{
       const retiring=!bindingEligible(r)&&r.bindingProposal?.state==='RUNNING'&&proposal.state==='SUPERSEDED'&&
         canonical({...proposal,state:null,error:null})===canonical({...r.bindingProposal,state:null,error:null});
       if(!retiring)canBind(r);
-      const next={...r,bindingProposal:structuredClone(proposal),sequence:r.sequence+1,updatedAt:now()};
-      this.db.prepare('UPDATE purchase_creates SET sequence=?,payload=? WHERE id=?').run(next.sequence,JSON.stringify(next),id);
+      const phase=proposal.state==='READY'&&proposal.request.operator?'MANUAL_HANDOFF':r.state;
+      const next={...r,state:phase,bindingProposal:structuredClone(proposal),sequence:r.sequence+1,updatedAt:now()};
+      this.db.prepare('UPDATE purchase_creates SET state=?,sequence=?,payload=? WHERE id=?').run(next.state,next.sequence,JSON.stringify(next),id);
       this.event(next,kind);return next;
     });
   }
@@ -206,11 +225,26 @@ export class PurchaseCreates{
     }
   }
 }
+export function bindingView(proposal){
+  if(!proposal?.request?.operator)return proposal||null;
+  const {original_units,host_facts,...request}=proposal.request;
+  return {...proposal,request};
+}
+
 export function purchasePublic(r){
   if(r.state==='RETIRED')return {id:r.id,state:'RETIRED',sourceDeleted:true,uploadAttempted:r.uploadAttempted,taskIds:r.taskIds};
+  let binding=r.binding;
+  if(binding?.manualRevision){
+    const {rows,...summary}=binding.manualRevision;
+    binding={...binding,manualRevision:{...summary,rowCount:rows.length}};
+  }
   return {id:r.id,state:r.state,sequence:r.sequence,createdAt:r.createdAt,updatedAt:r.updatedAt,
     basis:r.intent.basis,target:r.intent.target,supplierCode:r.intent.supplierCode,rows:r.intent.rows.length,totalQuantity:r.intent.totalQuantity,totalAmount:r.intent.totalAmount,
-    uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding:r.binding,candidateOrderId:r.verification?.orderId||null,error:r.error,uploadWarning:r.uploadWarning||null,additionalTaskIds:r.additionalTaskIds||[],
+    uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding,candidateOrderId:r.verification?.orderId||null,error:r.error,uploadWarning:r.uploadWarning||null,additionalTaskIds:r.additionalTaskIds||[],
+    confirmedImportRequests:r.receipt?.importRequests??(r.uploadAttempted?null:0),
+    originalFile:{file:r.intent.file.path,sha256:r.intent.file.sha256},
+    ...(r.manualHandoff?{manualHandoff:r.manualHandoff}:{}),
+    ...(r.importResult?{importResult:r.importResult}:{}),
     ...(r.rebuildOperationId?{rebuildOperationId:r.rebuildOperationId,rebuildOf:r.rebuildOf,rebuildAlso:r.rebuildAlso,successorId:r.successorId,previousOrderId:r.previousOrderId,previousTaskId:r.previousTaskId}:{}),
-    ...(r.bindingProposal?{bindingProposal:r.bindingProposal}:{})};
+    ...(r.bindingProposal?{bindingProposal:bindingView(r.bindingProposal)}:{})};
 }

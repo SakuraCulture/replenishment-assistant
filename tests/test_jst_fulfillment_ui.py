@@ -101,17 +101,20 @@ class FulfillmentUI(unittest.TestCase):
         self.addCleanup(widget.reader.shutdown)
         widget.ready(daily_batch.read(self.fixture.path,cache,request))
         self.assertEqual(widget.table.rowCount(),0)
-        import jst_auto_order as automatic
-        online, = self.fixture.keys
-        self.fixture.fixture.portal.orders[online]['native_status'] = '发货中(打单拣货)'
-        [verified] = automatic.process(self.fixture.path,[online],self.fixture.fixture.portal,'recover')
-        self.assertTrue(verified['ok'], verified)
+        order = self.fixture.order
+        original = {'binding':order['proof']['binding'], 'online':order['online'], 'internal':order['internal'],
+                    'native_status':'发货中(打单拣货)', 'found':True, 'contact_ok':True, 'buyer_check':'verified',
+                    'items':[{'sku':'0001','qty':'12','price':'2.5','amount':'30'}], 'detail_count':1,
+                    'currency':'CNY', 'freight':'0', 'amount':'30'}
+        browser = SimpleNamespace(action=Mock(return_value=original))
+        [verified] = service.pull_order_payment(self.fixture.path,self.fixture.keys,browser)
+        self.assertTrue(verified['payment_locked'], verified)
         widget.ready(daily_batch.read(self.fixture.path,cache,request))
         self.assertEqual(widget.table.rowCount(),1)
         self.assertEqual(widget.table.item(0,3).text(),self.fixture.head['day'])
         self.assertEqual(widget.table.item(0,7).text(),'待收货')
         notice = widget.table.item(0,widget.table.columnCount()-1)
-        self.assertIn('已确认付款 V001',notice.text())
+        self.assertIn('已锁定付款 V001',notice.text())
         self.assertIn('聚水潭原单 '+self.fixture.order['internal'],notice.text())
         self.assertNotIn('历史下单标记',notice.text())
         self.assertEqual(notice.toolTip(),notice.text())

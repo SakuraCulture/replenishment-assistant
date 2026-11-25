@@ -107,22 +107,58 @@ export function checkNativePurchase(p,e,{status,requireNote,originalUnits}){
 }
 
 export function bindingRequest(request){
-  if(!request||Object.keys(request).sort().join(',')!=='created_day,order_id,reason'||typeof request.order_id!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(request.order_id))fail('BINDING_INPUT','请填写准确采购单号，不支持模糊匹配或多单');
+  const keys=request&&Object.keys(request).sort().join(',');
+  if(!['created_day,order_id,reason','created_day,host_facts,operator,order_id,original_units,reason'].includes(keys)||typeof request.order_id!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(request.order_id))fail('BINDING_INPUT','请填写准确采购单号，不支持模糊匹配或多单');
   if(request.created_day!==''&&request.created_day!==null)dateBounds(request.created_day,request.created_day);
   if(request.created_day&&request.created_day>businessDate()||typeof request.reason!=='string'||request.reason!==request.reason.trim()||request.reason.length<2||request.reason.length>500||/[\x00-\x1f]/.test(request.reason))fail('BINDING_INPUT','请填写准确采购单号及2至500字核对原因；制单日可留空按单号精查');
+  if(keys.includes('operator')&&(!text(request.operator,80)||!hash.test(request.host_facts||'')||
+    !request.original_units||typeof request.original_units!=='object'||Array.isArray(request.original_units)||
+    Object.entries(request.original_units).some(([sku,unit])=>!text(sku,128)||!text(unit,128))))
+    fail('BINDING_INPUT','经办人、原仓单版本或商品基础单位无效');
   return request;
 }
-export function bindingEligible(r){return ['RESERVED','PAUSED','FAILED_PRECHECK','NEEDS_REVIEW'].includes(r.state)&&!r.receipt&&!r.additionalTaskIds?.length;}
+export function bindingEligible(r){
+  if(r.binding||r.additionalTaskIds?.length)return false;
+  if(r.state==='MANUAL_HANDOFF')return true;
+  if(!r.receipt)return ['RESERVED','PAUSED','FAILED_PRECHECK','NEEDS_REVIEW'].includes(r.state);
+  return ['ACCEPTED','NEEDS_REVIEW'].includes(r.state)&&r.receipt.taskId===r.importResult?.taskId&&
+    ['failed','partial','complete'].includes(r.importResult.kind);
+}
 export function canBind(r){
-  if(!bindingEligible(r))fail('BINDING_NOT_ELIGIBLE','仅可核对未上传预览或无回执待核任务；已有回执请继续原任务，不绕过冲突或改绑');
+  if(!bindingEligible(r))fail('BINDING_NOT_ELIGIBLE','当前仍在执行、原提交范围待核或已有采购关联，请查看原任务');
+}
+
+function manualRevision(intent,e,request){
+  if(!['待提交','待入库','部分入库','已完成','已作废'].includes(e.main?.status)||!Array.isArray(e.rows)||!e.rows.length)
+    fail('PURCHASE_STATUS_UNSUPPORTED','采购状态或明细缺失，保留原任务待核');
+  const before=new Map(intent.rows.map(r=>[r.sku,r]));
+  const units=Object.create(null);
+  const rows=e.rows.map(r=>{
+    if(!text(r.sku,128)||!text(r.unit,128)||decimal(r.quantity)==='0')
+      fail('PURCHASE_DETAIL_MISMATCH','采购商品编码、基础单位或数量无效：'+r.sku);
+    units[r.sku]=before.has(r.sku)?(Object.hasOwn(request.original_units,r.sku)?request.original_units[r.sku]:''):r.unit;
+    return {sku:r.sku,unit:r.unit,quantity:decimal(r.quantity),price:decimal(r.price),amount:decimal(r.amount)};
+  });
+  const totalQuantity=sum(rows.map(r=>r.quantity)),totalAmount=sum(rows.map(r=>r.amount));
+  checkNativePurchase({...intent,rows,totalQuantity,totalAmount},e,{status:e.main.status,requireNote:true,originalUnits:units});
+  const differences=rows.filter(row=>{
+    const old=before.get(row.sku);
+    before.delete(row.sku);
+    return !old||decimal(old.quantity)!==row.quantity||
+      old.unitPrice!==undefined&&decimal(old.unitPrice)!==row.price||decimal(old.amount)!==row.amount;
+  }).length+before.size;
+  return {version:1,operator:request.operator,rows,totalQuantity,totalAmount,differences};
 }
 export function checkedBinding(r,proof){
   canBind(r);bindingRequest(proof?.request);
-  if(proof.schema!==1||proof.operation!=='purchase.binding.proof'||proof.purchaseId!==r.id||canonical(proof.basis)!==canonical(r.intent.basis)||proof.requireNote!==r.uploadAttempted||typeof proof.runId!=='string'||!proof.runId)fail('BINDING_PROOF','关联依据不属于原采购付款任务');
+  const manual=Boolean(proof.request.operator),requireNote=manual||r.uploadAttempted;
+  if(!manual&&r.receipt||proof.schema!==1||proof.operation!=='purchase.binding.proof'||proof.purchaseId!==r.id||canonical(proof.basis)!==canonical(r.intent.basis)||proof.requireNote!==requireNote||typeof proof.runId!=='string'||!proof.runId)fail('BINDING_PROOF','关联依据不属于原采购付款任务');
   const e=proof.evidence;
   if(e?.candidates?.[0]!==proof.request.order_id)fail('BINDING_PROOF','输入采购单号与已核对单号不同');
-  checkNativePurchase(r.intent,e,{status:e.main?.status,requireNote:r.uploadAttempted});
-  if(r.uploadAttempted&&(proof.uniqueMarkedOrders?.length!==1||proof.uniqueMarkedOrders[0]!==proof.request.order_id))fail('PURCHASE_NOT_UNIQUE','原上传标记下未唯一核实一张采购单，不能人工跳过多单待核');
-  return {orderId:proof.request.order_id,status:e.main.status,taskId:null,files:e.files,verifiedAt:e.observedAt,
+  if(requireNote&&(proof.uniqueMarkedOrders?.length!==1||proof.uniqueMarkedOrders[0]!==proof.request.order_id))fail('PURCHASE_NOT_UNIQUE','原上传标记下未唯一核实一张采购单，保留待核');
+  const revision=manual?manualRevision(r.intent,e,proof.request):null;
+  if(!manual)checkNativePurchase(r.intent,e,{status:e.main?.status,requireNote});
+  return {orderId:proof.request.order_id,status:e.main.status,taskId:r.receipt?.taskId??null,files:e.files,verifiedAt:e.observedAt,
+          ...(revision?{manualRevision:revision}:{}),
           method:'operator_confirmed_exact_native_rows',createdDay:proof.request.created_day||proof.nativeCreatedDay||null,reason:proof.request.reason};
 }

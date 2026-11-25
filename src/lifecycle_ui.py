@@ -251,8 +251,9 @@ class LifecycleDialog(QDialog):
         sources=QGroupBox('单据与依据');row=QHBoxLayout(sources);row.addWidget(button('查看决策依据',on_audit or (lambda:host.open_archive(head))));self.views={}
         for s in io.ALL_STAGES:self.views[s]=button('查看'+io.TITLES[s]+'版本',lambda checked=False,k=s:self.document(k));row.addWidget(self.views[s])
         self.payment_reference_btn=button('维护聚水潭内部订单号',self.payment_references);row.addWidget(self.payment_reference_btn)
+        row.addWidget(button('聚水潭人工处理',self.open_jst_manual))
         v.addWidget(sources)
-        ax=QGroupBox('翱象采购（以已确认付款为依据）');ax_row=QHBoxLayout(ax);self.ax_purchase=button('打开翱象采购',self.open_ax_purchase);ax_row.addWidget(self.ax_purchase);ax_row.addWidget(label('生成预览、上传建单、核对原任务；建单后保留待提交。','muted'));ax_row.addStretch();v.addWidget(ax)
+        ax=QGroupBox('翱象采购（以已确认付款为依据）');ax_row=QHBoxLayout(ax);self.ax_purchase=button('翱象采购／人工处理',self.open_ax_purchase);ax_row.addWidget(self.ax_purchase);ax_row.addWidget(label('生成预览、上传建单、核对原任务；建单后保留待提交。','muted'));ax_row.addStretch();v.addWidget(ax)
         self.ax_receipt=button('查看 / 同步翱象收货',self.open_ax_receipt);ax_row.addWidget(self.ax_receipt)
         exports=QGroupBox('数据导出');row=QHBoxLayout(exports);self.export_confirmation=button('导出签发单',lambda:host.export_order(head));row.addWidget(self.export_confirmation);self.exports={}
         for s in io.ALL_STAGES:self.exports[s]=button('导出'+io.TITLES[s],lambda checked=False,k=s:export_selected(self,host,[head],k));row.addWidget(self.exports[s])
@@ -280,6 +281,10 @@ class LifecycleDialog(QDialog):
     def open_ax_purchase(self):
         from aoxiang_purchase_ui import open_purchase
         open_purchase(self,self.host,self.head)
+    def open_jst_manual(self):
+        from jst_manual_order import order_keys
+        from jst_manual_order_ui import open_manual_order
+        open_manual_order(self,self.host,order_keys(self.host.work_repository.path,self.head))
     def open_ax_receipt(self):
         from aoxiang_receipt_ui import open_receipts
         if open_receipts(self,self.host,self.head):self.refresh()

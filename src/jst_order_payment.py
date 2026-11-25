@@ -36,6 +36,13 @@ def verify_details(order, receipt, cancel=None):
     buyer_problem = buyer_issue(receipt)
     if buyer_problem and receipt.get('buyer_check') != 'unavailable':
         raise ValueError(buyer_problem)
+    manual=(order.get('proof') or {}).get('manual_binding')
+    if manual:
+        rows, totals=manual_items(order,receipt,cancel)
+        if rows!=manual['rows'] or totals!=manual['totals']:
+            raise ValueError('平台原单数量或金额已变化，请先核对人工关联的原版本')
+        expected={row['sku']:(row['quantity'],row['price']) for row in rows}
+        return expected,{row['sku']:tuple(Decimal(row[k]) for k in ('quantity','price','amount')) for row in rows},totals
     expected, items = (verify_import_items(order, receipt, cancel) if buyer_problem else
                        _read_items(order['payload'], receipt, cancel))
     verified, totals = _verified_amounts(items, receipt, cancel)
@@ -72,12 +79,13 @@ def _verify_frozen_prices(order, expected, verified, totals, cancel):
         raise ValueError(f"平台应付 {totals['payable']} 元与原导入预览 {preview:.2f} 元不同，付款待核")
 
 
-def _read_items(payload, receipt, cancel, *, require_live_lines=True):
+def _read_items(payload, receipt, cancel, *, require_live_lines=True, actual_scope=False):
     if receipt.get('detail_error'):
         raise ValueError(receipt['detail_error'])
     expected = {sku: (qty, price) for sku, qty, price in payload['lines']}
     items = receipt.get('items')
-    if not isinstance(items, list) or not expected or receipt.get('detail_count') != len(items) or len(items) != len(expected):
+    if (not isinstance(items,list) or not items or not expected or receipt.get('detail_count')!=len(items)
+            or not actual_scope and len(items)!=len(expected)):
         raise ValueError('平台整单商品款数与原仓单不同，缺行须核对')
     checked = {}
     for item in items:
@@ -85,7 +93,7 @@ def _read_items(payload, receipt, cancel, *, require_live_lines=True):
         if not isinstance(item, dict):
             raise ValueError('平台整单商品明细格式待核')
         sku = item.get('sku')
-        if not isinstance(sku, str) or sku not in expected or sku in checked:
+        if not isinstance(sku,str) or not sku.strip() or sku in checked or not actual_scope and sku not in expected:
             raise ValueError('平台明细存在重复编码或原仓单外商品')
         if require_live_lines and (item.get('item_status') not in (None, '', 'Normal')
                                    or item.get('refund_status') not in (None, '', 'NoRefund')):
@@ -100,6 +108,16 @@ def _read_items(payload, receipt, cancel, *, require_live_lines=True):
         qty = number(item.get('qty'), f'{sku} 平台数量')
         checked[sku] = (qty, item)
     return expected, checked
+
+
+def manual_items(order, receipt, cancel):
+    _,items=_read_items(order['payload'],receipt,cancel,actual_scope=True)
+    checked, totals=_verified_amounts(items,receipt,cancel)
+    if any(quantity<=0 or price<0 for quantity, price, amount in checked.values()):
+        raise ValueError('原单商品数量或成交单价待核')
+    return [{'sku':sku,'unit':'库存单位','quantity':decimal_text(checked[sku][0]),
+             'price':decimal_text(checked[sku][1]),'amount':f'{checked[sku][2]:.2f}'}
+            for sku in sorted(checked)],totals
 
 
 def _verified_amounts(items, receipt, cancel):
@@ -130,6 +148,7 @@ def _verified_amounts(items, receipt, cancel):
 def prepare(order, receipt, cancel=None):
     expected, verified, totals = verify_details(order, receipt, cancel)
     payload = order['payload']
+    allocated = {sku:Decimal(qty)*Decimal(price) for sku,qty,price in payload['lines']}
     binding = order['proof']['binding']
     headers = ['商品编码', '平台数量', '成交单价', '商品金额', '币种', '数量单位']
     rows = []
@@ -138,7 +157,7 @@ def prepare(order, receipt, cancel=None):
         values = [sku, decimal_text(qty), decimal_text(price), f'{amount:.2f}', 'CNY', '库存单位']
         rows.append({'sku': sku, 'name': '', 'ordered': ordered, 'quantity': values[1],
                      'price': values[2], 'amount': values[3], 'currency': 'CNY',
-                     'allocated_amount': decimal_text(Decimal(ordered) * Decimal(original_price)),
+                     'allocated_amount': decimal_text(allocated.get(sku,Decimal(0))),
                      'sheet': LABEL, 'row': line, 'headers': headers, 'values': values})
     # Keep evidence stable across repeat reads and changes in the platform's row order.
     raw = dumps({'kind': KIND, 'binding': binding, 'online': order['online'], 'internal': order['internal'],

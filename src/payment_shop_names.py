@@ -57,7 +57,7 @@ def load(path,known=None,progress=lambda _:None,cancel=None):
                 for row in heads:
                     h=dict(zip(('day','store','oid','number','revision','digest','saved'),row));code=h['store']
                     if code not in missing:continue
-                    checkpoint(cancel);effective=execution.heads(db,[h]) if execution.has_parent(db,h['oid']) else [h]
+                    checkpoint(cancel);effective=execution.heads(db,[h],include_material=True) if execution.has_parent(db,h['oid']) else [h]
                     if effective:
                         order=execution.get_order(repo,effective[0],view='export',db=db)
                         names[code]=order['payload']['result'].get('store_name','')

@@ -22,8 +22,11 @@ CHECKED=Qt.CheckState.Checked
 
 
 class ResultsPage(QWidget):
-    def __init__(self,host,scope=None,parent=None):
+    def __init__(self,host,scope=None,parent=None,*,order_kind='normal_model'):
         super().__init__(parent);self.host=host;self.path=host.work_repository.path;self.scope=scope
+        if scope and any(h.get('kind')=='material' for h in scope):
+            order_kind = 'material' if all(h.get('kind')=='material' for h in scope) else 'all'
+        self.order_kind = order_kind
         self.data=None;self.records=[];self.count=0;self.worker=None;self.reading=False;self.closing=False;self.reviewing=False
         self.batch_id=None;self.close_pending=None;self.last_plan=None;self.remaining=[];self.chosen=set();self.building=False;self.payment_notice=''
         self.reader=HistoryReader(self.path,host.repository.folder/'jst_result_index.sqlite3',self)
@@ -114,7 +117,7 @@ class ResultsPage(QWidget):
         self.reading=True;self.controls()
         self.scope_note.setText(('分配批次 '+self.batch_id[:8]+' · 冻结库存、原分配顺序' if self.batch_id else self.day.text()+' 至 '+self.end.text()+' · 日期范围（可包含多个分配批次）')+(' · 限定所选 '+str(len(self.scope))+' 单' if self.scope is not None else ''))
         if self.data is None:self.progress.show();self.progress.setRange(0,0)
-        self.reader.request({'kind':'jst_results','day':self.day.text(),'date_end':self.end.text(),'batch_id':self.batch_id,'scope':[list(service.key(h)) for h in self.scope] if self.scope is not None else None,'platform_tracking':True},self.ready,self.failed_read,self.read_progress)
+        self.reader.request({'kind':'jst_results','day':self.day.text(),'date_end':self.end.text(),'batch_id':self.batch_id,'scope':[list(service.key(h)) for h in self.scope] if self.scope is not None else None,'platform_tracking':True,'order_kind':self.order_kind},self.ready,self.failed_read,self.read_progress)
     def poll(self):
         if self.isVisible() and not self.worker and not self.reading and not self.closing and not self.reviewing:self.refresh()
     def read_progress(self,p):
@@ -393,6 +396,9 @@ class ResultsPage(QWidget):
         if not heads:return
         self.reviewing=True;self.controls()
         try:
+            from platform_order_scope import choose
+            heads = choose(self,self.path,heads)
+            if not heads:return
             prepared=run(self,operation.preflight,(self.path,heads),'核对所选仓单与历史验证')
             if self.host.closing:return
             ready=prepared['ready']
@@ -436,6 +442,9 @@ class ResultsPage(QWidget):
         self.reviewing=True;self.controls()
         def prepare():
             selected=jst_auto_order.selection(self.visible_records(),self.chosen)
+            from platform_order_scope import choose
+            selected=choose(self,self.path,selected,lambda row:row['head'])
+            if not selected:return
             result=run(self,jst_auto_order.prepare,(self.path,selected),'按勾选仓单制表')
             if not self.closing and not self.host.closing:
                 if result['ready']:self.focus_redo(open_orders(self,self.host,result['ready'],result['failed']))

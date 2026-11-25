@@ -89,7 +89,7 @@ const pages = {
 };
 
 async function openFixture(t,{large=[],split=false,shortShop=false,listBuyer=contact.buyer,
-  detailBuyer=contact.buyer,displayBuyer=contact.buyer,detailOverrides={}}={}){
+  detailBuyer=contact.buyer,displayBuyer=contact.buyer,detailOverrides={},rejectImport=false}={}){
   const submittedFormats=[];
   const detailReads=[];
   const nativeItem=(sku,qty)=>({sku_id:sku,qty,price:'2',amount:String(Number(qty)*2)});
@@ -117,6 +117,8 @@ async function openFixture(t,{large=[],split=false,shortShop=false,listBuyer=con
       return;
     }
     let html=pages[url.pathname];
+    if (rejectImport&&url.pathname.endsWith('/import_show.aspx')) html=html.replace('parent.statusValue="waitconfirm";','');
+    if (rejectImport&&url.pathname==='/receipt') html=html.replace('成功条数：1，失败条数：0','成功条数：0，失败条数：1');
     if (shortShop&&url.pathname===listPath) html=html.replace(shop,'合成简称');
     if (url.pathname===listPath) html=html.replace('<span>'+contact.buyer+'</span>','<span>'+displayBuyer+'</span>');
     if (req.method==='POST') {
@@ -181,6 +183,22 @@ test('changed preview cannot release the order',{skip:!fs.existsSync(edge),timeo
   await page.frameLocator('#upload').locator('table tr td').nth(13).locator('span').evaluate(e=>e.textContent='合成°商品 * 9');
   await assert.rejects(flow.run('import',{warehouse:wh,permit:preview.permit,online},account),{code:'PREVIEW_CHANGED'});
   assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[0,0,0]);
+});
+
+test('the native rejection receipt reports 0/1; later lookup and retry never confirm a second import',
+  {skip:!fs.existsSync(edge),timeout:60000},async t=>{
+  const {page,account,flow}=await openFixture(t,{rejectImport:true});
+  const staged=await flow.run('stage_import',{spec},account);
+  const result=await flow.run('import',{warehouse:wh,permit:staged.permit,online},account);
+  assert.equal(result.receipt.online,online);
+  assert.deepEqual(result.receipt.binding,staged.binding);
+  assert.equal(result.receipt.success_count,0);assert.equal(result.receipt.fail_count,1);
+  for(let n=0;n<2;n++){
+    const found=await flow.run('lookup',{spec:{...spec,binding:staged.binding}},account);
+    assert.equal(found.found,false);
+    await assert.rejects(flow.run('import',{warehouse:wh,permit:staged.permit,online},account),{code:'PREVIEW_CHANGED'});
+  }
+  assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[1,0,0]);
 });
 
 test('native single-SKU rows preserve a 2000-item order and reopen a stale preview without importing',

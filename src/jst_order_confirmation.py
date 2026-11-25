@@ -52,6 +52,8 @@ def record(db, task, status, *, rows=None):
         if digest != source['generation']['digest']:
             raise wr.Conflict('原订单对应的生成单摘要已变化，请核对原单')
         names = {row['sku']: row.get('name') for row in generation['rows']}
+        if rows is None:
+            rows=((task.get('proof') or {}).get('manual_binding') or {}).get('rows')
         quantities = [(r['sku'], r['quantity']) for r in rows] if rows is not None else [(sku, qty) for sku, qty, _ in source['lines']]
         items = [{'sku': sku, 'name': names.get(sku), 'base_quantity': qty} for sku, qty in quantities]
         if old and not old['payload']['pending'] and old['payload']['reference'] == reference and old['payload']['rows'] == items:

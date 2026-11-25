@@ -79,7 +79,7 @@ def _generation_proof(db, generation, digest):
             'stamp':upstream_stamp(db,generation['head'],products)}
 
 
-def _require_plan(db, p):
+def _require_inputs(db, p):
     proof=p['generation']
     successor = _successor_online(db, p['head'])
     if successor is not None and p['online'] != successor:
@@ -89,6 +89,10 @@ def _require_plan(db, p):
         raise Check('门店回传或运营签发已更新，请按有效生成单重新制表')
     if _shop(db,p['head'])!=p['shop'] or store.profile(db,p['head']['store'],p['head']['warehouse'])!=p['profile']:
         raise Check('店铺对应或收货资料已更新，请重新制表并预览')
+
+
+def _require_plan(db, p):
+    _require_inputs(db,p)
     reason=saved_execution_reason(db,p['head'],allow_redo=True)
     if reason:
         raise Check(reason+'，请核对原订单')
@@ -112,6 +116,8 @@ def selection(records, chosen):
 
 def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=None, expected_setup=None):
     """Freeze one portable native file per valid local warehouse order."""
+    from platform_order_scope import require_single
+    require_single(path,selected,lambda row:row['head'])
     if order_phone is not None and (len(selected)!=1 or not re.fullmatch(r'[0-9]{11}',order_phone)):
         raise Check('单次测试号码只可用于一张仓单，需填11位数字')
     ready=[];failed=[]
@@ -196,6 +202,7 @@ def _client_error(exc):
         'PREVIEW_CONTACT':'聚水潭预览的买家或收货资料与本次制表不一致',
         'PREVIEW_CHANGED':'平台预览已变化，请重新核对该仓单',
         'RESPONSE_UNKNOWN':'组件应答超时，请继续核对原任务',
+        'ORDER_IMPORT_RECEIPT_UNKNOWN':'聚水潭未返回可核实的本次导入回执，请仅按原线上单号核对',
         'BUSY':'聚水潭正在同步资料或处理原任务，请待当前动作安全结束',
         'SESSION_CONFLICT':'聚水潭本仓操作权待核，请待原操作释放后继续核对',
         'CLOSING':'聚水潭组件正在退出，请在组件就绪后核对原任务',
@@ -322,6 +329,10 @@ def _save(path, order, stage, cancel, *, check_plan=False, proof=None, reason=''
         result=store.update(db,order,stage,proof=proof,reason=reason)
         if stage in store.UNRESOLVED and stage!=order['stage']:
             _event(db,result,'聚水潭自动下单执行意图',{'stage':stage})
+        if proof and proof.get('import_receipt') and not (order.get('proof') or {}).get('import_receipt'):
+            _event(db,result,'聚水潭原导入回执',{'stage':store.display_stage(stage,proof['import_receipt']),
+                                               'receipt':proof['import_receipt'],
+                                               'file_sha':result['file_sha']})
         commit(db,cancel)
     return result
 
@@ -333,7 +344,7 @@ def _legacy_audit_not_dispatched(order):
             and order['reason']=='原订单商品详情尚未关闭')
 
 
-def _record_found(path, order, result, cancel, *, identity_only=False):
+def _record_found(path, order, result, cancel, *, identity_only=False, manual_proof=None):
     from jst_cancellation import CANCELLED, PAYMENT_REVIEW, record as record_cancellation
     if order.get('historical'):
         return order
@@ -343,7 +354,7 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             return {**order,'reason':'尚未查到唯一原单，请继续核对'}
         saved = _save(path,order,order['stage'],cancel,reason='按原线上单号尚未查到唯一订单，保留原状态，请继续核对')
         return {**saved,'lookup_missing':True}
-    proof=order['proof']
+    proof=manual_proof if manual_proof is not None else order['proof']
     if result.get('binding')!=proof['binding'] or result.get('online')!=order['online']:
         raise Check('回查的企业、店铺或线上单号与原任务不同')
     if not identity_only:
@@ -361,8 +372,13 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
         if buyer_problem:
             if result.get('buyer_check') != 'unavailable':
                 raise Check(buyer_problem)
-            if confirmation.bound_cancelled_order(order, result):
+            if manual_proof is not None:
+                identity_basis = 'manual_exact_online_and_confirmed_items'
+            elif confirmation.bound_cancelled_order(order, result):
                 identity_basis = 'bound_internal_and_native_status'
+            elif proof.get('manual_binding') and native_status in confirmation.PAYMENT_STATES:
+                order_payment.verify_details(order,result,cancel)
+                identity_basis = 'manual_binding_and_native_items'
             elif native_status in confirmation.PAYMENT_STATES or native_status == CANCELLED:
                 order_payment.verify_import_items(order, result, cancel)
                 identity_basis = 'original_preview_and_item_details'
@@ -425,13 +441,13 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             return latest
         if allocations.active(db,h)!=order['gid']:
             raise wr.Conflict('外部原单已查到，本机原生成版本已变化，请核对关联')
-        if identity_basis:
+        if identity_basis or manual_proof is not None:
             from warehouse_execution import validate_visibility
             validate_visibility(db, h)
             generation, digest = allocations.read_generation(db, order['gid'])
             if digest != order['payload']['generation']['digest'] or any(generation['head'].get(k) != h[k] for k in HEAD_KEYS):
                 raise wr.Conflict('原仓单签发修订或生成单摘要已变化，请核对原关联')
-        current=store.update(db,order,stage,internal=internal,status=state,reason=reason)
+        current=store.update(db,order,stage,proof=manual_proof,internal=internal,status=state,reason=reason)
         lock=allocations.locked(db,h)
         if lock and lock!=order['gid']:
             raise wr.Conflict('已存在其他生成版本的下单标记，请核对')
@@ -451,7 +467,10 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             detail['identity_basis']=identity_basis
         if native_status in (ORDINARY_AUDIT_DONE,'已付款待审核',*SHIPPING_PLATFORM_STATES,*REVIEW_PLATFORM_STATES):
             detail['native_status']=native_status
-        if (stage=='AUDITED' and not identity_only) or native_status in confirmation.REVERSED:
+        if manual_proof is not None:
+            detail['manual_binding']=manual_proof['manual_binding']['digest']
+            confirmation.record(db,current,native_status,rows=manual_proof['manual_binding']['rows'])
+        elif (stage=='AUDITED' and not identity_only) or native_status in confirmation.REVERSED:
             confirmation.record(db,current,native_status)
         if stage == 'CANCELLED':
             from jst_fulfillment_store import current as payment_candidate, observe
@@ -485,11 +504,38 @@ def _audit(path, browser, order, cancel):
     return _review(path,browser,intent,cancel)
 
 
+def _save_import_receipt(path, order, dispatched):
+    if dispatched is not None and not isinstance(dispatched,dict):
+        raise Check('聚水潭回执格式无法核实，请继续核对原线上单号')
+    receipt=(dispatched or {}).get('receipt')
+    if receipt is None:
+        return order
+    if not isinstance(receipt,dict) or dispatched.get('dispatched') is not True:
+        raise Check('聚水潭回执格式无法核实，请继续核对原线上单号')
+    success, failed = (receipt.get(k) for k in ('success_count','fail_count'))
+    at=receipt.get('observed_at')
+    text=receipt.get('text')
+    counts=re.fullmatch(r'成功条数\s*[：:]\s*(\d+)\s*[，,]\s*失败条数\s*[：:]\s*(\d+)',
+                        text if isinstance(text,str) and len(text)<=80 else '')
+    if (receipt.get('online')!=order['online'] or receipt.get('binding')!=order['proof']['binding']
+            or type(success) is not int or type(failed) is not int or (success,failed) not in ((1,0),(0,1))
+            or not counts or (int(counts[1]),int(counts[2]))!=(success,failed)
+            or not isinstance(at,str) or not re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z',at)):
+        raise Check('聚水潭回执的仓账号、店铺、线上单号或张数与原任务不符，请继续核对原单')
+    saved={k:receipt[k] for k in ('online','success_count','fail_count','text','observed_at')}
+    # The platform already answered. Commit this receipt even if the user
+    # stopped the work while the response was arriving.
+    return _save(path,order,'IMPORT_UNKNOWN',None,proof={**order['proof'],'import_receipt':saved},
+                 reason='' if failed else '已取得导入回执，等待核对原线上单号')
+
+
 def _process(path, browser, order, action, cancel, *, expected_binding=None):
     if order.get('historical'):
         if action in ('recover','recover_delete'):
             return order
         raise Check('这是已经取消的历史原单，请打开后继下单任务')
+    if store.manual_pending(order):
+        raise Check('本次已转人工处理，请按原线上单号核对已有订单')
     if action=='probe':
         browser.action('probe',order)
         return _save(path,order,order['stage'],cancel,reason='已核对本仓企业、店铺和导入入口')
@@ -501,6 +547,8 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
         if order['stage']!='IMPORTED':
             raise Check('请先核对原单，确认已导入且待普通审核')
         return _audit(path,browser,order,cancel)
+    if store.display_stage(order['stage'],(order['proof'] or {}).get('import_receipt'))=='IMPORT_FAILED':
+        return order
     if order['stage'] in store.RELEASED:
         raise Check('此任务已有导入动作，请继续核对原单')
     with closing(wr.read_connection(path)) as db:
@@ -518,13 +566,21 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
     if not _same_order(_preview_for_submit(order,fresh),order['proof']) or not fresh.get('permit'):
         raise Check('平台预览或目标店铺已变化，请重新预览')
     intent=_save(path,order,'IMPORT_UNKNOWN',cancel,check_plan=True,reason='已保存导入意图，等待原单回查')
-    browser.request('import',permit=fresh['permit'],online=order['online'],warehouse=order['payload']['head']['warehouse'])
+    dispatched=browser.request('import',permit=fresh['permit'],online=order['online'],warehouse=order['payload']['head']['warehouse'])
+    intent=_save_import_receipt(path,intent,dispatched)
+    if store.display_stage(intent['stage'],(intent['proof'] or {}).get('import_receipt'))=='IMPORT_FAILED':
+        return intent
     return _review(path,browser,intent,cancel,identity_only=True)
 
 
 def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *, approved=None, prepare_payment=None,
             expected_binding=None):
     """Process at most the explicitly confirmed selection, in displayed order."""
+    if action=='submit' and len(keys)>1:
+        from platform_order_scope import require_single
+        with closing(wr.read_connection(path)) as db:
+            heads = [order['payload']['head'] for key in keys if (order := store.read(db,key))]
+        require_single(path,heads)
     responses=[]
     for i,online in enumerate(dict.fromkeys(keys),1):
         checkpoint(cancel)
@@ -546,11 +602,15 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
             ok=False
             with closing(wr.read_connection(path)) as db:
                 current=store.read(db,online)
-            if (current and not current.get('historical') and not _legacy_audit_not_dispatched(current)
+            if (current and not current.get('historical') and not store.manual_pending(current) and not _legacy_audit_not_dispatched(current)
                     and (current['stage']!='CANCELLED' or action in ('recover','recover_delete'))):
                 current=_save(path,current,current['stage'],cancel if action in ('recover','recover_delete') else None,reason=str(exc))
             result={**(current or order),'reason':str(exc)}
-        response={'online':online,'stage':result['stage'],'reason':result['reason'],'ok':ok and not result.get('lookup_missing'),
+        receipt=(result.get('proof') or {}).get('import_receipt')
+        stage=store.display_stage(result['stage'],receipt)
+        reason=store.display_reason(stage,result['reason'],receipt)
+        response={'online':online,'stage':stage,'reason':reason,
+                  'ok':ok and not result.get('lookup_missing') and stage!='IMPORT_FAILED',
                   'sequence':result['sequence'],'internal':result.get('internal')}
         if (prepare_payment and ok and not result.get('lookup_missing') and action in ('submit','recover') and result.get('internal')
                 and result['stage'] in ('IMPORTED','AUDITED','AUDIT_UNKNOWN','REVIEW')):

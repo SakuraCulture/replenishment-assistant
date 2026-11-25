@@ -10,7 +10,6 @@ import daily_batch
 from lifecycle_ui import LifecycleDialog,import_document,import_group,export_selected,warn,review_again
 from lifecycle_io import TITLES
 from lifecycle_rules import JST_ORDER
-from lifecycle_stages import SHIPMENT_CHECK
 
 class LifecycleWidget(QWidget):
     STAGES={'return':'回传处理','operations':'运营签发','jst':'聚水潭导入单','payment':'付款核对','receipt':'收货核对'}
@@ -23,9 +22,16 @@ class LifecycleWidget(QWidget):
         if stage == 'payment':
             self.status.addItem(daily_batch.PURCHASE_FILTER)
         self.warehouse_filter=QComboBox();self.warehouse_filter.addItems(['全部仓','河北仓','山东仓'])
+        self.order_kind=QComboBox()
+        for title,key in (('补货单','normal_model'),('物料单','material'),('全部类型','all')):
+            self.order_kind.addItem(title,key)
+        if scope and any(h.get('kind')=='material' for h in scope):
+            self.order_kind.setCurrentIndex(1 if all(h.get('kind')=='material' for h in scope) else 2)
         row=QHBoxLayout()
         for combo in (self.status,self.warehouse_filter):
             row.addWidget(combo);combo.currentIndexChanged.connect(self.query)
+        row.addWidget(self.order_kind)
+        self.order_kind.currentIndexChanged.connect(self.order_kind_changed)
         self.generation_filter=None
         if stage=='payment':
             self.generation_filter=QComboBox()
@@ -47,6 +53,7 @@ class LifecycleWidget(QWidget):
         row=QHBoxLayout();row.addWidget(self.note,1);row.addWidget(self.excluded_btn);v.addLayout(row)
         columns=['勾选','单据详情','下一步','业务日期','门店','仓','补货单号','当前进度','门店回传','运营签发','门店付款','实际收货','资料提示']
         if stage is None:columns[7:7]=['聚水潭内部订单号','翱象采购单号','收货状态']
+        columns.append('订单类型')
         self.table=QTableWidget();self.table.setColumnCount(len(columns));self.table.setHorizontalHeaderLabels(columns);self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers);self.table.itemChanged.connect(self.check);v.addWidget(self.table,1)
         if stage:
             for column in (8,9,10,11):self.table.setColumnHidden(column,True)
@@ -178,6 +185,10 @@ class LifecycleWidget(QWidget):
             d.deleteLater()
         self.query(keep_page=True)
         if self.host.closing:QTimer.singleShot(0,self.host.close)
+
+    def order_kind_changed(self):
+        self.checked.clear()
+        self.query()
     def imported(self, receipt=None):
         self.host.status.setText('所选生命周期单据已保存；原签发未改变。')
         if hasattr(self.host,'jst_generator'):self.host.jst_generator.start()
@@ -237,6 +248,7 @@ class LifecycleWidget(QWidget):
         self.selection_label();self.bar.show();self.table.setEnabled(False);self.export_btn.setEnabled(False);self.bar.setRange(0,0);self.note.setText('正在查询单据进度…可继续使用工作页。')
         self.order_compare_btn.setEnabled(False);self.store_compare_btn.setEnabled(False)
         request={'kind':'daily_batch','from':self.start.text().strip(),'to':self.end.text().strip(),'search':self.search.text().strip(),'status':'' if self.stage or self.status.currentIndex()==0 else self.status.currentText(),'stage_view':self.stage,'stage_filter':self.status.currentText() if self.stage else None,'scope':[[h['oid'],h['warehouse']] for h in self.fixed_scope] if self.fixed_scope is not None else None,'warehouse':'' if self.warehouse_filter.currentIndex()==0 else self.warehouse_filter.currentText(),'page':self.page,'explain_filters':True,'platform_tracking':True}
+        request['order_kind']=self.order_kind.currentData()
         if self.generation_filter is not None:
             request['jst_generation']=self.generation_filter.currentData()
         self.reader.request(request,lambda data,r=request:self.query_ready(data,r),self.failed,self.progress)
@@ -282,9 +294,11 @@ class LifecycleWidget(QWidget):
             c=QTableWidgetItem();c.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);c.setCheckState(Qt.CheckState.Checked if service.key(h) in self.checked else Qt.CheckState.Unchecked);self.table.setItem(i,0,c)
             notices=[h['note']] if h.get('note') else []
             tracking=h.get('platform_tracking',{})
+            shipment=h.get('shipment') or {}
             payment_version=tracking.get('payment_basis',(None,None))[0]
             if self.stage=='receipt' and h['next']=='receipt' and h['health'].get('payment') and payment_version is not None:
-                notices.append(f'已确认付款 V{payment_version:03d}')
+                payment_label='已锁定付款' if shipment.get('payment_lock') else '已确认付款'
+                notices.append(f'{payment_label} V{payment_version:03d}')
             platform=h.get('platform_purchase')
             if platform:notices.append('翱象 '+platform['orderId']+'：'+platform['status']+'（观察 '+platform.get('observedAt','未知')+'）'+('；作废后实收待处理' if platform.get('receipt_state')=='VOIDED_REVIEW' else ''))
             receipt_review=bool((platform or {}).get('payment_review'))
@@ -302,8 +316,9 @@ class LifecycleWidget(QWidget):
                 values[4:4]=['、'.join(tracking.get('jst_numbers',[])) or '未提供',
                              '、'.join(tracking.get('ax_numbers',[])) or ('待绑定' if tracking.get('await_binding') else '未关联'),
                              '待人工核对' if receipt_review else tracking.get('receipt_status','未记录收货')]
+            values.append('物料单' if h.get('kind')=='material' else '补货单')
             for j,x in enumerate(values,3):self.table.setItem(i,j,QTableWidgetItem(str(x)))
-            self.table.item(i,self.table.columnCount()-1).setToolTip(values[-1])
+            self.table.item(i,self.table.columnCount()-2).setToolTip(values[-2])
             if self.stage is None:
                 self.table.item(i,7).setToolTip(self.table.item(i,7).text()+' · '+tracking.get('jst_source','未提供'))
                 self.table.item(i,8).setToolTip(self.table.item(i,8).text())
@@ -311,25 +326,23 @@ class LifecycleWidget(QWidget):
                 receipt.setToolTip('点击查看正式实收或最近收货状态'+('\n'+tracking['detail'] if tracking.get('detail') else ''))
                 self.table.setCellWidget(i,9,receipt)
             self.table.setCellWidget(i,1,button('查看订单详情',lambda checked=False,r=h:self.open_comparison(r)))
-            s=h['next']
-            if s==SHIPMENT_CHECK and not self.stage:
-                title='核对聚水潭发货状态'
-                applicable=bool(h['shipment']['online'])
+            s=h['next'];recheck=s and h['present'].get(s)
+            title='生成聚水潭订单' if s=='jst_generate' else '核对付款草稿' if s=='jst_payment' else ('重新核对' if recheck else '导入')+TITLES[s] if s in TITLES else '无后续待办'
+            if self.stage:
+                applicable=s in ({'jst_generate'} if self.stage=='jst' else {'payment','jst_payment'} if self.stage=='payment' else {self.stage})
+                if not applicable:title='本环节已处理'
+                elif self.stage=='payment' and s=='payment':
+                    if shipment.get('online') and h['health'].get('payment'):title='刷新聚水潭原单'
+                    elif h['health'].get(JST_ORDER):title='核对聚水潭付款资料'
+                if self.stage=='receipt' and receipt_review:title,applicable='待人工核对 · 打开原采购',True
             else:
-                recheck=s and h['present'].get(s)
-                title='生成聚水潭订单' if s=='jst_generate' else '核对付款草稿' if s=='jst_payment' else ('重新核对' if recheck else '导入')+TITLES[s] if s in TITLES else '无后续待办'
-                if self.stage:
-                    applicable=s in ({'jst_generate'} if self.stage=='jst' else {'payment','jst_payment'} if self.stage=='payment' else {self.stage})
-                    if not applicable:title='本环节已处理'
-                    elif self.stage=='payment' and s=='payment' and h['health'].get(JST_ORDER):title='核对聚水潭付款资料'
-                    if self.stage=='receipt' and receipt_review:title,applicable='待人工核对 · 打开原采购',True
-                else:
-                    applicable=s is not None
-                    if s:title='进入'+self.STAGES[{'jst_generate':'jst','jst_payment':'payment'}.get(s,s)]
+                applicable=s is not None
+                if s:title='进入'+self.STAGES[{'jst_generate':'jst','jst_payment':'payment'}.get(s,s)]
             b=button(title,lambda checked=False,r=h:self.next(r));b.setEnabled(applicable and h['warehouse']!='旧版未标仓');self.table.setCellWidget(i,2,b)
         del blocker
         widths=[45,110,165,100,185,70,250,155,100,100,100,100,260]
         if self.stage is None:widths[7:7]=[170,175,145]
+        widths.append(92)
         for i,width in enumerate(widths):self.table.setColumnWidth(i,width)
         self.selection_label()
     def show_excluded_orders(self):
@@ -419,23 +432,25 @@ class LifecycleWidget(QWidget):
             self.open_receipt_record(head);return
         s=head['next']
         if not s:return
-        if s==SHIPMENT_CHECK:
-            from business_ui import run
-            from catalog_session_ui import manager
-            from jst_auto_order import run_browser
-            try:
-                result=run(self,run_browser,(self.host.work_repository.path,[head['shipment']['online']],
-                    manager(self.host).session,'recover'),'核对聚水潭发货状态')
-                if result and not result[0]['ok']:warn(self,result[0]['reason'])
-                self.query(keep_page=True)
-            except Exception as exc:warn(self,exc)
-            return
         if not self.stage:self.open_stage({'jst_generate':'jst','jst_payment':'payment'}.get(s,s),[head]);return
         if s in ('jst_generate','jst_payment'):
             from jst_ui import generate,payment
             if s=='jst_generate':generate(self,self.host,[head])
             else:self.offer_payment_preview(payment(self,self.host,head))
             self.query(keep_page=True);return
+        shipment=head.get('shipment') or {}
+        if s=='payment' and shipment.get('online') and head['health'].get('payment'):
+            from business_ui import run
+            from catalog_session_ui import manager
+            from jst_fulfillment import run_order_payment
+            try:
+                result=run(self,run_order_payment,(self.host.work_repository.path,[shipment['online']],
+                    manager(self.host).session),'刷新聚水潭原单')
+                if result and result[0]['state']=='READY':self._review_platform_payment([head])
+                elif result and result[0]['state']!='MATCHES_PAYMENT':warn(self,result[0]['message'])
+                self.query(keep_page=True)
+            except Exception as exc:warn(self,exc)
+            return
         if s=='payment' and head['health'].get(JST_ORDER):
             self._review_platform_payment([head]);return
         result=review_again(self,self.host,head,s) if head['present'][s] else import_document(self,self.host,s,head)
@@ -463,7 +478,7 @@ class StageDialog(QDialog):
         v=QVBoxLayout(self);v.addWidget(button('← 返回订单跟踪总览',self.reject))
         if stage=='jst':
             from jst_results_ui import ResultsPage
-            self.setProperty('jstResults',True);self.panel=ResultsPage(overview.host,scope,self);v.addWidget(self.panel,1)
+            self.setProperty('jstResults',True);self.panel=ResultsPage(overview.host,scope,self,order_kind=overview.order_kind.currentData());v.addWidget(self.panel,1)
             if scope is None:
                 from PySide6.QtCore import QDate
                 for target,value in ((self.panel.day,overview.start.text()),(self.panel.end,overview.end.text())):
@@ -473,6 +488,10 @@ class StageDialog(QDialog):
             return
         v.addWidget(label('限定所选 '+str(len(scope))+' 单' if scope is not None else '沿用总览日期、仓及搜索；本页筛选不改总览。','muted'))
         self.panel=LifecycleWidget(overview.host,stage,scope,parent=self);v.addWidget(self.panel,1)
+        if scope is None:
+            blocker = QSignalBlocker(self.panel.order_kind)
+            self.panel.order_kind.setCurrentIndex(overview.order_kind.currentIndex())
+            del blocker
         next_stage={'return':'operations','operations':'jst','payment':'receipt'}.get(stage)
         if next_stage:
             v.insertWidget(1,button('进入'+LifecycleWidget.STAGES[next_stage]+' →（沿用当前范围）',lambda:self.panel.open_stage(next_stage)))

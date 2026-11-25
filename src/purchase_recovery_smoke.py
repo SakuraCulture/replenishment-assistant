@@ -55,8 +55,8 @@ def start_smoke(app,win,args):
                     'warehouse':'山东仓','number':'BH-QA-'+str(n),'revision':'R1','current_revision':'R1',
                     'digest':'0'*64,'visibility_token':None} for n in ids]
             with closing(sqlite3.connect(host.work_repository.path)) as db,db:
-                db.execute('CREATE TABLE IF NOT EXISTS normal_orders(oid TEXT PRIMARY KEY,day TEXT,store TEXT)')
-                for h in heads:db.execute('INSERT OR REPLACE INTO normal_orders VALUES(?,?,?)',(h['oid'],h['day'],h['store']))
+                db.execute("CREATE TABLE IF NOT EXISTS normal_orders(oid TEXT PRIMARY KEY,day TEXT,store TEXT,kind TEXT DEFAULT 'normal_model')")
+                for h in heads:db.execute('INSERT OR REPLACE INTO normal_orders(oid,day,store) VALUES(?,?,?)',(h['oid'],h['day'],h['store']))
             p=manager.store.prepare(heads)
             for pos,n in enumerate(ids):
                 id='synthetic-'+str(n)

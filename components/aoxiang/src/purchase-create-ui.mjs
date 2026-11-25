@@ -3,6 +3,7 @@ import {portablePath} from './portable-assets.mjs';
 import path from 'node:path';
 import {PurchaseUI} from './purchase-ui.mjs';
 import {IMPORT_CODE,taskPattern} from './purchase-create-contract.mjs';
+import {importResult} from './purchase-import-result.mjs';
 import {fail,sha256,sameIdentity,now,businessDate} from './common.mjs';
 
 const allowed=u=>['saas-retail.ele.me','tc-supply-chain-portal.ele.me','sc-gei-tc-supply-chain-portal.ele.me'].includes(u.hostname);
@@ -72,7 +73,7 @@ export class NativeImportGuard{
 
 export class PurchaseCreateUI extends PurchaseUI{
   constructor(page,options){super(page,options);this.createRows=[];this.usedImports=new Set();}
-  async queryAction(action){const r=await super.queryAction(action);this.createRows.push(...r.rows.map(v=>Object.fromEntries(['supplyOrderId','buyerWarehouseCode','sellerMerchantCode','buyerMessage','status','totalSku','count','totalAmount','gmtCreate','outOrderId','executionMainOrderId'].map(k=>[k,v[k]??null]))));return r;}
+  async queryAction(action){const r=await super.queryAction(action);this.createRows.push(...r.rows.map(v=>Object.fromEntries(['supplyOrderId','buyerWarehouseCode','sellerMerchantCode','buyerMessage','status','totalSku','count','totalAmount','gmtCreate','outOrderId','executionMainOrderId'].map(k=>[k,k==='buyerMessage'?v[k]:v[k]??null]))));return r;}
   async queryCreateOrders(input){this.createRows=[];const query=await this.queryPurchase(input);return {query,rows:this.createRows};}
   async preparePurchaseCreate(p){
     const day=businessDate(),result=await this.queryCreateOrders({identity:p.identity,buyerWarehouseCode:p.basis.store,name:p.target.displayName,from:day,to:day,dateBasis:'created'});
@@ -110,6 +111,16 @@ export class PurchaseCreateUI extends PurchaseUI{
     if(!taskPattern.test(taskId||''))fail('IMPORT_TASK_ID','原导入任务编号无效');
     await this.open(identity,{reuseExistingPage});const t=await this.findTask(taskId);
     if((t.taskCode||t.code)!==IMPORT_CODE)fail('IMPORT_TASK_TYPE','原任务不是采购批量导入，不按近似任务匹配');
-    return {taskId,code:IMPORT_CODE,status:t.taskStatus,successCount:t.successCount,failCount:t.failCount};
+    return {taskId,code:IMPORT_CODE,status:t.taskStatus,successCount:t.successCount,failCount:t.failCount,doneTime:t.doneTime,
+      failureFileAvailable:t.downloadFileUrlType==='default'&&t.fileUrl===taskId+'.xlsx'&&!t.url};
+  }
+  async purchaseImportFailureFile({taskId,identity,directory,expectedCount}){
+    if(!taskPattern.test(taskId||'')||!sameIdentity(this.identity,identity))
+      fail('IMPORT_TASK_SCOPE','采购失败文件的原任务或账号不一致');
+    const task=this.taskCache.get(taskId);
+    const summary=importResult(task&&{taskId:task.taskId,code:task.taskCode||task.code,status:task.taskStatus,
+      successCount:task.successCount,failCount:task.failCount,doneTime:task.doneTime},taskId,expectedCount);
+    if(!['failed','partial'].includes(summary.kind))fail('IMPORT_TASK_SCOPE','原任务尚无可核实的失败结果');
+    return this.downloadTaskWorkbook(task,{taskId,directory,maxBytes:67108864,timeoutMs:15000});
   }
 }

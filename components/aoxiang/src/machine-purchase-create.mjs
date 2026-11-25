@@ -2,6 +2,11 @@ import {fail,now} from './common.mjs';
 import {errorInfo} from './machine-runtime.mjs';
 import {purchasePublic} from './purchase-create-ledger.mjs';
 
+function requireOriginalTask(record,expectedTaskId){
+  if(expectedTaskId&&(!record.uploadAttempted||record.receipt?.taskId!==expectedTaskId))
+    fail('PURCHASE_RECEIPT_CONFLICT','原任务受理号与核对请求不一致，核对请求未进入上传');
+}
+
 function mainVerificationRetry(record){
   const error=record.error;
   const details=error?.details;
@@ -18,9 +23,12 @@ export class MachinePurchaseCreate{
   status(id){const job=this.job?.id===id?this.job:null;return {...purchasePublic(this.ledger.get(id)),active:!!job&&this.busy,stage:job?.stage||null,pauseRequested:job?.cancelled||false,verificationError:job?.verificationError||null};}
   check(){if(this.job.cancelled)fail('PAUSED','已停止新动作；已受理任务和采购单不会撤销');}
   progress(stage){this.job.stage=stage;this.job.updatedAt=now();}
-  start(id,{submitOnly=false,verifyOnly=false,originalUnits}={}){
+  start(id,{submitOnly=false,verifyOnly=false,expectedTaskId,originalUnits}={}){
     if(this.busy)fail('PURCHASE_CREATE_BUSY','当前采购任务仍在安全结束，请勿重复执行');
-    const r=this.ledger.get(id);if(r.state==='BOUND'&&!verifyOnly)return this.status(id);
+    const r=this.ledger.get(id);requireOriginalTask(r,expectedTaskId);
+    if(r.state==='BOUND'&&!verifyOnly)return this.status(id);
+    if(r.state==='MANUAL_HANDOFF'||r.manualHandoff)
+      fail('PURCHASE_MANUAL_HANDOFF','本单已转人工处理，请核对已有采购单；未重新上传');
     if(r.state==='RETIRED')fail('SOURCE_ORDER_DELETED','来源订单已删除，任务已退役');
     if(r.state==='SUPERSEDED')fail('PURCHASE_SUPERSEDED','旧任务已结束并重建，请打开后继任务；原平台单未撤销',{successorId:r.successorId});
     if(r.state==='CANCELLED_BEFORE_UPLOAD')fail('PURCHASE_CANCELLED','该任务已在上传前取消');
@@ -28,7 +36,8 @@ export class MachinePurchaseCreate{
     if(r.uploadAttempted&&!r.receipt)fail('SUBMISSION_UNKNOWN','已进入上传边界但无唯一受理任务号，只能核对，不允许重新上传');
     if(r.additionalTaskIds?.length)fail('MULTIPLE_IMPORT_TASKS','导入任务不唯一，请人工核对');
     if(verifyOnly&&(!r.uploadAttempted||!r.receipt))fail('SUBMISSION_UNKNOWN','原采购缺少唯一已受理导入回执；核对请求未进入上传');
-    this.job={id,submitOnly,verifyOnly,originalUnits,stage:r.uploadAttempted?'核对原导入任务':'核验已确认付款及采购文件',cancelled:false,updatedAt:now()};
+    if(submitOnly&&r.receipt)return this.status(id);
+    this.job={id,submitOnly,verifyOnly,expectedTaskId,originalUnits,stage:r.uploadAttempted?'核对原导入任务':'核验已确认付款及采购文件',cancelled:false,updatedAt:now()};
     this.control=new AbortController();
     this.pending=Promise.resolve().then(()=>this.run(id)).catch(e=>{this.onFatal(e);}).finally(()=>{this.pending=null;});
     return this.status(id);
@@ -45,6 +54,7 @@ export class MachinePurchaseCreate{
     let r=this.ledger.get(id);
     try{
       this.check();
+      requireOriginalTask(r,this.job.expectedTaskId);
       if(this.job.verifyOnly&&(!r.uploadAttempted||!r.receipt))fail('SUBMISSION_UNKNOWN','原导入回执缺失，无法继续核对');
       if(!r.uploadAttempted){
         r=this.ledger.update(id,r.sequence,'PREPARING',{error:null});
@@ -94,7 +104,9 @@ export class MachinePurchaseCreate{
       else if(r.state==='VERIFYING')this.ledger.update(id,r.sequence,this.job.cancelled||['TASK_PENDING','TASK_NOT_FOUND','BROWSER_DISCONNECTED','WORKER_RESPONSE_UNKNOWN'].includes(e.code)?'ACCEPTED':'NEEDS_REVIEW',{error});
       else if(r.state==='ACCEPTED'&&!this.job.cancelled)this.ledger.update(id,r.sequence,'NEEDS_REVIEW',{error});
       // A pause immediately after receipt leaves ACCEPTED intact, preserving exactly that task.
-      this.progress(!r.uploadAttempted?'准备未完成，未上传':r.receipt?'原导入任务已保存，等待继续核对':'上传结果待核，禁止重复建单');
+      const terminal=r.importResult?.kind;
+      this.progress(terminal==='failed'?'原导入任务失败':terminal==='partial'?'原导入任务部分成功':
+        !r.uploadAttempted?'准备未完成，未上传':r.receipt?'原导入任务已保存，等待继续核对':'上传结果待核，禁止重复建单');
     }
   }
 }

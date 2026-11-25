@@ -17,7 +17,8 @@ from aoxiang_purchase_pricing import HEADERS, preview_rows, intent_summary
 STATES = {'RESERVED': '已准备，尚未上传', 'PREPARING': '核验上传准备', 'READY': '准备就绪',
           'SUBMITTING': '正在上传，等待唯一回执', 'ACCEPTED': '已受理，待核对原任务', 'VERIFYING': '正在核对采购单',
           'BOUND': '已关联采购单', 'PAUSED': '已停止，尚未上传', 'FAILED_PRECHECK': '准备未通过，尚未上传',
-          'NEEDS_REVIEW': '结果待核，请继续核对原采购', 'CANCELLED_BEFORE_UPLOAD': '已在上传前取消', 'SUPERSEDED':'已结束并重建，旧平台单保留'}
+          'NEEDS_REVIEW': '结果待核，请继续核对原采购', 'MANUAL_HANDOFF':'人工处理待核',
+          'CANCELLED_BEFORE_UPLOAD': '已在上传前取消', 'SUPERSEDED':'已结束并重建，旧平台单保留'}
 
 
 class PurchaseDialog(BindingActions, ComponentDialog):
@@ -34,6 +35,7 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         self.template_id = None
         self.make_preview_pending = False
         self.pending_basis = None
+        self.pending_binding_refresh = False
         self.basis_state = None
         self.records = []
         self.began = time.monotonic()
@@ -41,7 +43,7 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         self.poll.setInterval(900)
         self.poll.timeout.connect(self.refresh_current)
         self.setWindowTitle('翱象采购 · ' + head['number'])
-        self.resize(1080, 760)
+        self.resize(1150, 790)
         layout = QVBoxLayout(self)
         layout.addWidget(label(head['name'] + ' · ' + head['warehouse'] + ' · ' + head['number'], 'section'))
         layout.addWidget(label('按付款金额÷基础数量计算单价，四舍五入到两位；采购金额随之计算，原付款记录不变。仅创建为“待提交”。', 'muted'))
@@ -101,11 +103,12 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         available = bool((self.configuration or {}).get('enabled'))
         pending = any(r['state'] not in ('CANCELLED_BEFORE_UPLOAD','SUPERSEDED') for r in self.records)
         attempted = bool((self.current or {}).get('uploadAttempted'))
+        manual = bool((self.current or {}).get('manualHandoff')) or (self.current or {}).get('state')=='MANUAL_HANDOFF'
         self.preview_btn.setEnabled(idle and not active and available and not pending
                                     and not self.original_id and not self.head.get('deleted'))
-        self.upload_btn.setEnabled(idle and not active and available and bool(self.package) and bool((self.basis_state or {}).get('valid')) and not attempted
+        self.upload_btn.setEnabled(idle and not active and available and bool(self.package) and bool((self.basis_state or {}).get('valid')) and not attempted and not manual
                                    and (self.current or {}).get('state') not in ('CANCELLED_BEFORE_UPLOAD','SUPERSEDED') and not self.head.get('deleted'))
-        self.verify_btn.setEnabled(idle and not active and bool((self.current or {}).get('taskId'))
+        self.verify_btn.setEnabled(idle and not active and not manual and bool((self.current or {}).get('taskId'))
                                    and (self.current or {}).get('state') not in ('BOUND','SUPERSEDED') and not (self.current or {}).get('additionalTaskIds'))
         self.stop_btn.setEnabled(idle and active)
         self.cancel_btn.setEnabled(idle and not active and bool(self.current) and not attempted
@@ -124,8 +127,13 @@ class PurchaseDialog(BindingActions, ComponentDialog):
             rows, offset = [], 0
             while True:
                 page = self.client.request('purchase.list', offset=offset, limit=100)
-                rows.extend(r for r in page['items'] if r['basis']['number'] == self.head['number']
-                            and r['basis']['warehouse'] == self.head['warehouse'] and r['basis']['store'] == self.head['store'])
+                for record in page['items']:
+                    basis=record.get('basis') or {}
+                    scope=(('oid','oid'),('revision','revision'),('signedDigest','digest'))
+                    if (all(basis.get(k)==self.head[k] for k in ('number','warehouse','store'))
+                            and all(basis[key]==self.head[head_key] for key,head_key in scope
+                                    if key in basis and head_key in self.head)):
+                        rows.append(record)
                 offset += len(page['items'])
                 if offset >= page['total'] or not page['items']:
                     break
@@ -157,10 +165,13 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         if self.current:
             self.current = {**self.current, 'active': False}
         if self.binding_record:self.binding_record={**self.binding_record,'active':False}
+        if text.startswith(('BINDING_PREVIEW_STALE','PURCHASE_BASIS_CHANGED','PURCHASE_NOT_UNIQUE','PURCHASE_DETAIL_MISMATCH')):
+            self.pending_binding_refresh=True
         super().failure(text)
 
     def select_record(self, index):
         self.pending_basis = None
+        self.pending_binding_refresh = False
         self.basis_state = None
         if not 0 <= index < len(self.records):
             self.current = None
@@ -197,6 +208,10 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         if self.current:
             r = self.current
             text = STATES.get(r['state'], r['state'])
+            mode=self.head.get('kind')
+            revision=self.head.get('revision')
+            text+=f" · {('物料单' if mode=='material' else '补货单')} · 采购任务 {r['id']}"
+            if revision is not None:text+=f" · 签发修订 V{revision:03d}"
             if r.get('binding'):
                 text += ' · 采购单号：' + r['binding']['orderId'] + ' · ' + (r['binding'].get('status') or '平台状态未提供')
                 from aoxiang_receipt_scope import saved_observations
@@ -204,9 +219,9 @@ class PurchaseDialog(BindingActions, ComponentDialog):
                 if latest:text+='\n最新平台观察：'+latest['status']+' · '+latest.get('observedAt','未知时间')+('；作废后实收待处理' if latest.get('receipt_state')=='VOIDED_REVIEW' else '')
             elif r.get('taskId'):
                 text += '\n原导入任务号：' + r['taskId']
-            if r.get('error'):
-                from aoxiang_purchase_messages import explain
-                text += '\n' + explain(r['error'], r)
+            from aoxiang_purchase_messages import explain,import_failure
+            if r.get('error') or import_failure(r):
+                text += '\n' + explain(r.get('error'), r)
             self.note.setText(text)
         self.update_buttons()
 
@@ -252,6 +267,10 @@ class PurchaseDialog(BindingActions, ComponentDialog):
         if self.make_preview_pending:
             self.make_preview_pending = False
             self.run(self.prepare_package, self.package_ready)
+        elif self.pending_binding_refresh and self.current:
+            self.pending_binding_refresh=False
+            expected=self.current['id']
+            self.run(lambda _:self.client.request('purchase.status',purchase_id=expected),self.purchase_status)
         elif self.pending_basis:
             id, package = self.pending_basis, self.package
             self.pending_basis = None
@@ -334,7 +353,9 @@ class PurchaseDialog(BindingActions, ComponentDialog):
 
     def verify(self):
         self.began = time.monotonic()
-        self.run(lambda _: self.client.request('purchase.start', purchase_id=self.current['id']), self.purchase_status)
+        original = self.current
+        self.run(lambda _: self.client.request('purchase.start', purchase_id=original['id'],
+                                               expected_task_id=original['taskId']), self.purchase_status)
 
     def stop(self):
         if self.binding_active():

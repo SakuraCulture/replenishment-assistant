@@ -15,7 +15,8 @@ def start_smoke(app, win, args):
     out = Path(args[0]).resolve()
     phase = args[1]
     fixture = json.loads((out/'synthetic.json').read_text(encoding='utf-8'))
-    if (phase not in ('recover', 'reopen', 'cancel-redo', 'cancel-reopen', 'shipping') or fixture.get('synthetic') is not True
+    if (phase not in ('recover', 'reopen', 'cancel-redo', 'cancel-reopen', 'shipping', 'shipping-reopen')
+            or fixture.get('synthetic') is not True
             or fixture.get('live_platform') is not False or fixture.get('case') != 'jst-buyer-recovery'
             or Path(os.environ.get('REPLENISHMENT_DATA_DIR', '')).resolve() != out/'settings'
             or win.work_repository.path.resolve() != out/'settings/workbench.sqlite3'):
@@ -103,7 +104,8 @@ def start_smoke(app, win, args):
                 finally:
                     assert component.close()
 
-            catalog_session_ui.manager = lambda _: SimpleNamespace(session=SimpleNamespace(acquire=Lease))
+            session = SimpleNamespace(acquire=Lease, lease=None, ready=True, client=SimpleNamespace(running=True))
+            catalog_session_ui.manager = lambda _: SimpleNamespace(session=session)
             dialog = Orders(win, win, [online])
             dialog.show()
             qtimer.start(25)
@@ -128,6 +130,15 @@ def start_smoke(app, win, args):
                     assert db.execute("SELECT count(*) FROM jst_events WHERE action='原取消单释放占用并登记后继'").fetchone() == (1,)
                 report.update(passed=True, warehouse=warehouse, internal=order['internal'],
                               successor=redo['online'], released=redo['released'])
+                return
+            if phase == 'shipping-reopen':
+                from jst_fulfillment_jobs import due_payment_locks
+                order, _, _ = state()
+                head = order['payload']['head']
+                assert lifecycle.snapshot(path, head)['status'] == '待收货'
+                assert len(lifecycle.history(path, head, 'payment')) == 1
+                assert online not in due_payment_locks(path) and not calls
+                report.update(passed=True, warehouse=warehouse, receipt_status='待收货', payment_versions=1)
                 return
             assert dialog.buttons['recover'].isEnabled() and not dialog.buttons['submit'].isEnabled()
             if phase in ('recover', 'shipping'):
@@ -158,31 +169,46 @@ def start_smoke(app, win, args):
             assert not messages, messages
             snapshot(dialog, phase+'-待人工确认付款')
             if phase == 'shipping':
+                from time import monotonic
+                from PySide6.QtTest import QTest
                 import daily_batch
-                from lifecycle_home_ui import LifecycleWidget
+                from lifecycle_home_ui import StageDialog
                 head = order['payload']['head']
                 lifecycle.commit(path, plan)
                 cache = out/'shipping.sqlite3'
-                overview = {'status':'待发货','platform_tracking':True}
+                waiting = {'stage_view':'payment','stage_filter':'待处理','platform_tracking':True}
                 inbox = {'stage_view':'receipt','stage_filter':'待处理'}
                 assert daily_batch.read(path, cache, inbox)['count'] == 0
-                widget = LifecycleWidget(win)
+                assert lifecycle.snapshot(path, head)['status'] == '待付款'
+                dialog.hide()
+                panel = StageDialog(win.followup, 'payment', [head])
+                panel.setModal(True)
                 try:
-                    widget.ready(daily_batch.read(path, cache, overview))
-                    widget.show()
-                    action = widget.table.cellWidget(0,2)
-                    assert action.text() == '核对聚水潭发货状态' and action.isEnabled()
-                    assert widget.grab().save(str(out/'待发货.png'))
-                    fixture['lookup']['native_status'] = '发货中(打单拣货)'
-                    action.click()
+                    panel.show()
+                    QTest.qWait(50)
+                    assert app.activeModalWidget() is panel
+                    assert '待发货' not in win.followup.cards
+                    scope = {'scope':[(head['oid'],head['warehouse'])]}
+                    panel.panel.ready(daily_batch.read(path, cache, {**waiting, **scope}))
+                    assert panel.panel.table.item(0,7).text() == '待付款'
+                    assert panel.grab().save(str(out/'待付款_已保存付款.png'))
+                    receipt['native_status'] = '发货中(打单拣货)'
+                    runner = win.jst_fulfillment_runner
+                    runner.tick()
+                    assert runner.worker, runner.message
+                    deadline = monotonic() + 20
+                    while runner.worker and monotonic() < deadline:
+                        QTest.qWait(20)
+                    assert runner.worker is None and calls[-1:] == ['order.payment_detail'], runner.message
                     received = daily_batch.read(path, cache, inbox)
                     assert received['count'] == 1 and received['records'][0]['number'] == head['number']
                     assert lifecycle.snapshot(path, head)['status'] == '待收货'
                     assert len(lifecycle.history(path, head, 'payment')) == 1 and not messages
-                    report.update(receipt_status_before='待发货', receipt_status_after='待收货')
+                    assert received['records'][0]['shipment']['payment_lock']['version'] == 1
+                    report.update(receipt_status_before='待付款', receipt_status_after='待收货', background_lock=True)
                 finally:
-                    widget.reader.shutdown()
-                    widget.deleteLater()
+                    panel.reject()
+                    panel.deleteLater()
             report.update(passed=True, warehouse=warehouse, used_frozen_preview=use_frozen_preview,
                           synthetic_internal=order['internal'], payment_candidate=current['digest'],
                           sku_count=receipt['detail_count'], quantity=summary[0]['quantity'],

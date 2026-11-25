@@ -7,6 +7,7 @@ const IMPORT_PATH = '/app/order/import/import.aspx';
 const PREVIEW_PATH = '/app/order/import/import_show.aspx';
 const MULTI = 'MultiCommodity';
 const SINGLE = 'SingleCommodity';
+const IMPORT_COUNTS = /^成功条数\s*[：:]\s*(\d+)\s*[，,]\s*失败条数\s*[：:]\s*(\d+)$/;
 const same = (a,b) => canonical(a) === canonical(b);
 const displayName = value => String(value || '').trim().replace(/\s+/g,' ');
 const workbookName = value => displayName(String(value || '').replace(/_x([0-9a-f]{4})_/gi,
@@ -364,6 +365,15 @@ export class OrderPages {
     // The native template duplicates the same primary control above and below the single preview.
     if (actions.length!==2 || actions.some(action=>action!=='Confirm()'))
       fail('ORDER_PAGE_CHANGED','未找到可核验的单张订单最终导入控件');
+    const receiptFrame=page.locator('#epaasDialogFrame');
+    if(await receiptFrame.filter({visible:true}).count())
+      fail('ORDER_PAGE_CHANGED','已有平台回执窗口，未发起本次导入');
+    const receipt=page.frameLocator('#epaasDialogFrame');
+    const summaryText=receipt.getByText(IMPORT_COUNTS);
+    const priorReceipt=await receiptFrame.count()===1 && await summaryText.count()>0;
+    const priorFrame=priorReceipt?await (await receiptFrame.elementHandle()).contentFrame():null;
+    const newReceipt=priorFrame? page.waitForEvent('framenavigated',{predicate:frame=>frame===priorFrame,timeout:15000}):null;
+    newReceipt?.catch(()=>{});
     await activateControl(controls.first(),{
       beforeDispatch:async()=>{
         const {amount,...scope}=await readPreview(preview,spec);
@@ -371,9 +381,16 @@ export class OrderPages {
           fail('PREVIEW_CHANGED','最终导入前预览内容已变化');
         check(signal);
       }});
-    const receipt=page.frameLocator('#epaasDialogFrame');
-    await one(receipt.getByText('成功条数：1，失败条数：0',{exact:true}),'单张导入成功回执');
-    await activateControl(await one(receipt.getByRole('link',{name:'关闭',exact:true}),'导入回执的关闭入口'));
+    if(newReceipt)await newReceipt.catch(()=>fail('ORDER_IMPORT_RECEIPT_UNKNOWN','未读到本次导入的新回执，请核对原线上单号'));
+    const summary=await one(summaryText,'本次导入回执','ORDER_IMPORT_RECEIPT_UNKNOWN');
+    const text=(await summary.innerText()).trim(),match=text.match(IMPORT_COUNTS);
+    const success_count=Number(match?.[1]),fail_count=Number(match?.[2]);
+    if(!Number.isSafeInteger(success_count)||!Number.isSafeInteger(fail_count)||success_count+fail_count!==1)
+      fail('ORDER_IMPORT_RECEIPT_UNKNOWN','聚水潭回执张数与本次单张导入不符，请核对原线上单号');
+    const result={success_count,fail_count,text,observed_at:new Date().toISOString()};
+    const close=receipt.getByRole('link',{name:'关闭',exact:true}).filter({visible:true});
+    if(await close.count()===1)await activateControl(close).catch(()=>{});
+    return result;
   }
 
   async finishAudit(staged, spec, signal) {
@@ -398,8 +415,11 @@ export class OrderFlow {
           hold.binding.uid!==account.expectedUid||hold.binding.company!==account.expectedCompany
           ||hold.binding.version!==account.bindingVersion)
         fail('ACCOUNT_CHANGED','聚水潭仓账号绑定已变化');
-      if (action==='import') await this.pages.finishImport(hold.staged,hold.spec,signal);
-      else await this.pages.finishAudit(hold.staged,hold.spec,signal);
+      if (action==='import'){
+        const receipt=await this.pages.finishImport(hold.staged,hold.spec,signal);
+        return {dispatched:true,...(receipt?{receipt:{...receipt,online:hold.spec.online,binding:hold.binding}}:{})};
+      }
+      await this.pages.finishAudit(hold.staged,hold.spec,signal);
       return {dispatched:true};
     }
     this.permits.clear();

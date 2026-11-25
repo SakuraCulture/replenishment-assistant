@@ -17,6 +17,7 @@ import purchases
 import warehouse_catalog
 import storage_chunks
 import jst_allocation as allocation
+import material_stock
 from runtime_support import checkpoint, CommitProgress, Cancelled
 from export_progress import RowProgress
 from jst_order_guards import allocation_gate, guard_payment, guard_resign, saved_execution_reason
@@ -91,7 +92,10 @@ def return_basis(db, head):
 
 def reservations(db, wh, included, exclude=()):
     values = {}
-    for gid, sku, qty in db.execute('SELECT a.gid,r.sku,r.quantity FROM jst_active a JOIN jst_reservations r ON a.gid=r.gid WHERE a.warehouse=? ORDER BY a.rowid,r.rowid', (wh,)):
+    sql = 'SELECT a.gid,r.sku,r.quantity FROM jst_active a JOIN jst_reservations r ON a.gid=r.gid WHERE a.warehouse=?'
+    if material_stock.has_material(db):
+        sql += " AND NOT EXISTS(SELECT 1 FROM normal_orders o WHERE o.oid=a.oid AND o.kind='material')"
+    for gid, sku, qty in db.execute(sql+' ORDER BY a.rowid,r.rowid', (wh,)):
         if gid in included or gid in exclude:
             continue
         values[sku] = values.get(sku, Decimal(0)) + Decimal(qty)
@@ -131,7 +135,14 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                 raise ValueError(wh + '尚未建立库存基准，请导入或采用默认仓资料')
             states[wh] = batch['states'][wh] if batch else state(db, wh)
             compact = {k:v for k,v in h.items() if k != 'products'}
-            orders.append({'head': compact, 'basis': basis, 'rows': rows, 'saved': saved, 'old': old, 'signed_products':signed_products,'previous_payment':previous_payment})
+            is_material = material_stock.has_material(db) and material_stock.is_material(db,h['oid'])
+            if is_material:
+                compact['kind'] = 'material'
+            orders.append({'head': compact, 'basis': basis, 'rows': rows, 'saved': saved, 'old': old, 'signed_products':signed_products,'previous_payment':previous_payment,'material':is_material})
+        kinds = {o['material'] for o in orders}
+        if len(kinds) > 1:
+            raise ValueError('物料单和补货单请分别建立库存分配批次')
+        material = kinds == {True}
         if correction and not batch:
             # A correction changes subsequent balances; include ALL unlocked active orders in each affected warehouse.
             chosen = {o['old'] for o in orders if o['old']}
@@ -141,10 +152,15 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                     raise ValueError('重新分配须选齐该仓全部未锁已生成订单，避免改变其它订单占用')
         if not manual_order:
             orders.sort(key=lambda o: (o['saved'], o['head']['day'], o['head']['number']))
-        balances = {}; reserved = {}
+        balances = {}; reserved = {}; cross = {}
         for wh, b in bases.items():
             exclude={o['old'] for o in orders if correction and o['old']}
-            used = jst_batches.reservations(db,batch['batch_id'],wh,exclude) if batch else reservations(db, wh, set(b['included']), exclude)
+            used = jst_batches.reservations(db,batch['batch_id'],wh,exclude) if batch else ({} if material else reservations(db, wh, set(b['included']), exclude))
+            wanted = {r['sku'] for o in orders if o['head']['warehouse']==wh for r in o['rows'] if Decimal(r['base_quantity'])>0}
+            own_batch = batch['batch_id'] if batch else None
+            cross[wh] = material_stock.cross_reservations(db, wh, b, wanted, material=material, batch_id=own_batch, exclude=exclude)
+            for sku, qty in cross[wh]['reserved'].items():
+                used[sku] = used.get(sku, Decimal(0))+Decimal(qty)
             reserved[wh] = {s:allocation.text(q) for s,q in used.items()}; balances[wh] = {}
             for sku, item in b['catalog']['items'].items():
                 try: balances[wh][sku] = allocation.number(item.get('可用数'), '可用库存') - used.get(sku, Decimal(0))
@@ -179,8 +195,14 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                         issue=allocation.status_issue(live) if live is not None else ''
                         if issue:entry['reasons'].append('当前仓资料：'+issue)
                 o['rows']=[{**r,'_admission_error':'；'.join(evidence['items'][r['sku']]['reasons'])} for r in o['rows']]
-            rows = allocation.allocate(o['rows'], b['catalog']['items'], balances[wh])
-            value = {'gid': uuid.uuid4().hex, 'operation': runid+':'+str(i), 'rule': allocation.RULE,
+            wanted = {r['sku'] for r in o['rows'] if Decimal(r['base_quantity'])>0}
+            overlap = {key:{s:v for s,v in values.items() if s in wanted} for key,values in cross[wh].items()}
+            if overlap['uncertain']:
+                for row in o['rows']:
+                    if row['sku'] in overlap['uncertain']:
+                        row['_admission_error'] = '旧执行是否已反映在仓可用数中待核 '+', '.join(overlap['uncertain'][row['sku']])
+            rows = allocation.allocate(o['rows'], b['catalog']['items'], balances[wh], material=material)
+            value = {'gid': uuid.uuid4().hex, 'operation': runid+':'+str(i), 'rule': allocation.MATERIAL_RULE if material else allocation.RULE,
                      'head': o['head'], 'basis': o['basis'], 'bid': b['bid'], 'old': o['old'],
                      'rows': rows, 'summary': allocation.totals(rows), 'saved': wr.now(), 'position': i+1,
                      'catalog': warehouse_catalog.metadata(b['catalog']), 'draft_status': '待核对付款单'}
@@ -191,6 +213,9 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                     if not member or member['status']=='cancelled':raise wr.Conflict('订单不在本批有效范围')
                     value['position']=member['position']
             if o['signed_products'] is not None:value['signed_products']=o['signed_products']
+            if any(overlap.values()):
+                value['material_cross'] = overlap
+                value['material_cross_exclude'] = sorted(x for x in exclude if x)
             if o['previous_payment'] is not None:value['previous_payment']=o['previous_payment']
             if evidence is not None:value['admission']=evidence
             plans.append(value); progress(RowProgress(f'预览分配 {i+1}/{len(orders)}：'+o['head']['number'],i+1,len(orders)))
@@ -217,6 +242,13 @@ def validate_plan(db, p, catalog_revisions=None):
         raise wr.Conflict('付款依据已变化，请重新预览分配：'+h['number'])
     if active(db,h) != p['old']:
         raise wr.Conflict('生成记录已变化：'+h['number'])
+    if material_stock.has_material(db):
+        base = decode(db.execute('SELECT payload,digest FROM jst_baselines WHERE bid=?',(p['bid'],)).fetchone())
+        seen = material_stock.cross_reservations(db,h['warehouse'],base,{r['sku'] for r in p['rows']},
+            material=material_stock.is_material(db,h['oid']),batch_id=p.get('batch_id'),
+            exclude=p.get('material_cross_exclude') or (p['old'],))
+        if seen != p.get('material_cross', {'reserved':{}, 'uncertain':{}}):
+            raise wr.Conflict('共享仓库存占用已变化，请重新预览：'+h['number'])
     # Modern returns carry all effective rows. Legacy needs the frozen upstream products.
     h = {**h, 'products':p.get('signed_products',p['basis']['products'])}
     if lc.upstream(db,h,'payment') != p['basis']:

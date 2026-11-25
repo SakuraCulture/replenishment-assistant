@@ -12,7 +12,7 @@ def current_heads(path,items,progress=lambda _:None,cancel=None):
     with closing(sqlite3.connect(Path(path).resolve().as_uri()+'?mode=ro',uri=True)) as db:
         db.execute('BEGIN')
         import warehouse_execution
-        current={(h['oid'],h['warehouse']):h for h in warehouse_execution.heads(db)} if warehouse_execution.exists(db) else {}
+        current={(h['oid'],h['warehouse']):h for h in warehouse_execution.heads(db,include_material=True)} if warehouse_execution.exists(db) else {}
         tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         for item in items:
             checkpoint(cancel);basis=item.get('head') or item.get('basis') or {};oid=basis.get('oid');wh=basis.get('warehouse')

@@ -362,9 +362,9 @@ def data_stamp(db,spec):
     """Lightweight business-index check, excluding unrelated AI task journal writes."""
     tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     if 'normal_orders' not in tables:return digest([])
-    selection='SELECT oid FROM normal_orders WHERE day>=? AND day<=?'
+    selection="SELECT oid FROM normal_orders WHERE day>=? AND day<=? AND kind<>'material'"
     args=(spec['from'],spec['to'])
-    values=[db.execute('SELECT o.oid,o.day,o.store,o.current,r.digest FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid AND r.revision=o.current WHERE o.day>=? AND o.day<=? ORDER BY o.oid',args).fetchall()]
+    values=[db.execute("SELECT o.oid,o.day,o.store,o.current,r.digest FROM normal_orders o JOIN normal_revisions r ON r.oid=o.oid AND r.revision=o.current WHERE o.day>=? AND o.day<=? AND o.kind<>'material' ORDER BY o.oid",args).fetchall()]
     for table,columns,order in [('lifecycle_versions','oid,revision,warehouse,stage,version,digest','oid,revision,warehouse,stage,version'),
                                ('archive_visibility','oid,warehouse,deleted,token','oid,warehouse'),
                                ('merchant_feedback','oid,revision,version,payload','oid,revision,version'),
@@ -380,7 +380,7 @@ def data_stamp(db,spec):
     if not spec.get('as_of'):
         from jst_shipping import read as read_shipments
         shipments=read_shipments(db,(record[0] for record in values[0]))
-        if shipments:values.append(sorted((*key, shipment['ready']) for key,shipment in shipments.items()))
+        if shipments:values.append(sorted((*key, shipment['payment_lock']) for key,shipment in shipments.items()))
     return digest(values)
 
 
@@ -409,7 +409,7 @@ _WAREHOUSES=('山东仓','河北仓')
 def _order_records(db,spec):
     """Read the signed identity index before fetching any snapshot payload."""
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name='normal_orders'").fetchone():return []
-    scope='o.day>=? AND o.day<=?';args=[spec['from'],spec['to']]
+    scope="o.day>=? AND o.day<=? AND o.kind<>'material'";args=[spec['from'],spec['to']]
     if spec['stores']:
         scope+=' AND o.store IN (SELECT value FROM json_each(?))';args.append(json.dumps(spec['stores']))
     where='o.current=r.revision';at=spec.get('as_of')
