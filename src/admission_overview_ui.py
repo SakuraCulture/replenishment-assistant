@@ -214,7 +214,7 @@ class Overview(QDialog):
         if self.host.worker or self.host.readonly:
             return
         from import_ui import choose
-        from interaction_ui import review_rows, show_rows
+        from interaction_ui import review_rows
         from admission_ui import invalidate
         from runtime_support import Cancelled
 
@@ -228,12 +228,11 @@ class Overview(QDialog):
             stores = len({store for store, _ in plan['keys']})
             skipped = len(plan['rows']) - count
             note = f'{Path(paths[0]).name} · {plan["sheet"]}\n将解除 {count} 条，涉及 {stores} 家门店，跳过 {skipped} 条。'
-            headers = overview.REFUSAL_RELEASE_IMPORT_HEADERS
-            if not count:
-                show_rows(self, '没有可解除的拒收', headers, plan['rows'], note)
-                return
-            if not review_rows(self, '核对导入批量解除', headers, plan['rows'], note, '确认批量解除',
-                               widths=(75, 126, 165, 210, 95, 150, 155, 160, 100)):
+            accepted = review_rows(self, '核对导入批量解除' if count else '没有可解除的拒收',
+                                   overview.REFUSAL_RELEASE_IMPORT_HEADERS, plan['rows'], note,
+                                   '确认批量解除' if count else None,
+                                   widths=(75, 118, 210, 230, 95, 142, 145, 160, 100))
+            if not count or not accepted:
                 return
             if self.host.worker or self.host.readonly or self.host.work_repository.path != path:
                 raise ValueError('当前已不能保存，请回到原资料目录重新核对')

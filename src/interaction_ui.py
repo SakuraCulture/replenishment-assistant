@@ -17,8 +17,11 @@ def show_rows(parent,title,headers,rows,note=''):
 def review_rows(parent,title,headers,rows,note,accept_text,*,widths=()):
     d=QDialog(parent);d.setObjectName('interactionReview');d.setWindowTitle(title);d.resize(1100,700);v=QVBoxLayout(d);v.addWidget(label(note))
     table,model=grid(d,headers,rows)
+    if widths:table.reading_controller.apply()
     for index,width in enumerate(widths):table.setColumnWidth(index,width)
-    v.addWidget(table,1);actions=QHBoxLayout();cancel=button('取消',d.reject);cancel.setDefault(True);actions.addWidget(cancel);actions.addWidget(button(accept_text,d.accept,True));v.addLayout(actions)
+    v.addWidget(table,1);actions=QHBoxLayout();cancel=button('取消' if accept_text else '关闭',d.reject);cancel.setDefault(True);actions.addWidget(cancel)
+    if accept_text:actions.addWidget(button(accept_text,d.accept,True))
+    v.addLayout(actions)
     return d.exec()==QDialog.DialogCode.Accepted
 
 

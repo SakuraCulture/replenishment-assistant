@@ -108,7 +108,7 @@ def verify_release_import(win, out, drive, require, click):
     from contextlib import closing
     from unittest.mock import patch
     from openpyxl import load_workbook
-    from PySide6.QtWidgets import QTableView
+    from PySide6.QtWidgets import QPushButton, QTableView
     from admission_overview_ui import Overview
     from import_ui import ImportDialog
     import admission
@@ -158,18 +158,21 @@ def verify_release_import(win, out, drive, require, click):
                 with patch('import_ui.QFileDialog.getOpenFileName',return_value=(str(source),'Excel')):
                     click(d, '选择文件')
                 click(d, '读取并校验')
+            elif d.windowTitle() == '没有可解除的拒收':
+                require(action == 'replay' and d.findChild(QTableView).model().rowCount() == 6
+                        and not any(b.text() == '确认批量解除' for b in d.findChildren(QPushButton)),
+                        '重复导入只显示核对结果，不能再次保存')
+                click(d, '关闭')
             elif d.objectName() == 'interactionReview':
-                preview = d.findChild(QTableView).model().rows
+                table = d.findChild(QTableView)
+                preview = table.model().rows
                 require([r[3] for r in preview] == ['将解除', '将解除', '跳过 · 表内重复', '跳过 · 已解除',
                                                    '跳过 · 未找到拒收记录', '跳过 · 编码无效（商品编码）'],
                         '导入预览按原文件行序列出应解除和跳过原因')
+                require(table.columnWidth(2) >= 200 and table.columnWidth(3) >= 215, '预览为长编码和跳过原因保留足够宽度')
                 if action == 'confirm':
                     d.grab().save(str(out/'13-导入批量解除预览.png'))
                 click(d, '取消' if action == 'cancel' else '确认批量解除')
-            elif d.windowTitle() == '没有可解除的拒收':
-                require(action == 'replay' and d.findChild(QTableView).model().rowCount() == 6,
-                        '重复导入只显示核对结果，不能再次保存')
-                click(d, '关闭')
         drive(lambda: click(win.parameter_scene, '门店拒收清单'), handle)
 
     before = path.read_bytes()
