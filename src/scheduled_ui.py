@@ -61,7 +61,8 @@ class Manager(QObject):
         return bool(getattr(h,'_data_location_preparing',False) or getattr(h,'worker',None) or pending is not None and not pending._completed and not getattr(pending,'scoped_collection',False) or
                     maintenance or
                     getattr(getattr(h,'browser_startup',None),'workers',None) or
-                    not parallel and (h.catalog_sessions.session.lease or getattr(getattr(h,'stockout',None),'worker',None)) or
+                    not parallel and (h.catalog_sessions.session.lease or getattr(getattr(h,'stockout',None),'worker',None)
+                                      or getattr(getattr(h,'timed_workbench',None),'worker',None)) or
                     h.jst_generator.worker or getattr(h,'closing',False))
 
     def poll(self):

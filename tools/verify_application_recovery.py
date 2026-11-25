@@ -10,7 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = {'normal-close': 'CLOSED', 'scheduled': 'CLOSED', 'receipt-pending': 'CLOSED',
-         'disabled': 'DISABLED', 'crash-loop': 'LIMIT_REACHED'}
+         'disabled': 'DISABLED', 'crash-loop': 'LIMIT_REACHED',
+         'stockout-queued': 'CLOSED','stockout-claimed': 'CLOSED'}
 
 
 def read(path):
@@ -43,7 +44,7 @@ def verify(mode, out, command):
     code = process.wait(timeout=10)
     assert code == (0 if mode == 'normal-close' else 23), code
     attempts = [event for event in state['events'] if event['state'] == 'RESTARTING']
-    assert len(attempts) == {'normal-close': 0, 'scheduled': 1, 'receipt-pending': 1, 'disabled': 0, 'crash-loop': 3}[mode], state
+    assert len(attempts) == {'normal-close': 0, 'disabled': 0, 'crash-loop': 3}.get(mode,1), state
     result = {'mode': mode, 'original_exit_code': code, 'watchdog_pid': state['watchdog_pid'],
               'original_pid': owner['pid'], 'restart_attempts': len(attempts), 'watchdog_final_state': state['state'],
               'elapsed_seconds': round(time.monotonic() - started, 2), 'watchdog_log': str(state_path)}
@@ -52,7 +53,10 @@ def verify(mode, out, command):
         assert report['passed'], report
         if mode != 'normal-close':
             assert report['original_main_pid'] == owner['pid'] != report['pid']
-            assert report['completed'] == [1, 1 if mode == 'receipt-pending' else 2] and report['reserve_calls'] == 1
+            if mode.startswith('stockout-'):
+                assert report['production_platform_submissions']==0 and report['original_run_id']
+            else:
+                assert report['completed'] == [1, 1 if mode == 'receipt-pending' else 2] and report['reserve_calls'] == 1
         result['desktop'] = report
     return result
 

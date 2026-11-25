@@ -104,6 +104,58 @@ def start_smoke(app, win, args):
         win.job_dirty = False
         win.close()
 
+    if mode in ('stockout-queued','stockout-claimed'):
+        from datetime import datetime
+        from unittest.mock import patch
+        from stockout_common import TZ
+        from stockout_hub_schedule import due
+        from stockout_hub_service import Journal,create
+        from stockout_schedule_queue import Queue,SOURCES
+        from stockout_task import Bridge
+        entry=win.stockout_hub;queue=Queue(out/'settings');journal=Journal(out/'settings')
+        progress=[]
+        def controlled(_self,payload):
+            assert payload.get('service')=='jst' and payload.get('action')=='sync.start',payload.get('action')
+            progress.append(payload['values']['operation_id'])
+            raise ValueError('隔离替身：平台未连接，停在原采集待核')
+        def queue_case():
+            if not session.restarted:
+                try:
+                    clock=datetime.now(TZ);when=clock.replace(second=0,microsecond=0)
+                    queue.save(SOURCES[-1][0],{'enabled':True,'at':when.strftime('%H:%M'),'next_at':when.isoformat(),
+                                              'mode':'warehouse','warehouses':['山东仓']})
+                    with patch.object(entry,'busy',return_value=True):due(entry,clock);due(entry,clock)
+                    queued,=queue.entries()
+                    assert queued['state']=='QUEUED'
+                    if mode=='stockout-claimed':
+                        queued=queue.claim();request=queued['request']
+                        create(journal,request['plan'],trigger=request['trigger'],run_id=queued['id'])
+                        journal.change(queued['id'],state='COMPLETE')
+                    atomic_json(out/'checkpoint.json',{'row':queued,'pid':os.getpid()});_interrupt_current_fixture()
+                except Exception:finish(traceback.format_exc())
+                return
+            replacement=patch.object(Bridge,'request',controlled);replacement.start()
+            def verify_queue():
+                terminal='PARTIAL' if mode=='stockout-queued' else 'COMPLETE'
+                try:
+                    row,=queue.entries()
+                    if row['state']!=terminal or entry.worker:return
+                    timer.stop();prior=read_json(out/'checkpoint.json')
+                    assert row['id']==prior['row']['id'] and row['epoch']>prior['row']['epoch']
+                    original,=journal.recent()
+                    assert original['id']==row['id'] and len(progress)==(1 if mode=='stockout-queued' else 0)
+                    app_page=win.timed_workbench.open();app_page.tabs.setCurrentIndex(2)
+                    assert any(r[4]==row['id'] for r in app_page.collect_rows)
+                    app_page.grab().save(str(out/'采集队列恢复.png'));app_page.close()
+                    report.update(original_main_pid=prior['pid'],original_run_id=row['id'],epoch=row['epoch'],state=terminal,
+                                  controlled_preflight_count=len(progress),production_platform_submissions=0)
+                    replacement.stop();finish()
+                except Exception:
+                    timer.stop();replacement.stop();finish(traceback.format_exc())
+            timer=QTimer(win);timer.setInterval(200);timer.timeout.connect(verify_queue);timer.start();entry.ensure_watch()
+        QTimer.singleShot(0,queue_case)
+        return
+
     def set_backend(catalogs, manifest):
         collection = RecordedCollection(out, manifest, pending)
         manager.platform = lambda cancel: RetryPlatforms(manager.repo, catalogs, manifest, cancel, {'calls': []}, collection)
@@ -123,14 +175,17 @@ def start_smoke(app, win, args):
             assert (manager.repo.value(run['id'], 'result:B') is None) == pending
             actions = read_json(out / 'platform-actions.json')
             assert actions.count('reserve') == 1 and actions.count('configuration') == 1
-            assert actions.count('status') > prior['status_count']
             if pending:
+                assert actions.count('status') > prior['status_count']
                 assert actions.count('collection.continue') == 1
                 assert '受理待核' in run['stores'][1]['message']
+            else:
+                assert actions.count('status') == prior['status_count'], '已验收的完整原任务文件可直接续算'
             assert win.work_repository.list_jobs() == [] and win.orders.list() == []
             report.update(original_main_pid=prior['pid'], run_id=run['id'], platform_command=run['external']['ax'],
                           completed=[1, 1 if pending else 2], reserve_calls=actions.count('reserve'),
-                          original_result_preserved=True, pending_receipt_retained=pending)
+                           original_result_preserved=True, pending_receipt_retained=pending,
+                           status_lookups_after_restart=actions.count('status')-prior['status_count'])
             win.grab().save(str(out / '恢复后的工作台.png'))
             finish()
         except Exception:

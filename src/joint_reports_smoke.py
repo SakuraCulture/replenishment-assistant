@@ -13,6 +13,7 @@ import traceback
 from unittest.mock import patch
 
 from PySide6.QtCore import QDate, QTime, QTimer
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QFileDialog
 from openpyxl import load_workbook
 
@@ -121,7 +122,12 @@ def start_smoke(app, win, args):
         def run_result(rid, expected):
             def done():
                 poll()
-                state = manager.repo.inspect(rid)[0]['state']
+                row = manager.repo.inspect(rid)[0]
+                state = row['state']
+                if mode=='parallel' and state=='WAITING' and '本地计算或写表' in row['message']:
+                    # Preserve the frozen business day while allowing the real wait clock to advance.
+                    clock[0]=max(clock[0],datetime.fromisoformat(row['retry_at']))
+                    QTest.qWait(300)
                 return state == expected or state in ('REVIEW','EMPTY','PARTIAL','COMPLETE')
             wait(done,180)
             row, artifact = manager.repo.inspect(rid)
@@ -157,7 +163,7 @@ def start_smoke(app, win, args):
                 script=Path(settings['browser_harness']).resolve(strict=True)
                 assert script.name=='verify_unattended_browsers.mjs' and jst.parent==ax.parent
                 probe_log = (root/'browser.log').open('wb')
-                probe = subprocess.Popen([str(ax/'runtime/node.exe'),str(script),str(probe_path),str(ax.parent),'--hold'],
+                probe = subprocess.Popen([str(ax/'runtime/node.exe'),str(script),str(probe_path),str(ax.parent),'--hold','--one'],
                                          stdout=probe_log,stderr=probe_log,creationflags=subprocess.CREATE_NO_WINDOW)
                 wait(lambda:(probe_path/'active.json').is_file() or probe.poll() is not None,75)
                 assert probe.poll() is None

@@ -81,6 +81,7 @@ class Entry(QObject):
         return bool(other or getattr(h,'worker',None) or getattr(h,'closing',False)
                     or io is not None and not getattr(io,'_completed',False) and not getattr(io,'scoped_collection',False)
                     or getattr(h,'_aoxiang_dialog',None)
+                    or not parallel and getattr(getattr(h,'timed_workbench',None),'worker',None)
                     or scheduled and not parallel and (scheduled.worker or scheduled.publisher or getattr(scheduled,'queued_for_execution',False))
                     or ax and (ax.maintenance_depth or not parallel and (ax.worker or ax.gate.foreground is not None))
                     or generator and generator.worker and getattr(generator,'active_work',True))

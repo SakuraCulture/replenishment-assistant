@@ -25,6 +25,8 @@ class SessionOwner:
         if scope - {'山东仓', '河北仓'}:
             raise ValueError('聚水潭操作仓无效')
         with self.lock:
+            if scope and self.resources and hasattr(self.resources,'check') and self.resources.check()=='protected':
+                raise ComponentError('RESOURCE_WAIT', '内存处于保护档，等待资源恢复后再连接本仓')
             limit = self.resources.warehouse_slots() if scope and self.resources else 1
             if limit < 2:
                 scope = frozenset()
@@ -42,9 +44,10 @@ class SessionOwner:
             try:
                 return self.acquire(warehouses)
             except ComponentError as error:
-                if error.code != 'BUSY' or time.monotonic() >= deadline:
+                if error.code not in ('BUSY','RESOURCE_WAIT') or time.monotonic() >= deadline:
                     raise
-            progress('等待聚水潭浏览器可用 · ' + '、'.join(warehouses))
+                message=('等待聚水潭浏览器可用' if error.code=='BUSY' else str(error))
+            progress(message+' · ' + '、'.join(warehouses))
             cancel.wait(.5)
 
     def start(self):

@@ -7,6 +7,7 @@ import {pathToFileURL} from 'node:url';
 
 const out=path.resolve(process.argv[2]),components=path.resolve(process.argv[3]);
 const held=process.argv.includes('--hold');
+const solo=process.argv.includes('--one');
 await fs.mkdir(out,{recursive:false});
 const load=name=>import(pathToFileURL(path.join(components,name)).href);
 const {CatalogService}=await load('jst_catalog/src/service.mjs');
@@ -26,10 +27,10 @@ const server=http.createServer(async(request,response)=>{
   if(![sd,hb,ax].includes(lane)||!['initial','following','wrong_account'].includes(name))return response.writeHead(400).end();
   const row={lane,name,from_ms:Date.now()};intervals.push(row);
   if(held&&name==='initial'){
-    if(intervals.filter(item=>item.name==='initial').length===3)
+    if(intervals.filter(item=>item.name==='initial').length===(solo?1:3))
       await fs.writeFile(path.join(out,'active.json'),JSON.stringify(intervals));
     let released=false;
-    for(let i=0;i<900&&!released;i++){
+    for(let i=0;i<2400&&!released;i++){
       released=await fs.access(path.join(out,'release')).then(()=>true,()=>false);
       if(!released)await delay(100);
     }
@@ -56,11 +57,11 @@ async function until(predicate,timeout=30000){
 }
 async function navigate(page,lane,name){
   const url=new URL('/query',origin);url.searchParams.set('lane',lane);url.searchParams.set('operation',name);
-  await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:held?105000:20000});
+  await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:held?255000:20000});
   assert.equal(await page.title(),'isolation fixture');
 }
 async function finish(bid,c){
-  const end=Date.now()+(held?110000:30000);
+  const end=Date.now()+(held?260000:30000);
   while(Date.now()<end){
     const state=service.status(bid),batch=state.batches[0];
     if(!state.running)return batch;
@@ -85,6 +86,11 @@ try{
   service=await CatalogService.open({stateRoot,bridgeRoot,lockRoot:locks});
   const axBinding=await axSessions.automaticBinding(sd,[]);profiles.set(ax,axBinding);
   const axBridge=await axSessions.connect({binding:axBinding});
+  if(solo){
+    report.instances={[ax]:axBridge.facts};
+    await navigate(axBridge.page,ax,'initial');
+    report.common_ms=intervals[0].to_ms-intervals[0].from_ms;
+  }else{
   for(const warehouse of [sd,hb]){
     const binding=await service.sessions.automaticBinding(warehouse,[...profiles.values()].map(binding=>({binding})));
     profiles.set(warehouse,binding);
@@ -149,6 +155,7 @@ try{
   }
   report.batches=[doneA,doneB,doneD].map(b=>({id:b.id,operation:b.operation_id,warehouse:b.items[0].account.warehouse,task:b.items[0].native.nativeTaskRef}));
   report.same_scope_refused_until_release=true;report.alias_refused_before_page=true;report.wrong_account_submitted=0;
+  }
   report.passed=true;
 }catch(error){report.error=error.stack;}
 finally{

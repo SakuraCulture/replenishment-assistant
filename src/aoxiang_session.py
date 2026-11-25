@@ -1,4 +1,5 @@
 """In-process browser-session handoff. The component's process lock remains authoritative."""
+from collections import deque
 import threading
 import time
 
@@ -27,6 +28,7 @@ class SessionGate:
     def __init__(self):
         self.condition = threading.Condition()
         self.background = self.foreground = None
+        self.waiters = deque()
 
     def request_foreground(self):
         with self.condition:
@@ -41,7 +43,7 @@ class SessionGate:
 
     def claim_background(self):
         with self.condition:
-            if self.foreground is not None or self.background is not None:
+            if self.foreground is not None or self.background is not None or self.waiters:
                 return None
             self.background = threading.Event()
             return self.background
@@ -49,16 +51,22 @@ class SessionGate:
     def wait_background(self, cancel, progress):
         from runtime_support import checkpoint
         deadline = time.monotonic() + 900
+        ticket = object()
         with self.condition:
-            while True:
-                checkpoint(cancel)
-                token = self.claim_background()
-                if token is not None:
-                    return token
-                if time.monotonic() >= deadline:
-                    raise ValueError('翱象浏览器仍由原作业占用，可继续本次任务')
-                progress('等待翱象浏览器可用 · 原作业仍在执行')
-                self.condition.wait(.5)
+            self.waiters.append(ticket)
+            try:
+                while True:
+                    checkpoint(cancel)
+                    if self.waiters[0] is ticket and self.foreground is None and self.background is None:
+                        self.background = threading.Event()
+                        return self.background
+                    if time.monotonic() >= deadline:
+                        raise ValueError('翱象浏览器仍由原作业占用，可继续本次任务')
+                    progress('等待翱象浏览器可用 · 前方 '+str(self.waiters.index(ticket))+' 个后台请求')
+                    self.condition.wait(.5)
+            finally:
+                self.waiters.remove(ticket)
+                self.condition.notify_all()
 
     def release_background(self, token):
         with self.condition:
