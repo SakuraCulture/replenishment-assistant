@@ -10,6 +10,40 @@ import warehouse_catalog
 import work_repository as wr
 
 
+def jst_file(path,order,destination):
+    import hashlib,os,tempfile
+    target=Path(destination).resolve()
+    online=order['online']
+    key=sp.uid('聚水潭文件',online,str(target).casefold())
+    value={'online':online,'gid':order['gid'],'path':str(target),'sha':order['file_sha']}
+    raw=order['workbook']
+    if hashlib.sha256(raw).hexdigest()!=value['sha']:
+        raise ValueError('原任务文件与冻结摘要不一致')
+    with sp.connection(path,True) as db:
+        previous=sp.latest(db,key,'聚水潭文件意图')
+        if previous and previous['body']!=value:raise wr.Conflict('同一路径原任务依据已变，请核对原文件')
+        if not previous and target.exists():raise FileExistsError('目标路径已有其他文件 '+str(target))
+        sp.record(db,key,'聚水潭文件意图',value,'保存核对用 XLS')
+    if not target.exists():
+        fd,name=tempfile.mkstemp(prefix='.专项原包-',dir=target.parent)
+        try:
+            with os.fdopen(fd,'wb') as f:
+                f.write(raw);f.flush();os.fsync(f.fileno())
+            try:os.link(name,target)
+            except FileExistsError:pass
+        finally:Path(name).unlink(missing_ok=True)
+    with target.open('rb') as f:
+        if hashlib.file_digest(f,'sha256').hexdigest()!=value['sha']:
+            raise ValueError('原路径现有文件的摘要不同，保留待核 '+str(target))
+    jst_file_receipt(path,key,value)
+    return str(target)
+
+
+def jst_file_receipt(path,key,value):
+    with sp.connection(path,True) as db:
+        sp.record(db,key,'聚水潭文件回执',value,'核对原文件')
+
+
 def remember_jst(db,order,reply):
     if not sp.exists(db,'special_packages'):
         return

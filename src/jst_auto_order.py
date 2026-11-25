@@ -177,9 +177,14 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
 def export_file(path, online, target, progress=lambda _:None, cancel=None):
     with closing(wr.read_connection(path)) as db:
         row=store.read(db,online,workbook=True)
+        from special_plans import exists as has_special
+        special=row and has_special(db,'special_packages') and db.execute('SELECT 1 FROM special_packages WHERE online=?',(online,)).fetchone()
     if not row or row['stage'] in store.RELEASED:
         raise Check('此任务已有下单动作，请从原任务核对')
     checkpoint(cancel)
+    if special:
+        from special_native import jst_file
+        return jst_file(path,row,target)
     dest=Path(target)
     with dest.open('xb') as stream:
         stream.write(row['workbook'])
@@ -443,6 +448,12 @@ def _record_found(path, order, result, cancel, *, identity_only=False, manual_pr
             # the successor's state, reference, payment or inventory.
             return latest
         if allocations.active(db,h)!=order['gid']:
+            if latest and latest.get('stage')=='CANCELLED' and native_status==CANCELLED and latest.get('internal')==internal:
+                from special_plans import exists as has_special,latest as last_special
+                if has_special(db,'special_packages'):
+                    original=last_special(db,h['oid'],'原单')
+                    if original and original['body']['status']=='已取消' and original['body']['gid']==order['gid']:
+                        return latest
             raise wr.Conflict('外部原单已查到，本机原生成版本已变化，请核对关联')
         if identity_basis or manual_proof is not None:
             from warehouse_execution import validate_visibility

@@ -47,6 +47,7 @@ def schema(db):
         'special_claims': 'plan TEXT,line TEXT,store TEXT,warehouse TEXT,sku TEXT,oid TEXT,gid TEXT,qty TEXT,PRIMARY KEY(gid,line)',
         'special_releases': 'gid TEXT,warehouse TEXT,sku TEXT,qty TEXT,source TEXT,PRIMARY KEY(gid,sku)',
         'special_settings': 'kind TEXT PRIMARY KEY,enabled INTEGER NOT NULL',
+        'special_stock_evidence': 'warehouse TEXT,source_sha TEXT,gid TEXT,sku TEXT,included TEXT,sha TEXT,actor TEXT,at TEXT,PRIMARY KEY(warehouse,source_sha,gid,sku)',
         'special_tickets': 'plan TEXT,wave INTEGER,sha TEXT,body TEXT,state TEXT,message TEXT,PRIMARY KEY(plan,wave)',
         'special_records': 'object TEXT,stage TEXT,version INTEGER,sha TEXT,at TEXT,actor TEXT,body TEXT,PRIMARY KEY(object,stage,version)',
         'special_groups': 'id TEXT PRIMARY KEY,plan TEXT,scope TEXT,anchor TEXT,UNIQUE(plan,scope)',
@@ -217,12 +218,25 @@ def publish(path,raw,actor,*,plan=None,expected=0,reason='首次发布'):
         if old:
             previous=read(db,plan)
             old_lines={r['id']:r for r in previous['lines']}
+            revised={r['id']:r for r in body['lines']}
+            initial={r['id']:Decimal(r['target']) for r in read(db,plan,1)['lines']}
             if set(old_lines)-{r['id'] for r in body['lines']}:
                 raise ValueError('原行必须保留，免供请以原行数量零并记录批准原因')
             for line in body['lines']:
                 origin=old_lines.get(line['id'])
+                replace=line.get('replaces')
+                if replace:
+                    target=old_lines.get(replace)
+                    if (not target or replace not in initial or replace==line['id'] or target['sku']==line['sku'] or
+                            line['store']!=target['store'] or line['unit']!=target['unit'] or
+                            Decimal(revised[replace]['target'])>=initial[replace]):
+                        raise ValueError('换品须指向同店同单位的原行，并保留批准减供的原款')
+                    if origin and origin.get('replaces')!=replace:
+                        raise ValueError('已发布替代行不能改变对应原行')
                 if origin and any(origin[key]!=line[key] for key in ('store','sku','warehouse','unit',*SCOPES)):
                     raise ValueError('替代商品须追加新行并标注替代的原行，原行须保留')
+        elif any(r.get('replaces') for r in body['lines']):
+            raise ValueError('首次货盘没有已发布的可替代原行，请通过批准修订登记换品')
         version=expected+1
         body.update(plan=plan,version=version)
         db.execute('INSERT INTO special_plans VALUES(?,?,?,?) ON CONFLICT(plan) DO UPDATE SET version=excluded.version,title=excluded.title',

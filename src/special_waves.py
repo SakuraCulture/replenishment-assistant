@@ -42,6 +42,12 @@ def commitments(db,plan):
                         for c in r['shares']:
                             settled[c['oid'],c['line']]=Decimal(c['quantity'])
     generations={gid:oid for gid,oid in db.execute('SELECT gid,oid FROM special_packages')}
+    policy_actual={}
+    if lifecycle_store.exists(db):
+        from special_settlement import package,policy_received
+        for oid, in db.execute("""SELECT DISTINCT p.oid FROM special_packages p JOIN lifecycle_versions v ON p.oid=v.oid
+                                  JOIN special_plans s ON p.plan=s.plan WHERE s.kind='policy' AND v.stage='receipt'"""):
+            policy_actual[oid]=policy_received(db,package(db,oid))
     for owner,line,store,sku,gid,qty,released,version in db.execute(sql):
         qty=Decimal(qty)
         key=gid,sku
@@ -54,8 +60,9 @@ def commitments(db,plan):
             effective=posted
         if owner==plan:
             used[line]+=effective
-        if effective and posted is None:
-            shared[store,sku].append((gid,effective))
+        outstanding=max(ZERO,effective-policy_actual.get(generations[gid],{}).get(line,ZERO))
+        if outstanding and posted is None:
+            shared[store,sku].append((gid,outstanding))
     return used,shared
 
 

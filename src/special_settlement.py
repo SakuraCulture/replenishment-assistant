@@ -34,6 +34,26 @@ def head(db,p):
     return g['head']
 
 
+def policy_received(db,p):
+    if db.execute('SELECT kind FROM special_plans WHERE plan=?',(p['plan'],)).fetchone()!=('policy',):
+        return {}
+    row=db.execute("SELECT 1 FROM lifecycle_versions WHERE oid=? AND warehouse=? AND stage='receipt' LIMIT 1",
+                   (p['oid'],p['scope']['warehouse'])).fetchone() if lifecycle_store.exists(db) else None
+    if not row:return {}
+    document=lifecycle.current(db,head(db,p),'receipt')
+    if not document or document['payload'].get('pending'):return {}
+    quantities=defaultdict(Decimal)
+    for r in document['payload']['rows']:quantities[r['sku']]+=number(r['base_quantity'],'已归属实收')
+    received={}
+    for item in p['items']:
+        left=quantities[item['sku']]
+        for c in item['claims']:
+            q=min(left,Decimal(c['quantity']))
+            received[c['line']]=q
+            left-=q
+    return received
+
+
 def release_unsubmitted(db,oid,actor,reason):
     p=package(db,oid)
     previous=sp.latest(db,oid,'未发送撤销')
@@ -57,6 +77,37 @@ def note_file(db,path):
     lifecycle_store.schema(db)
     db.execute('INSERT OR IGNORE INTO lifecycle_files VALUES(?,?,?)',(sha,Path(path).name,raw))
     return json.loads(raw.decode('utf-8-sig')),sha
+
+
+def note_stock_inclusion(path,file,actor):
+    import warehouse_catalog
+    from catalog_write_lock import acquire
+    value=json.loads(Path(file).read_text('utf-8-sig'))
+    wh=required(value['warehouse'],'仓')
+    with acquire(Path(path).parent,wh),sp.connection(path,True) as db:
+        source,sha=note_file(db,file)
+        if source!=value:raise wr.Conflict('凭证在读取期间已变化')
+        catalog=warehouse_catalog.Repository(Path(path).parent).snapshots((wh,))[0][wh]
+        if (value['source_sha'],value['revision'])!=(catalog['source_sha256'],catalog['revision']):
+            raise wr.Conflict('凭证与当前仓资料的原件摘要或版本不符')
+        required(value.get('reason'),'平台或仓方核对依据')
+        seen=set()
+        for e in value.get('rows',[]):
+            gid,sku=e['gid'],e['sku']
+            if (gid,sku) in seen:raise ValueError('同一份凭证重复列出代次和 SKU')
+            seen.add((gid,sku))
+            row=db.execute("""SELECT n.number,r.quantity FROM jst_active a JOIN normal_orders n ON n.oid=a.oid
+                  JOIN jst_reservations r ON r.gid=a.gid WHERE a.gid=? AND a.warehouse=? AND r.sku=?""",(gid,wh,sku)).fetchone()
+            if not row or e.get('order_number') not in (row[0],row[0]+('-SD' if wh=='山东仓' else '-HB')):
+                raise ValueError('原仓单、仓、SKU 或代次不一致 '+sku)
+            qty=number(e['included'],'仓快照已含量')
+            if qty>Decimal(row[1]) or not e.get('platform_reference'):raise ValueError('数量超出原认领或缺少仓方／平台原件编号')
+            key=(wh,value['source_sha'],gid,sku)
+            old=db.execute('SELECT included,sha FROM special_stock_evidence WHERE (warehouse,source_sha,gid,sku)=(?,?,?,?)',key).fetchone()
+            if old and (Decimal(old[0])!=qty or old[1]!=sha):raise wr.Conflict('该原件计入口径已登记，冲突请核对新仓资料')
+            db.execute('INSERT OR IGNORE INTO special_stock_evidence VALUES(?,?,?,?,?,?,?,?)',(*key,text(qty),sha,required(actor,'经办人'),sp.now()))
+        if not seen:raise ValueError('凭证缺少原代次、SKU 及已含量')
+    return len(seen)
 
 
 def original_from_platform(db,p):
@@ -152,7 +203,7 @@ def receive_original(path,oid,file,actor):
         if db.execute("SELECT 1 FROM special_effects WHERE object=? AND stage='采购' AND state IN ('已发待核','已关联')",(group,)).fetchone():
             if not prev or prev['body']['file_sha']!=sha:
                 raise wr.Conflict('原采购已经发出，请沿原采购处理差异')
-        if state=='已取消' and db.execute('SELECT 1 FROM special_receipts WHERE group_id=?',(group,)).fetchone():
+        if state=='已取消' and (db.execute('SELECT 1 FROM special_receipts WHERE group_id=?',(group,)).fetchone() or any(policy_received(db,p).values())):
             raise wr.Conflict('已登记正式实收，须先核对实收归属')
         prior_release={s:Decimal(q) for s,q in db.execute('SELECT sku,qty FROM special_releases WHERE gid=?',(p['gid'],))}
         if any(dict(releases).get(s,ZERO)<q for s,q in prior_release.items()):
@@ -244,6 +295,9 @@ def sources(db,p):
     if not actual:
         return native_sources(db,p)
     pay=sp.latest(db,p['oid'],'付款')
+    latest_read=sp.latest(db,p['oid'],'聚水潭原单回读')
+    if latest_read and latest_read['body']['status']=='已取消' and actual['body']['status']!='已取消':
+        return actual,None
     if pay and pay['body']['source']!=actual['sha']:
         pay=None
     if pay:

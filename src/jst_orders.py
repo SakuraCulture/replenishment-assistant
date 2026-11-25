@@ -117,6 +117,8 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
         db.execute('BEGIN')
         for supplied in heads:
             checkpoint(cancel); h = lc.full_head(path, supplied); key = (h['oid'], h['warehouse'])
+            if db.execute("SELECT 1 FROM normal_orders WHERE oid=? AND kind IN ('policy','opening')",(h['oid'],)).fetchone():
+                raise ValueError('专项执行包请从原工作台按目标行预览和认领，已生成的包可继续原平台任务')
             if key in seen:
                 raise ValueError('重复选择同一店仓订单')
             seen.add(key); old = active(db, h)

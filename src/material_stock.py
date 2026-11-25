@@ -80,6 +80,10 @@ def cross_reservations(db, warehouse, baseline, skus, *, material=False, batch_i
 
     origins = {None: (None,None)}
     releases = {}
+    recognized={}
+    if 'special_stock_evidence' in tables:
+        recognized={(g,s):Decimal(q) for g,s,q in db.execute(
+            'SELECT gid,sku,included FROM special_stock_evidence WHERE warehouse=? AND source_sha=?',(warehouse,sha))}
     if 'special_releases' in tables:
         releases = {(gid,sku):Decimal(qty) for gid,sku,qty in db.execute(
             'SELECT gid,sku,qty FROM special_releases WHERE warehouse=?', (warehouse,))}
@@ -90,6 +94,10 @@ def cross_reservations(db, warehouse, baseline, skus, *, material=False, batch_i
             origins[bid] = db.execute("SELECT json_extract(payload,'$.catalog.revision'),json_extract(payload,'$.catalog.source_sha256') FROM jst_baselines WHERE bid=?", (bid,)).fetchone()
         old_revision, old_sha = origins[bid]
         qty = Decimal(qty) - releases.get((gid,sku),0)
+        if (gid,sku) in recognized:
+            qty=max(Decimal(0),qty-recognized[gid,sku])
+            if qty:reserved[sku]=reserved.get(sku,Decimal(0))+qty
+            continue
         if not qty:
             continue
         local = False

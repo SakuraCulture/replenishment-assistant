@@ -111,6 +111,42 @@ def contention(root):
     assert v['payload']['rows'][0]['quantity']=='2',v['payload']['rows']
     material_orders.commit(work.path,material_orders.register(work.path,v))
 
+
+def ordinary_2000(root):
+    from contextlib import closing
+    from copy import deepcopy
+    sys.path.insert(0,str(ROOT/'tests'))
+    from test_archive_orders import seed
+    from test_lifecycle import LifecycleTests
+    import jst_batches,order_lifecycle,lifecycle_store,payment_shop_names
+    from jst_delivery_profiles import save_profile
+    work,_,payload=seed(root)
+    order=payload['result']
+    sample=next(r for r in order['rows'] if r['AU']=='山东仓')
+    order['rows']=[]
+    items=[]
+    from warehouse_catalog import Repository,import_catalog
+    repo=Repository(work.path.parent)
+    cat=import_catalog(root/'inputs/山东仓-第二版.xlsx','山东仓')
+    repo.save(cat)
+    for i in range(1,2001):
+        sku=f'{i:06}'
+        row=deepcopy(sample);row.update(E=sku,D='样品'+sku,G='件',_execution_qty=1,_execution_amount=2,V=2)
+        order['rows'].append(row)
+        items.append(dict(供货仓='山东仓',商品编码=sku,门店确认数量=1))
+    with closing(work.connect()) as db,db:
+        db.execute('INSERT OR IGNORE INTO stores VALUES(?,?)',('T',wr.dumps(dict(name='测试店'))))
+        db.execute('UPDATE normal_revisions SET digest=?,payload=? WHERE oid=? AND revision=1',
+                   (normal_orders.fingerprint(order),normal_orders.encode(payload,db),'oid'))
+        lifecycle_store.save_mapping(db,'payment',payment_shop_names.key('T','山东仓'),dict(store='T',warehouse='山东仓',name='隔离普通原店',version='qa'))
+    save_profile(work.path,'T','山东仓',dict(buyer='普通样本',recipient='测试收货',phone='13000000000',
+                province='测试省',city='测试市',district='测试区',address='隔离样本地址'),None)
+    s=LifecycleTests();s.root,s.count,s.path=root,0,work.path
+    s.h=next(h for h in order_lifecycle.current_targets(work.path) if h['warehouse']=='山东仓')
+    s.save('return',items)
+    generated=jst_batches.execute(work.path,jst_batches.preview_new(work.path,[s.h],{'山东仓':cat}))
+    assert not generated['errors'],generated
+
 if __name__=='__main__':
     p=argparse.ArgumentParser()
     p.add_argument('folder',type=Path)

@@ -402,6 +402,12 @@ def pause_imported(root):
             audit.extend({'table':'jst_batches','id':r[0],'state':r[1]} for r in db.execute("SELECT batch_id,status FROM jst_batches WHERE status='active'"))
             db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE status='active'")
         pause(db,'scheduled_runs','id',active=('QUEUED','RUNNING','PAUSING'))
+        if 'special_tickets' in tables:
+            audit.extend({'table':'special_tickets','id':p,'wave':w,'state':'等待'} for p,w in db.execute("SELECT plan,wave FROM special_tickets WHERE state='等待'"))
+            db.execute("UPDATE special_tickets SET state='待复核',message='完整迁入后暂停，请复核原票据' WHERE state='等待'")
+        if 'special_settings' in tables:
+            audit.extend({'table':'special_settings','id':k,'enabled':True} for k, in db.execute('SELECT kind FROM special_settings WHERE enabled=1'))
+            db.execute('UPDATE special_settings SET enabled=0 WHERE enabled<>0')
         if 'scheduled_arrangements' in tables:
             for ident,raw in db.execute('SELECT id,payload FROM scheduled_arrangements').fetchall():
                 value=json.loads(raw)

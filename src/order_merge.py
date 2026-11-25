@@ -28,6 +28,7 @@ PARENTS['material_batches']=('id',)
 MAIN.update(('special_plans','special_versions','special_confirmations','special_observations','special_runs',
              'special_packages','special_claims','special_releases','special_records','special_groups','special_receipts','special_effects','special_tickets'))
 GLOBAL.add('special_settings')
+MAIN.add('special_stock_evidence')
 PARENTS.update(special_plans=('plan',),special_runs=('run',),special_groups=('id',),special_packages=('oid','gid'))
 LINKS={'oid','gid','batch_id','runid','docid','task','run_id','id','item_id','command_id','purchase_id','hostOrderId','hostPurchaseId','hostOrderIds','rebuildOf','successorId','operation'}
 ASSETS={'source_files','lifecycle_files','jst_files','purchase_files'}
@@ -595,6 +596,10 @@ def _pause(row):
         v=json.loads(out['payload']);v.update(enabled=False,automation_paused=True,final_pending=False);out['payload']=encoded(v)
     elif row.table=='jst_tasks' and out.get('status') in ('pending','prepared'):
         out.update(status='paused',message='合并迁入后暂停，核对原分配批次后继续')
+    elif row.table=='special_tickets' and out.get('state')=='等待':
+        out.update(state='待复核',message='合并迁入后暂停，请复核原票据')
+    elif row.table=='special_settings':
+        out['enabled']=0
     elif row.table=='scheduled_runs':
         v=json.loads(out['payload']);v['migration_paused']=True
         if out.get('state') in ACTIVE:v['state']='PAUSED';out['state']='PAUSED'

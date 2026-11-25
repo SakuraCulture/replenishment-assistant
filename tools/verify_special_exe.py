@@ -42,6 +42,9 @@ def exercise(exe,case,root,fixture,template,*,reopen=False):
         if case in ('race','opening'):
             from special_fixture import contention
             contention(root)
+        if case=='original-2000':
+            from special_fixture import ordinary_2000
+            ordinary_2000(root)
         if case=='short':
             for flag in ('short-receipt','lose-ax-response','lose-receipt-response'):(root/flag).touch()
     if read(root/'synthetic.json')!={'synthetic':True,'live_platform':False}:raise ValueError('Isolation required')
@@ -91,5 +94,5 @@ if __name__=='__main__':
     for entry in args.cases:
         case,_,label=entry.partition(':')
         case_root=args.out/(label or case)
-        result=exercise(args.exe,case,case_root,args.fixture,args.template,reopen=case in ('reopen','resume-transaction','migration-export','migration-check'))
+        result=exercise(args.exe,case,case_root,args.fixture,args.template,reopen=case in ('reopen','resume-transaction','migration-export','migration-check','file-resume'))
         print(case,result['ui'].get('passed'),str(result['ui'].get('error',''))[-950:],flush=True)

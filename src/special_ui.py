@@ -213,6 +213,7 @@ class Desk(QDialog):
         button(toolbar,'门店确认',self.confirm)
         button(toolbar,'登记门店快照',self.observe)
         button(toolbar,'采用仓资料',self.stock)
+        button(toolbar,'核对快照已含占用',self.stock_inclusion)
         button(toolbar,'预览本轮',self.preview)
         button(toolbar,'确认本轮分配',self.claim)
         button(toolbar,'登记定时认领',self.schedule)
@@ -247,6 +248,7 @@ class Desk(QDialog):
         bar=QHBoxLayout()
         button(bar,'查看组级收货',self.group_status)
         button(bar,'回读原采购实收',self.native_receipt)
+        if self.kind=='policy':button(bar,'登记本仓实收',self.policy_receipt)
         button(bar,'更正已入账实收',self.correct_receipt)
         button(bar,'导出逐行对账',self.export_rows)
         button(bar,'全部经营实绩',self.operating)
@@ -301,7 +303,9 @@ class Desk(QDialog):
                 pos=db.execute('SELECT position FROM special_packages WHERE oid=?',(p['oid'],)).fetchone()[0]
                 data.append([wave,pos,p['number'],p['scope']['warehouse'],len(p['items']),sum(Decimal(x['quantity']) for x in p['items']),
                              sum(Decimal(x['amount']) for x in p['items']),p['online'],obs['body']['internal'] if obs else '',
-                             obs['body']['status'] if obs else '待回读',paid['version'] if paid else '待人工核对'])
+                             obs['body']['status'] if obs else ('已撤销未发包' if sp.latest(db,p['oid'],'未发送撤销') else '待回读'),
+                             ('原款 V'+str(paid['version'])+' 待人工重核' if obs and paid and (paid['body']['source']!=obs['sha'] or obs['body']['status']=='已取消')
+                              else paid['version'] if paid else '待人工核对')])
             fill(self.orders,data)
             fill(self.rows,[[r['source_row'],r['store'],r['warehouse'],r['sku'],r['target']] for r in body['lines'][:200]])
             self.status.setText(f"主单 {key} · V{body['version']} · {len(body['lines'])} 个目标行 · {len(data)} 张仓单。列表显示前 200 个目标行，逐行导出含全量。")
@@ -346,6 +350,14 @@ class Desk(QDialog):
             if ask(self,'采用当前仓资料',f"{wh} · {len(new['items'])} 款 · {new['revision']}"):
                 repo.save(new,expected_digest=before)
                 self.status.setText('已采用 '+wh+' 新资料，原预览须复核差额')
+        self.run(action)
+
+    def stock_inclusion(self):
+        def action():
+            file=file_in(self,'读取仓快照已含代次原件')
+            if file and ask(self,'核对仓快照已含占用','按原仓资料摘要和逐 SKU 原代次记录已含量？'):
+                count=settle.note_stock_inclusion(self.path,file,self.actor.text())
+                self.status.setText('已登记 '+str(count)+' 项快照占用口径，请重做预览')
         self.run(action)
 
     def confirm(self):
@@ -497,6 +509,15 @@ class Desk(QDialog):
             from aoxiang_receipt_ui import open_receipts
             with sp.connection(self.path) as db:h=settle.head(db,self.selected())
             open_receipts(self,self.host,settle.resolve_head(self.path,h))
+        self.run(action)
+
+    def policy_receipt(self):
+        def action():
+            from lifecycle_ui import import_document
+            p=self.selected()
+            with sp.connection(self.path) as db:h=settle.head(db,p)
+            import_document(self,self.host,'receipt',h)
+            self.refresh()
         self.run(action)
 
     def group_status(self):

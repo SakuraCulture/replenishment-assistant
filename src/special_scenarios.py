@@ -22,7 +22,8 @@ def exercise(ui,case):
     if case=='source-rows':return source_rows(ui)
     if case=='ambiguous':return ambiguous(ui)
     if case.startswith('migration-'):return migrate(ui,case)
-    raise ValueError(case)
+    from special_more_scenarios import extra
+    return extra(ui,case)
 
 
 def simple(ui,kind,sku,target=1):
@@ -234,6 +235,15 @@ def amount(ui):
 
 def cancellation(ui):
     d=ui.desk('policy')
+    other=ui.desk('policy')
+    other_plan=simple(ui,'policy','PART',3)
+    other_plan['scope'].update(warehouse='河北仓',account='1',shop='22',supplier='HB-SUP')
+    ui.publish(other,other_plan);ui.preview(other);ui.claim(other);ui.proof(other,0);ui.pay(other,0)
+    def other_state():
+        p=other.packages[0]
+        with sp.connection(d.path) as db:
+            return [p['gid'],sp.latest(db,p['oid'],'付款')['sha'],db.execute('SELECT sku,quantity FROM jst_reservations WHERE gid=?',(p['gid'],)).fetchall()]
+    preserved=other_state()
     ui.publish(d,simple(ui,'policy','PART',4));ui.preview(d);ui.claim(d);orig=ui.proof(d,0);ui.pay(d,0)
     p=d.packages[0];d.orders.selectRow(0)
     false={**orig,'status':'已取消','rows':[{**r,'quantity':'0','amount':'0','final_evidence':'尚未取得原单取消回读'} for r in orig['rows']]}
@@ -249,8 +259,9 @@ def cancellation(ui):
         releases=db.execute('SELECT gid,sku,qty FROM special_releases').fetchall()
         old=sp.latest(db,p['oid'],'付款')
     assert len(releases)==1 and old['version']==1
+    assert preserved==other_state()
     ui.output(d,'取消重做对账');ui.snap(d,'旧款与新代次')
-    return dict(release=releases,old_paid_version=old['version'],gids=[p['gid'] for p in d.packages])
+    return dict(release=releases,old_paid_version=old['version'],gids=[p['gid'] for p in d.packages],unchanged_hebei=preserved)
 
 
 def source_rows(ui):
@@ -269,17 +280,24 @@ def migrate(ui,case):
     from pathlib import Path
     import hashlib,zipfile
     if case=='migration-check':
-        d=ui.desk('opening');assert len(d.packages)==4
+        d=ui.desk('opening',False);assert len(d.packages)==4
+        with sp.connection(d.path) as db:
+            ticket=db.execute("SELECT state,message FROM special_tickets WHERE state='待复核'").fetchall()
+            enabled=db.execute('SELECT count(*) FROM special_settings WHERE enabled<>0').fetchone()[0]
+        assert enabled==0 and len(ticket)==1
         d.tabs.setCurrentIndex(1);d.orders.selectRow(0)
         d.tabs.setCurrentIndex(2);ui.press(d,'全部经营实绩')
         totals=json.loads(d.detail.toPlainText())
         assert totals['开业']['实收件数']=='1650'
         ui.output(d,'迁入后逐行');ui.snap(d,'迁入后四包')
-        return dict(packages=[p['online'] for p in d.packages],actual=totals)
+        return dict(packages=[p['online'] for p in d.packages],actual=totals,enabled=enabled,ticket=ticket)
     if case=='migration-export':
         d=ui.desk('policy')
         for sku in ('K1','K2'):
             ui.publish(d,simple(ui,'policy',sku,1));ui.preview(d);ui.claim(d)
+        future=simple(ui,'policy','HOLD')
+        future.update(start='2026-12-15T09:00:00+08:00',end='2026-12-16T12:00:00+08:00')
+        ui.publish(d,future);ui.preview(d);ui.press(d,'登记定时认领')
         d.close()
     ui.win.show_section(3)
     options=[b for b in ui.win.findChildren(QPushButton) if b.text().startswith('完整订单迁移／导入与参数导出')]

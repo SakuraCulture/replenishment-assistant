@@ -8,9 +8,11 @@ import special_plans as sp
 import special_settlement as settlement
 
 
-def detail(db,plan):
+def detail(db,plan,view=None):
     original=sp.read(db,plan,1)
     current=sp.read(db,plan)
+    decisions={r['id']:r for r in (view or {}).get('rows',[])}
+    revision=db.execute('SELECT actor,reason FROM special_versions WHERE plan=? AND version=?',(plan,current['version'])).fetchone()
     original_rows={r['id']:r for r in original['lines']}
     traced=defaultdict(list)
     received=defaultdict(Decimal)
@@ -28,6 +30,7 @@ def detail(db,plan):
                 if not Decimal(r['pending']):
                     settled[share['oid'],share['line']]=Decimal(share['quantity'])
     for p in settlement.packages(db,plan):
+        for line,qty in settlement.policy_received(db,p).items():received[line]+=qty
         actual,paid=settlement.sources(db,p)
         actuals={r['sku']:r for r in actual['body']['rows']} if actual else {}
         payments={r['sku']:r for r in paid['body']['rows']} if paid else {}
@@ -67,13 +70,18 @@ def detail(db,plan):
                          平台实配=sp.text(sum((Decimal(i['平台实配']) for i in entries),Decimal(0))),
                          有效未结=sp.text(max(Decimal(0),held-got)),尚可补=sp.text(max(Decimal(0),target-held)),
                          原货盘缺口=sp.text(max(Decimal(0),orig-got)),实收待认领=any(i['待认领'] for i in entries),
-                         经批准免供=sp.text(max(Decimal(0),orig-target)),原单来源=json.dumps(entries,ensure_ascii=False)))
+                         经批准免供=sp.text(max(Decimal(0),orig-target)),替代原行=r.get('replaces',''),原行标识=key,
+                         修订批准人=revision[0],修订依据=revision[1],快照=(decisions.get(key) or {}).get('snapshot') or '',
+                         本轮未满足原因=(decisions.get(key) or {}).get('reason') or '',仓账号=r['account'],店铺编码=r['shop'],
+                         供应商=r['supplier'],币种=r['currency'],原单来源=json.dumps(entries,ensure_ascii=False)))
     return rows
 
 
 def export(path,plan,destination):
     with sp.connection(path) as db:
-        rows=detail(db,plan)
+        import special_waves
+        view,_=special_waves.prepare(db,path,sp.read(db,plan))
+        rows=detail(db,plan,view)
     with open(destination,'x',encoding='utf-8-sig',newline='') as output:
         writer=csv.DictWriter(output,fieldnames=list(rows[0]))
         writer.writeheader()

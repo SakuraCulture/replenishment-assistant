@@ -49,13 +49,13 @@ class Drive:
         f=self.root/(f'{self.counter:03}-'+title+'.png')
         if not d.grab().save(str(f)):raise IOError(str(f))
         self.screen[title]=str(f)
-    def desk(self,kind):
+    def desk(self,kind,enable=True):
         before={id(w) for w in self.app.topLevelWidgets() if isinstance(w,Desk)}
         self.press(self.win,sp.KINDS[kind])
         matches=[w for w in self.app.topLevelWidgets() if isinstance(w,Desk) and w.isVisible() and w.kind==kind and id(w) not in before]
         if not matches:raise ValueError('未打开业务工作台')
         d=matches[-1]
-        if not d.on.isChecked():QTest.mouseClick(d.on,Qt.MouseButton.LeftButton)
+        if enable and not d.on.isChecked():QTest.mouseClick(d.on,Qt.MouseButton.LeftButton)
         return d
     def modal(self,action,work):
         fail=[]
@@ -203,7 +203,7 @@ class Drive:
             if case in ('opening','short','reopen'):return self.opening(case)
             if case.startswith('performance-'):return self.performance(int(case.split('-')[1]))
             if case.startswith('boundary-'):return self.boundary(int(case.split('-')[1]))
-            if case.startswith('policy-'):return self.policy(case[7:])
+            if case.startswith('policy-') and case!='policy-receipts':return self.policy(case[7:])
             from special_scenarios import exercise
             return exercise(self,case)
 
@@ -369,7 +369,7 @@ class Drive:
             self.platform_dialog(d,'回读原采购实收',recover)
 
     def opening(self,case):
-        d=self.desk('opening')
+        d=self.desk('opening',enable=case!='reopen')
         if case=='reopen':
             d.tabs.setCurrentIndex(1)
             assert len(d.packages)==4
