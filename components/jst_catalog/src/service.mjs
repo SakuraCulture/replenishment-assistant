@@ -169,6 +169,8 @@ export class CatalogService {
       if(action==='sync.retry_unsubmitted'&&ids.some(id=>b.items.find(i=>i.id===id).native?.submissions>0))throw Error('该项已经提交，只能恢复原任务');
       const warehouses=b.items.filter(i=>ids.includes(i.id)).map(i=>i.account.warehouse);
       this.requireScope(c,warehouses);
+      if(c.recover_only&&b.items.some(i=>ids.includes(i.id)&&!i.native?.nativeTaskRef))
+        throw new CatalogError('NEEDS_ORIGINAL_TASK','本次仅回收已受理原任务，未取得原平台编号的仓项继续待核');
       await this.requireSlot(warehouses,!!c.scoped);
       this.launch(b.id,'batch',(signal,active)=>this.run(b.id,ids,signal,active),warehouses,c);return {batch_id:b.id};
     }
@@ -302,10 +304,12 @@ export class CatalogService {
     const data=this.store.read(),fingerprint=sha(canonical({operation_id:c.operation_id,purpose:c.purpose,items:c.items}));
     const existing=Object.values(data.batches).find(b=>b.operation_id===c.operation_id);
     if(existing){if(existing.fingerprint!==fingerprint)throw Error('同一同步编号对应不同范围');if(existing.items.some(retired))throw new CatalogError('ITEM_RETIRED','原采集已在本地结束，请明确新建采集；未重放旧导出');return {batch_id:existing.id,reused:true};}
+    if(c.recover_only)throw new CatalogError('NEEDS_ORIGINAL_TASK','未找到原仓导出任务；本次仅核对原记录');
     await this.requireSlot(warehouses,!!c.scoped);
+    const independent=c.independent_observation===true&&c.purpose!=='allocation_baseline'&&!!this.driver.exportArchive;
     const items=c.items.map((i,index)=>{
       const a=data.accounts?.[i.warehouse];if(!a?.enabled)throw Error(i.warehouse+'尚未启用自动同步');validateIdentity(a);
-      if(Object.values(data.batches).some(b=>b.items.some(x=>x.account.id===a.id&&unresolved(x))))throw new CatalogError('PENDING_TASK',i.warehouse+'有已受理未决任务，请继续原批次');
+      if(!independent&&Object.values(data.batches).some(b=>b.items.some(x=>x.account.id===a.id&&unresolved(x))))throw new CatalogError('PENDING_TASK',i.warehouse+'有已受理未决任务，请继续原批次');
       return {id:crypto.randomUUID(),index,account:businessAccount(a),expected_catalog_digest:i.expected_catalog_digest??null,
         ...(this.driver.exportArchive?{sourceFormat:ARCHIVE}:{}),stage:'QUEUED',native:null,receipt:null,adoption:null,observation:null,error:null};
     });

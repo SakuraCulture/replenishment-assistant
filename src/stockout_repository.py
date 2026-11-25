@@ -141,7 +141,7 @@ class Repository:
                 db.execute('INSERT INTO settings_current VALUES(1,?) ON CONFLICT(id) DO UPDATE SET version=excluded.version', (version,))
         return self.settings(version)
 
-    def new_run(self, *, trigger='manual', day=None, source_run=None, fresh_source=None, reexport_scope=None, reexport_publications=None, run_id=None, basis_version=None):
+    def new_run(self, *, trigger='manual', day=None, source_run=None, fresh_source=None, reexport_scope=None, reexport_publications=None, run_id=None, basis_version=None, publication_basis=None):
         if source_run and fresh_source:raise ValueError('继续原任务与重新采集不能同时选择')
         if run_id:
             with self.connect() as db:prior=db.execute('SELECT trigger,source_run FROM runs WHERE id=?',(run_id,)).fetchone()
@@ -166,14 +166,15 @@ class Repository:
             external.pop('identity',None)
             external['reexport_publications']=reexport_publications or {}
         if fresh_source:external['rerun']=True
+        if publication_basis is not None:external['publication_basis']=publication_basis
         external.setdefault('versions',{k:INFO[k] for k in ('version','model_version','routing_version')})
         with self.connect(write=True) as db:
             # Never create a second local intention over an unfinished analysis run.
             active = db.execute("SELECT id FROM runs WHERE state NOT IN ('COMPLETE','PARTIAL','ENDED') LIMIT 1").fetchone()
-            if active:
+            if active and publication_basis is None:
                 raise ValueError('请先继续或结束原分析任务：' + active[0])
             latest=db.execute('SELECT external FROM runs ORDER BY rowid DESC LIMIT 1').fetchone()
-            if not source_run and latest and json.loads(latest[0]).get('catalogs_pending'):
+            if publication_basis is None and not source_run and latest and json.loads(latest[0]).get('catalogs_pending'):
                 raise ValueError('原分析的仓资料采集尚未核对，请先继续原任务，不重复提交新仓导出')
             db.execute('INSERT INTO runs(id,day,basis,trigger,state,message,created,updated,source_run,external,catalogs) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
                        (rid, day or today(), basis['version'], trigger, 'PREPARED', '已保存采集意图', now(), now(), source_run or fresh_source,
@@ -232,14 +233,21 @@ class Repository:
             for day,expected in external.get('reexport_publications',{}).items():
                 current=db.execute('SELECT publication FROM current_days WHERE day=?',(day,)).fetchone()
                 if (current[0] if current else None)!=expected:raise ValueError('重导期间该日期日报已变化，未覆盖；请核对当前日报作业')
+            publication_basis=external.get('publication_basis')
+            if publication_basis is not None:
+                for day,expected in publication_basis.items():
+                    current=db.execute('SELECT publication FROM current_days WHERE day=?',(day,)).fetchone()
+                    if (current[0] if current else None)!=expected:raise ValueError('该日已有更新的已采用门店日报，原作业的快照已保留')
             for day,expected in external.get('recalculate',{}).get('publications',{}).items():
                 current=db.execute('SELECT publication FROM current_days WHERE day=?',(day,)).fetchone()
                 if not current or current[0]!=expected:raise ValueError('重算期间该日期日报已变化，未覆盖；请结束本次重算后选择当前作业')
             days = [r[0] for r in db.execute("SELECT DISTINCT s.day FROM run_stores r JOIN store_snapshots s ON s.id=r.snapshot WHERE r.run=? AND s.state='READY'", (rid,))]
             if not days:
                 raise ValueError('没有完整验收的门店快照，未发布日报')
+            if publication_basis is not None and set(days)-set(publication_basis):
+                raise ValueError('原仓点采集日期与本次登记业务日不同；原件保留待核')
             for day in days:
-                if external.get('rerun'):
+                if external.get('rerun') or publication_basis is not None:
                     outside=db.execute('''SELECT 1 FROM current_days d JOIN publications p ON p.id=d.publication
                         JOIN run_stores r ON r.run=p.run WHERE d.day=? AND r.store NOT IN
                         (SELECT store FROM run_stores WHERE run=?) LIMIT 1''',(day,rid)).fetchone()

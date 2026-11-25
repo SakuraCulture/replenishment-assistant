@@ -122,3 +122,17 @@ class Queue:
             if row:
                 value=json.loads(row[0]);value['message']=str(message)
                 db.execute('UPDATE runs SET state=?,payload=? WHERE id=?',(state,encoded(value),rid))
+
+    def request(self,rid,pause,*,prepared=None):
+        with self.connect(True) as db:
+            row=db.execute('SELECT state,payload FROM runs WHERE id=?',(rid,)).fetchone()
+            allowed=('QUEUED',) if pause else ('PAUSED','REVIEW','PARTIAL')
+            if not row or row[0] not in allowed:
+                raise ValueError('原缺货登记已变化，请刷新运行记录')
+            state,payload=row;value=json.loads(payload)
+            if prepared is not None:
+                if not value['request'].get('input_error') or prepared['day']!=value['day']:
+                    raise ValueError('只能为原日期补齐尚未固定的分析资料')
+                value['request'].pop('input_error',None);value['request']['plan']=prepared
+            value['message']='已暂停本次登记' if pause else '等待继续原缺货采集'
+            db.execute('UPDATE runs SET state=?,payload=? WHERE id=?',('PAUSED' if pause else 'QUEUED',encoded(value),rid))

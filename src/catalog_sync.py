@@ -138,7 +138,8 @@ def run_sync(client,folder,dbpath,warehouses,purpose='default_catalog',resume=No
         result=client.request('sync.resume',batch_id=resume['batch_id'],item_ids=resume['item_ids']);bid=result['batch_id']
     else:
         items=[{'warehouse':wh,'expected_catalog_digest':adoptions.catalogs.current_digest(wh)} for wh in warehouses]
-        result=client.request('sync.start',operation_id=uuid.uuid4().hex,purpose=purpose,items=items);bid=result['batch_id']
+        observation={'independent_observation':True} if purpose=='default_catalog' else {}
+        result=client.request('sync.start',operation_id=uuid.uuid4().hex,purpose=purpose,items=items,**observation);bid=result['batch_id']
     sent_stop=False;adoption_errors={};observations=set();last=None
     while True:
         if cancel is not None and cancel.is_set() and not sent_stop:

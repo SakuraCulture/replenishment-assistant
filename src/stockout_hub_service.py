@@ -34,8 +34,18 @@ def preview(root,mode,warehouses=None):
     if mode!='warehouse' and not settings:raise ValueError('请先在门店缺货选择门店并采用供货设置')
     outputs=check_warehouses(warehouses if warehouses is not None else wh.selected()) if mode!='store' else []
     required=sorted(set(outputs)|{w for r in (settings or {}).get('routes',{}).values() for w in (r.get('primary'),r.get('secondary')) if w in WAREHOUSES})
-    result={'mode':mode,'day':today(),'basis':settings,'warehouses':outputs,'required':required,
-            'stores':(settings or {}).get('stores',[])}
+    day=today();store_pub=None;warehouse_pubs={w:None for w in outputs}
+    if mode!='warehouse' and stores.path.is_file():
+        with stores.connect() as db:
+            current=db.execute('SELECT publication FROM current_days WHERE day=?',(day,)).fetchone()
+            if current:store_pub=current[0]
+    if outputs and wh.path.is_file():
+        with wh.connect() as db:
+            for item in db.execute('SELECT warehouse,snapshot FROM current WHERE day=?',(day,)):
+                if item[0] in warehouse_pubs:warehouse_pubs[item[0]]=item[1]
+    result={'mode':mode,'day':day,'basis':settings,'warehouses':outputs,'required':required,
+            'stores':(settings or {}).get('stores',[]),
+            'publication_basis':{'store':store_pub,'warehouse':warehouse_pubs}}
     result['token']=digest(result)
     return result
 
@@ -46,14 +56,16 @@ def create(journal,plan,*,trigger='manual',run_id=None):
         if old.get('trigger')!=trigger or old['mode']!=plan['mode'] or old['day']!=plan['day']:
             raise ValueError('原缺货运行与登记的范围不符')
         return old
+    recent=journal.recent() if trigger!='manual' or 'publication_basis' not in plan else []
+    for old in recent:
+        if not run_id and trigger!='manual' and old.get('trigger')==trigger:return journal.run(old['id'])
     if run_id:
         body={key:value for key,value in plan.items() if key!='token'}
         if plan.get('token')!=digest(body) or plan['day']!=today():raise ValueError('原时点冻结的采集依据不完整')
     elif preview(journal.root,plan['mode'],plan['warehouses'])!=plan:
         raise ValueError('选择或分析设置已变化，请重新确认运行范围')
-    for old in journal.recent():
-        if trigger!='manual' and old.get('trigger')==trigger:return old
-        if old['state'] not in TERMINAL:
+    for old in recent:
+        if old['state'] not in TERMINAL and 'publication_basis' not in plan:
             frozen=journal.run(old['id'])
             # A finished warehouse consumer must not be held hostage by an AX
             # failure. Its native warehouse capture is already fully reconciled.
@@ -77,7 +89,9 @@ def children(journal,row):
     if row['store_run']:
         from stockout_repository import Repository
         stores=Repository(journal.root);stores.initialize()
-        stores.new_run(run_id=row['store_run'],basis_version=row['basis']['version'],trigger='hub:'+row['id'],day=row['day'],source_run=row.get('store_source'))
+        expected=row.get('publication_basis')
+        stores.new_run(run_id=row['store_run'],basis_version=row['basis']['version'],trigger='hub:'+row['id'],day=row['day'],source_run=row.get('store_source'),
+                       publication_basis={row['day']:expected['store']} if expected and not row.get('store_source') else None)
     if row['warehouse_run']:
         from warehouse_stockout import Repository
         wh=Repository(journal.root);wh.initialize()
@@ -109,8 +123,11 @@ def execute(journal,rid,rpc,cancel,progress=lambda _:None):
                 if not existing:
                     if wh.run(row['warehouse_run'])['state']=='COMPLETE':raise ValueError('原大仓结果已删除，不能由旧任务恢复')
                     warehouse.load_master(wh,path,code,run=row['warehouse_run'],observed=observed,**values)
-                wh.publish(row['warehouse_run'],code,once=True)
-                progress(code+'大仓结果已保存；继续其余分析')
+                expected=row.get('publication_basis')
+                publication={'expected':expected['warehouse'][code]} if expected else {}
+                try:wh.publish(row['warehouse_run'],code,once=True,**publication)
+                except warehouse.PublicationChanged as exc:errors['warehouse:'+code]=str(exc);progress(str(exc))
+                else:progress(code+'大仓结果已保存；继续其余分析')
             return values['expected']
         try:
             if not row['external'].get('catalogs_frozen'):
@@ -134,7 +151,7 @@ def execute(journal,rid,rpc,cancel,progress=lambda _:None):
                     current=db.execute('SELECT publication FROM current_days WHERE day=?',(row['day'],)).fetchone()
                 if not own or not current or current[0]!=own:raise ValueError('门店日报已更新或删除；旧组合任务不会覆盖它，请核对当前日报')
                 new=uuid.uuid4().hex;journal.change(rid,store_source=child['id'],store_run=new)
-                row=journal.run(rid);stores.new_run(run_id=new,source_run=child['id'],trigger='hub:'+rid,day=row['day'])
+                row=journal.run(rid);stores.new_run(run_id=new,source_run=child['id'],trigger='hub:'+rid,day=row['day'],publication_basis={row['day']:own})
                 child=stores.run(new)
             if child['state']=='ENDED':raise ValueError('门店子任务已结束，旧统一任务不会重建它')
             if child['state']!='COMPLETE':

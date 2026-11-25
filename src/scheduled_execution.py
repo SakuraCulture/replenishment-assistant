@@ -295,6 +295,10 @@ def publish_catalogs(repo,rid,folder):
     if run['state'] not in ('COMPLETE','REVIEW','PAUSED'):raise ValueError('请等待本次计算安全结束后采用资料')
     if run['schedule'].get('catalog_source')=='default':
         return '本任务已固定当时的默认仓资料，供本次计算使用',{}
+    if run['day']!=sr.stamp().date().isoformat():
+        message='原业务日的已采用仓资料继续留存，当前仓资料等待当日采集'
+        repo.change(rid,publication={'state':'HISTORICAL_ONLY'},message=message)
+        return message,{}
     basis=repo.value(rid,'basis');catalogs=repo.value(rid,'catalogs',{})
     if not basis or not catalogs:raise ValueError('没有可采用的资料')
     master=Repository(folder);publication=run.get('publication',{})

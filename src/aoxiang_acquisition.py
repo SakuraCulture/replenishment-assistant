@@ -25,7 +25,7 @@ class PendingAcquisition(ValueError):
                          '\n已定位原记录。可继续原采集，或点击“重新导出所选门店”，核对范围后结束所选旧项并获取新文件。')
 
 
-def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=None):
+def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=None, independent=False):
     if not configuration.get('configured') or not configuration.get('enabled'):
         raise ValueError('请先核验并保存翱象连接与门店')
     if freshness not in {'reuse', 'refresh'}:
@@ -35,7 +35,7 @@ def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=N
         raise ValueError('请选择1至256家门店，不能重复')
     if any(not isinstance(code, str) or code not in available for code in codes):
         raise ValueError('所选门店不在已核验绑定中，请重新核验')
-    if purpose == 'stockout_analysis':
+    if purpose == 'stockout_analysis' and not independent:
         blockers = []
         for pending in jobs.unfinished():
             old = pending['command']
@@ -53,6 +53,7 @@ def prepare(jobs, configuration, codes, freshness, *, day, purpose=None, owner=N
                'policy': {'freshness': freshness}}
     command['consumer']={'purpose':purpose or 'replenishment'}
     if owner:command['consumer']['owner']=owner
+    if independent and purpose=='stockout_analysis':command['consumer']['independent']=True
     context = {'day': day, 'created': now(), 'stores': [available[code] for code in codes]}
     if purpose is not None:
         if purpose != 'stockout_analysis' or not isinstance(owner,str) or not owner:

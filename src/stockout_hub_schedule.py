@@ -26,7 +26,7 @@ def arm(entry):
         if Queue(folder).pending():entry.ensure_watch()
         if not rows:return
         when=min(datetime.fromisoformat(r['next_at']) for r in rows)
-        delay=max(1,int((when-datetime.now(TZ)).total_seconds()*1000))
+        delay=max(1000,int((when-datetime.now(TZ)).total_seconds()*1000))
         entry.timer=QTimer(entry);entry.timer.setSingleShot(True);entry.timer.timeout.connect(entry.due);entry.timer.start(min(delay,2147483647))
     except Exception as exc:entry.status('缺货率计划未启动：'+str(exc))
 

@@ -304,6 +304,11 @@ class Window(QDialog):
         self.note=label('','muted');v.addWidget(self.note);bottom=QHBoxLayout();bottom.addWidget(button('刷新',self.refresh));bottom.addWidget(button('关闭',self.close));v.addLayout(bottom)
         self.timer=QTimer(self);self.timer.setInterval(2000);self.timer.timeout.connect(self.refresh);self.timer.start();self.refresh()
 
+    def select_run(self,rid):
+        self.current=rid;self.offset=0;self.query.clear()
+        self.group.setCurrentIndex(self.group.findData('all'))
+        self.tabs.setCurrentIndex(1);self.refresh()
+
     def call(self,fn,success=lambda _:None):
         if self.worker:return
         task=Call(fn,self);self.worker=task;task.succeeded.connect(success);task.failed.connect(self.note.setText)

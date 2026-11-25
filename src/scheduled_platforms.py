@@ -172,8 +172,9 @@ class Platforms:
 
     def catalogs(self,runner,basis):
         repo=runner.repo;rid=runner.rid;run=repo.get(rid);external=dict(run['external'])
+        recover_only=bool(run.get('day') and run['day']!=stamp().date().isoformat())
         if not external.get('catalog_operation'):
-            if run.get('day') and run['day']!=stamp().date().isoformat():
+            if recover_only:
                 raise ValueError('仓资料原采集尚未发起且已跨日，请建立当天任务')
             external['catalog_operation']=uuid.uuid4().hex
             external['catalog_items']=[{'warehouse':w,'expected_catalog_digest':basis['catalog_digests'][w]} for w in basis['warehouses']]
@@ -181,11 +182,13 @@ class Platforms:
         client=(self.jst_client([i['warehouse'] for i in external['catalog_items']],
                                 lambda m:runner.update('更新仓商品资料',m)) if self.resources else self.jst_client())
         # A stable operation_id replays only the original durable intention, not a fresh export.
-        response=client.request('sync.start',operation_id=external['catalog_operation'],purpose='scheduled_replenishment',items=external['catalog_items'])
+        response=client.request('sync.start',operation_id=external['catalog_operation'],purpose='scheduled_replenishment',items=external['catalog_items'],
+                                independent_observation=True,recover_only=recover_only)
         bid=response['batch_id'];self.active_jst=bid;state=client.request('sync.status',batch_id=bid)
         if response.get('reused') and not state['running']:
-            ids=[i['id'] for i in state['batches'][0]['items'] if not i.get('adoption') and not i.get('receipt')]
-            if ids:client.request('sync.resume',batch_id=bid,item_ids=ids)
+            ids=[i['id'] for i in state['batches'][0]['items'] if not i.get('adoption') and not i.get('receipt')
+                 and (not recover_only or (i.get('native') or {}).get('nativeTaskRef'))]
+            if ids:client.request('sync.resume',batch_id=bid,item_ids=ids,**({'recover_only':True} if recover_only else {}))
         sent_stop=False;deadline=time.monotonic()+1800;observations=set()
         while True:
             state=client.request('sync.status',batch_id=bid);batch=state['batches'][0]

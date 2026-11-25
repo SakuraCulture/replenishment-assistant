@@ -47,6 +47,19 @@ test('命令、逐店run及有序事件原子保存，重复派发只返回原�
   assert.equal(state.rows('runs').length,2);
 });
 
+test('independent analysis allocates a distinct command and keeps the old original',async t=>{
+  const {state,commands}=await context(t);
+  const first={...command('analysis-older'),consumer:{purpose:'stockout_analysis',owner:'analysis-older'}};
+  const newer={...command('analysis-newer'),consumer:{purpose:'stockout_analysis',owner:'analysis-newer',independent:true}};
+  assert.throws(()=>validateCommand({...newer,consumer:{purpose:'stockout_analysis',independent:true}}),{code:'COMMAND_SCHEMA'});
+  const old=(await commands.reserve(first,config)).record;
+  const fresh=(await commands.reserve(newer,config)).record;
+  assert.equal((await commands.reserve(newer,config)).record.id,fresh.id);
+  assert.notEqual(old.items[0].run_id,fresh.items[0].run_id);
+  assert.equal(state.getRun(old.items[0].run_id).consumer.owner,'analysis-older');
+  assert.equal(state.getRun(fresh.items[0].run_id).consumer.owner,'analysis-newer');
+});
+
 test('事务中途失败整体回滚，未留下只有命令没有run的恢复断点',async t=>{
   const {state,commands}=await context(t);
   state.db.exec("CREATE TRIGGER fail_item BEFORE INSERT ON items BEGIN SELECT RAISE(ABORT,'injected failure'); END;");

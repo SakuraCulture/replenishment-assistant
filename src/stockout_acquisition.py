@@ -32,7 +32,8 @@ def collect_catalogs(repo,rid,rpc,cancel,progress,*,warehouses=None,loader=load_
                         catalog_items=[{'warehouse':w,'expected_catalog_digest':None} for w in warehouses])
         repo.change(rid,external=external)
     checkpoint(cancel)
-    result=client.request('sync.start',operation_id=external['catalog_operation'],purpose='stockout_analysis',items=external['catalog_items'])
+    admitted={'independent_observation':True} if 'publication_basis' in run or 'publication_basis' in external else {}
+    result=client.request('sync.start',operation_id=external['catalog_operation'],purpose='stockout_analysis',items=external['catalog_items'],**admitted)
     bid=result['batch_id'];state=client.request('sync.status',batch_id=bid)
     if result.get('reused') and not state['running']:
         missing=[i['id'] for i in state['batches'][0]['items'] if not i.get('receipt') and not i.get('adoption')]
@@ -119,8 +120,9 @@ def collect_stores(repo,rid,configuration,rpc,cancel,progress):
 
     # Preserve per-store conflict isolation: one unrelated unfinished business
     # command must not prevent the other selected stores from forming a batch.
+    independent='publication_basis' in external
     blocked={}
-    for pending in jobs.unfinished():
+    for pending in (() if independent else jobs.unfinished()):
         command=pending['command']
         if (command['operation']=='replenishment.export' and command['account_binding']==configuration['account_binding']
                 and pending.get('purpose')=='stockout_analysis'):
@@ -134,7 +136,7 @@ def collect_stores(repo,rid,configuration,rpc,cancel,progress):
     if fresh:
         checkpoint(cancel)
         try:
-            job=prepare(jobs,configuration,fresh,'refresh',day=today(),purpose='stockout_analysis',owner=rid)
+            job=prepare(jobs,configuration,fresh,'refresh',day=today(),purpose='stockout_analysis',owner=rid,independent=independent)
             commands.update({code:job['id'] for code in fresh})
             external['ax_commands']=commands
             # Bind every store before the first external reserve. Replays retain

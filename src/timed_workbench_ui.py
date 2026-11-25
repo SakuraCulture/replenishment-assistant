@@ -308,9 +308,10 @@ class Workbench(QDialog):
         layout.addWidget(parallel)
         self.tabs = QTabWidget()
         layout.addWidget(self.tabs)
-        run_page, plan_page = QWidget(), QWidget()
+        run_page, plan_page, collect_page = QWidget(), QWidget(), QWidget()
         self.tabs.addTab(run_page, '运行记录')
         self.tabs.addTab(plan_page, '执行计划')
+        self.tabs.addTab(collect_page, '采集与补货')
         run_layout, plan_layout = QVBoxLayout(run_page), QVBoxLayout(plan_page)
         self.runs = table(['原定时点', '业务日', '安排', '报表', '状态', '当前阶段 / 缺项'])
         self.plans = table(['安排', '报表', '重复方式', '下次执行', '状态'])
@@ -338,6 +339,15 @@ class Workbench(QDialog):
                           ('停用未来计划', self.disable), ('立即运行一次', self.run_plan)):
             actions.addWidget(button(title, lambda checked=False, call=fn:self.guard(call)))
         plan_layout.addLayout(actions)
+        collect_layout=QVBoxLayout(collect_page)
+        self.collect_runs=table(['类别','业务日 / 原时点','状态','阶段 / 下一步','原运行号'])
+        collect_layout.addWidget(self.collect_runs,1)
+        collect_actions=QHBoxLayout()
+        collect_actions.addWidget(button('打开原工作页',lambda:self.guard(self.open_collection)))
+        collect_actions.addWidget(button('暂停本次',lambda:self.guard(lambda:self.control_collection(True))))
+        collect_actions.addWidget(button('继续原运行',lambda:self.guard(lambda:self.control_collection(False))))
+        collect_layout.addLayout(collect_actions)
+        self.tabs.currentChanged.connect(lambda index:self.guard(self.refresh_collections) if index==2 else None)
         self.note = label('应用保持运行时按北京时间触发。关闭工作台后可返回查看同一运行。', 'muted')
         layout.addWidget(self.note)
 
@@ -381,6 +391,74 @@ class Workbench(QDialog):
                 break
         if self.runs.currentRow() >= 0:
             self.select()
+        if self.tabs.currentIndex()==2:self.guard(self.refresh_collections)
+
+    def refresh_collections(self):
+        from scheduled_replenishment import STATES as schedule_states
+        from stockout_schedule_queue import Queue
+        from stockout_hub_service import Journal
+        root=self.manager.root
+        schedule=self.manager.host.scheduled
+        scheduled=schedule.repo.list(limit=50)['items'] if schedule.repo.exists() else []
+        journal={r['id']:r for r in Journal(root).recent()}
+        status={'QUEUED':'已排队','CLAIMED':'执行中','PAUSED':'已暂停','PARTIAL':'部分完成',
+                'REVIEW':'待核','COMPLETE':'已完成','MISSED':'错过','ENDED':'已结束','RUNNING':'执行中','PREPARED':'待开始'}
+        rows=[]
+        for r in scheduled:
+            summary=str(sum(s['state']=='READY' for s in r['stores']))+'/'+str(len(r['stores']))+' 店 · '
+            rows.append(('补货',r['day'],schedule_states[r['state']],summary+r['message'],r['id'],r))
+        for r in Queue(root).entries():
+            orig=journal.pop(r['id'],None)
+            detail=r.get('message') or ('等待执行槽或同仓浏览器' if r['state']=='QUEUED' else '查看原运行')
+            if r['state']=='CLAIMED' and getattr(self.manager.host.stockout_hub,'scheduled_claim',None):
+                detail=self.manager.host.stockout_hub.message
+            if orig and orig.get('errors'):detail='；'.join(orig['errors'].values())
+            rows.append(('缺货定时',r['slot'][:16].replace('T',' '),status.get(r['state'],r['state']),detail,r['id'],r))
+        for r in journal.values():
+            rows.append(('缺货手动',r['day'],status.get(r['state'],r['state']),'；'.join(r.get('errors',{}).values()),r['id'],r))
+        current=self.collect_runs.currentRow()
+        previous=self.collect_rows[current][4] if hasattr(self,'collect_rows') and 0<=current<len(self.collect_rows) else None
+        self.collect_rows=sorted(rows,key=lambda row:row[1],reverse=True)
+        fill(self.collect_runs,[list(row[:5]) for row in self.collect_rows])
+        if previous:
+            for i,row in enumerate(self.collect_rows):
+                if row[4]==previous:self.collect_runs.selectRow(i);break
+
+    def collection_row(self):
+        idx=self.collect_runs.currentRow()
+        if not 0<=idx<len(getattr(self,'collect_rows',[])):raise ValueError('请先选择一条采集或补货运行')
+        return self.collect_rows[idx]
+
+    def open_collection(self):
+        kind,_,_,_,rid,_=self.collection_row()
+        if kind=='补货':
+            schedule=self.manager.host.scheduled;schedule.open()
+            if schedule.dialog:schedule.dialog.select_run(rid)
+        else:
+            self.manager.host.stockout_hub.selected_run=rid;self.manager.original_stockout()
+
+    def control_collection(self,pause):
+        kind,_,_,_,rid,row=self.collection_row()
+        host=self.manager.host;self.note.setText('正在核对原运行')
+        if not host.scheduled.owner or getattr(host,'readonly',False):raise ValueError('请在持有执行权的窗口继续原运行')
+        if kind=='补货':
+            if pause:host.scheduled.pause(rid)
+            else:host.scheduled.repo.resume(rid,row['revision']);host.scheduled.poll()
+        elif kind=='缺货定时':
+            from stockout_schedule_queue import Queue
+            from stockout_hub_service import preview
+            entry=host.stockout_hub;claim=getattr(entry,'scheduled_claim',None)
+            if pause and claim and claim['id']==rid and entry.worker:
+                entry.worker.cancel.set()
+            else:
+                values=row['request'] or {};plan=None
+                if not pause and values.get('input_error'):plan=preview(self.manager.root,values['mode'],values['warehouses'])
+                Queue(self.manager.root).request(rid,pause,prepared=plan)
+                entry.ensure_watch()
+        else:
+            self.open_collection()
+            self.note.setText('已定位原缺货采集，请在原工作页处理')
+        self.refresh_collections()
 
     def plan(self):
         i = self.plans.currentRow()

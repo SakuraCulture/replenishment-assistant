@@ -115,6 +115,21 @@ class HubTests(unittest.TestCase):
         later=create(self.journal,preview(self.folder,'warehouse',['山东仓']))
         self.assertNotEqual(later['id'],rid)
 
+    def test_paused_batch_can_finish_late_without_replacing_new_publication(self):
+        original=self.start('warehouse');self.journal.change(original,state='PAUSED')
+        other=create(self.journal,preview(self.folder,'warehouse',['山东仓']))['id']
+        newer=NativeFixture(self.root/'newer',self.cancel)
+        result=execute(self.journal,other,newer.rpc,self.cancel)
+        self.assertEqual(result['state'],'COMPLETE')
+        older=self.run_it(original)
+        self.assertEqual(older['state'],'PARTIAL')
+        self.assertIn('快照已保留',older['errors']['warehouse:山东仓'])
+        self.assertNotEqual(self.native.operation,newer.operation)
+        wh=warehouse.Repository(self.folder)
+        with wh.connect() as db:
+            self.assertEqual(db.execute('SELECT run FROM current').fetchone()[0],result['warehouse_run'])
+            self.assertEqual(db.execute('SELECT count(*) FROM run_snapshots').fetchone()[0],2)
+
     def test_resume_never_rewinds_newer_independent_warehouse_snapshot(self):
         self.native=MultiNative(self.root/'multi',self.cancel);self.native.missing={'河北仓'}
         rid=create(self.journal,preview(self.folder,'both',['山东仓','河北仓']))['id'];self.run_it(rid)

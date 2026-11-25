@@ -76,7 +76,8 @@ class Entry(QObject):
         io=getattr(h,'_large_io_dialog',None);generator=getattr(h,'jst_generator',None)
         other=any(e is not self and getattr(e,'worker',None) for e in (getattr(h,'stockout',None),getattr(h,'warehouse_stockout',None)) if e is not None)
         from unattended_resources import configured
-        parallel=configured(h.repository.folder)
+        folder=getattr(getattr(h,'repository',None),'folder',None)
+        parallel=folder is not None and configured(folder)
         return bool(other or getattr(h,'worker',None) or getattr(h,'closing',False)
                     or io is not None and not getattr(io,'_completed',False) and not getattr(io,'scoped_collection',False)
                     or getattr(h,'_aoxiang_dialog',None)

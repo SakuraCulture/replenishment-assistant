@@ -1,6 +1,6 @@
 import path from 'node:path';
 import {ExclusiveLock,StateStore,collectionPurpose} from './state.mjs';
-import {MachineCommands,mappingVersion} from './machine-commands.mjs';
+import {MachineCommands,mappingVersion,independentCollection} from './machine-commands.mjs';
 import {MachineRuntime,errorInfo} from './machine-runtime.mjs';
 import {readFrames,writeFrame,validateRequest,publicRecord,correlationId} from './machine-protocol.mjs';
 import {Coordinator} from './coordinator.mjs';
@@ -63,7 +63,7 @@ async function main(){
       const binding=await validateConfig('machine.binding',await readJson(path.join(root,'config/machine.binding.json')));
       const browser=await browsers.acquire({state,config,binding,signal,onProgress});
       const result=await new Coordinator({state,config,binding,adapter:browser.adapter,signal,onProgress})
-        .run({runId:item.run_id,phase,independent:collectionPurpose(record.request)==='replenishment',
+        .run({runId:item.run_id,phase,independent:independentCollection(record.request),
           retryId:record.selected_retry?.id,retryError:item.previous_error?.code});
       if(result.pending)return {pending:true};
       return await freezeRunAsset({state,binding,commandId:record.id,item});
@@ -78,8 +78,8 @@ async function main(){
       request=validateRequest(raw);
       const configurationActions=['discover','setup.start','setup.check_login','setup.verify_saved','setup.commit','template.start'];
       const collectionControl=['resume','retry','collection.continue'].includes(request.action)?commands.get(request.command_id):null;
-      const independent=request.action==='reserve'?collectionPurpose(request.command)==='replenishment':
-        !!collectionControl&&collectionPurpose(collectionControl.request)==='replenishment';
+      const independent=request.action==='reserve'?independentCollection(request.command):
+        !!collectionControl&&independentCollection(collectionControl.request);
       if((configurationActions.includes(request.action)||(!independent&&['reserve','resume'].includes(request.action))||
           ['purchase.start','purchase.submit','purchase.verify','purchase.rebuild','purchase.cancel','receipt.start','binding.start','binding.confirm'].includes(request.action))&&
           (purchase.busy||receiptSync.busy||bindingCheck.busy))fail('PURCHASE_CREATE_BUSY','当前采购、关联核对或收货动作正在运行或安全停止，请等待后再执行其他作业');

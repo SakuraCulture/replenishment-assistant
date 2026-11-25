@@ -3,9 +3,12 @@ from contextlib import closing
 from datetime import datetime, timedelta
 import hashlib
 import json
+import os
 from pathlib import Path
 import sqlite3
+import subprocess
 import sys
+import time
 import traceback
 from unittest.mock import patch
 
@@ -61,6 +64,16 @@ def start_smoke(app, win, args):
         timer = QTimer(win)
         timer.setInterval(20)
         errors = []
+        probe = None
+        probe_log = None
+        report_windows = []
+        original_render = manager.backend.render
+
+        def render(*args, **kwargs):
+            started = time.time()
+            result = original_render(*args, **kwargs)
+            report_windows.append({'type':args[0]['plan']['type'],'from_ms':round(started*1000),'to_ms':round(time.time()*1000)})
+            return result
 
         def modal(action, dialog_type, prepare):
             done = []
@@ -127,6 +140,31 @@ def start_smoke(app, win, args):
         try:
             before = business_facts(win.work_repository.path)
             assert manager.host.scheduled.owner
+            if mode == 'parallel':
+                from PySide6.QtWidgets import QCheckBox
+                from catalog_sync_client import components
+                from types import SimpleNamespace
+                from unattended_resources import configured
+                page = manager.open()
+                checkbox = next(widget for widget in page.findChildren(QCheckBox) if '独立浏览器与本地作业并行' in widget.text())
+                checkbox.click()
+                assert configured(manager.root)
+                page.tabs.setCurrentIndex(2)
+                page.grab().save(str(root/'unattended-queue.png'))
+                page.close()
+                jst, ax = components()
+                probe_path = root/'browser-probe'
+                script=Path(settings['browser_harness']).resolve(strict=True)
+                assert script.name=='verify_unattended_browsers.mjs' and jst.parent==ax.parent
+                probe_log = (root/'browser.log').open('wb')
+                probe = subprocess.Popen([str(ax/'runtime/node.exe'),str(script),str(probe_path),str(ax.parent),'--hold'],
+                                         stdout=probe_log,stderr=probe_log,creationflags=subprocess.CREATE_NO_WINDOW)
+                wait(lambda:(probe_path/'active.json').is_file() or probe.poll() is not None,75)
+                assert probe.poll() is None
+                # The local-only platform adapter owns the background step while the normal
+                # workbench and report writers remain in the delivered application process.
+                win.scheduled.worker=SimpleNamespace(probe_pid=probe.pid)
+                manager.backend.render=render
             if mode == 'reopen':
                 previous = json.loads((root/'exercise.json').read_text('utf-8'))
                 assert previous['passed'] and before == previous['business_facts']
@@ -240,11 +278,28 @@ def start_smoke(app, win, args):
                               leave_and_restore_background=True)
                 page.grab().save(str(root/'publication-recovery.png'))
             assert before == business_facts(win.work_repository.path)
+            if probe is not None:
+                win.scheduled.worker=None
+                (root/'browser-probe'/'release').write_text('release original fixture queries','ascii')
+                wait(lambda:probe.poll() is not None,35)
+                assert probe.returncode==0
+                browser=json.loads((root/'browser-probe'/'report.json').read_text('utf-8'))
+                common_start=max(row['from_ms'] for row in browser['intervals'] if row['name']=='initial')
+                common_end=min(row['to_ms'] for row in browser['intervals'] if row['name']=='initial')
+                assert {row['type'] for row in report_windows}=={'sku_completion','stockout','business_daily'}
+                assert all(common_start<=row['from_ms']<=row['to_ms']<=common_end for row in report_windows)
+                report['browser_and_export']={'browser_interval_ms':[common_start,common_end],'render_intervals':report_windows,
+                                              'production_platform_submissions':0,'controlled_catalog_submissions':browser['counts']}
             report.update(passed=True,business_facts=before)
         except Exception:
             report['error'] = traceback.format_exc()
             report['modal_errors'] = errors
         finally:
+            if probe is not None:
+                win.scheduled.worker=None
+                if probe.poll() is None and (root/'browser-probe').is_dir():
+                    (root/'browser-probe'/'release').write_text('release original fixture queries','ascii')
+                if probe_log:probe_log.close()
             timer.stop()
             write(root/(mode+'.json'), report)
             win.job_dirty=False
