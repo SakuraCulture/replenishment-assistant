@@ -10,7 +10,6 @@ import daily_batch
 from lifecycle_ui import LifecycleDialog,import_document,import_group,export_selected,warn,review_again
 from lifecycle_io import TITLES
 from lifecycle_rules import JST_ORDER
-from lifecycle_stages import SHIPMENT_CHECK
 
 class LifecycleWidget(QWidget):
     STAGES={'return':'回传处理','operations':'运营签发','jst':'聚水潭导入单','payment':'付款核对','receipt':'收货核对'}
@@ -282,9 +281,11 @@ class LifecycleWidget(QWidget):
             c=QTableWidgetItem();c.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);c.setCheckState(Qt.CheckState.Checked if service.key(h) in self.checked else Qt.CheckState.Unchecked);self.table.setItem(i,0,c)
             notices=[h['note']] if h.get('note') else []
             tracking=h.get('platform_tracking',{})
+            shipment=h.get('shipment') or {}
             payment_version=tracking.get('payment_basis',(None,None))[0]
             if self.stage=='receipt' and h['next']=='receipt' and h['health'].get('payment') and payment_version is not None:
-                notices.append(f'已确认付款 V{payment_version:03d}')
+                payment_label='已锁定付款' if shipment.get('payment_lock') else '已确认付款'
+                notices.append(f'{payment_label} V{payment_version:03d}')
             platform=h.get('platform_purchase')
             if platform:notices.append('翱象 '+platform['orderId']+'：'+platform['status']+'（观察 '+platform.get('observedAt','未知')+'）'+('；作废后实收待处理' if platform.get('receipt_state')=='VOIDED_REVIEW' else ''))
             receipt_review=bool((platform or {}).get('payment_review'))
@@ -311,21 +312,18 @@ class LifecycleWidget(QWidget):
                 receipt.setToolTip('点击查看正式实收或最近收货状态'+('\n'+tracking['detail'] if tracking.get('detail') else ''))
                 self.table.setCellWidget(i,9,receipt)
             self.table.setCellWidget(i,1,button('查看订单详情',lambda checked=False,r=h:self.open_comparison(r)))
-            s=h['next']
-            if s==SHIPMENT_CHECK and not self.stage:
-                title='核对聚水潭发货状态'
-                applicable=bool(h['shipment']['online'])
+            s=h['next'];recheck=s and h['present'].get(s)
+            title='生成聚水潭订单' if s=='jst_generate' else '核对付款草稿' if s=='jst_payment' else ('重新核对' if recheck else '导入')+TITLES[s] if s in TITLES else '无后续待办'
+            if self.stage:
+                applicable=s in ({'jst_generate'} if self.stage=='jst' else {'payment','jst_payment'} if self.stage=='payment' else {self.stage})
+                if not applicable:title='本环节已处理'
+                elif self.stage=='payment' and s=='payment':
+                    if shipment.get('online') and h['health'].get('payment'):title='刷新聚水潭原单'
+                    elif h['health'].get(JST_ORDER):title='核对聚水潭付款资料'
+                if self.stage=='receipt' and receipt_review:title,applicable='待人工核对 · 打开原采购',True
             else:
-                recheck=s and h['present'].get(s)
-                title='生成聚水潭订单' if s=='jst_generate' else '核对付款草稿' if s=='jst_payment' else ('重新核对' if recheck else '导入')+TITLES[s] if s in TITLES else '无后续待办'
-                if self.stage:
-                    applicable=s in ({'jst_generate'} if self.stage=='jst' else {'payment','jst_payment'} if self.stage=='payment' else {self.stage})
-                    if not applicable:title='本环节已处理'
-                    elif self.stage=='payment' and s=='payment' and h['health'].get(JST_ORDER):title='核对聚水潭付款资料'
-                    if self.stage=='receipt' and receipt_review:title,applicable='待人工核对 · 打开原采购',True
-                else:
-                    applicable=s is not None
-                    if s:title='进入'+self.STAGES[{'jst_generate':'jst','jst_payment':'payment'}.get(s,s)]
+                applicable=s is not None
+                if s:title='进入'+self.STAGES[{'jst_generate':'jst','jst_payment':'payment'}.get(s,s)]
             b=button(title,lambda checked=False,r=h:self.next(r));b.setEnabled(applicable and h['warehouse']!='旧版未标仓');self.table.setCellWidget(i,2,b)
         del blocker
         widths=[45,110,165,100,185,70,250,155,100,100,100,100,260]
@@ -419,23 +417,25 @@ class LifecycleWidget(QWidget):
             self.open_receipt_record(head);return
         s=head['next']
         if not s:return
-        if s==SHIPMENT_CHECK:
-            from business_ui import run
-            from catalog_session_ui import manager
-            from jst_auto_order import run_browser
-            try:
-                result=run(self,run_browser,(self.host.work_repository.path,[head['shipment']['online']],
-                    manager(self.host).session,'recover'),'核对聚水潭发货状态')
-                if result and not result[0]['ok']:warn(self,result[0]['reason'])
-                self.query(keep_page=True)
-            except Exception as exc:warn(self,exc)
-            return
         if not self.stage:self.open_stage({'jst_generate':'jst','jst_payment':'payment'}.get(s,s),[head]);return
         if s in ('jst_generate','jst_payment'):
             from jst_ui import generate,payment
             if s=='jst_generate':generate(self,self.host,[head])
             else:self.offer_payment_preview(payment(self,self.host,head))
             self.query(keep_page=True);return
+        shipment=head.get('shipment') or {}
+        if s=='payment' and shipment.get('online') and head['health'].get('payment'):
+            from business_ui import run
+            from catalog_session_ui import manager
+            from jst_fulfillment import run_order_payment
+            try:
+                result=run(self,run_order_payment,(self.host.work_repository.path,[shipment['online']],
+                    manager(self.host).session),'刷新聚水潭原单')
+                if result and result[0]['state']=='READY':self._review_platform_payment([head])
+                elif result and result[0]['state']!='MATCHES_PAYMENT':warn(self,result[0]['message'])
+                self.query(keep_page=True)
+            except Exception as exc:warn(self,exc)
+            return
         if s=='payment' and head['health'].get(JST_ORDER):
             self._review_platform_payment([head]);return
         result=review_again(self,self.host,head,s) if head['present'][s] else import_document(self,self.host,s,head)

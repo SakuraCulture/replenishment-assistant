@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import jst_auto_order_store as orders
 from jst_order_confirmation import AWAITING
 import jst_order_store as generations
+from jst_shipping import read as read_shipments
 from lifecycle_rules import JST_ORDER
 import work_repository as wr
 from sqlite_write import begin
@@ -101,6 +102,37 @@ def due_order_payment(path, *, now=None, limit=10):
             sql += ' ' + _UNPAID
         sql += ' ORDER BY c.observed,o.online' if pending else ' ORDER BY o.online'
         return [row[0] for row in db.execute(sql + ' LIMIT ?', (*args, max(1, min(10, limit))))]
+
+
+def due_payment_locks(path, *, now=None, limit=10):
+    """Recheck paid originals awaiting shipment on an already available connection."""
+    cutoff = (now or datetime.fromisoformat(wr.now())) - timedelta(minutes=1)
+    with closing(wr.read_connection(path, timeout=.15)) as db:
+        db.execute('BEGIN')
+        if not all(orders.exists(db, name) for name in ('jst_auto_orders', 'jst_active', 'jst_generations', 'lifecycle_versions')):
+            return []
+        checks = orders.exists(db, 'jst_fulfillment_checks')
+        sql = '''SELECT o.online,o.oid,g.revision,o.warehouse,p.version,p.digest ''' + _ACTIVE_ORDERS + '''
+            JOIN lifecycle_versions p ON p.oid=o.oid AND p.warehouse=o.warehouse AND p.revision=g.revision
+                AND p.stage='payment' AND p.version=(SELECT MAX(v.version) FROM lifecycle_versions v
+                    WHERE v.oid=p.oid AND v.revision=p.revision AND v.warehouse=p.warehouse AND v.stage=p.stage)
+        '''
+        if checks:
+            sql += ' LEFT JOIN jst_fulfillment_checks c ON c.online=o.online'
+        sql += ''' WHERE o.internal IS NOT NULL AND o.stage IN ('IMPORTED','AUDITED','AUDIT_UNKNOWN','REVIEW')
+            AND COALESCE(json_extract(CAST(p.payload AS TEXT),'$.pending'),0)=0
+            AND NOT EXISTS(SELECT 1 FROM lifecycle_versions r WHERE r.oid=p.oid AND r.revision=p.revision
+                AND r.warehouse=p.warehouse AND r.stage='receipt'
+                AND COALESCE(json_extract(CAST(r.payload AS TEXT),'$.pending'),0)=0)'''
+        if checks:
+            sql += ' AND (c.online IS NULL OR julianday(c.observed)<=julianday(?) OR p.saved>=c.observed)'
+        sql += ' ORDER BY c.observed,o.online' if checks else ' ORDER BY p.saved,o.online'
+        candidates = db.execute(sql, (cutoff.isoformat(),) if checks else ()).fetchall()
+        if not candidates:
+            return []
+        observed = read_shipments(db, (row[1] for row in candidates))
+        return [online for online, oid, revision, wh, version, digest in candidates
+                if observed.get((oid, revision, wh), {}).get('payment_lock') != {'version':version, 'digest':digest}][:max(1, min(10, limit))]
 
 
 def originals_for_scope(path, heads):

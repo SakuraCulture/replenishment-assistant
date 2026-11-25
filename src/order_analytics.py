@@ -380,7 +380,7 @@ def data_stamp(db,spec):
     if not spec.get('as_of'):
         from jst_shipping import read as read_shipments
         shipments=read_shipments(db,(record[0] for record in values[0]))
-        if shipments:values.append(sorted((*key, shipment['ready']) for key,shipment in shipments.items()))
+        if shipments:values.append(sorted((*key, shipment['payment_lock']) for key,shipment in shipments.items()))
     return digest(values)
 
 

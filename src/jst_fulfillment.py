@@ -12,10 +12,12 @@ import jst_auto_order as automatic
 import jst_auto_order_store as orders
 import jst_fulfillment_store as sources
 from jst_order_guards import require_generation_basis
+from jst_shipping import observe_payment_read
 import jst_order_store as generations
 import jst_order_payment as order_payment
 import jst_order_confirmation as confirmation
 import order_lifecycle as lifecycle
+from lifecycle_rules import basis_token
 import purchase_io
 import purchases
 import work_repository as wr
@@ -201,10 +203,9 @@ def _original(path, online, payload, raw):
     return {'path': str(dest), **payload['file']}
 
 
-def _existing_payment(db, payload):
+def _existing_payment(db, payload, payment):
     from jst_cancellation import redo_case
     head = payload['head']
-    payment = lifecycle.current(db, head, 'payment')
     redo = redo_case(db, head) if payment else None
     original = None
     if (redo and redo['successor']==payload['online']
@@ -226,7 +227,7 @@ def prepare_review(path, keys, progress=lambda _: None, cancel=None):
             order = _order(db, online, payload, check_current_basis=True)
             source_kind = payload.get('source_kind')
             is_native = source_kind in order_payment.NATIVE_KINDS
-            former = _existing_payment(db,payload) if is_native else None
+            former = _existing_payment(db,payload,lifecycle.current(db,payload['head'],'payment')) if is_native else None
             if former and not (former['changed_skus'] or former['freight_to_check']):
                 raise ValueError(f"原单商品数量和金额与正式付款 V{former['version']:03d} 一致，沿用该付款版本")
         file = _original(path, online, payload, raw)
@@ -348,6 +349,8 @@ def _observe_payment(path, order, state, message, native_status, candidate, canc
             raise wr.Conflict('回查期间原单已变化，请重新读取付款资料')
         previous = sources.current(db, online)
         digest = (previous or {}).get('digest')
+        payment_checked = payment_locked = False
+        matched_payment = None
         if native_status == confirmation.AUDITED and current['stage'] != 'AUDITED':
             current = orders.update(db, current, 'AUDITED', status='audited', reason='已核对原单，聚水潭当前为“已客审待财审”')
         elif native_status == '已取消':
@@ -362,14 +365,17 @@ def _observe_payment(path, order, state, message, native_status, candidate, canc
                 old, original = sources.source(db, online, digest)
                 if old.get('source_kind') == order_payment.LEGACY_KIND and order_payment.same_order_facts(old,payload):
                     payload, raw = old, original
-            formal = _existing_payment(db,payload)
+            saved_payment = lifecycle.current(db,payload['head'],'payment')
+            formal = _existing_payment(db,payload,saved_payment)
             if formal:
+                payment_checked = True
                 version = f"V{formal['version']:03d}"
                 if not (formal['changed_skus'] or formal['freight_to_check']):
                     state, message = 'MATCHES_PAYMENT', f'原单商品数量和金额与正式付款 {version} 一致，沿用该版本'
                     from jst_cancellation import payment_state
-                    hold, _ = payment_state(db,payload['head'],lifecycle.current(db,payload['head'],'payment'))
+                    hold, _ = payment_state(db,payload['head'],saved_payment)
                     if hold: message = f'商品数量和金额与 {version} 一致。'+hold
+                    else: matched_payment = basis_token(saved_payment)
                 else:
                     freight = '，另需核对运费' if formal['freight_to_check'] else ''
                     message = f"与正式付款 {version} 有 {formal['changed_skus']} 款商品差异{freight}，等待人工核对"
@@ -380,9 +386,11 @@ def _observe_payment(path, order, state, message, native_status, candidate, canc
                 confirmation.record(db, current, native_status)
             sources.observe(db, online, state, message, digest)
         if native_status in confirmation.PAYMENT_STATES | confirmation.REVERSED:
-            automatic._event(db, current, '聚水潭回读原单状态', {'internal': current['internal'], 'native_status': native_status})
+            payment_locked = observe_payment_read(db, current, native_status, payment_checked=payment_checked,
+                                                  matched_payment=matched_payment, source_digest=digest)
         commit(db, cancel)
-        return {'online': online, 'state': state, 'digest': digest, 'message': message, 'order_stage': current['stage']}
+        return {'online': online, 'state': state, 'digest': digest, 'message': message,
+                'order_stage': current['stage'], 'payment_locked': payment_locked}
 
 
 def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None):

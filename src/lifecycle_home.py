@@ -10,7 +10,7 @@ from lifecycle_facts import current, legacy_return
 from app_defaults import WAREHOUSES
 from result_semantics import SIGNED_GROUPS, order_quantity, signed_rows
 from lifecycle_rules import JST_ORDER, basis_token, document_summary
-from lifecycle_stages import CURRENT as ALL_STAGES, STATUSES, WAITING_SHIPMENT, progress_state
+from lifecycle_stages import CURRENT as ALL_STAGES, STATUSES, progress_state
 from jst_shipping import read as read_shipments
 from order_keys import warehouse_revision
 import warehouse_execution as execution
@@ -163,7 +163,7 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
             now_managed=execution.managed(fresh,(h['oid'] for h in selected_parents))
             if now_managed!=managed or (managed and execution.heads(fresh,[h for h in selected_parents if h['oid'] in managed])!=managed_heads):raise wr.Conflict('仓单签发范围在查询期间变化，请刷新')
         idx.commit()
-    counts = {s: sum(r['status'] == s for r in records) for s in (*STATUSES,'待运营签发',WAITING_SHIPMENT)}
+    counts = {s: sum(r['status'] == s for r in records) for s in (*STATUSES,'待运营签发')}
     for i, r in enumerate(records): r['list_position'] = i
     if request.get('all_records'):return {'records':records,'counts':counts,'scope':len(records),**({'_basis_tokens':basis_tokens} if request.get('_with_tokens') else {})}
     kind = request.get('status', '')

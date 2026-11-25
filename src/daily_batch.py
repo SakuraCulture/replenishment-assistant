@@ -6,11 +6,10 @@ import lifecycle_home
 from jst_order_store import list_generation_state
 from jst_task_store import latest_statuses
 from lifecycle_rules import JST_ORDER
-from lifecycle_stages import WAITING_SHIPMENT
 from runtime_support import checkpoint
 from query_scope import oid_batches
 
-STATUSES=('待回传','待运营签发','待付款',WAITING_SHIPMENT,'待收货','已结束')
+STATUSES=('待回传','待运营签发','待付款','待收货','已结束')
 GENERATION_FILTERS={'generated':'已生成导入单','missing':'未生成导入单'}
 PURCHASE_FILTER = '可生成采购预览'
 
@@ -43,7 +42,7 @@ def read(path,cache,request,cancel=None,progress=lambda _:None):
                     token=base['_basis_tokens'][r['oid'],r['warehouse']][stage]
                     if token!=g[1]['return'] or r['revision']!=g[1]['revision']:
                         r['note']='回传或签发依据已变化，请核对生成单；未自动重分配'
-                else:r['note']='待生成聚水潭导入单；也可直接导入实际付款单'
+                elif not r.get('shipment'):r['note']='待生成聚水潭导入单；也可直接导入实际付款单'
             if key in tasks:r['generation_task']=tasks[key]
             if key in affected:
                 hold, authorization = payment_state(db,r,document(db,r,'payment'))

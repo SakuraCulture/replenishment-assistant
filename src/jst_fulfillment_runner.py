@@ -1,4 +1,4 @@
-"""Application-owned, opt-in polling. No payment, import or audit commands."""
+"""Poll original orders and lock receipt evidence for payments already saved."""
 import sqlite3
 from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout
@@ -43,13 +43,19 @@ class Runner(QObject):
         if not self.worker and not self.stopping and not getattr(h, '_data_location_preparing', False):
             if not self.refresh_pending():
                 return
-        if (self.worker or self.stopping or self.blocked or getattr(h, 'closing', False)
-                or getattr(h, '_data_location_preparing', False) or getattr(h, 'worker', None)
-                or QApplication.activeModalWidget()):
+        if (self.worker or self.stopping or getattr(h, 'closing', False)
+                or getattr(h, '_data_location_preparing', False) or getattr(h, 'worker', None)):
+            return
+        from lifecycle_home_ui import StageDialog
+        modal = QApplication.activeModalWidget()
+        if modal and (not isinstance(modal, StageDialog) or modal.stage not in ('payment', 'receipt')):
             return
         try:
-            originals = jobs.due_order_payment(h.work_repository.path)
-            legacy = jobs.enabled(h.work_repository.path)
+            path = h.work_repository.path
+            locks = jobs.due_payment_locks(path, limit=5)
+            unpaid = [] if modal else jobs.due_order_payment(path)
+            originals = (locks + unpaid)[:10]
+            legacy = not modal and not self.blocked and jobs.enabled(path)
             if not originals and not legacy:
                 return
         except (OSError, ValueError, sqlite3.Error) as exc:
@@ -92,13 +98,25 @@ class Runner(QObject):
     def ready(self, rows):
         count = sum(row['state'] == 'READY' for row in rows)
         self.message = f'付款来源检查 {len(rows)} 单，{count} 单待人工确认付款'
+        locked = sum(bool(row.get('payment_locked')) for row in rows)
+        if locked:
+            from lifecycle_home_ui import StageDialog
+            self.message += f'，{locked} 单已锁定付款并转待收货'
+            modal = QApplication.activeModalWidget()
+            if isinstance(modal, StageDialog) and modal.stage in ('payment', 'receipt'):
+                modal.panel.query(keep_page=True)
+            if hasattr(self.host, 'followup'):
+                self.host.followup.query(keep_page=True)
+            if hasattr(self.host, 'home_tasks'):
+                self.host.home_tasks.refresh()
         self.refresh_pending()
         if count and hasattr(self.host, 'status'):
             self.host.status.setText(self.message + '；可直接打开已回流资料。')
 
     def failed(self, text):
-        self.blocked = True
-        self.message = '实配检查已暂停，请从原下单任务核对：' + text
+        if self.legacy_worker:
+            self.blocked = True
+        self.message = ('历史实配检查已暂停：' if self.legacy_worker else '原单回查暂未完成，稍后自动重试：') + text
         self.changed.emit()
 
     def open_review(self):

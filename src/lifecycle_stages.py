@@ -10,8 +10,6 @@ PENDING = {
     'receipt': '待收货',
 }
 FINISHED = '已收齐'
-WAITING_SHIPMENT = '待发货'
-SHIPMENT_CHECK = 'jst_shipping'
 TITLES = {
     'return': '门店回传单',
     'payment': '门店付款单',
@@ -56,15 +54,18 @@ def progress_state(summaries, legacy=None, operations_required=False, *, shipmen
         health[JST_ORDER]=order_valid
     order_note='已核实聚水潭原单，待人工确认付款' if order_valid and not health['payment'] else ''
     if not summaries['return'] and not (legacy and legacy['complete']):return PENDING['return'],'return','',health
+    payment = summaries.get('payment')
     for i,s in enumerate(stages[1:],1):
         document=summaries.get(s)
         prev=ordered if s=='receipt' and order_valid else summaries.get(stages[i-1])
         if not document and prev and health[stages[i-1]] and prev['schema']==DOCUMENT_SCHEMA and prev['positive']==0 and not any(summaries.get(k) for k in stages[i:]):
             return STATUSES[-1],None,('无要货，无需后续运营、分配、付款或收货' if stages[i-1] in ('return','operations') else '无付款数量，无需收货'),health
-        if s=='receipt' and not health[s] and shipment and not shipment['ready']:
+        if s=='receipt' and not health[s] and shipment and shipment['payment_lock'] != basis_token(payment):
             status = shipment['status']
             observed = f'原单当前为“{status}”，' if status else ''
-            return WAITING_SHIPMENT,SHIPMENT_CHECK,'已确认付款，'+observed+'待核实聚水潭原单发货中（打单拣货）',health
+            reason = '付款版本待与聚水潭原单核对' if shipment['observed'] else '等待核实聚水潭原单发货中（打单拣货）'
+            note = f"已保存付款 V{payment['version']:03d}，{observed}{reason}"
+            return PENDING['payment'],'payment',note,health
         if not document:
             return PENDING[s],s,order_note,health
         if not health[s]:return PENDING[s],s,order_note if s=='payment' and order_note else TITLES[s]+'对照依据已更新或未就绪，请重新核对',health

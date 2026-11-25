@@ -520,7 +520,8 @@ class OrderRedoTests(unittest.TestCase):
                     self.assertEqual(case.cancel(online[changed])['stage'],'CANCELLED')
                     pending = daily_batch.read(case.path,case.root/'stage.sqlite',
                         {'stage_view':'payment','stage_filter':'待处理','all_matched':True})
-                    waiting, = pending['records']
+                    self.assertEqual({row['warehouse'] for row in pending['records']},set(WAREHOUSES))
+                    waiting, = [row for row in pending['records'] if row.get('cancelled_payment_hold')]
                     self.assertEqual(waiting['number'],head['number'])
                     self.assertIn('付款待重新核对',waiting['note'])
                     self.assertEqual(case.ax.guard(original)['code'],'PURCHASE_BASIS_CHANGED')
