@@ -25,6 +25,16 @@ def buyer_issue(receipt):
     return ''
 
 
+def bound_cancelled_order(order, receipt):
+    """An earlier verified internal number can anchor the native cancellation status."""
+    binding = (order.get('proof') or {}).get('binding')
+    internal = order.get('internal')
+    return bool(binding and internal and receipt.get('found') is True
+                and receipt.get('native_status') == '已取消' and receipt.get('buyer_check') == 'unavailable'
+                and receipt.get('binding') == binding and receipt.get('online') == order['online']
+                and receipt.get('internal') == internal and not receipt.get('detail_error'))
+
+
 def record(db, task, status, *, rows=None):
     if not (status in PAYMENT_STATES and (rows is not None or status == AUDITED)) and status not in REVERSED:
         return

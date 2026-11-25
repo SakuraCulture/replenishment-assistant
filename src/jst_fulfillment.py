@@ -411,7 +411,7 @@ def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None
                     buyer_problem = confirmation.buyer_issue(receipt)
                     if receipt.get('buyer_check') in ('mismatch', 'masked_conflict'):
                         state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
-                    elif status == '已取消' and buyer_problem:
+                    elif status == '已取消' and buyer_problem and not confirmation.bound_cancelled_order(order, receipt):
                         state, message, status = 'NEEDS_REVIEW', buyer_problem, ''
                     elif status not in confirmation.PAYMENT_STATES:
                         state, message = 'PAYMENT_SOURCE_PENDING', f'聚水潭当前为“{status}”，须核对原订单后准备付款资料'

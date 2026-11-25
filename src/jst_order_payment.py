@@ -27,8 +27,7 @@ def money(value, label):
 
 
 def verify_details(order, receipt, cancel=None):
-    """Check complete payment facts and corroborate the original when the buyer is hidden."""
-    payload = order['payload']
+    """Check payment facts after independently corroborating a hidden buyer's original order."""
     binding = (order['proof'] or {}).get('binding')
     if (receipt.get('found') is not True or not binding
             or receipt.get('native_status') not in PAYMENT_STATES or receipt.get('binding') != binding
@@ -37,43 +36,55 @@ def verify_details(order, receipt, cancel=None):
     buyer_problem = buyer_issue(receipt)
     if buyer_problem and receipt.get('buyer_check') != 'unavailable':
         raise ValueError(buyer_problem)
-    try:
-        if receipt.get('detail_error'):
-            raise ValueError(receipt['detail_error'])
-        expected, verified, totals = _verified_amounts(payload, receipt, cancel)
-        if buyer_problem:
-            _verify_frozen_preview(order, expected, verified, totals, cancel)
-    except (ValueError, TypeError, ArithmeticError) as exc:
-        if buyer_problem:
-            raise ValueError(f'{buyer_problem} · {exc}') from None
-        raise
+    expected, items = (verify_import_items(order, receipt, cancel) if buyer_problem else
+                       _read_items(order['payload'], receipt, cancel))
+    verified, totals = _verified_amounts(items, receipt, cancel)
+    if buyer_problem:
+        _verify_frozen_prices(order, expected, verified, totals, cancel)
     return expected, verified, totals
 
 
-def _verify_frozen_preview(order, expected, verified, totals, cancel):
-    proof = order['proof']
-    if not order.get('file_sha') or proof.get('file_sha') != order['file_sha'] or proof.get('amount') is None:
-        raise ValueError('缺少原导入文件或平台预览金额的凭据')
-    if Decimal(totals['payable']) != money(proof['amount'], '原平台预览金额'):
-        raise ValueError('平台应付金额与原导入预览不同')
-    for sku, (quantity, price) in expected.items():
+def verify_import_items(order, receipt, cancel=None):
+    """Corroborate the uniquely located order using its frozen import and complete quantities."""
+    try:
+        proof = order['proof']
+        if not order.get('file_sha') or proof.get('file_sha') != order['file_sha'] or proof.get('amount') is None:
+            raise ValueError('缺少原导入文件或平台预览凭据')
+        expected, items = _read_items(order['payload'], receipt, cancel)
+        for sku, (quantity, _) in expected.items():
+            checkpoint(cancel)
+            actual = items[sku][0]
+            if actual != Decimal(quantity):
+                raise ValueError(f'商品 {sku} 的数量与原生成单不同（原单 {quantity}，平台 {decimal_text(actual)}）')
+    except (ValueError, TypeError, ArithmeticError) as exc:
+        raise ValueError(f'{buyer_issue(receipt)} · {exc}') from None
+    return expected, items
+
+
+def _verify_frozen_prices(order, expected, verified, totals, cancel):
+    for sku, (_, price) in expected.items():
         checkpoint(cancel)
-        if verified[sku][:2] != (Decimal(quantity), Decimal(price)):
-            raise ValueError(f'商品 {sku} 的逐项数量或单价与原生成单不同')
+        if verified[sku][1] != Decimal(price):
+            raise ValueError(f'商品 {sku} 的成交单价与原生成单不同（原单 {price}，平台 {verified[sku][1]}），付款待核')
+    preview = money(order['proof']['amount'], '原平台预览金额')
+    if Decimal(totals['payable']) != preview:
+        raise ValueError(f"平台应付 {totals['payable']} 元与原导入预览 {preview:.2f} 元不同，付款待核")
 
 
-def _verified_amounts(payload, receipt, cancel):
-    if receipt.get('currency') not in CURRENCIES:
-        raise ValueError('聚水潭成交币种不是已核验的人民币')
+def _read_items(payload, receipt, cancel):
+    if receipt.get('detail_error'):
+        raise ValueError(receipt['detail_error'])
     expected = {sku: (qty, price) for sku, qty, price in payload['lines']}
     items = receipt.get('items')
     if not isinstance(items, list) or not expected or receipt.get('detail_count') != len(items) or len(items) != len(expected):
         raise ValueError('平台整单商品款数与原仓单不同，缺行须核对')
-    verified = {}
+    checked = {}
     for item in items:
         checkpoint(cancel)
+        if not isinstance(item, dict):
+            raise ValueError('平台整单商品明细格式待核')
         sku = item.get('sku')
-        if sku not in expected or sku in verified:
+        if not isinstance(sku, str) or sku not in expected or sku in checked:
             raise ValueError('平台明细存在重复编码或原仓单外商品')
         if item.get('item_status') not in (None, '', 'Normal') or item.get('refund_status') not in (None, '', 'NoRefund'):
             raise ValueError(f'商品 {sku} 的成交或退款状态待核')
@@ -85,10 +96,22 @@ def _verified_amounts(payload, receipt, cancel):
                 or (unit and factor is None)):
             raise ValueError(f'商品 {sku} 存在待核的单位换算')
         qty = number(item.get('qty'), f'{sku} 平台数量')
+        checked[sku] = (qty, item)
+    return expected, checked
+
+
+def _verified_amounts(items, receipt, cancel):
+    if receipt.get('currency') not in CURRENCIES:
+        raise ValueError('聚水潭成交币种不是已核验的人民币')
+    verified = {}
+    for sku, (qty, item) in items.items():
+        checkpoint(cancel)
         price = number(item.get('price'), f'{sku} 成交单价')
         amount = money(item.get('amount'), f'{sku} 商品金额')
-        if min(qty, price) < 0 or (qty * price).quantize(CENT, rounding=ROUND_HALF_UP) != amount:
-            raise ValueError(f'商品 {sku} 的数量、成交价和行金额不符，行级优惠或价差待核')
+        calculated = (qty * price).quantize(CENT, rounding=ROUND_HALF_UP)
+        if calculated != amount:
+            raise ValueError(f'商品 {sku} 按数量 {decimal_text(qty)} × 成交单价 {decimal_text(price)} '
+                             f'为 {calculated:.2f} 元，平台行金额 {amount:.2f} 元，差额 {amount-calculated:+.2f} 元，付款待核')
         verified[sku] = (qty, price, amount)
     merchandise = sum((row[2] for row in verified.values()), Decimal(0))
     freight = money(receipt.get('freight'), '原单运费')
@@ -99,7 +122,7 @@ def _verified_amounts(payload, receipt, cancel):
                          f'优惠或其他金额差异 {difference:+.2f} 元待核')
     totals = {'goods': f'{merchandise:.2f}', 'freight': f'{freight:.2f}',
               'payable': f'{total:.2f}', 'unexplained': f'{difference:.2f}'}
-    return expected, verified, totals
+    return verified, totals
 
 
 def prepare(order, receipt, cancel=None):

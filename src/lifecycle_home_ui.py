@@ -280,23 +280,29 @@ class LifecycleWidget(QWidget):
         for i,h in enumerate(self.records):
             c=QTableWidgetItem();c.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsUserCheckable);c.setCheckState(Qt.CheckState.Checked if service.key(h) in self.checked else Qt.CheckState.Unchecked);self.table.setItem(i,0,c)
             notices=[h['note']] if h.get('note') else []
+            tracking=h.get('platform_tracking',{})
+            payment_version=tracking.get('payment_basis',(None,None))[0]
+            if self.stage=='receipt' and h['next']=='receipt' and h['health'].get('payment') and payment_version is not None:
+                notices.append(f'已确认付款 V{payment_version:03d}')
             platform=h.get('platform_purchase')
             if platform:notices.append('翱象 '+platform['orderId']+'：'+platform['status']+'（观察 '+platform.get('observedAt','未知')+'）'+('；作废后实收待处理' if platform.get('receipt_state')=='VOIDED_REVIEW' else ''))
             receipt_review=bool((platform or {}).get('payment_review'))
             if receipt_review:notices.append('付款金额已更正，原采购实收待人工核对')
-            if h.get('locked'):notices.append('有历史下单标记。更正前请在聚水潭导入单核对。')
+            if h.get('locked'):
+                originals=tracking.get('jst_numbers',[])
+                notices.append('聚水潭原单 '+originals[0] if len(originals)==1 else '仓单已锁定，聚水潭原单关联待核')
             if h.get('generation_summary'):notices.append('聚水潭生成 '+h['generation_summary']['amount']+' 元')
-            if h.get('generation_task'):notices.append(h['generation_task']['message'])
+            if h.get('generation_task') and self.stage!='receipt':notices.append(h['generation_task']['message'])
             if h['legacy_incomplete']:notices.append('已有旧回传资料，请导入完整确认单')
             if h['old_revision']:notices.append('旧签发修订另有下游资料，未转移至本修订')
             if h['warehouse']=='旧版未标仓':notices.append('仓归属待核，不能自动关联')
             values=[h['day'],h['name']+'（'+h['store']+'）',h['warehouse'],h['number'],h['status'],*[('已导入' if h['present'].get(s) else '启用前未留存' if s=='operations' and h.get('flow_version',1)==1 else '未导入') for s in service.ALL_STAGES],'；'.join(notices)]
             if self.stage is None:
-                tracking=h.get('platform_tracking',{})
                 values[4:4]=['、'.join(tracking.get('jst_numbers',[])) or '未提供',
                              '、'.join(tracking.get('ax_numbers',[])) or ('待绑定' if tracking.get('await_binding') else '未关联'),
                              '待人工核对' if receipt_review else tracking.get('receipt_status','未记录收货')]
             for j,x in enumerate(values,3):self.table.setItem(i,j,QTableWidgetItem(str(x)))
+            self.table.item(i,self.table.columnCount()-1).setToolTip(values[-1])
             if self.stage is None:
                 self.table.item(i,7).setToolTip(self.table.item(i,7).text()+' · '+tracking.get('jst_source','未提供'))
                 self.table.item(i,8).setToolTip(self.table.item(i,8).text())

@@ -86,6 +86,29 @@ class FulfillmentUI(unittest.TestCase):
             self.assertTrue(dialog.redo_btn.isEnabled())
             self.assertIsNone(dialog.redo_target)
 
+    def test_receipt_page_explains_formal_payment_and_the_linked_original(self):
+        import daily_batch
+        import order_lifecycle as lifecycle
+        from lifecycle_home_ui import LifecycleWidget
+
+        cache = self.fixture.root/'receipt-page.sqlite3'
+        request = {'stage_view':'receipt','stage_filter':'待处理','platform_tracking':True}
+        self.assertEqual(daily_batch.read(self.fixture.path,cache,request)['count'],0)
+        plan, _ = service.prepare_review(self.fixture.path,self.fixture.keys)
+        lifecycle.commit(self.fixture.path,plan)
+        widget = LifecycleWidget(self.host,'receipt')
+        self.addCleanup(widget.deleteLater)
+        self.addCleanup(widget.reader.shutdown)
+        widget.ready(daily_batch.read(self.fixture.path,cache,request))
+        self.assertEqual(widget.table.rowCount(),1)
+        self.assertEqual(widget.table.item(0,3).text(),self.fixture.head['day'])
+        self.assertEqual(widget.table.item(0,7).text(),'待收货')
+        notice = widget.table.item(0,widget.table.columnCount()-1)
+        self.assertIn('已确认付款 V001',notice.text())
+        self.assertIn('聚水潭原单 '+self.fixture.order['internal'],notice.text())
+        self.assertNotIn('历史下单标记',notice.text())
+        self.assertEqual(notice.toolTip(),notice.text())
+
     def test_payment_review_cannot_save_until_human_confirms(self):
         plan,overview=service.prepare_review(self.fixture.path,self.fixture.keys)
         dialog=make_review(self.host,plan,overview)

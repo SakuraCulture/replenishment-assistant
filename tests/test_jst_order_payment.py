@@ -121,7 +121,7 @@ class OrderPayment(unittest.TestCase):
             ({'binding': receipts[second]['binding']}, '企业、店铺或线上单号'),
             ({'items': []}, '商品款数'),
             ({'items': [{**item, 'sku': '0002'}]}, '原仓单外商品'),
-            ({'items': [{**item, 'qty': '20', 'price': '4'}]}, '逐项数量或单价'),
+            ({'items': [{**item, 'qty': '20', 'price': '4'}]}, '数量与原生成单不同'),
             ({'buyer_check': 'mismatch'}, '完整买家账号与原任务不同'),
             ({'buyer_check': 'masked_conflict'}, '隐号'),
             ({'native_status': '已取消'}, '原单身份待核'),
@@ -154,6 +154,52 @@ class OrderPayment(unittest.TestCase):
                 self.assertEqual(order['internal'], valid['internal'] if online == first else receipts[online]['internal'])
                 self.assertEqual(len(sources.history(db, online)), 1)
                 self.assertIsNone(lifecycle.current(db, order['payload']['head'], 'payment'))
+
+    def test_masked_buyer_can_bind_original_with_line_amount_pending(self):
+        order = self.base.read(self.online)
+        automatic._save(self.path, order, 'IMPORT_UNKNOWN', None, reason='合成平台已落原单')
+        sku, qty, price = order['payload']['lines'][0]
+        item = {'sku': sku, 'qty': qty, 'price': price, 'amount': '79.99'}
+        receipt = {'found': True, 'buyer_check': 'unavailable', 'contact_ok': False,
+                   'online': self.online, 'internal': '90013', 'native_status': confirmation.AWAITING,
+                   'binding': order['proof']['binding'], 'items': [item], 'detail_count': 1,
+                   'currency': 'CNY', 'freight': '0', 'amount': '79.99'}
+        with patch.object(self.portal, 'action', return_value=receipt) as read:
+            result, = automatic.process(self.path, self.keys, self.portal, 'recover',
+                                        prepare_payment=service.pull_order_payment)
+            self.assertEqual((result['stage'], result['internal']), ('IMPORTED', '90013'))
+            self.assertEqual(result['payment']['state'], 'NEEDS_REVIEW')
+            self.assertIn(f'商品 {sku}', result['payment']['message'])
+            self.assertIn('平台行金额 79.99 元', result['payment']['message'])
+            self.assertIn('差额 -0.01 元', result['payment']['message'])
+            self.assertEqual(jobs.waiting_review(self.path), [])
+            self.assertFalse(lifecycle.snapshot(self.path,self.base.head)['present']['payment'])
+            item['amount'] = receipt['amount'] = '80.00'
+            result, = automatic.process(self.path, self.keys, self.portal, 'recover',
+                                        prepare_payment=service.pull_order_payment)
+        self.assertEqual(result['internal'], '90013')
+        self.assertEqual(result['payment']['state'], 'READY')
+        self.assertEqual([call.args[0] for call in read.call_args_list], ['lookup','payment_detail']*2)
+        self.assertEqual([op for op, _ in self.portal.calls], ['preview'])
+
+    def test_bound_original_can_read_cancelled_status_with_hidden_buyer(self):
+        self.submit()
+        order = self.base.read(self.online)
+        original = self.portal.orders[self.online]
+        original.update(native_status='已取消', status='review', buyer_check='unavailable', contact_ok=False)
+        for changes in ({'buyer_check':'mismatch'}, {'buyer_check':'masked_conflict'},
+                        {'internal':'6002'}, {'detail_error':'原生整单明细身份待核'}):
+            with self.subTest(changes=changes), patch.dict(original, changes):
+                check, = automatic.process(self.path, self.keys, self.portal, 'recover')
+                self.assertFalse(check['ok'])
+                self.assertEqual(check['stage'], 'IMPORTED')
+        check, = automatic.process(self.path, self.keys, self.portal, 'recover')
+        self.assertEqual((check['stage'],check['internal']), ('CANCELLED',order['internal']))
+        with closing(wr.read_connection(self.path)) as db:
+            from jst_order_store import active, locked
+            self.assertEqual(active(db,order['payload']['head']), order['gid'])
+            self.assertEqual(locked(db,order['payload']['head']), order['gid'])
+        self.assertEqual([op for op, _ in self.portal.calls].count('import'), 1)
 
     def test_insufficient_buyer_evidence_or_conflict_blocks_payment_recheck(self):
         ready = self.submit()['payment']

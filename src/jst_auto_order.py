@@ -197,11 +197,17 @@ def _client_error(exc):
         'PREVIEW_CHANGED':'平台预览已变化，请重新核对该仓单',
         'RESPONSE_UNKNOWN':'组件应答超时，请继续核对原任务',
         'BUSY':'聚水潭正在同步资料或处理原任务，请待当前动作安全结束',
+        'SESSION_CONFLICT':'聚水潭本仓操作权待核，请待原操作释放后继续核对',
+        'CLOSING':'聚水潭组件正在退出，请在组件就绪后核对原任务',
+        'NOT_READY':'聚水潭组件尚未就绪，请在连接就绪后继续核对原任务',
+        'STARTUP_UNKNOWN':'聚水潭组件启动结果待核，请检查原组件进程',
+        'COMPONENT_EXITED':'聚水潭组件已退出，请连接后继续核对原任务',
         'COMPONENT_MISSING':'聚水潭组件缺失，请使用包含组件的完整程序',
     }
     if exc.code in ('ORDER_PAGE_CHANGED','PREVIEW_CHANGED','PREVIEW_ISSUES') and str(exc):
         return PlatformCheck(str(exc))
-    return PlatformCheck(messages.get(exc.code,'聚水潭连接或结果待核，请检查专用浏览器与原任务'))
+    code = exc.code if isinstance(exc.code,str) and re.fullmatch(r'[A-Z][A-Z0-9_]{1,48}',exc.code) else 'FAILED'
+    return PlatformCheck(messages.get(code, f'聚水潭原任务结果待核（{code}），请继续核对原单'))
 
 
 class Browser:
@@ -349,14 +355,19 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
     native_status=result.get('native_status')
     if identity_only and native_status not in confirmation.PAYMENT_STATES | confirmation.REVERSED:
         raise Check('已查到原单，平台状态仍待核')
-    matched_preview = False
+    identity_basis = None
     if identity_only:
         buyer_problem = confirmation.buyer_issue(result)
         if buyer_problem:
-            if result.get('buyer_check') != 'unavailable' or native_status not in confirmation.PAYMENT_STATES:
+            if result.get('buyer_check') != 'unavailable':
                 raise Check(buyer_problem)
-            order_payment.verify_details({**order, 'internal': internal}, result, cancel)
-            matched_preview = True
+            if confirmation.bound_cancelled_order(order, result):
+                identity_basis = 'bound_internal_and_native_status'
+            elif native_status in confirmation.PAYMENT_STATES:
+                order_payment.verify_import_items(order, result, cancel)
+                identity_basis = 'original_preview_and_item_details'
+            else:
+                raise Check(buyer_problem+(f" · {result['detail_error']}" if result.get('detail_error') else ''))
     state='review' if native_status == CANCELLED else reported_state
     confirmed=identity_only and native_status in confirmation.PAYMENT_STATES
     if confirmed:
@@ -396,8 +407,8 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             reason+=' · '+issues
     if confirmed and stage in ('IMPORTED','AUDITED'):
         reason=f'已核对原单，聚水潭当前为“{native_status}”'
-    if matched_preview:
-        reason=f'已按原平台预览及逐项明细核对原单，聚水潭当前为“{native_status}”'
+    if identity_basis == 'original_preview_and_item_details':
+        reason=f'已按原导入凭据和逐项商品数量核对原单，聚水潭当前为“{native_status}”'
     if native_status == CANCELLED:
         stage, state = 'CANCELLED', 'cancelled'
         reason = PAYMENT_REVIEW+'；可沿原仓单重做'
@@ -413,7 +424,7 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             return latest
         if allocations.active(db,h)!=order['gid']:
             raise wr.Conflict('外部原单已查到，本机原生成版本已变化，请核对关联')
-        if matched_preview:
+        if identity_basis:
             from warehouse_execution import validate_visibility
             validate_visibility(db, h)
             generation, digest = allocations.read_generation(db, order['gid'])
@@ -435,8 +446,8 @@ def _record_found(path, order, result, cancel, *, identity_only=False):
             lifecycle_store.save_mapping(db,'payment',ref,{'head':{k:h[k] for k in HEAD_KEYS},'number':internal,
                                                           'saved':wr.now(),'source':'聚水潭自动下单'})
         detail={'internal':internal,'stage':stage}
-        if matched_preview:
-            detail['identity_basis']='original_preview_and_item_details'
+        if identity_basis:
+            detail['identity_basis']=identity_basis
         if native_status in (ORDINARY_AUDIT_DONE,'已付款待审核',*SHIPPING_PLATFORM_STATES,*REVIEW_PLATFORM_STATES):
             detail['native_status']=native_status
         if (stage=='AUDITED' and not identity_only) or native_status in confirmation.REVERSED:
