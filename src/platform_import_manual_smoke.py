@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QFileDialog, QLineEdit, QMessageBox, QPushButton
+from PySide6.QtWidgets import QDialog, QFileDialog, QLineEdit, QMessageBox, QPushButton, QTableView
 
 
 def start_smoke(app, win, args):
@@ -118,6 +118,32 @@ def exercise(app,win,root,fixture,phase):
     def unexpected(*args):
         raise AssertionError(str(args[2]))
 
+    def inspect_ax_details(ax):
+        details=[]
+        execute=QDialog.exec
+
+        def read(dialog):
+            if not dialog.windowTitle().startswith('逐商品关联核对'):
+                return execute(dialog)
+            model=dialog.findChild(QTableView).model()
+            headers=[model.headerData(i,Qt.Orientation.Horizontal) for i in range(model.columnCount())]
+            for row in range(model.rowCount()):
+                details.append({name:model.data(model.index(row,i)) for i,name in enumerate(headers)})
+            dialog.show()
+            app.processEvents()
+            assert dialog.grab().save(str(root/(phase+'-翱象-逐商品核对.png')))
+            return QDialog.DialogCode.Accepted
+
+        assert ax.binding_details_btn.isEnabled()
+        with patch.object(QDialog,'exec',read),patch.object(QMessageBox,'warning',side_effect=unexpected):
+            ax.binding_details_btn.click()
+        assert len(details)==2
+        original,added=details
+        assert (original['原基础单位'],original['平台基础单位'],original['预览数量'],
+                original['采购数量'],original['差异'])==('件','箱','4','3','变化')
+        assert (added['商品编码'],added['平台基础单位'],added['差异'])==('@00000001','件','新增')
+        return details
+
     class AX:
         def __init__(self,*args):self.running=False
         def start(self):self.running=True
@@ -152,9 +178,9 @@ def exercise(app,win,root,fixture,phase):
                 assert request['order_id']=='PO-QA-ADOPT-'+affected and request['original_units']
                 manifest=root/'controlled-AX-proof.json'
                 sku=next(iter(request['original_units']))
-                rows=[{'sku':sku,'unit':request['original_units'][sku],'quantity':'3','price':'3.50','amount':'10.50'},
+                rows=[{'sku':sku,'unit':'箱','quantity':'3','price':'3.50','amount':'10.50'},
                       {'sku':'@00000001','unit':'件','quantity':'2','price':'3','amount':'6'}]
-                atomic_json(manifest,{'evidence':{'rows':rows,'observedAt':wr.now()}})
+                atomic_json(manifest,{'request':request,'evidence':{'rows':rows,'observedAt':wr.now()}})
                 record['bindingProposal']={'id':'proposal-QA','state':'READY','request':request,
                     'manifest':{'file':str(manifest),'sha256':file_hash(manifest)},'summary':{
                         'status':'部分入库','rows':2,'quantity':'5','amount':'16.50','differences':2}}
@@ -200,6 +226,7 @@ def exercise(app,win,root,fixture,phase):
             jst_window.manual_btn.click()
         jd=windows[-1]
         assert jd.row['online']==jst_key
+        ax_details=None
         if phase=='exercise':
             with (patch.object(QMessageBox,'warning',side_effect=unexpected),
                   patch.object(catalog_session_ui,'manager',return_value=SimpleNamespace(session=portal)),
@@ -234,11 +261,13 @@ def exercise(app,win,root,fixture,phase):
             input_fields(ax.binding_start_btn,'核对已有翱象采购单',['PO-QA-ADOPT-'+affected,'','隔离经办','保留原采购'],'开始核对')
             wait(lambda:ax.binding_confirm_btn.isEnabled() and not ax.worker)
             assert (ax.binding_record['proposal']['summary']['differences'])==2
+            ax_details=inspect_ax_details(ax)
             with patch.object(QMessageBox,'question',return_value=QMessageBox.StandardButton.Yes):
                 ax.binding_confirm_btn.click()
             wait(lambda:ax.current.get('state')=='BOUND' and not ax.worker)
         assert jd.row['internal']=='88001' and not jd.manual_file.isEnabled()
         assert ax.current['state']=='BOUND' and not ax.manual_export_btn.isEnabled()
+        if phase=='reopen':ax_details=inspect_ax_details(ax)
         assert jst.record(path,sibling)==original_jst_sibling
         assert ax_records[b]==ax_sibling
         assert not {'purchase.start','purchase.submit','purchase.reserve','purchase.rebuild'} & set(attempts)
@@ -256,7 +285,7 @@ def exercise(app,win,root,fixture,phase):
                  'original_submissions':sum(event[0]=='order.import' and event[2]==jst_key for event in fixture['jst_seed_calls']),
                  'sibling_internal':original_jst_sibling['internal']},
             aoxiang={'number':ax_item['head']['number'],'task':ax_records[a]['taskId'],'binding':ax_records[a]['binding'],
-                     'exports':ax_records[a]['originalExports'],'additional_submissions':0,'component_calls':attempts,
+                     'comparison':ax_details,'exports':ax_records[a]['originalExports'],'additional_submissions':0,'component_calls':attempts,
                      'original_submissions':ax_records[a]['confirmedImportRequests'],'sibling_po':ax_sibling['binding']['orderId']})
     except Exception:
         reports.update(passed=False,error=traceback.format_exc())

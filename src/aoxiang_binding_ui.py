@@ -78,6 +78,8 @@ class BindingActions:
         if p.get('summary'):
             summary=p['summary'];differences=summary.get('differences',0)
             text+='\n平台状态 '+summary['status']+f' · {differences} 款与原预览不同'
+            if summary.get('unverifiedUnits'):
+                text+=f" · {summary['unverifiedUnits']} 款原基础单位未留存"
         if p.get('error'):text+='\n'+p['error']['message']
         self.binding_note.setText(text)
 
@@ -148,29 +150,43 @@ class BindingActions:
             proof=run(self,lambda progress,cancel:checked_json(manifest['file'],manifest['sha256']),(),'读取已核对采购原件')
             expected={r['sku']:r for r in self.package['intent']['rows']}
             actual={r['sku']:r for r in proof['evidence']['rows']}
+            request=proof.get('request',{})
+            original_units=request.get('original_units',{})
             rows=[]
             from decimal import Decimal
-            def differs(old,new):
+            def differs(old,new,old_unit):
                 fields=(('quantity','quantity'),('unitPrice','price'),('amount','amount'))
-                return any(Decimal(old[a])!=Decimal(new[b]) for a,b in fields if old.get(a) is not None and new.get(b) is not None)
+                return (old_unit is not None and old_unit!=new.get('unit')) or any(
+                    Decimal(old[a])!=Decimal(new[b]) for a,b in fields if old.get(a) is not None and new.get(b) is not None)
             for sku in dict.fromkeys([*expected,*actual]):
                 old,new=expected.get(sku,{}),actual.get(sku,{})
-                rows.append([sku,old.get('name'),new.get('unit'),old.get('quantity'),new.get('quantity'),
+                old_unit=original_units.get(sku)
+                if not old:state='新增'
+                elif not new:state='缺行'
+                elif differs(old,new,old_unit):state='变化'
+                elif request.get('operator') and old_unit is None:state='原单位未留存'
+                else:state='一致'
+                rows.append([sku,old.get('name'),old_unit or ('未留存' if old else None),new.get('unit'),
+                             old.get('quantity'),new.get('quantity'),
                              old.get('unitPrice'),new.get('price'),old.get('amount'),new.get('amount'),
-                             '新增' if not old else '缺行' if not new else '变化' if differs(old,new) else '一致'])
+                             state])
             d=QDialog(self);d.resize(1260,650);d.setWindowTitle('逐商品关联核对 · '+p['request']['order_id']);v=QVBoxLayout(d)
             v.addWidget(label(self.head['name']+' · '+self.head['warehouse']+' · '+self.head['number'],'section'))
             v.addWidget(label('平台制单日 '+str(p['request']['created_day'] or proof.get('nativeCreatedDay') or '未留存')+' · 原件观察时间 '+proof['evidence']['observedAt'],'muted'))
             search=QLineEdit();search.setPlaceholderText('查找商品编码或名称');v.addWidget(search)
-            table,model=grid(d,['商品编码','商品名称','基础单位','预览数量','采购数量','预览采购价','平台采购价','预览金额','平台金额','差异'],rows)
-            for column,width in enumerate((170,200,82,92,92,105,105,105,105,75)):table.setColumnWidth(column,width)
+            table,model=grid(d,['商品编码','商品名称','原基础单位','平台基础单位','预览数量','采购数量',
+                                '预览采购价','平台采购价','预览金额','平台金额','差异'],rows)
+            for column,width in enumerate((170,185,95,100,85,85,95,95,90,90,110)):table.setColumnWidth(column,width)
             search.textChanged.connect(model.filter);v.addWidget(table,1);v.addWidget(button('关闭',d.accept));d.exec();d.deleteLater()
         except Exception as exc:QMessageBox.warning(self,'未打开关联核对',str(exc))
 
     def binding_confirm(self):
         record=self.binding_record;p=record['proposal'];package=self.package
         id,proposal_id,sequence,sha=record['purchase_id'],p['id'],record['sequence'],p['manifest']['sha256']
-        text=f"{self.head['name']} · {self.head['warehouse']}\n本地仓单 {self.head['number']}\n关联翱象采购单 {p['request']['order_id']}\n平台状态 {p['summary']['status']}\n{p['summary']['rows']} 款 · 数量 {p['summary']['quantity']} · 金额 {p['summary']['amount']} 元\n与预览不同 {p['summary'].get('differences',0)} 款\n核对依据 {p['request']['reason']}\n\n确认后保存平台采购实际明细与本地关联。"
+        summary=p['summary']
+        text=f"{self.head['name']} · {self.head['warehouse']}\n本地仓单 {self.head['number']}\n关联翱象采购单 {p['request']['order_id']}\n平台状态 {summary['status']}\n{summary['rows']} 款 · 数量 {summary['quantity']} · 金额 {summary['amount']} 元\n与预览不同 {summary.get('differences',0)} 款"
+        if summary.get('unverifiedUnits'):text+=f"\n原基础单位未留存 {summary['unverifiedUnits']} 款"
+        text+=f"\n核对依据 {p['request']['reason']}\n\n确认后保存平台采购实际明细与本地关联。"
         if QMessageBox.question(self,'确认关联已有采购单',text,QMessageBox.StandardButton.Yes|QMessageBox.StandardButton.No,QMessageBox.StandardButton.No)!=QMessageBox.StandardButton.Yes:return
         def operation(_):
             if p['request'].get('operator'):

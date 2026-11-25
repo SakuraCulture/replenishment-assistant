@@ -227,3 +227,39 @@ test('manual binding reads exact marked original completed PO and confirms persi
   assert.equal((await f.service.confirm(p.id,m.id,ready.sequence,m.manifest.sha256,h)).sequence,bound.sequence);
   assert.equal(f.creates.events(p.id).filter(e=>e.kind==='OPERATOR_CONFIRMED_NATIVE_BINDING').length,1);
 });
+
+test('manual binding adopts valid platform units for retained SKUs',async t=>{
+  for(const originalUnit of ['件',null]){
+    await t.test(originalUnit?'changed original unit':'unrecorded original unit',async t=>{
+      const f=await fixture(t,{manual:true,unknown:true}),p=f.p;
+      const original=accepted(f,{successCount:0,failCount:2});
+      const input=manualRequest(f),sku=p.rows[0].sku;
+      if(!originalUnit)delete input.original_units[sku];
+      f.rows[0][15]='箱';
+      await refreshSources(f);
+
+      f.machine.start(p.id,input);await f.machine.pending;
+      const ready=f.creates.get(p.id),proposal=ready.bindingProposal;
+      assert.equal(proposal.state,'READY',JSON.stringify(proposal.error));
+      assert.equal(proposal.summary.differences,originalUnit?1:0);
+      assert.equal(proposal.summary.unverifiedUnits,originalUnit?0:1);
+      const proof=JSON.parse(await fs.readFile(proposal.manifest.file,'utf8'));
+      for(const [code,mutate] of [
+        ['PURCHASE_DETAIL_MISMATCH',e=>{e.rows[0].unit='';}],
+        ['PURCHASE_DETAIL_MISMATCH',e=>{e.rows[1].sku=sku;}],
+        ['PURCHASE_CREATED_MISMATCH',e=>{e.main.supplier='other-warehouse';}],
+        ['PURCHASE_CREATED_MISMATCH',e=>{e.main.amount='999';}],
+      ]){
+        const wrong=structuredClone(proof);mutate(wrong.evidence);
+        assert.throws(()=>checkedBinding(ready,wrong),{code});
+      }
+
+      const bound=await f.service.confirm(p.id,proposal.id,ready.sequence,proposal.manifest.sha256,h);
+      assert.equal(bound.binding.manualRevision.rows[0].unit,'箱');
+      assert.equal(bound.binding.manualRevision.rows[0].quantity,p.rows[0].quantity);
+      assert.equal(bound.binding.taskId,original.taskId);
+      assert.deepEqual(bound.intent,p);
+      assert.equal(f.creates.events(p.id).filter(e=>e.kind==='OPERATOR_CONFIRMED_NATIVE_BINDING').length,1);
+    });
+  }
+});
