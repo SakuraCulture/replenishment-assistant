@@ -109,7 +109,8 @@ class Runner:
         deadline = time.monotonic() + self.verification_wait
         while True:
             checkpoint(self.cancel)
-            self.client.request('purchase.start', purchase_id=p['id'])
+            original = {'expected_task_id':record['taskId']} if record.get('taskId') else {}
+            self.client.request('purchase.start', purchase_id=p['id'], **original)
             record = self.wait_status('purchase.status', 'purchase_id', p['id'], cancel_action='purchase.pause', notify=notify)
             if record['state'] == 'BOUND':
                 return 'BOUND', {'binding': record['binding']} | ({'uploadWarning': record['uploadWarning']} if record.get('uploadWarning') else {})
@@ -123,6 +124,8 @@ class Runner:
                 if self.cancel.wait(min(self.verification_interval, remaining)):
                     raise Cancelled('已停止等待；原受理任务保留，可继续核对采购结果')
                 continue
+            if error.get('code')=='TASK_PENDING':
+                raise ComponentError('IMPORT_TASK_WAIT_EXPIRED','自动核对窗口已结束，原受理号保留',error.get('details'))
             raise ComponentError(error.get('code', 'PURCHASE_NEEDS_REVIEW'), error.get('message', '原采购任务尚未核实成功，不能重传'), error.get('details'))
 
     def receipt_item(self, item, configuration, suppliers):

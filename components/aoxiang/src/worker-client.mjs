@@ -55,6 +55,7 @@ export class BrowserClient{
   preparePurchaseCreate(params){return this.call('preparePurchaseCreate',params,Math.max(180000,(this.pageTimeoutMs||30000)*12));}
   uploadPurchaseOnce(params,beforePurchaseImport){return this.call('uploadPurchaseOnce',params,Math.max(120000,(this.pageTimeoutMs||30000)*4),beforePurchaseImport);}
   purchaseImportTask(params){return this.call('purchaseImportTask',params,180000);}
+  purchaseImportFailureFile(params){return this.call('purchaseImportFailureFile',params,25000);}
   queryCreateOrders(params){return this.call('queryCreateOrders',params,Math.max(180000,(this.pageTimeoutMs||30000)*12));}
   async stop(){
     if(this.closed)return;

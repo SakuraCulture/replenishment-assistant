@@ -14,13 +14,14 @@ STAGES = {
     'PREPARED':'尚未导入',
     'PREVIEWED':'尚未导入',
     'IMPORT_UNKNOWN':'导入结果待核',
+    'IMPORT_FAILED':'导入失败',
     'IMPORTED':'已导入',
     'AUDIT_UNKNOWN':'审核结果待核',
     'AUDITED':'普通审核完成',
     'REVIEW':'异常待处理',
     'CANCELLED':'原单已取消',
 }
-RELEASED = frozenset(('IMPORT_UNKNOWN','IMPORTED','AUDIT_UNKNOWN','AUDITED','REVIEW','CANCELLED'))
+RELEASED = frozenset(('IMPORT_UNKNOWN','IMPORT_FAILED','IMPORTED','AUDIT_UNKNOWN','AUDITED','REVIEW','CANCELLED'))
 UNRESOLVED = ('IMPORT_UNKNOWN','AUDIT_UNKNOWN')
 HISTORY = 'jst_auto_order_history'
 CANCELLATION_HOLDS = 'jst_cancellation_holds'
@@ -180,6 +181,21 @@ def profiles(db):
             db.execute('SELECT store,warehouse,payload FROM jst_auto_profiles')}
 
 
+def display_stage(stage, receipt):
+    # Older builds still recognize the same guarded execution stage. The
+    # exact rejection is a separate observation on the released intent.
+    if stage=='IMPORT_UNKNOWN' and (receipt or {}).get('fail_count')==1:
+        return 'IMPORT_FAILED'
+    return stage
+
+
+def display_reason(stage, reason, receipt):
+    if stage != 'IMPORT_FAILED' or not receipt:
+        return reason
+    summary=f"聚水潭导入失败（成功 {receipt['success_count']} 张、失败 {receipt['fail_count']} 张），原导入记录已保留"
+    return summary+('。最近一次核对：'+reason if reason else '。')
+
+
 def _put_profile(db, store, warehouse, values, expected):
     current=_profile(db,store,warehouse)
     if (current or {}).get('version')!=expected:
@@ -277,13 +293,20 @@ def list_orders(path):
             if not exists(db, table):
                 continue
             fields = ('online','stage','sequence','store','name','warehouse','number','shop',
-                      'sku_count','quantity','amount','preview_amount','internal','status','reason')
+                      'sku_count','quantity','amount','preview_amount','internal','status','reason','import_receipt')
             for row in db.execute('''SELECT online,stage,sequence,json_extract(payload,'$.head.store'),
                    json_extract(payload,'$.head.name'),warehouse,json_extract(payload,'$.head.number'),
                    json_extract(payload,'$.shop.name'),json_extract(payload,'$.stats.sku_count'),
                    json_extract(payload,'$.stats.quantity'),json_extract(payload,'$.stats.amount'),
-                   json_extract(proof,'$.amount'),internal,platform_status,reason FROM '''+table+' ORDER BY created DESC,rowid'):
-                rows.append({**dict(zip(fields,row)), 'historical':table == HISTORY})
+                   json_extract(proof,'$.amount'),internal,platform_status,reason,
+                   CASE WHEN stage='IMPORT_UNKNOWN' THEN json_extract(proof,'$.import_receipt') END
+                   FROM '''+table+' ORDER BY created DESC,rowid'):
+                record=dict(zip(fields,row))
+                raw=record.pop('import_receipt')
+                receipt=wr.loads(raw) if raw else None
+                record['stage']=display_stage(record['stage'],receipt)
+                record['reason']=display_reason(record['stage'],record['reason'],receipt)
+                rows.append({**record, 'historical':table == HISTORY})
         return rows
 
 

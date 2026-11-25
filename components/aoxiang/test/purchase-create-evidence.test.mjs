@@ -96,9 +96,34 @@ test('known-task service reaches native void proof and refreshes only completed 
     rows=[{...candidate,...changed}];const before=exports;await assert.rejects(()=>service.observe(p,receipt,{}));assert.equal(exports,before);
   }
   rows=[candidate,{...candidate,supplyOrderId:'PO-extra'}];await assert.rejects(()=>service.observe(p,receipt,{}),{code:'PURCHASE_NOT_UNIQUE'});
-  rows=[candidate];importResult={...task,failCount:'1'};await assert.rejects(()=>service.observe(p,receipt,{}),{code:'IMPORT_TASK_PARTIAL'});
+  rows=[candidate];importResult={...task,failCount:'1'};await assert.rejects(()=>service.observe(p,receipt,{}),{code:'IMPORT_TASK_COUNTS_UNVERIFIED'});
   importResult=task;detail[26]='1.99';files.D17=path.join(root,'changed-detail.xlsx');await workbook(files.D17,'D17',[detail]);
   await assert.rejects(()=>service.observe(p,receipt,{}),{code:'PURCHASE_PROOF_CHANGED'});
+});
+
+test('the original 601-row import stops on a completed all-failed receipt and never queries a PO',async()=>{
+  const taskId='GEI@'+IMPORT_CODE+'@261125201517@601';
+  const p={id:'qa-all-failed',identity:{accountId:'QA',merchantCode:'QA'},rows:Array(601)};
+  let native={taskId,code:IMPORT_CODE,status:'部分失败',successCount:'0',failCount:'601'};
+  const service=new PurchaseCreateService({ledger:{get:()=>({})}});
+  service.context=async()=>({adapter:{
+    purchaseImportTask:async()=>native,
+    queryCreateOrders:async()=>assert.fail('an all-failed import must not search for a PO'),
+  }});
+  await assert.rejects(()=>service.observe(p,{taskId},{}),error=>{
+    assert.equal(error.code,'IMPORT_TASK_FAILED');
+    assert.equal(error.details.importResult.successCount,0);
+    assert.equal(error.details.importResult.failCount,601);
+    return true;
+  });
+  native={...native,status:'SYNTHETIC_NEW_STATUS'};
+  await assert.rejects(()=>service.observe(p,{taskId},{}),{code:'IMPORT_TASK_STATUS_UNKNOWN'});
+  native={...native,doneTime:'2026-11-25T12:15:17Z'};
+  await assert.rejects(()=>service.observe(p,{taskId},{}),{code:'IMPORT_TASK_FAILED'});
+  native={...native,status:'RUNNING'};
+  await assert.rejects(()=>service.observe(p,{taskId},{}),{code:'IMPORT_TASK_STATUS_UNKNOWN'});
+  native={...native,status:'部分失败',taskId:taskId+'0'};
+  await assert.rejects(()=>service.observe(p,{taskId},{}),{code:'IMPORT_TASK_SCOPE'});
 });
 
 for(const scenario of ['missing receipt','late receipt','changed amount','different owner']){

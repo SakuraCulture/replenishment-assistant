@@ -1,6 +1,6 @@
 import path from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
-import {readJson,fail,now,businessDate,countValue,sameIdentity} from './common.mjs';
+import {readJson,fail,now,businessDate,sameIdentity,sha256} from './common.mjs';
 import {loadConfig,validateConfig} from './config.mjs';
 import {assertHandoff} from './preflight.mjs';
 import {checkPurchaseConfiguration,checkPurchaseInput} from './purchase-create-artifacts.mjs';
@@ -8,7 +8,7 @@ import {PurchaseCoordinator} from './purchase-coordinator.mjs';
 import {requireHostOrder,requireUnretired,captureOwnedFiles} from './order-retirement.mjs';
 import {purchaseContract,purchaseScopeHash} from './purchase-contract.mjs';
 import {validateWorkbook} from './workbook-validator.mjs';
-import {IMPORT_CODE} from './purchase-create-contract.mjs';
+import {importResult,importSettled,sameImportResult,requireCompletedImport} from './purchase-import-result.mjs';
 import {checkHostDispatch,abortHostDispatch} from './purchase-host-guard.mjs';
 import {errorInfo} from './machine-runtime.mjs';
 
@@ -88,12 +88,35 @@ export class PurchaseCreateService{
     finally{if(adapter.beforePurchaseImport===guard)adapter.beforePurchaseImport=null;}
   }
   async observe(p,receipt,{signal,retryMainRunId=null,verifyOnly=false}){
-    const context=await this.context(p,signal),{adapter}=context,r=this.ledger.get(p.id);
+    const context=await this.context(p,signal),{adapter}=context;
+    let r=this.ledger.get(p.id);
     const read=(stage,action)=>retryPurchaseRead(stage,action,{signal,progress:this.progress});
     this.progress('查询原导入任务 '+receipt.taskId);
     const task=await read('查询原导入任务',()=>adapter.purchaseImportTask({taskId:receipt.taskId,identity:p.identity,reuseExistingPage:true}));
-    if(task.status!=='FINISHED')fail(['FAILED','FAILURE','CANCELLED'].includes(task.status)?'IMPORT_TASK_FAILED':'TASK_PENDING','原导入任务尚未成功完成，保留原任务不重传');
-    if(task.code!==IMPORT_CODE||countValue(task.failCount)!==0||countValue(task.successCount)!==p.rows.length)fail('IMPORT_TASK_PARTIAL','原导入任务非全部成功，保留失败信息及已生成单，不重传');
+    let summary=importResult(task,receipt.taskId,p.rows.length);
+    const saved=r.importResult;
+    if(importSettled(saved)){
+      if(!sameImportResult(saved,summary))
+        fail('IMPORT_TASK_RESULT_CHANGED','本次回查与已留存的原导入终态不同，原结果保留',{latestImportResult:summary});
+      summary={...saved,successCount:saved.successCount??summary.successCount,failCount:saved.failCount??summary.failCount,
+        completedAt:saved.completedAt??summary.completedAt};
+    }
+    const recordSummary=()=>{
+      if(['VERIFYING','BOUND'].includes(r.state))
+        r=this.ledger.update(p.id,r.sequence,r.state,{importResult:summary},'ORIGINAL_IMPORT_OBSERVED');
+    };
+    if(JSON.stringify(summary)!==JSON.stringify(saved))recordSummary();
+    if(['failed','partial'].includes(summary.kind)&&!summary.failureFile&&task.failureFileAvailable&&adapter.purchaseImportFailureFile){
+      let failureFile,failureFileError;
+      try{
+        failureFile=await adapter.purchaseImportFailureFile({taskId:receipt.taskId,identity:p.identity,expectedCount:p.rows.length,
+          directory:path.join(this.state.root,'purchase-import-failures',sha256(p.id))});
+        captureOwnedFiles(this.state,p.basis.oid,failureFile,p.basis.warehouse);
+      }catch(error){failureFileError=errorInfo(error);}
+      summary={...summary,failureFile:failureFile??null,failureFileError:failureFileError??null};
+      recordSummary();
+    }
+    requireCompletedImport(summary);
     this.progress('查找原采购单号');
     const current=await read('查询原采购单号',()=>adapter.queryCreateOrders({identity:p.identity,buyerWarehouseCode:p.basis.store,name:p.target.displayName,from:r.baseline.from,to:businessDate(),dateBasis:'created',reuseExistingPage:true}));
     const candidates=current.rows.filter(v=>v.buyerMessage===p.note&&!r.baseline.orderIds.includes(v.supplyOrderId));

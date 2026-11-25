@@ -129,7 +129,8 @@ async function main(){
         case 'purchase.verify':
         case 'purchase.start':{
           if(runtime.closing||runtime.active||commands.list().some(r=>r.state==='QUEUED')||setup.busy||template.busy)fail('COMPONENT_BUSY','先完成或停止当前取数、模板或连接任务');
-          result=purchase.start(request.purchase_id,{submitOnly:request.action==='purchase.submit',verifyOnly:request.action==='purchase.verify',originalUnits:request.original_units});break;
+          result=purchase.start(request.purchase_id,{submitOnly:request.action==='purchase.submit',verifyOnly:request.action==='purchase.verify',
+            expectedTaskId:request.expected_task_id,originalUnits:request.original_units});break;
         }
         case 'purchase.status':result=purchase.status(request.purchase_id);break;
         case 'purchase.pause':result=purchase.pause(request.purchase_id);break;

@@ -59,8 +59,9 @@ class WorkflowUiTests(unittest.TestCase):
         self.host.work_repository = SimpleNamespace(path=self.root / 'not-used.db');self.host.closing = False
         import sqlite3
         with sqlite3.connect(self.host.work_repository.path) as db:
-            db.execute('CREATE TABLE normal_orders(oid TEXT PRIMARY KEY,day TEXT,store TEXT)')
-            db.executemany('INSERT INTO normal_orders VALUES(?,?,?)',[(str(n),head(n)['day'],str(n)) for n in range(1,101)])
+            db.execute("CREATE TABLE normal_orders(oid TEXT PRIMARY KEY,day TEXT,store TEXT,kind TEXT DEFAULT 'normal_model')")
+            db.executemany('INSERT INTO normal_orders(oid,day,store) VALUES(?,?,?)',
+                           [(str(n),head(n)['day'],str(n)) for n in range(1,101)])
         db.close()
         self.m = Manager(self.host, client_factory=Client);self.m.timer.stop();self.host.aoxiang_workflows = self.m
         self.warnings = []

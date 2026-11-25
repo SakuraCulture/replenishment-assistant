@@ -198,6 +198,7 @@ def _client_error(exc):
         'PREVIEW_CONTACT':'聚水潭预览的买家或收货资料与本次制表不一致',
         'PREVIEW_CHANGED':'平台预览已变化，请重新核对该仓单',
         'RESPONSE_UNKNOWN':'组件应答超时，请继续核对原任务',
+        'ORDER_IMPORT_RECEIPT_UNKNOWN':'聚水潭未返回可核实的本次导入回执，请仅按原线上单号核对',
         'BUSY':'聚水潭正在同步资料或处理原任务，请待当前动作安全结束',
         'SESSION_CONFLICT':'聚水潭本仓操作权待核，请待原操作释放后继续核对',
         'CLOSING':'聚水潭组件正在退出，请在组件就绪后核对原任务',
@@ -324,6 +325,10 @@ def _save(path, order, stage, cancel, *, check_plan=False, proof=None, reason=''
         result=store.update(db,order,stage,proof=proof,reason=reason)
         if stage in store.UNRESOLVED and stage!=order['stage']:
             _event(db,result,'聚水潭自动下单执行意图',{'stage':stage})
+        if proof and proof.get('import_receipt') and not (order.get('proof') or {}).get('import_receipt'):
+            _event(db,result,'聚水潭原导入回执',{'stage':store.display_stage(stage,proof['import_receipt']),
+                                               'receipt':proof['import_receipt'],
+                                               'file_sha':result['file_sha']})
         commit(db,cancel)
     return result
 
@@ -487,6 +492,31 @@ def _audit(path, browser, order, cancel):
     return _review(path,browser,intent,cancel)
 
 
+def _save_import_receipt(path, order, dispatched):
+    if dispatched is not None and not isinstance(dispatched,dict):
+        raise Check('聚水潭回执格式无法核实，请继续核对原线上单号')
+    receipt=(dispatched or {}).get('receipt')
+    if receipt is None:
+        return order
+    if not isinstance(receipt,dict) or dispatched.get('dispatched') is not True:
+        raise Check('聚水潭回执格式无法核实，请继续核对原线上单号')
+    success, failed = (receipt.get(k) for k in ('success_count','fail_count'))
+    at=receipt.get('observed_at')
+    text=receipt.get('text')
+    counts=re.fullmatch(r'成功条数\s*[：:]\s*(\d+)\s*[，,]\s*失败条数\s*[：:]\s*(\d+)',
+                        text if isinstance(text,str) and len(text)<=80 else '')
+    if (receipt.get('online')!=order['online'] or receipt.get('binding')!=order['proof']['binding']
+            or type(success) is not int or type(failed) is not int or (success,failed) not in ((1,0),(0,1))
+            or not counts or (int(counts[1]),int(counts[2]))!=(success,failed)
+            or not isinstance(at,str) or not re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z',at)):
+        raise Check('聚水潭回执的仓账号、店铺、线上单号或张数与原任务不符，请继续核对原单')
+    saved={k:receipt[k] for k in ('online','success_count','fail_count','text','observed_at')}
+    # The platform already answered. Commit this receipt even if the user
+    # stopped the work while the response was arriving.
+    return _save(path,order,'IMPORT_UNKNOWN',None,proof={**order['proof'],'import_receipt':saved},
+                 reason='' if failed else '已取得导入回执，等待核对原线上单号')
+
+
 def _process(path, browser, order, action, cancel, *, expected_binding=None):
     if order.get('historical'):
         if action in ('recover','recover_delete'):
@@ -503,6 +533,8 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
         if order['stage']!='IMPORTED':
             raise Check('请先核对原单，确认已导入且待普通审核')
         return _audit(path,browser,order,cancel)
+    if store.display_stage(order['stage'],(order['proof'] or {}).get('import_receipt'))=='IMPORT_FAILED':
+        return order
     if order['stage'] in store.RELEASED:
         raise Check('此任务已有导入动作，请继续核对原单')
     with closing(wr.read_connection(path)) as db:
@@ -520,7 +552,10 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
     if not _same_order(_preview_for_submit(order,fresh),order['proof']) or not fresh.get('permit'):
         raise Check('平台预览或目标店铺已变化，请重新预览')
     intent=_save(path,order,'IMPORT_UNKNOWN',cancel,check_plan=True,reason='已保存导入意图，等待原单回查')
-    browser.request('import',permit=fresh['permit'],online=order['online'],warehouse=order['payload']['head']['warehouse'])
+    dispatched=browser.request('import',permit=fresh['permit'],online=order['online'],warehouse=order['payload']['head']['warehouse'])
+    intent=_save_import_receipt(path,intent,dispatched)
+    if store.display_stage(intent['stage'],(intent['proof'] or {}).get('import_receipt'))=='IMPORT_FAILED':
+        return intent
     return _review(path,browser,intent,cancel,identity_only=True)
 
 
@@ -557,7 +592,11 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
                     and (current['stage']!='CANCELLED' or action in ('recover','recover_delete'))):
                 current=_save(path,current,current['stage'],cancel if action in ('recover','recover_delete') else None,reason=str(exc))
             result={**(current or order),'reason':str(exc)}
-        response={'online':online,'stage':result['stage'],'reason':result['reason'],'ok':ok and not result.get('lookup_missing'),
+        receipt=(result.get('proof') or {}).get('import_receipt')
+        stage=store.display_stage(result['stage'],receipt)
+        reason=store.display_reason(stage,result['reason'],receipt)
+        response={'online':online,'stage':stage,'reason':reason,
+                  'ok':ok and not result.get('lookup_missing') and stage!='IMPORT_FAILED',
                   'sequence':result['sequence'],'internal':result.get('internal')}
         if (prepare_payment and ok and not result.get('lookup_missing') and action in ('submit','recover') and result.get('internal')
                 and result['stage'] in ('IMPORTED','AUDITED','AUDIT_UNKNOWN','REVIEW')):

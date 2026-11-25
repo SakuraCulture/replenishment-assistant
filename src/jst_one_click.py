@@ -247,6 +247,7 @@ def _order(path, entry, gid, browser, progress, cancel):
                     return _result(head, '付款待重新核对', reason, online=online, internal=status['internal'])
     label = ('待人工确认付款' if payment.get('state') == 'READY' else
              '已查回原单，付款资料待核' if status.get('internal') and status['ok'] else
+             '导入失败' if status['stage']=='IMPORT_FAILED' else
              '导入结果待核' if status['stage'] in tasks.RELEASED else '下单待核')
     return _result(head, label, payment.get('message') or status['reason'],
                    online=online, internal=status.get('internal'))

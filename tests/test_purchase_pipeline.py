@@ -32,7 +32,7 @@ class Platform:
                 r.update(state='ACCEPTED',uploadAttempted=True,taskId='TASK-'+i)
             if self.cancel:self.cancel.set()
             return copy.deepcopy(r)
-        if action=='purchase.start':
+        if action in ('purchase.start','purchase.verify'):
             self.events.append(('observe',i));self.checks[i]=self.checks.get(i,0)+1
             if i in self.fail:r.update(state='NEEDS_REVIEW',error={'code':'IMPORT_TASK_PARTIAL','message':'合成部分失败'});self.inflight.discard(i)
             elif self.checks[i]<=(self.pending.get(i,0) if isinstance(self.pending,dict) else self.pending):r.update(state='ACCEPTED',error={'code':'TASK_PENDING','message':'合成处理中'})
@@ -122,14 +122,33 @@ class PipelineTests(unittest.TestCase):
         out=self.run_batch(job,client)
         self.assertEqual(out['state'],'COMPLETED_WITH_ERRORS');self.assertEqual([i['state'] for i in out['items']],['REVIEW','REVIEW','BOUND'])
         self.assertEqual(client.uploads,['p1','p2']);self.assertEqual(out['items'][0]['error']['code'],'SUBMISSION_UNKNOWN')
-    def test_pending_pass_yields_session_and_scheduler_can_choose_another_job(self):
+    def test_expired_wait_releases_session_and_can_finish_on_manual_read(self):
         job=self.batch(2);client=Platform(['p0','p1'],pending=999)
         out=self.run_batch(job,client,wait=0)
-        self.assertEqual(out['state'],'QUEUED');self.assertEqual([i['state'] for i in out['items']],['ACCEPTED','ACCEPTED'])
+        self.assertEqual(out['state'],'COMPLETED_WITH_ERRORS')
+        self.assertEqual([i['error']['code'] for i in out['items']],['IMPORT_TASK_WAIT_EXPIRED']*2)
         self.assertIsNone(self.store.next_queued())
         other=self.store.prepare([head(9)]);self.assertEqual(self.store.next_queued()['id'],other['id'])
-        client.pending=0;self.now+=1;out=self.run_batch(job,client)
+        client.pending=0;self.now+=1
+        self.store.queue_verification(job['id'],[i['item_id'] for i in out['items']])
+        with patch('aoxiang_upload_pipeline.original_units',return_value={}):
+            out=self.run_batch(job,client)
         self.assertEqual(out['state'],'COMPLETED');self.assertEqual(client.uploads,['p0','p1'])
+    def test_acceptance_poll_window_does_not_restart_when_the_app_reopens(self):
+        job=self.batch(1);client=Platform(['p0'],pending=999);cancel=threading.Event()
+        request=client.request
+        def stop_after_first_lookup(action,**values):
+            result=request(action,**values)
+            if action=='purchase.start':cancel.set()
+            return result
+        client.request=stop_after_first_lookup
+        with self.assertRaises(Cancelled):self.run_batch(job,client,cancel=cancel,wait=30)
+        self.store=Workflows(self.root,clock=lambda:self.now);self.store.recover()
+        client.request=request;self.now+=31
+        out=self.run_batch(job,client,wait=0)
+        self.assertEqual(out['state'],'COMPLETED_WITH_ERRORS')
+        self.assertEqual(out['items'][0]['error']['code'],'IMPORT_TASK_WAIT_EXPIRED')
+        self.assertEqual(client.uploads,['p0']);self.assertEqual(client.checks,{'p0':1})
     def test_pause_and_restart_keep_exact_accepted_task_without_upload_replay(self):
         job=self.batch(2);cancel=threading.Event();client=Platform(['p0','p1'],cancel=cancel)
         with self.assertRaises(Cancelled):self.run_batch(job,client,cancel=cancel)
@@ -150,14 +169,15 @@ class PipelineTests(unittest.TestCase):
             self.store.claim(job['id']);self.store.recover()
             client=Platform(['p'+str(i) for i in range(7)],pending=999)
             out=self.run_batch(job,client,wait=0)
-            self.assertEqual(client.maximum,7);self.assertEqual(out['state'],'QUEUED')
-            self.assertEqual([i['state'] for i in out['items']],['ACCEPTED']*7)
+            self.assertEqual(client.maximum,7);self.assertEqual(out['state'],'COMPLETED_WITH_ERRORS')
+            self.assertEqual([i['error']['code'] for i in out['items']],['IMPORT_TASK_WAIT_EXPIRED']*7)
             self.store.update(job['id'],state='COMPLETED')
     def test_first_long_pending_import_does_not_stop_remaining_submissions_or_binding(self):
         job=self.batch(8);client=Platform(['p'+str(n) for n in range(8)],pending={'p0':999})
         out=self.run_batch(job,client,wait=0)
         self.assertEqual(client.uploads,['p'+str(n) for n in range(8)])
-        self.assertEqual(out['state'],'QUEUED');self.assertEqual(out['items'][0]['state'],'ACCEPTED')
+        self.assertEqual(out['state'],'COMPLETED_WITH_ERRORS')
+        self.assertEqual(out['items'][0]['error']['code'],'IMPORT_TASK_WAIT_EXPIRED')
         self.assertEqual([i['state'] for i in out['items'][1:]],['BOUND']*7)
         self.assertEqual([i['result']['binding']['orderId'] for i in out['items'][1:]],['PO-p'+str(n) for n in range(1,8)])
     def test_legacy_interrupted_running_item_reads_original_receipt_instead_of_disappearing(self):

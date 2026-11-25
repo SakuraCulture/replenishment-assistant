@@ -43,7 +43,7 @@ process.on('message',async message=>{
     }else{
       if(!modules)throw Object.assign(new Error('尚未连接浏览器'),{code:'SETUP_REQUIRED'});
       if(['queryPurchase','preparePurchase','submitPurchase','purchaseTask','downloadPurchase','downloadPurchaseTemplate'].includes(method))await sourceUI('purchase');
-      else if(['preparePurchaseCreate','uploadPurchaseOnce','purchaseImportTask','queryCreateOrders'].includes(method))await sourceUI('purchase_create');
+      else if(['preparePurchaseCreate','uploadPurchaseOnce','purchaseImportTask','purchaseImportFailureFile','queryCreateOrders'].includes(method))await sourceUI('purchase_create');
       else if(['querySingle','warehouseOptions','prepareExport','submitOnce','findTask'].includes(method))await sourceUI('D13');
       if(method==='observeLogin'){ui=await modules.open('D13',null,{force:true,observeCurrent:true});result={facts:bridge.facts,identity:modules.identity};}
       else if(method==='recheckLogin'){ui=await modules.open(modules.source||'D13',params.expectedIdentity,{force:true});result={facts:bridge.facts,identity:modules.identity};}
@@ -62,6 +62,7 @@ process.on('message',async message=>{
       else if(method==='preparePurchaseCreate')result=await ui.preparePurchaseCreate(params);
       else if(method==='uploadPurchaseOnce')result=await uploadWithHostGuard(ui,params,id,hostGuards);
       else if(method==='purchaseImportTask')result=await ui.purchaseImportTask(params);
+      else if(method==='purchaseImportFailureFile')result=await ui.purchaseImportFailureFile(params);
       else if(method==='queryCreateOrders')result=await ui.queryCreateOrders(params);
       else if(method==='findTask'){
         const t=await ui.findTask(params.taskId);result={taskId:String(t.taskId),taskStatus:t.taskStatus,code:t.code||t.taskCode,successCount:t.successCount,failCount:t.failCount,fileUrl:t.fileUrl,startTime:t.startTime,doneTime:t.doneTime};

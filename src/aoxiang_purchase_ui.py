@@ -204,9 +204,9 @@ class PurchaseDialog(BindingActions, ComponentDialog):
                 if latest:text+='\n最新平台观察：'+latest['status']+' · '+latest.get('observedAt','未知时间')+('；作废后实收待处理' if latest.get('receipt_state')=='VOIDED_REVIEW' else '')
             elif r.get('taskId'):
                 text += '\n原导入任务号：' + r['taskId']
-            if r.get('error'):
-                from aoxiang_purchase_messages import explain
-                text += '\n' + explain(r['error'], r)
+            from aoxiang_purchase_messages import explain,import_failure
+            if r.get('error') or import_failure(r):
+                text += '\n' + explain(r.get('error'), r)
             self.note.setText(text)
         self.update_buttons()
 
@@ -334,7 +334,9 @@ class PurchaseDialog(BindingActions, ComponentDialog):
 
     def verify(self):
         self.began = time.monotonic()
-        self.run(lambda _: self.client.request('purchase.start', purchase_id=self.current['id']), self.purchase_status)
+        original = self.current
+        self.run(lambda _: self.client.request('purchase.start', purchase_id=original['id'],
+                                               expected_task_id=original['taskId']), self.purchase_status)
 
     def stop(self):
         if self.binding_active():

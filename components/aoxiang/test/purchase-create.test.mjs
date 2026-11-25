@@ -6,6 +6,7 @@ import path from 'node:path';
 import {StateStore} from '../src/state.mjs';
 import {PurchaseCreates,purchasePublic} from '../src/purchase-create-ledger.mjs';
 import {MachinePurchaseCreate} from '../src/machine-purchase-create.mjs';
+import {PurchaseCreateService} from '../src/purchase-create-service.mjs';
 import {IMPORT_CODE,validatePurchaseIntent,checkCreatedPurchase,decimal,sum,roundedPurchaseRow,PRICE_POLICY} from '../src/purchase-create-contract.mjs';
 import {sha256} from '../src/common.mjs';
 import {exportMigration} from '../src/migration.mjs';
@@ -107,6 +108,46 @@ test('crash before upload pauses; crash after boundary needs review and never re
   const c=new MachinePurchaseCreate({ledger:f.ledger,adapter:{upload(){assert.fail('must not retry');}}});
   assert.throws(()=>c.start(p.id),{code:'SUBMISSION_UNKNOWN'});
   f.ledger.accepted(receipt(p));await f.reopen();assert.equal(f.ledger.get(p.id).state,'ACCEPTED');
+});
+test('known terminal import facts, failed rows and the original receipt survive later stale results and restart',async t=>{
+  const f=await fixture(t),p=reserve(f),original=receipt(p);
+  let uploads=0,reads=0,downloads=0,lastTask={taskId:original.taskId,code:IMPORT_CODE,status:'PART_FAILED',
+    successCount:'1',failCount:'1',failureFileAvailable:true,doneTime:'2026-11-25T12:15:17Z'};
+  const controller=()=>{
+    const adapter={
+      purchaseImportTask:async({taskId})=>{assert.equal(taskId,original.taskId);reads++;return lastTask;},
+      purchaseImportFailureFile:async({taskId,directory})=>{
+        assert.equal(taskId,original.taskId);downloads++;
+        const file=path.join(directory,'synthetic-failed-rows.xlsx'),bytes=Buffer.from('controlled failure bytes');
+        await fs.mkdir(directory,{recursive:true});await fs.writeFile(file,bytes);
+        return {taskId,file,sha256:sha256(bytes),bytes:bytes.length};
+      },
+      queryCreateOrders:async()=>assert.fail('must not bind a partial or contradictory result'),
+    };
+    const service=new PurchaseCreateService({state:f.state,ledger:f.ledger});
+    service.context=async()=>({adapter});
+    return new MachinePurchaseCreate({ledger:f.ledger,adapter:{prepare:async()=>({orderIds:[]}),
+      upload:async()=>{uploads++;return original;},observe:service.observe.bind(service)}});
+  };
+  let c=controller();
+  assert.throws(()=>c.start(p.id,{expectedTaskId:original.taskId}),{code:'PURCHASE_RECEIPT_CONFLICT'});
+  c.start(p.id);await c.pending;
+  const first=c.status(p.id),known=first.importResult;
+  assert.equal(first.error.code,'IMPORT_TASK_PARTIAL');
+  assert.equal(known.successCount,1);assert.equal(known.failCount,1);assert.equal(first.confirmedImportRequests,1);
+  assert.equal(sha256(await fs.readFile(known.failureFile.file)),known.failureFile.sha256);
+  await f.reopen();c=controller();
+  assert.deepEqual(c.status(p.id).importResult,known);
+  c.start(p.id,{submitOnly:true});assert.equal(c.pending,null);
+  lastTask={...lastTask,status:'RUNNING',doneTime:null};
+  c.start(p.id,{expectedTaskId:original.taskId});await c.pending;
+  assert.equal(c.status(p.id).error.code,'IMPORT_TASK_RESULT_CHANGED');
+  assert.deepEqual(c.status(p.id).importResult,known);
+  lastTask={...lastTask,status:'FINISHED',successCount:'2',failCount:'0'};
+  c.start(p.id,{expectedTaskId:original.taskId});await c.pending;
+  assert.equal(c.status(p.id).error.code,'IMPORT_TASK_RESULT_CHANGED');
+  assert.deepEqual(c.status(p.id).importResult,known);
+  assert.deepEqual([uploads,reads,downloads],[1,3,1]);
 });
 test('pause during preparation never uploads; retry uses original intent safely',async t=>{
   const f=await fixture(t),p=reserve(f),d=deferred();let uploads=0;

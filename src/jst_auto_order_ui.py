@@ -289,7 +289,8 @@ class Orders(QDialog):
                     'MATCHES_PAYMENT':'沿用已确认付款'}
             values=(r['name'] or r['store'],r['warehouse'],r['number'],r['shop'],r['sku_count'],r['quantity'],
                     r['amount'],r['preview_amount'],r['online'],r['internal'],STAGES[r['stage']],
-                    labels.get((state or {}).get('state'),'尚未拉取'),(state or {}).get('message') or r['reason'])
+                    labels.get((state or {}).get('state'),'尚未拉取'),
+                    r['reason'] if r['stage']=='IMPORT_FAILED' else (state or {}).get('message') or r['reason'])
             for j,value in enumerate(values,1):
                 cell=QTableWidgetItem(str(value if value is not None else '—'))
                 cell.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsSelectable)

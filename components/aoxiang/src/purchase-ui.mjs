@@ -146,6 +146,9 @@ export class PurchaseUI extends AoxiangUI{
   }
   async downloadPurchase({taskId,sourceId,query,directory,maxBytes=67108864,timeoutMs=600000}){
     const task=await this.purchaseTask(taskId,sourceId,query);if(task.taskStatus!=='FINISHED'||countValue(task.failCount)!==0)fail('PURCHASE_TASK_PENDING','采购原任务未成功完成');
+    return this.downloadTaskWorkbook(task,{taskId,directory,maxBytes,timeoutMs});
+  }
+  async downloadTaskWorkbook(task,{taskId,directory,maxBytes,timeoutMs}){
     // Native legacy GEI download: task-list fileUrl is a filename, not an OSS
     // URL. Use only the observed exact known-task GET with browser-context auth.
     if(task.downloadFileUrlType!=='default'||task.fileUrl!==taskId+'.xlsx'||task.url)fail('PURCHASE_DOWNLOAD_CHANGED','采购原生下载机制已变化，需要复核后兼容');

@@ -107,6 +107,7 @@ export class PurchaseCreates{
     });
   }
   event(r,kind){this.db.prepare('INSERT INTO purchase_create_events VALUES(?,?,?)').run(r.id,r.sequence,JSON.stringify({id:r.id,sequence:r.sequence,state:r.state,at:r.updatedAt,kind,error:r.error,taskId:r.receipt?.taskId||null,orderId:r.binding?.orderId||null,
+    ...(kind==='ORIGINAL_IMPORT_OBSERVED'?{importResult:r.importResult}:{}),
     ...(r.rebuildOperationId?{rebuildOperationId:r.rebuildOperationId,rebuildOf:r.rebuildOf,successorId:r.successorId,reason:r.rebuildReason}:{}),
     ...(r.bindingProposal?{proposalId:r.bindingProposal.id,proposalState:r.bindingProposal.state,proofSha256:r.bindingProposal.manifest?.sha256||null,proposalError:r.bindingProposal.error}:{} )}));}
   update(id,sequence,next,changes={},kind=next){
@@ -119,7 +120,9 @@ export class PurchaseCreates{
         // late receipts immediately before recording this request's dispatch.
         for(const previous of this.previousAttempts(old.intent))requireReplaceable(this.db,previous);
       }
-      if(Object.keys(changes).some(k=>!['baseline','uploadAttempted','receipt','binding','error','evidence','additionalTaskIds','uploadWarning','verification'].includes(k)))fail('PURCHASE_STATE_IMMUTABLE','不能修改采购冻结依据');
+      if(Object.keys(changes).some(k=>!['baseline','uploadAttempted','receipt','binding','error','evidence','additionalTaskIds','uploadWarning','verification','importResult'].includes(k)))fail('PURCHASE_STATE_IMMUTABLE','不能修改采购冻结依据');
+      if(changes.importResult&&(!old.receipt||changes.importResult.taskId!==old.receipt.taskId||changes.importResult.code!==old.receipt.code))
+        fail('IMPORT_TASK_SCOPE','导入结果与原受理回执不符');
       if(old.uploadAttempted&&changes.uploadAttempted===false)fail('PURCHASE_STATE_IMMUTABLE','已进入上传边界，不能清除提交事实');
       if(old.receipt&&changes.receipt?.taskId&&old.receipt.taskId!==changes.receipt.taskId)fail('PURCHASE_RECEIPT_CONFLICT','原导入任务号不能覆盖');
       const r={...old,...structuredClone(changes),state:next,sequence:sequence+1,updatedAt:now()};
@@ -211,6 +214,8 @@ export function purchasePublic(r){
   return {id:r.id,state:r.state,sequence:r.sequence,createdAt:r.createdAt,updatedAt:r.updatedAt,
     basis:r.intent.basis,target:r.intent.target,supplierCode:r.intent.supplierCode,rows:r.intent.rows.length,totalQuantity:r.intent.totalQuantity,totalAmount:r.intent.totalAmount,
     uploadAttempted:r.uploadAttempted,taskId:r.receipt?.taskId||null,binding:r.binding,candidateOrderId:r.verification?.orderId||null,error:r.error,uploadWarning:r.uploadWarning||null,additionalTaskIds:r.additionalTaskIds||[],
+    confirmedImportRequests:r.receipt?.importRequests??(r.uploadAttempted?null:0),
+    ...(r.importResult?{importResult:r.importResult}:{}),
     ...(r.rebuildOperationId?{rebuildOperationId:r.rebuildOperationId,rebuildOf:r.rebuildOf,rebuildAlso:r.rebuildAlso,successorId:r.successorId,previousOrderId:r.previousOrderId,previousTaskId:r.previousTaskId}:{}),
     ...(r.bindingProposal?{bindingProposal:r.bindingProposal}:{})};
 }

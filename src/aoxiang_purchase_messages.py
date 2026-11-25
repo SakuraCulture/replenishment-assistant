@@ -6,7 +6,25 @@ PAYMENT_PREPARATION_CODES = frozenset({'PAYMENT_MISSING', 'PAYMENT_PENDING', 'PA
 
 def observation(record):
     return {k: record.get(k) for k in ('state', 'taskId', 'uploadAttempted', 'additionalTaskIds')} | {
-        'orderId': (record.get('binding') or {}).get('orderId'), 'candidateOrderId': record.get('candidateOrderId')} | ({'uploadWarning': record['uploadWarning']} if record.get('uploadWarning') else {})
+        'orderId': (record.get('binding') or {}).get('orderId'), 'candidateOrderId': record.get('candidateOrderId'),
+        'confirmedImportRequests': record.get('confirmedImportRequests')} | {
+        k: record[k] for k in ('uploadWarning', 'importResult') if record.get(k)}
+
+
+def import_failure(record):
+    record = record or {}
+    result = record.get('importResult') or {}
+    if result.get('taskId') and result['taskId'] == record.get('taskId') and result.get('kind') in ('failed','partial'):
+        return result
+    return None
+
+
+def import_failure_message(result):
+    label = '导入失败' if result['kind']=='failed' else '部分成功'
+    success, failure = (result.get(k) for k in ('successCount','failCount'))
+    counts = f"成功 {success if success is not None else '未留存'}、失败 {failure if failure is not None else '未留存'}"
+    detail = '失败原件已留存。' if result.get('failureFile') else '失败原件暂未取得，可在翱象原任务查看。'
+    return f'翱象原任务{label}（{counts}）。{detail}原任务号 {result["taskId"]}。'
 
 
 def waiting(item, kind):
@@ -31,6 +49,7 @@ def explain(error, known=None):
         'PURCHASE_STORE_NOT_FOUND': '原任务仍保留；采购页暂未定位到指定门店，尚未完成查单。请核对门店目录的编码、名称及页面加载后继续核对采购结果，不要重新上传。',
         'IMPORT_SIDE_EFFECT_BLOCKED': '上传保护已阻断额外请求。已有唯一受理回执时只核对原任务和采购明细；尚无回执时保留待核，不能重新上传。具体被拦请求见技术详情。',
         'TASK_PENDING': '翱象已受理，采购单或核对文件仍在处理中。稍后点击“继续核对采购结果”，沿原任务检查完成状态。',
+        'IMPORT_TASK_WAIT_EXPIRED': '自动核对窗口已结束，原受理号保留。点击“继续核对采购结果”可查询同一任务。',
         'TASK_NOT_FOUND': '本次暂未查到原平台任务，已有任务号仍保留。请稍后继续核对采购结果；不要重新导入。',
         'IMPORT_TASK_FAILED': '翱象报告原导入任务未成功，请继续核实原任务及采购单结果。',
         'IMPORT_TASK_PARTIAL': '原导入任务未全部成功，请沿原任务核对成功、失败商品及已有采购单。',
@@ -46,6 +65,11 @@ def explain(error, known=None):
         # Keep the order/stage/version explanation supplied by local validation.
         return error.get('message') or messages[code]
     details = error.get('details') or {}
+    if result := import_failure(known):
+        message=import_failure_message(result)
+        if code and code != result.get('errorCode'):
+            message+=' 最近一次核对：'+explain(error, {k: v for k,v in known.items() if k!='importResult'})
+        return message
     if details.get('stage') and code in ('TASK_NOT_FOUND','PURCHASE_VERIFY_TIMEOUT'):
         return error.get('message') or details['stage']+'未完成，保留原任务。'
     source = details.get('sourceId')
@@ -68,6 +92,8 @@ def explain(error, known=None):
 
 def item_message(item, kind):
     if item.get('rebuild_to'):return '旧任务已转入重建批次 '+item['rebuild_to']+'；旧平台单未撤销，原记录保留。'
+    if kind=='upload' and item['state']!='BOUND' and import_failure(item.get('purchase_observation')):
+        return explain(item.get('error'),item['purchase_observation'])
     if item['state']=='ACCEPTED':return '平台已受理并正在处理；等待时可提交其他订单，不重复上传本单。'
     if item['state']=='VOIDED':return '平台已作废，常规同步与最终实收待办已停止；原签发、付款和平台关联保留，未记收货0。'
     if kind != 'upload':

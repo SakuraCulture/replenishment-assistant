@@ -143,13 +143,13 @@ console.log(JSON.stringify(new MachinePurchaseCreate({ledger:{get:()=>r}}).statu
         self.assertEqual(after['items'][0]['package'],original[0]['package']);self.assertEqual(c.uploads,0)
         self.assertEqual(after['items'][0]['purchase_observation']['orderId'],'PO-0')
 
-    def test_pending_exhausts_bounded_wait_and_shows_waiting_not_failure(self):
+    def test_pending_exhausts_bounded_wait_and_offers_original_lookup(self):
         job=self.upload_batch(1);c=Client(pending=100);c.add('0')
         after=self.runner(c,verification_wait=0).run(job['id'])
         self.assertEqual(c.checks['0'],1);self.assertEqual(c.uploads,0)
-        self.assertEqual(counts(after)['waiting'],1);self.assertEqual(counts(after)['review'],0)
-        self.assertIn('已受理待核对1单',summary(after));self.assertNotIn('失败',summary(after))
-        self.assertIn('稍后',item_message(after['items'][0],'upload'))
+        self.assertEqual(counts(after)['waiting'],0);self.assertEqual(counts(after)['review'],1)
+        self.assertIn('待处理1单',summary(after));self.assertNotIn('失败',summary(after))
+        self.assertIn('自动核对窗口已结束',item_message(after['items'][0],'upload'))
         self.store.retry_items(job['id'],[0],after['sequence']);c.pending=0
         self.assertEqual(self.runner(c).run(job['id'])['state'],'COMPLETED');self.assertEqual(c.uploads,0)
 
