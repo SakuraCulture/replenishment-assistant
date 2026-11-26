@@ -26,6 +26,7 @@ if version['version'] in {'0.53.7','0.53.8'}:
 if version['version']=='0.53.8':
     shutil.copy2(root/'docs/0.53.8自然转付款与采购准备优化.md',dest/'docs/0.53.8自然转付款与采购准备优化.md')
 shutil.copy2(root/'使用说明.txt',dest/'使用说明.txt')
+(dest/'启动检查.cmd').write_text((root/'tools/windows_startup_check.cmd').read_text('utf-8'), encoding='utf-8', newline='\r\n')
 if version['version']=='0.54.16':
     (dest/'docs').mkdir(exist_ok=True)
     source=root/'docs/0.54.16聚水潭审核后付款与整单制表.md'

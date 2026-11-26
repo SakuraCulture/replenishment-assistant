@@ -1,0 +1,37 @@
+@echo off
+setlocal DisableDelayedExpansion
+chcp 65001 >nul
+title 补货助手启动检查
+set "BH_CHECK_DIR=%~dp0"
+set "BH_CHECK_TARGET=%~f1"
+set "BH_CHECK_REPORT=%TEMP%\补货助手_启动检查_%RANDOM%_%RANDOM%.txt"
+>"%BH_CHECK_REPORT%" echo 补货助手 Windows 启动检查
+>>"%BH_CHECK_REPORT%" ver
+echo 正在核对解压文件并启动一次补货助手。检查结果只保存在这台电脑。
+powershell.exe -NoLogo -NoProfile -STA -Command ^
+  "$ErrorActionPreference='Stop'; $report=$env:BH_CHECK_REPORT; $utf8=New-Object Text.UTF8Encoding($false);" ^
+  "function Note($line) { [IO.File]::AppendAllText($report, [string]$line+[Environment]::NewLine, $utf8) }" ^
+  "function Workbenches { @(Get-Process -Name '补货助手' -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq (Get-Process -Id $PID).SessionId -and $_.MainWindowTitle -like '补货助手*多店工作台' } | Select-Object -ExpandProperty Id) }" ^
+  "try { Note ('检查时间 '+[DateTimeOffset]::Now.ToString('o')); $os=Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'; Note ('Windows build '+$os.CurrentBuildNumber+'.'+$os.UBR+' '+$os.DisplayVersion+'  CPU '+$env:PROCESSOR_ARCHITECTURE+'  64位系统 '+[Environment]::Is64BitOperatingSystem);" ^
+  "$file=$env:BH_CHECK_TARGET; if (-not $file) { foreach ($relative in '补货助手.exe','补货助手\补货助手.exe') { $candidate=Join-Path $env:BH_CHECK_DIR $relative; if ([IO.File]::Exists($candidate)) { $file=$candidate; break } } }" ^
+  "if (-not $file) { Add-Type -AssemblyName System.Windows.Forms; $dialog=New-Object Windows.Forms.OpenFileDialog; $dialog.Title='选择业务机上已解压的 补货助手.exe'; $dialog.Filter='补货助手.exe|补货助手.exe'; try { if($dialog.ShowDialog() -eq 'OK') { $file=$dialog.FileName } } finally { $dialog.Dispose() } }" ^
+  "if (-not $file) { Note '未选中 EXE，仅收集最近的启动记录'; exit 0 }; $item=Get-Item -LiteralPath $file; if($item.Name -ne '补货助手.exe') { throw '请选择文件名为 补货助手.exe 的程序' }; $dir=$item.DirectoryName; Note ('EXE 文件名 '+$item.Name+'，大小 '+$item.Length); try { $sha=[Security.Cryptography.SHA256]::Create(); $stream=$item.OpenRead(); try { Note ('EXE SHA256 '+[BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-','')) } finally { $stream.Dispose(); $sha.Dispose() } } catch { Note 'EXE 指纹读取失败' };" ^
+  "$meta=Join-Path $dir '_internal\build_info.json'; if([IO.File]::Exists($meta)) { try { $v=Get-Content -Raw -Encoding UTF8 -LiteralPath $meta | ConvertFrom-Json; Note ('交付版本 '+$v.version+' '+$v.build_id) } catch { Note '构建信息无法读取' } };" ^
+  "$missing=@(); foreach($component in 'python312.dll','python3.dll','base_library.zip','VCRUNTIME140.dll','shiboken6\Shiboken.pyd','shiboken6\shiboken6.abi3.dll','shiboken6\MSVCP140.dll','PySide6\QtCore.pyd','PySide6\QtGui.pyd','PySide6\QtWidgets.pyd','PySide6\Qt6Core.dll','PySide6\Qt6Gui.dll','PySide6\Qt6Widgets.dll','PySide6\Qt6Network.dll','PySide6\plugins\platforms\qwindows.dll') { if (-not [IO.File]::Exists((Join-Path $dir ('_internal\'+$component)))) { $missing+=$component } }; if ($missing.Count) { Note ('缺少启动文件 '+($missing -join ', ')) } else { Note '启动必需文件抽查齐全' };" ^
+  "$before=@(Workbenches); Note ('启动前工作台 PID：'+($before -join ', ')); $now=Get-Date; $p=Start-Process -FilePath $item.FullName -WorkingDirectory $dir -PassThru; Note ('本次启动 PID：'+$p.Id); $until=$now.AddSeconds(35);" ^
+  "do { $p.Refresh(); if($p.HasExited -or $p.MainWindowTitle -like '补货助手*多店工作台' -or $p.MainWindowTitle -match '启动未完成|资料目录未打开|已在运行|Failed to') { break }; Start-Sleep -Milliseconds 250 } while((Get-Date) -lt $until);" ^
+  "if($p.HasExited) { Note ('本次进程已退出，退出码 '+$p.ExitCode+' (0x'+$p.ExitCode.ToString('X8')+')') } elseif($p.MainWindowTitle -like '补货助手*多店工作台') { Note '本次新进程已显示工作台' } elseif($p.MainWindowHandle -ne 0) { Note ('进程显示提示窗口。可响应：'+$p.Responding) } else { Note '35 秒后进程仍在运行，未发现工作台或提示窗口' }; Note ('检查后工作台 PID：'+(@(Workbenches) -join ', '))" ^
+  "} catch { $ex=$_.Exception.GetBaseException(); Note ('启动检查错误 '+$ex.GetType().Name+' HRESULT=0x'+$ex.HResult.ToString('X8')); if($ex -is [Management.Automation.CommandNotFoundException]) { Note ('未能执行的 Windows 命令 '+$ex.CommandName) }; if($ex -is [ComponentModel.Win32Exception]) { Note ('Windows 启动错误 '+$ex.NativeErrorCode+' '+$ex.Message) }; exit 1 }"
+if errorlevel 1 >>"%BH_CHECK_REPORT%" echo Windows 未能完成启动步骤，继续读取已有记录。
+powershell.exe -NoLogo -NoProfile -NonInteractive -Command ^
+  "$report=$env:BH_CHECK_REPORT; $utf8=New-Object Text.UTF8Encoding($false); function Note($line) { [IO.File]::AppendAllText($report, [string]$line+[Environment]::NewLine, $utf8) };" ^
+  "$control=Join-Path $env:LOCALAPPDATA 'YoutuanTools\data-location'; $base=Join-Path $env:LOCALAPPDATA 'YoutuanTools\补货助手'; $location=Join-Path $control 'location.json'; if(Test-Path -LiteralPath $location) { try { $saved=Get-Content -Raw -Encoding UTF8 -LiteralPath $location -ErrorAction Stop | ConvertFrom-Json; $base=$saved.active_base } catch { Note '资料位置配置读取失败' } }; $data=Join-Path $base 'settings'; if($env:REPLENISHMENT_DATA_DIR) { $data=$env:REPLENISHMENT_DATA_DIR }; Note ('配置的资料目录存在：'+[IO.Directory]::Exists($data));" ^
+  "$logs=@((Join-Path $control 'diagnostics\application.jsonl'),(Join-Path (Split-Path -Parent $data) ('.'+(Split-Path -Leaf $data)+'.diagnostics\application.jsonl'))); $since=[DateTimeOffset]::Now.AddDays(-1); $count=0;" ^
+  "$logs+=@((Join-Path $control 'diagnostics\last-startup-failure.json'),(Join-Path $env:TEMP 'YoutuanTools\startup\last-startup-failure.json')); foreach($log in $logs) { if(-not [IO.File]::Exists($log)) { continue }; $events=foreach($s in (Get-Content -LiteralPath $log -Tail 180 -Encoding UTF8 -ErrorAction SilentlyContinue)) { try { $v=$s | ConvertFrom-Json -ErrorAction Stop; if([DateTimeOffset]::Parse($v.at) -ge $since -and $v.event -in 'STARTED','DIAGNOSTIC_ROUTE','EXCEPTION','PROCESS_RESTART_BLOCKED','WORKBENCH_READY','EXISTING_WINDOW_ACTIVATED','STARTUP_FAILED') { $v } } catch {} }; foreach($v in @($events | Select-Object -Last 14)) { $where=''; $trace=[regex]::Matches([string]$v.traceback,'File [^\r\n]*?([A-Za-z_0-9]+\.py).{1,4}line (\d+)'); if($trace.Count) { $frames=@($trace | ForEach-Object { $_.Groups[1].Value+':'+$_.Groups[2].Value }); $where=' '+($frames -join ' > ') }; $detail=''; if($v.message -match 'file is not a database|database disk image is malformed|database is locked|unable to open database file|no such (table|column): [\w.]+|no module named .[A-Za-z0-9_.]+|WinError \d+') { $detail=' '+$Matches[0] }; Note ($v.at+' PID '+$v.pid+' '+$v.event+' '+$v.type+$where+$detail); $count++ } }; if(-not $count) { Note '未找到最近一天的应用启动记录' };" ^
+  "$channels=@(@{LogName='Application'; Id=@(1000,1001,33,59)},@{LogName='Microsoft-Windows-CodeIntegrity/Operational'; Id=@(3033,3077)},@{LogName='Microsoft-Windows-AppLocker/EXE and DLL'; Id=@(8004)}); $hit=0; foreach($filter in $channels) { $filter.StartTime=$since.LocalDateTime; $entries=Get-WinEvent -FilterHashtable $filter -MaxEvents 160 -ErrorAction SilentlyContinue; foreach($entry in $entries) { $xml=[xml]$entry.ToXml(); if($xml.InnerText -notmatch '补货助手\.exe' -and $entry.Message -notmatch '补货助手\.exe') { continue }; $fields=@($xml.Event.EventData.Data | Where-Object { $_.Name -in 'ModuleName','ExceptionCode','Status' } | ForEach-Object { $_.'#text' }); Note ($entry.TimeCreated.ToString('s')+' '+$entry.ProviderName+' EventID='+$entry.Id+' '+($fields -join ' ')); $hit++ } }; if(-not $hit) { Note '已能读取的事件中未找到匹配的 Windows 故障或拦截记录' }"
+if errorlevel 1 >>"%BH_CHECK_REPORT%" echo 部分 Windows 诊断来源未能读取。
+echo.
+echo 启动检查已结束，报告位置
+echo %BH_CHECK_REPORT%
+if /I not "%~2"=="--no-view" start "" notepad.exe "%BH_CHECK_REPORT%"
+endlocal

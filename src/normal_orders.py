@@ -110,7 +110,7 @@ def revision_source(db, day, store, revision=None):
 
 
 class Repository:
-    def __init__(self, work):
+    def __init__(self, work, *, backup_progress=lambda _: None):
         self.work=work
         with closing(work.connect()) as db:
             with db:
@@ -119,7 +119,7 @@ class Repository:
                 prior_index=db.execute("SELECT sql FROM sqlite_master WHERE name='normal_orders_standard_key'").fetchone()
                 if not exists or has_legacy_order_key(db) or prior_index and "'opening'" not in prior_index[0]:
                     from schema_backup import backup
-                    backup(work.path,'before-normal-orders.')
+                    backup(work.path,'before-normal-orders.',backup_progress)
                 order_header_schema(db)
             with db:db.executescript('''
                 CREATE TABLE IF NOT EXISTS normal_revisions(oid TEXT NOT NULL,revision INTEGER NOT NULL,digest TEXT NOT NULL,saved TEXT NOT NULL,payload BLOB NOT NULL,PRIMARY KEY(oid,revision));

@@ -31,7 +31,9 @@ def _main():
     primary=SingleInstance(scope(sys.argv,logs),parent=app,data_root=logs)
     runtime.primary=primary
     try:
-        if not primary.acquire():return 0
+        if not primary.acquire():
+            runtime.emit('EXISTING_WINDOW_ACTIVATED')
+            return 0
     except Exception as exc:
         if supervised:
             runtime.exception(*sys.exc_info(),event='PROCESS_RESTART_BLOCKED');return 1
@@ -88,6 +90,8 @@ def _main():
     from PySide6.QtCore import QTimer
     QTimer.singleShot(0,win,lambda:notice(win,logs))
     smokes.start_window_smokes(app,win,sys.argv)
+    runtime.workbench_ready=True
+    runtime.emit('WORKBENCH_READY')
     code=app.exec()
     if code==0:runtime.expect_exit()
     from application_exit import finish
@@ -96,6 +100,9 @@ def _main():
 
 def main():
     from application_runtime import current
+    from application_recovery import TICKET_ENV
+    interactive_launch = len(sys.argv) == 1 and not os.environ.get(TICKET_ENV)
+    startup_error = None
     code=1;runtime=None
     try:code=_main()
     except BaseException as exc:
@@ -116,13 +123,21 @@ def main():
                         data_relocation.record(runtime.storage_request,'FAILED','WAITING_EXIT','安全退出或搬迁未完成，原资料与已有副本保留',error={'message':str(exc),'traceback':__import__('traceback').format_exc()})
                     runtime.location_result=data_relocation.status()
                 except BaseException:runtime.exception(*sys.exc_info(),event='STORAGE_HANDOFF_LOG_EXCEPTION')
-        else:sys.__excepthook__(*sys.exc_info())
+        if interactive_launch and not getattr(runtime, 'workbench_ready', False):
+            from startup_failure import save_failure
+            startup_error = (exc, save_failure(exc))
+        elif runtime is None:sys.__excepthook__(*sys.exc_info())
         code=1
     finally:
         runtime=current()
-        if runtime:
-            from application_exit import release
-            release(runtime)
+        try:
+            if runtime:
+                from application_exit import release
+                release(runtime)
+        finally:
+            if startup_error is not None:
+                from startup_failure import show_failure
+                show_failure(*startup_error)
     if runtime and getattr(runtime,'location_result',None):
         from data_location_ui import reopen
         reopen(runtime)
