@@ -29,6 +29,7 @@ class ResultsPage(QWidget):
         self.order_kind = order_kind
         self.data=None;self.records=[];self.count=0;self.worker=None;self.reading=False;self.closing=False;self.reviewing=False
         self.batch_id=None;self.close_pending=None;self.last_plan=None;self.remaining=[];self.chosen=set();self.building=False;self.payment_notice=''
+        self.redo_targets=set()
         self.reader=HistoryReader(self.path,host.repository.folder/'jst_result_index.sqlite3',self)
         v=QVBoxLayout(self);v.setContentsMargins(0,0,0,0)
         v.addWidget(label('聚水潭导入单 · 看分配结果，随时导出','section'))
@@ -101,13 +102,16 @@ class ResultsPage(QWidget):
         for b in (self.payment_all_btn,self.payment_selected_btn):b.setToolTip('直接使用已保存生成单，无需导出再导入；核对实际已付款后才保存。')
         self.selection.setText(f'已勾选 {len(self.chosen)} 单，可导出 {m} 份')
         for b in (self.day,self.end,self.refresh_btn,self.scope_btn,self.folder_btn,self.prepare_btn,self.tools_btn,self.batch_btn,self.all_batches_btn):b.setEnabled(not busy and not self.closing)
+        if self.order_kind!='material':self.prepare_btn.setEnabled(ready and not self.reading and not busy and chosen>0)
         self.day.setEnabled(not busy and not self.batch_id);self.end.setEnabled(not busy and not self.batch_id)
         correction_rows=[r for r in self.records if service.key(r['head']) in self.chosen and r.get('batch_id') and (r.get('gid') or r.get('original_zero'))]
         self.continue_btn.setEnabled(ready and not busy and bool(self.batch_id) and bool(self.data.get('batch_pending')))
         self.recovery_btn.setEnabled(ready and not busy and bool(self.batch_id))
-        self.reallocate_btn.setText(f'按原批重新分配勾选单（{len(correction_rows)}单）')
-        self.reallocate_btn.setEnabled(ready and not busy and bool(correction_rows))
-        self.reallocate_btn.setToolTip('沿用原批库存，替换所选可更正仓单。旧付款依据因回传变化失效时，分配后按新结果重新核对付款。多个原批分别处理。')
+        count=len(correction_rows) if self.order_kind=='material' else chosen
+        self.reallocate_btn.setText(f'重新分配勾选单（{count}单）')
+        self.reallocate_btn.setEnabled(ready and not self.reading and not busy and count>0)
+        self.reallocate_btn.setToolTip('所选仓单按最新聚水潭库存重新分配。保存后作废旧分配的下游资料。' if self.order_kind!='material'
+                                       else '沿用原批库存更正所选物料仓单。')
         self.continue_btn.setToolTip('先选择分配批次；继续使用其冻结库存和原顺序')
         if not n:self.all_btn.setToolTip('当前筛选没有有效生成单；请准备批次或核对待处理原因')
         self.stop_btn.setEnabled(self.worker is not None and not self.worker.cancel.is_set());self.retry_btn.setEnabled(bool(self.remaining) and not busy and not self.closing)
@@ -133,12 +137,13 @@ class ResultsPage(QWidget):
         c=data['counts']
         if changed:self.render()
         if self.last_plan and new-old:self.status.setText(f'新增 {len(new-old)} 份可导出结果；不会加入已开始的导出，可再次导出。')
-        elif self.last_plan is None:self.status.setText('查询完成；业务进度见各单状态。可重复导出有效结果，不重新分配。' if c['ready'] else '旧分配已失效，不能直接导出；请勾选要更正的订单，点击“按原批重新分配勾选单”。旧付款保留，新分配后需重新核对付款。' if any((r.get('gid') or r.get('original_zero')) and r['state']=='stale' for r in self.records) else '当前范围没有可导出结果：尚未回传请先确认回传；已回传请准备分配批次，或选择原批继续。')
+        elif self.last_plan is None:self.status.setText('查询完成；业务进度见各单状态。可重复导出有效结果，不重新分配。' if c['ready'] else '旧分配已失效。请勾选要更正的仓单，再点「重新分配勾选单」。' if any((r.get('gid') or r.get('original_zero')) and r['state']=='stale' for r in self.records) else '当前范围没有可导出结果：尚未回传请先确认回传；已回传请准备分配批次，或选择原批继续。')
         if self.payment_notice:self.status.setText(self.payment_notice)
         if any(r.get('withdrawn') and service.key(r['head']) in self.chosen for r in self.records):
             self.status.setText('已勾选撤销完成的仓单。点「准备新分配批次」，按仓刷新资料，再预览并确认生成。')
-        if getattr(self,'redo_target',None) in self.chosen:
-            self.status.setText('已返回重做仓单。点「准备新分配批次」按仓刷新资料；改量请先在订单跟踪更正本仓回传。')
+        selected_redo = len(self.redo_targets & self.chosen)
+        if selected_redo:
+            self.status.setText(f'已返回 {selected_redo} 张重做仓单。需要改量时，先更正本仓回传，再按最新库存重新分配。')
         self.progress.hide();self.controls()
         if getattr(self,'auto_payment_scope',None):QTimer.singleShot(0,self.prepare_payment_automatically)
 
@@ -322,7 +327,9 @@ class ResultsPage(QWidget):
             self.refresh();self.status.setText(r['message'])
         except Exception as exc:warn(self,exc)
     def continue_batch(self):self.open_existing(False)
-    def reallocate(self):self.open_existing(True)
+    def reallocate(self):
+        if self.order_kind=='material':self.open_existing(True)
+        else:self.prepare()
     def open_existing(self,correction):
         if self.worker or self.reviewing:return
         if not correction and not self.batch_id:return
@@ -356,8 +363,22 @@ class ResultsPage(QWidget):
         except Exception as exc:self.status.setText(str(exc))
         finally:self.reviewing=False;self.controls();self.refresh()
     def prepare(self):
-        if not self.data or self.worker:return
+        if not self.data or self.worker or self.reviewing:return
         import jst_ui
+        if self.order_kind!='material':
+            heads=[r['head'] for r in self.visible_records() if service.key(r['head']) in self.chosen]
+            if not heads:return
+            self.reviewing=True;self.controls()
+            try:
+                receipt=jst_ui.generate(self,self.host,heads,fresh=True)
+                if receipt and (receipt['generated'] or receipt['zero']):
+                    self.batch_id=None
+                    self.last_plan=None
+                    self.remaining=[]
+            finally:
+                self.reviewing=False
+                self.refresh()
+            return
         rows=[r for r in self.visible_records() if (not self.chosen or service.key(r['head']) in self.chosen) and not r['gid'] and not r.get('original_zero') and not r['locked']]
         if not rows:
             selected=[r for r in self.visible_records() if service.key(r['head']) in self.chosen]
@@ -385,7 +406,7 @@ class ResultsPage(QWidget):
                     self.batch_id = None
                     self.chosen = {service.key(r['head']) for r in released}
                     self.last_plan = None
-                    self.redo_target = None
+                    self.redo_targets.clear()
                 d.accept()
             finally:
                 self.reviewing=False;self.controls()
@@ -474,7 +495,9 @@ class ResultsPage(QWidget):
             result=run(self,jst_auto_order.prepare,(self.path,selected),'按勾选仓单制表')
             if not self.closing and not self.host.closing:
                 if result['ready']:self.focus_redo(open_orders(self,self.host,result['ready'],result['failed']))
-                else:raise ValueError('\n'.join(e['order']+'：'+e['reason'] for e in result['failed']))
+                elif result['failed']:
+                    from jst_order_dialogs import failure_rows,show_job_details
+                    show_job_details(self,failure_rows(result['failed']))
         try:notify(self,prepare)
         finally:self.reviewing=False;self.refresh()
 
@@ -485,17 +508,19 @@ class ResultsPage(QWidget):
         try:self.focus_redo(notify(self,lambda:open_orders(self,self.host)))
         finally:self.reviewing=False;self.refresh()
 
-    def focus_redo(self,head):
-        if not head:return
+    def focus_redo(self,heads):
+        if not heads:return
         self.batch_id=None
-        self.scope=[head]
+        self.last_plan=None
+        self.remaining=[]
+        self.scope=list(heads)
         self.scope_btn.show()
-        self.redo_target=service.key(head)
-        self.chosen={self.redo_target}
-        day=QDate.fromString(head['day'],'yyyy-MM-dd')
+        self.redo_targets={service.key(head) for head in heads}
+        self.chosen=set(self.redo_targets)
+        days=[head['day'] for head in heads]
         with QSignalBlocker(self.day),QSignalBlocker(self.end),QSignalBlocker(self.search),QSignalBlocker(self.warehouse):
-            self.day.setDate(day)
-            self.end.setDate(day)
+            self.day.setDate(QDate.fromString(min(days),'yyyy-MM-dd'))
+            self.end.setDate(QDate.fromString(max(days),'yyyy-MM-dd'))
             self.search.clear()
             self.warehouse.setCurrentText('全部仓')
 

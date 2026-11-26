@@ -146,22 +146,6 @@ async function importPreview(frame) {
     && await frame.locator('form#form1 input#txt_exception_datas').count()===1 && await visible(frame);
 }
 
-function compact(value) {
-  return String(value || '').replace(/\s+/g,'');
-}
-
-function contactMatches(spec, facts) {
-  const {buyer,recipient,phone,province,city,district,address} = spec.contact;
-  const location = compact(province+city+district+address);
-  const name = compact(recipient);
-  const tel = compact(phone);
-  const displayed = compact(facts.address).replace(/[\[\]]/g,'');
-  return facts.buyer===buyer && [
-    name+tel+location,tel+name+location,location+name+tel,
-    location+tel+name,name+location+tel,tel+location+name,
-  ].includes(displayed);
-}
-
 function issueCode(message) {
   if (/缺货|库存不足/.test(message)) return 'STOCK_SHORT';
   if (/手机号.*(?:格式|错误|无效)/.test(message)) return 'PHONE_INVALID';
@@ -188,7 +172,7 @@ async function readPreview(form, spec) {
     const cells = orders.length===1 ? orders[0].cells : [];
     return {
       action:new URL(f.action).pathname,count:orders.length,online:text(cells[2]),
-      buyer:text(cells[5]),status:text(cells[7]),address:text(cells[11]),courier:text(cells[12]),
+      status:text(cells[7]),courier:text(cells[12]),
       items:cells[13] ? Array.from(cells[13].querySelectorAll('span'),text) : [],
       invalidItems:!!cells[13]?.querySelector('.no_in_itemsku'),
       exceptionData:f.querySelector('#txt_exception_datas')?.value,exceptions,
@@ -199,7 +183,7 @@ async function readPreview(form, spec) {
   if (facts.invalidItems) issues.add('PRODUCT_MISSING');
   if (typeof facts.exceptionData!=='string') fail('ORDER_PAGE_CHANGED','预览缺少异常校验字段');
   if (facts.exceptionData && !issues.size) issues.add('OTHER');
-  const evidence = {online:spec.online,shop:spec.shop,lines:[],amount:null,issues:[...issues],contact_ok:false};
+  const evidence = {online:spec.online,shop:spec.shop,lines:[],amount:null,issues:[...issues]};
   if (issues.has('PHONE_INVALID'))
     fail('PREVIEW_ISSUES','聚水潭提示手机号不符合格式，请核对本仓买家和收货资料');
   if (issues.size) {
@@ -265,7 +249,6 @@ async function readPreview(form, spec) {
     evidence.import_format=SINGLE;
     evidence.order_count=facts.count;
   }
-  evidence.contact_ok = contactMatches(spec,facts);
   return evidence;
 }
 
@@ -370,7 +353,12 @@ export class OrderPages {
     if (![1,2].includes(actions.length) || actions.some(action=>action!=='Confirm()'))
       fail('ORDER_PAGE_CHANGED','未找到可核验的单张订单最终导入控件');
     const receiptFrame=page.locator('#epaasDialogFrame');
-    if(await receiptFrame.filter({visible:true}).count())
+    // Epaas leaves the dialog iframe behind the workspace while it is closed.
+    const receiptOpen=await receiptFrame.filter({visible:true}).evaluateAll(frames=>frames.some(frame=>{
+      const {zIndex}=getComputedStyle(frame);
+      return zIndex==='auto'||Number(zIndex)>=0;
+    }));
+    if(receiptOpen)
       fail('ORDER_PAGE_CHANGED','已有平台回执窗口，未发起本次导入');
     const receipt=page.frameLocator('#epaasDialogFrame');
     const summaryText=receipt.getByText(IMPORT_COUNTS);
@@ -483,8 +471,7 @@ export class OrderFlow {
       fail('PREVIEW_CHANGED','原订单当前不处于可普通审核状态');
     const permit=crypto.randomUUID();
     const staged={frame,row,detail,preview,page:previewPage,internal:facts.internal,evidence:{
-      online:facts.online,shop:facts.shop,lines:facts.lines,
-      issues:facts.issues,contact_ok:facts.contact_ok}};
+      online:facts.online,shop:facts.shop,lines:facts.lines,issues:facts.issues}};
     if (action==='stage_import'&&spec.import_format===SINGLE) {
       if (facts.order_count!==1||facts.import_format!==SINGLE||facts.amount==null)
         fail('PREVIEW_CHANGED','单商品格式缺少一张整单的预览凭据，未提交');

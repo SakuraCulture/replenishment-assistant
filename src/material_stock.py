@@ -51,6 +51,9 @@ def _locally_unsubmitted(db, oid, warehouse, gid):
 def cross_reservations(db, warehouse, baseline, skus, *, material=False, batch_id=None, exclude=()):
     """Return additional reservations and SKU-specific uncertainties. Caller owns the snapshot."""
     reserved, uncertain = {}, {}
+    # Ordinary replenishment batches share one snapshot only inside their own batch.
+    if batch_id is not None and not material:
+        return {'reserved': reserved, 'uncertain': uncertain}
     reserve_other = baseline.get('reserve_other_orders')
     if not skus or not stock.exists(db) or not (material or reserve_other or shared_ledger(db)):
         return {'reserved': reserved, 'uncertain': uncertain}

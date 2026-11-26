@@ -18,7 +18,6 @@ from lifecycle_rules import basis_token
 from lifecycle_stages import TITLES
 from lifecycle_store import exists, latest_version
 from warehouse_execution import validate_visibility
-from jst_order_guards import allocation_gate
 import jst_order_store as orders
 import jst_exports
 import jst_batch_store as batches
@@ -117,7 +116,7 @@ def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=N
             for eid,at,oid,wh,action,raw in db.execute('SELECT id,at,oid,warehouse,action,detail FROM jst_events WHERE day BETWEEN ? AND ? ORDER BY id',(day,date_end)):
                 if action=='导出聚水潭订单':
                     detail=wr.loads(raw);last_export[detail['gid']]=at
-                elif action in ('生成聚水潭订单','库存不足未生成','撤销未下单生成单'):
+                elif action in ('生成聚水潭订单','库存不足未生成','撤销未下单生成单',orders.OPERATIONS_SUPERSEDED):
                     if batch_id:
                         member=batch_members.get((oid,wh))
                         if (not member or member['status']!='done' or member['message']!=batches.ZERO_OUTCOME
@@ -159,8 +158,7 @@ def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=N
                             reason='可导出' if valid and (stock_same or lock) else '仓资料已更新，请核对当时分配' if valid else '回传或签发依据已变化，请重新核对',
                             last_export=last_export.get(gid,'未导出'),return_token=token,current_bid=current[0] if current else None,batch_id=p.get('batch_id'))
                 if item['state']=='stale' and h['health'].get(demand) and h['revision']==p['head']['revision']:
-                    blocker,previous_payment=allocation_gate(db,h,gid,True)
-                    item['reason']=(blocker+'；旧分配已失效') if blocker else ('回传已更新，按原批重分配后需重新核对付款；旧付款保留' if previous_payment else '旧分配依据已变化，请勾选后按原批重新分配')
+                    item['reason']='旧分配依据已变化，请勾选后重新分配'
             elif key(h) in events and events[key(h)][1]=='库存不足未生成':
                 eid,_,raw=events[key(h)];event=wr.loads(raw)
                 run=orders.decode(db.execute('SELECT payload,digest FROM jst_runs WHERE runid=?',(event['runid'],)).fetchone())
@@ -172,13 +170,17 @@ def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=N
                 elif p and p.get('batch_id') and (not batch_id or p['batch_id']==batch_id) and h['revision']==p['head']['revision']:
                     item.update(batch_id=p['batch_id'],original_zero=True)
                     if h['health'].get(demand) and p['basis']['dependencies'].get(p['basis']['stage'])!=return_token(db,h,p):
-                        item.update(state='stale',reason='回传已更新，上次为零分配，请勾选后按原批重新分配；原付款事实保留')
+                        item.update(state='stale',reason='回传已更新，上次为零分配，请勾选后重新分配')
                 if p and key(h) not in other_batch and h['health'].get(demand) and p['head']['revision']==h['revision'] and p['basis']['dependencies'].get(p['basis']['stage'])==return_token(db,h,p):
                     pr=cached_projection(idx,source_id,'zero:'+str(eid),orders.digest(p),lambda:p)
                     current=batches.state(db,p['batch_id'],h['warehouse']) if p.get('batch_id') else orders.state(db,h['warehouse']);valid=current and current[0]==p['bid']
                     item.update(state='zero' if valid else 'stale',reason='分配为0，无下单商品' if valid else '上次分配为0，仓资料已更新，请重新核对',projection=pr,batch_id=p.get('batch_id'))
-            if not hit and key(h) in events and events[key(h)][1]=='撤销未下单生成单' and item['state'] in ('pending','waiting'):
-                item.update(state='pending',reason='旧分配已撤销，可准备新分配批次',withdrawn=True)
+            if not hit and key(h) in events:
+                action=events[key(h)][1]
+                if action==orders.OPERATIONS_SUPERSEDED and h['health'].get(demand):
+                    item.update(state='stale',reason='运营签发已更新，请按最新库存重新分配')
+                elif action=='撤销未下单生成单' and item['state'] in ('pending','waiting'):
+                    item.update(state='pending',reason='旧分配已撤销，可准备新分配批次',withdrawn=True)
             if not hit and h['present']['return'] and h['next'] is None and not h['present']['payment']:
                 item.update(state='zero',reason='回传无要货，无需生成')
             records.append(item);progress(RowProgress('汇总门店结果',n+1,len(heads)))

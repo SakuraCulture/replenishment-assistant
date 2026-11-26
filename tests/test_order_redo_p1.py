@@ -336,6 +336,65 @@ class OrderRedoTests(unittest.TestCase):
         with closing(wr.read_connection(case.path)) as db:
             return review_context(db,case.heads[wh])['stamp']
 
+    def test_operations_update_keeps_original_platform_order_and_invalidates_local_execution(self):
+        import jst_exports
+        import order_amendments
+
+        for disconnect in (False,True):
+            with self.subTest(import_pending=disconnect):
+                case=self.dual(operations=True)
+                wh, other=WAREHOUSES
+                heads=case.heads
+                gids=case.begin()
+                online=case.order(wh,gids[wh],disconnect=disconnect)
+                if not disconnect:
+                    case.pay(online)
+                    case.manual(wh,'receipt',12,24)
+                with closing(wr.read_connection(case.path)) as db:
+                    original=orders.read(db,online)
+                    history={stage:lifecycle.current(db,heads[wh],stage) for stage in ('payment','receipt')}
+                if disconnect:
+                    correction=order_amendments.read(case.path,heads[wh],'operations')
+                    plan=order_amendments.prepare(case.path,heads[wh],'operations',correction['token'],
+                                                  [{'sku':'00000','action':'set','quantity':'7'}],'验收员','合成改量')
+                    lifecycle.commit(case.path,plan['write'])
+                else:
+                    case.manual(wh,'operations',7)
+                with closing(wr.read_connection(case.path)) as db:
+                    ops=lifecycle.current(db,heads[wh],'operations')
+                    self.assertEqual((ops['version'],ops['payload']['rows'][0]['base_quantity']),(2,'7'))
+                    self.assertIsNone(generations.active(db,heads[wh]))
+                    self.assertEqual(generations.active(db,heads[other]),gids[other])
+                    self.assertEqual(orders.read(db,online),original)
+                    for stage,doc in history.items():
+                        self.assertIsNone(lifecycle.current(db,heads[wh],stage))
+                        if doc:
+                            self.assertEqual(lifecycle.current(db,heads[wh],stage,doc['version']),doc)
+                with self.assertRaises(wr.Conflict):
+                    jst_exports.export_checked(case.path,[gids[wh]],case.root)
+                observed=[]
+                recovered,=jst.process(case.path,[online],case.jst,'recover',prepare_payment=lambda *args:observed.append(args))
+                self.assertTrue(recovered['ok'],recovered)
+                self.assertEqual(observed,[])
+                preview=jst_batches.preview_new(case.path,[heads[wh]],{wh:case.catalogs[wh]},replace_allocations=True)
+                self.assertEqual(preview['payload']['plans'][0]['summary']['quantity'],'7')
+                saved=jst_batches.execute(case.path,preview)
+                new,=saved['generated']
+                existing=jst.prepare(case.path,[{'head':heads[wh],'gid':new}])
+                self.assertEqual(existing,{'ready':[online],'failed':[]})
+                calls=len(case.jst.calls)
+                self.assertFalse(jst.process(case.path,[online],case.jst,'submit')[0]['ok'])
+                self.assertEqual(len(case.jst.calls),calls)
+                if disconnect:
+                    from jst_cancellation import begin_redo
+                    case.jst.orders[online].update(native_status='已取消',status='review')
+                    cancelled,=jst.process(case.path,[online],case.jst,'recover_cancelled')
+                    self.assertTrue(cancelled['ok'] and cancelled['stage']=='CANCELLED',cancelled)
+                    replacement=begin_redo(case.path,online)
+                    self.assertNotEqual(replacement['online'],online)
+                    with closing(wr.read_connection(case.path)) as db:
+                        self.assertEqual(generations.active(db,heads[wh]),new)
+
     def test_batch_return_replacement_preserves_platform_execution(self):
         from jst_cancellation import begin_redo
         from jst_order_guards import allocation_gate

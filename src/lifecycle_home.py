@@ -74,6 +74,14 @@ def read(path, cache, request, cancel=None, progress=lambda _: None):
             for placeholders,oids in oid_batches(h['oid'] for h in selected):
                 checkpoint(cancel)
                 versions.update(((o,r,w,s),v) for o,r,w,s,v in db.execute('SELECT oid,revision,warehouse,stage,MAX(version) FROM lifecycle_versions WHERE oid IN ('+placeholders+') GROUP BY oid,revision,warehouse,stage',oids))
+        if 'jst_allocation_rounds' in tables:
+            for placeholders,oids in oid_batches(h['oid'] for h in selected):
+                for o,r,w,payment,receipt in db.execute(
+                    'SELECT oid,revision,warehouse,payment_version,receipt_version FROM jst_allocation_rounds WHERE oid IN ('+placeholders+')',oids):
+                    for stage,floor in (('payment',payment),('receipt',receipt)):
+                        identity=(o,r,w,stage)
+                        if versions.get(identity,0)<=floor:
+                            versions.pop(identity,None)
         shipments = read_shipments(db,(o for o,r,w,s in versions if s=='payment'),cancel)
         older=set()
         selected_revisions={(h['oid'],h.get('warehouse')):h['revision'] for h in selected}

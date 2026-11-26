@@ -106,7 +106,7 @@ class WithdrawalExercise(Exercise):
     def browser_redo(self,page,number):
         def tasks_dialog(dialog):
             self.task_selection(dialog,self.rows[number]['online'])
-            self.confirmation(dialog.redo_btn.click,'确认沿原仓单重做','17082')
+            self.confirmation(dialog.redo_btn.trigger,'确认沿原仓单重做','17082')
         self.dialog(page.auto_tasks_btn.click,Orders,tasks_dialog)
         self.wait(lambda:not page.reading and page.scope and len(page.records)==1,'返回重做原仓单')
         page.clear_scope()
@@ -127,6 +127,7 @@ class WithdrawalExercise(Exercise):
             value = d.plan['payload']
             result['batch_id'] = value['batch_id']
             result['other_reserved'] = value['reserved']
+            assert not any(result['other_reserved'].values()), result['other_reserved']
             result['stock'] = {wh:{'revision':b['catalog']['revision'],'file':b['catalog']['source_path'],
                                   'sha256':b['catalog']['source_sha256']}
                                for wh,b in value['new_batch']['stocks'].items()}

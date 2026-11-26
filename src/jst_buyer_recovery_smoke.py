@@ -118,7 +118,7 @@ def start_smoke(app, win, args):
                     before, _, _ = state()
                     assert before['internal'] is None and dialog.redo_btn.isEnabled()
                     buyer['full_detail'] = True
-                    dialog.redo_btn.click()
+                    dialog.redo_btn.trigger()
                     assert dialog.redo_target and calls == ['order.lookup'], messages
                 order, _, versions = state()
                 head = order['payload']['head']
@@ -149,7 +149,7 @@ def start_smoke(app, win, args):
                     dialog.buttons['recover'].click()
                     original_order, current, versions = state()
                     assert original_order['stage'] == 'IMPORT_UNKNOWN' and original_order['internal'] is None
-                    assert hint in dialog.note.text() and not current and not versions
+                    assert any(hint in row[-1] for row in dialog.job_rows) and not current and not versions
                     snapshot(dialog, outcome)
                 buyer.update(check='unavailable' if use_frozen_preview else 'verified', full_detail=use_frozen_preview)
                 for _ in range(2):

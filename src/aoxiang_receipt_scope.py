@@ -40,7 +40,7 @@ def _payment_rows(document):
 
 def amount_review(db, head, original, current=None):
     """Only a formal amount-only correction can use the original receipt path."""
-    current = latest_version(db,head,'payment') if current is None else current
+    current = latest_version(db,head,'payment',effective=True) if current is None else current
     if not current or tuple(current) == (original['version'],original['digest']):
         return None
     from jst_cancellation import read as cancellation
@@ -89,7 +89,7 @@ def validate_review(db, head, review):
     old = version_row(db,head,'payment',review['original']['version'])
     current = review['current']
     if (cancellation(db,head) or not old or old[2] != review['original']['digest']
-            or latest_version(db,head,'payment') != (current['version'],current['digest'])):
+            or latest_version(db,head,'payment',effective=True) != (current['version'],current['digest'])):
         raise Conflict('原采购或付款版本在实收核对后变化，请重新核对')
 
 
@@ -147,7 +147,7 @@ def assess(path, items, *, require_payment=True):
                 except (Conflict,SourceDeleted) as exc:raise ValueError(str(exc)) from exc
                 if require_payment:
                     if 'lifecycle_versions' not in tables:raise ValueError('原已确认付款依据不存在')
-                    payment=latest_version(db, head, 'payment')
+                    payment=latest_version(db,head,'payment',effective=True)
                     pv=basis.get('paymentVersion');pd=basis.get('paymentDigest')
                     if not payment or pv is None or not pd:raise ValueError('原采购缺少可复核的付款版本，需核对原任务')
                     if tuple(payment)!=(pv,pd):

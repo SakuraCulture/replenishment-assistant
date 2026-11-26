@@ -18,7 +18,7 @@ from export_progress import RowProgress
 from lifecycle_io import STAGES, TITLES, QUANTITIES, DOCNUM, DOCDATE, fields
 from lifecycle_io import ALL_STAGES
 import lifecycle_routes as flow
-from jst_order_guards import guard_operations, guard_payment
+from jst_order_guards import guard_payment
 from jst_shipping import read as read_shipments
 from jst_task_store import enqueue
 from lifecycle_stages import FINISHED, PENDING, STATUSES, route as document_route
@@ -141,6 +141,23 @@ def prepare_numbered(path, scanned, scope=None, progress=lambda _:None, cancel=N
         bindings[binding_key(row)]=h
     return prepare(path,scanned,bindings,progress,cancel,staged=staged,_owned=True)
 
+def _operations_token(version):
+    return f'operations:{version}'
+
+
+def _allocation_token(db, head, stage, staged):
+    if stage not in store.ALLOCATION_STAGES:
+        return None
+    # A combined import can confirm new operations and downstream documents
+    # in the same transaction. They must use the version about to be saved.
+    operations = (staged or {}).get((*key(head),'operations'))
+    if operations and not operations['payload']['pending']:
+        current_operations = store.latest_version(db,head,'operations') if exists(db) else None
+        if (operations['version'],operations['digest']) != current_operations:
+            return _operations_token(operations['version'])
+    return (store.allocation_round(db,head,stage) or (None,))[0]
+
+
 def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=False, *, staged=None,_verified=None,
               aoxiang_payment_review=None):
     if stage in ('return','operations'):
@@ -159,7 +176,9 @@ def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=Fals
             payload['payment_source']={'type':'jst_import_return','external_order_number':None,'amount_basis':'数量×单价'}
     if stage=='receipt' and aoxiang_payment_review:
         payload['aoxiang_payment_review']=aoxiang_payment_review
-    digest=fingerprint(payload);old=current(db,head,stage,_proofs=proofs);prior={r['sku']:r for r in old['payload']['rows']} if old else {}
+    if token:=_allocation_token(db,head,stage,staged):
+        payload['allocation_round']=token
+    digest=fingerprint(payload);old=current(db,head,stage,_proofs=proofs,include_superseded=True);prior={r['sku']:r for r in old['payload']['rows']} if old else {}
     differences=[]
     for r in effective:
         a=prior.get(r['sku'],{})
@@ -326,6 +345,8 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
             checkpoint(cancel); purchases.validate_head(db, p['head'])
             identity=(*key(p['head']),p['stage'])
             if identity in staged:raise ValueError('同一订单同一环节只能保存一份完整单据')
+            if _allocation_token(db,p['head'],p['stage'],staged) != p['payload'].get('allocation_round'):
+                raise wr.Conflict('运营签发或库存分配已更新，请重新预览下游资料')
             if p['payload'].get('manual_correction'):
                 target=staged_document(p)
                 saved=store.version_row(db,p['head'],p['stage'],target['version'])
@@ -333,7 +354,7 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
                     replayed.add(identity);staged[identity]=target;continue
                 from order_amendments import validate
                 validate(db,p)
-            old = current(db, p['head'], p['stage'],_verified=verified)
+            old = current(db, p['head'], p['stage'],_verified=verified,include_superseded=True)
             from special_settlement import group_for_oid
             if p['stage']=='receipt' and group_for_oid(db,p['head']['oid']):
                 raise ValueError('开业组只登记一份原采购实收，请从新店开业工作台进入该张翱象采购')
@@ -341,8 +362,6 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
                 from material_stock import has_material, is_material
                 if has_material(db) and is_material(db, p['head']['oid']):
                     raise ValueError('物料单请沿原申请更正，不能覆盖物料分配依据')
-            # Saving store demand leaves the original execution and reservation in place.
-            if p['stage']=='operations' and p['changed']:guard_operations(db,p['head'])
             if p['stage']=='payment':guard_payment(db,p)
             if p['stage']=='receipt' and p['payload'].get('aoxiang_payment_review'):
                 from aoxiang_receipt_scope import validate_review
@@ -367,6 +386,9 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
                 v += 1
                 store.insert_version(db, h, p['stage'], v, p['digest'], data)
                 del data
+                if p['stage']=='operations' and not p['payload']['pending']:
+                    from jst_orders import supersede_operations
+                    supersede_operations(db,h,_operations_token(v),v)
                 if p['stage']==flow.demand_stage(db,h):
                     enqueue(db,h,{'version':v,'digest':p['digest']})
                 store.insert_event(db, wr.now(), h, p['stage'], v, '确认完整单据', wr.dumps({'number': h['number'], 'rows': len(p['payload']['rows']), 'missing': p['payload']['missing'], 'extra': p['payload']['extra']}))

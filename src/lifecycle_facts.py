@@ -22,9 +22,12 @@ from order_keys import warehouse_revision as key
 SCHEMA = rules.DOCUMENT_SCHEMA
 
 
-def current(db, head, stage, version=None,*,as_of=None,_proofs=None,_verified=None):
+def current(db, head, stage, version=None,*,as_of=None,_proofs=None,_verified=None,include_superseded=False):
     if not exists(db): return None
     row=store.version_row(db, head, stage, version, as_of=as_of)
+    if (row and version is None and not as_of and not include_superseded
+            and not store.version_is_current(db,head,stage,row[0])):
+        return None
     if type(_verified) is dict and row:
         from lifecycle_read_proofs import reuse
         reused=reuse(head,stage,row,_verified.get(stage))

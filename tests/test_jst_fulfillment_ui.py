@@ -61,7 +61,7 @@ class FulfillmentUI(unittest.TestCase):
             with self.subTest(reason=reason), patch('catalog_session_ui.manager'), \
                     patch('jst_auto_order_ui.run',return_value=result) as run, \
                     patch('jst_auto_order_ui.confirm') as confirm, patch.object(QMessageBox,'warning') as warning:
-                dialog.redo_btn.click()
+                dialog.redo_btn.trigger()
                 run.assert_called_once()
                 confirm.assert_not_called()
                 warning.assert_called_once()
@@ -70,7 +70,9 @@ class FulfillmentUI(unittest.TestCase):
                 self.assertEqual(title,'取消重做未完成')
                 self.assertIn(reason,detail)
                 self.assertIn(self.fixture.keys[0],detail)
-                self.assertEqual(dialog.note.text(),detail)
+                self.assertEqual(dialog.note.text(),'取消重做未完成 · 1 张待处理')
+                self.assertIn(reason,dialog.job_rows[0][-1])
+                self.assertEqual(dialog.job_rows[0][2],self.fixture.keys[0])
                 self.assertTrue(dialog.redo_btn.isEnabled())
                 self.assertIsNone(dialog.redo_target)
 
@@ -80,7 +82,7 @@ class FulfillmentUI(unittest.TestCase):
         self.addCleanup(dialog.deleteLater)
         with patch('catalog_session_ui.manager'), patch('jst_auto_order_ui.run',side_effect=Cancelled), \
                 patch('jst_auto_order_ui.confirm') as confirm:
-            dialog.redo_btn.click()
+            dialog.redo_btn.trigger()
             confirm.assert_not_called()
             self.assertIn('本次操作已取消',dialog.note.text())
             self.assertTrue(dialog.redo_btn.isEnabled())

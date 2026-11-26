@@ -1,19 +1,21 @@
 """Qt selection, confirmation and task results for 聚水潭 automatic orders."""
 from pathlib import Path
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QComboBox, QDialog, QFileDialog, QFormLayout, QHBoxLayout,
-    QLineEdit, QMessageBox, QTableWidget, QTableWidgetItem, QVBoxLayout)
+from PySide6.QtCore import QSignalBlocker, Qt
+from PySide6.QtWidgets import (QAbstractScrollArea, QComboBox, QDialog, QFileDialog, QFormLayout,
+    QHBoxLayout, QLineEdit, QMenu, QMessageBox, QPushButton, QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout)
 
 from business_ui import grid, run
-from interaction_ui import confirm
+from interaction_ui import confirm, review_rows
 from app_defaults import WAREHOUSES
 import jst_auto_order as service
-from jst_auto_order_store import RELEASED, list_orders, save_profiles
+from jst_auto_order_store import RELEASED, STAGES, list_orders, save_profiles
 from jst_auto_order_template import CONTACT
 import jst_delivery_profiles as delivery
 import jst_delivery_profiles_xlsx as delivery_xlsx
+from jst_order_dialogs import confirm_import, failure_rows, show_job_details
 from runtime_support import Cancelled
+from table_readability import fit_window
 from ui_controls import button, label
 
 
@@ -220,54 +222,124 @@ class Orders(QDialog):
         self.busy=False
         self.initial=True
         self.redo_target=None
+        self.batch_redo_targets=[]
         self.setWindowTitle('聚水潭自动下单')
-        self.resize(1280,580)
+        self.setObjectName('jstAutomaticOrders')
+        fit_window(self,1280,650)
+        self.setMinimumSize(640,360)
         pane=QVBoxLayout(self)
-        pane.addWidget(label('先平台预览，再确认导入。已受理的仓单可核对原单，查回后自动准备付款资料。'))
-        pane.addWidget(label('聚水潭的「已付款待审核」表示导入完成。实际付款由业务在付款核对中确认。','muted'))
+        policy=QSizePolicy.Policy
+        instruction=label('聚水潭的「已付款待审核」表示导入完成。实际付款由业务在付款核对中确认。','muted')
+        instruction.setWordWrap(False)
+        instruction.setSizePolicy(policy.Ignored,policy.Fixed)
+        pane.addWidget(instruction)
+        toolbar=QHBoxLayout()
+        toolbar.addWidget(button('勾选当前列表',lambda:self.select(True)))
+        toolbar.addWidget(button('清空勾选',lambda:self.select(False)))
+        toolbar.addWidget(button('刷新任务',self.reload))
+        self.selection_hint=label('','muted')
+        self.selection_hint.setWordWrap(False)
+        self.selection_hint.setSizePolicy(policy.Ignored,policy.Fixed)
+        toolbar.addWidget(self.selection_hint,1)
+        self.more_btn=QPushButton('更多操作')
+        self.more_menu=QMenu(self.more_btn)
+        self.more_btn.setMenu(self.more_menu)
+        toolbar.addWidget(self.more_btn)
+        pane.addLayout(toolbar)
+
         headers=('选择','门店','仓','补货单号','聚水潭店铺','款数','数量','分配金额','平台预览金额','线上单号','内部单号','下单状态','付款资料','处理提示')
         self.table=QTableWidget(0,len(headers))
         self.table.setHorizontalHeaderLabels(headers)
         self.table.setSortingEnabled(False)
+        self.table.setAlternatingRowColors(True)
+        self.table.setSizePolicy(policy.Expanding,policy.Expanding)
+        self.table.setMinimumSize(0,0)
+        self.table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustIgnored)
+        self.table.verticalHeader().setDefaultSectionSize(max(27,self.table.fontMetrics().height()+9))
+        for column,width in enumerate((49,153,67,188,148,61,63,94,108,218,113,143,139,330)):
+            self.table.setColumnWidth(column,width)
         self.table.itemChanged.connect(self.controls)
         pane.addWidget(self.table,1)
-        select=QHBoxLayout()
-        select.addWidget(button('勾选当前列表',lambda:self.select(True)))
-        select.addWidget(button('清空勾选',lambda:self.select(False)))
-        select.addWidget(button('刷新任务',self.reload))
-        self.allocation=button('补取付款资料并核对',self.pull_allocation)
-        select.addWidget(self.allocation)
-        self.payment_history=button('历次付款资料',self.show_payment_history)
-        select.addWidget(self.payment_history)
+
+        summary=QHBoxLayout()
+        self.note=label('','muted')
+        self.note.setWordWrap(False)
+        self.note.setSizePolicy(policy.Ignored,policy.Fixed)
+        summary.addWidget(self.note,1)
+        self.details_btn=button('查看作业明细',self.show_details)
+        summary.addWidget(self.details_btn)
+        pane.addLayout(summary)
+
+        self.buttons={'probe':self.more_action('核对平台账号和店铺',lambda:self.perform('probe'))}
+        self.export=self.more_action('保存核对用 XLS',self.save_file)
+        self.redo_btn=self.more_action('核对取消并重做',self.redo)
+        self.batch_redo_btn=self.more_action('批量登记重做',self.batch_redo)
+        self.manual_btn=self.more_action('人工处理',self.open_manual)
+        self.more_menu.addSeparator()
+        self.allocation=self.more_action('补取付款资料并核对',self.pull_allocation)
+        self.payment_history=self.more_action('历次付款资料',self.show_payment_history)
         import jst_fulfillment_jobs as fulfillment_jobs
-        from PySide6.QtWidgets import QCheckBox
-        self.auto_allocation=QCheckBox('检查历史出库资料')
+        self.auto_allocation=self.more_menu.addAction('检查历史出库资料')
+        self.auto_allocation.setCheckable(True)
         self.auto_allocation.setChecked(fulfillment_jobs.enabled(self.path))
         self.auto_allocation.toggled.connect(self.configure_allocation)
-        select.addWidget(self.auto_allocation)
-        pane.addLayout(select)
-        self.selection_hint=label('','muted')
-        pane.addWidget(self.selection_hint)
-        self.note=label('\n'.join(e['order']+'：'+e['reason'] for e in failures),'muted')
-        self.note.setWordWrap(True)
-        pane.addWidget(self.note)
-        row=QHBoxLayout()
-        self.buttons={}
-        for action,title in (('probe','核对平台账号和店铺'),('preview','平台预览'),
-                ('submit','确认导入'),('recover','核对原单')):
+
+        footer=QHBoxLayout()
+        for action,title in (('preview','平台预览'),('submit','确认导入'),('recover','核对原单')):
             control=button(title,lambda checked=False,a=action:self.perform(a),action=='submit')
             self.buttons[action]=control
-            row.addWidget(control)
-        self.export=button('保存核对用 XLS',self.save_file)
-        row.addWidget(self.export)
-        self.redo_btn=button('核对取消并重做',self.redo)
-        row.addWidget(self.redo_btn)
-        self.manual_btn=button('人工处理',self.open_manual)
-        row.addWidget(self.manual_btn)
-        row.addStretch()
-        row.addWidget(button('关闭',self.reject))
-        pane.addLayout(row)
+            footer.addWidget(control)
+        footer.addStretch(1)
+        self.close_btn=button('关闭',self.reject)
+        self.close_btn.setText('关闭')
+        footer.addWidget(self.close_btn)
+        pane.addLayout(footer)
+
+        self.set_job(f'{len(failures)} 张制表待处理' if failures else '暂无作业结果',failure_rows(failures))
         self.reload()
+
+    def more_action(self,title,callback):
+        option=self.more_menu.addAction(title)
+        option.triggered.connect(callback)
+        return option
+
+    def set_job(self,summary,rows=()):
+        self.note.setText(summary)
+        self.note.setToolTip(summary)
+        self.job_rows=tuple(rows)
+        self.details_btn.setEnabled(bool(self.job_rows))
+
+    def show_details(self):
+        if self.job_rows:
+            show_job_details(self,self.job_rows)
+
+    def remember_job(self,action,result,selected):
+        by_online={r['online']:r for r in selected}
+        details=[]
+        for result_row in result:
+            online=result_row['online']
+            source=by_online.get(result_row.get('replaces',online),{})
+            status=STAGES.get(result_row['stage'],'已核对') if action!='probe' else '核对通过'
+            if not result_row['ok']:
+                status='待处理' if result_row['stage']!='IMPORT_FAILED' else '导入失败'
+            reason=result_row['reason']
+            payment=(result_row.get('payment') or {}).get('message')
+            if payment and payment!=reason:
+                reason+='\n'+payment
+            details.append((source.get('warehouse','—'),source.get('number','—'),online,status,reason))
+        count=len(result)
+        if action=='preview':
+            previewed=sum(r.get('previewed',False) for r in result)
+            ready=sum(r['ok'] and r['stage']=='PREVIEWED' and not r.get('internal') for r in result)
+            summary=f'已预览 {previewed} 张 · 可确认导入 {ready} 张 · {count-ready} 张待处理'
+        elif action=='probe':
+            ready=sum(r['ok'] for r in result)
+            summary=f'已核对账号及店铺 {ready} 张 · {count-ready} 张待处理'
+        else:
+            linked=sum(bool(r['ok'] and r.get('internal')) for r in result)
+            what='导入结果' if action=='submit' else '原单'
+            summary=f'已核对{what} {count} 张 · 查回 {linked} 张 · {count-linked} 张待处理'
+        self.set_job(summary,details)
 
     def reload(self):
         chosen={r['online'] for r in self.selected()}
@@ -297,12 +369,9 @@ class Orders(QDialog):
                     r['reason'] if r['stage'] in ('IMPORT_UNKNOWN','IMPORT_FAILED') else (state or {}).get('message') or r['reason'])
             for j,value in enumerate(values,1):
                 cell=QTableWidgetItem(str(value if value is not None else '—'))
-                if j==13:
-                    cell.setToolTip(cell.text())
+                cell.setToolTip(cell.text())
                 cell.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsSelectable)
                 self.table.setItem(i,j,cell)
-        self.table.resizeColumnsToContents()
-        self.table.setColumnWidth(13,330)
         self.table.blockSignals(False)
         self.initial=False
         self.controls()
@@ -311,15 +380,19 @@ class Orders(QDialog):
         return [r for i,r in enumerate(self.records) if self.table.item(i,0) and self.table.item(i,0).checkState()==Qt.CheckState.Checked]
 
     def select(self,wanted):
-        for i in range(self.table.rowCount()):
-            self.table.item(i,0).setCheckState(Qt.CheckState.Checked if wanted else Qt.CheckState.Unchecked)
+        state=Qt.CheckState.Checked if wanted else Qt.CheckState.Unchecked
+        with QSignalBlocker(self.table):
+            for i in range(self.table.rowCount()):
+                self.table.item(i,0).setCheckState(state)
+        self.controls()
 
     def eligible(self,rows,action):
         if action=='preview':
             return [r for r in rows if r['stage'] in ('PREPARED','PREVIEWED','IMPORT_UNKNOWN','IMPORT_FAILED')
-                    and not (r['historical'] or r['internal'] or r['import_outcome']=='accepted')]
+                    and not (r['historical'] or r['internal'] or r.get('allocation_superseded') or r['import_outcome']=='accepted')]
         if action=='submit':
-            return [r for r in rows if r['stage']=='PREVIEWED' and not (r['historical'] or r['internal'])]
+            return [r for r in rows if r['stage']=='PREVIEWED'
+                    and not (r['historical'] or r['internal'] or r.get('allocation_superseded'))]
         if action=='recover':
             return [r for r in rows if r['stage'] in RELEASED and r['stage']!='MANUAL_HANDOFF']
         return rows
@@ -329,19 +402,21 @@ class Orders(QDialog):
         stages={r['stage'] for r in rows}
         free=not self.busy and bool(rows)
         self.buttons['probe'].setEnabled(free and 'MANUAL_HANDOFF' not in stages and not any(r.get('historical') for r in rows))
-        for action in ('preview','submit','recover'):
-            self.buttons[action].setEnabled(free and bool(self.eligible(rows,action)))
-        counts=[len(self.eligible(rows,a)) for a in ('preview','submit','recover')]
-        hint=f'已勾选 {len(rows)} 张，可平台预览 {counts[0]} 张，可确认导入 {counts[1]} 张，可核对原单 {counts[2]} 张'
-        if any(r['stage']=='IMPORT_UNKNOWN' and r['import_outcome'] is None for r in rows):
-            hint+='。上次发送结果不明的仓单只可预览、核对'
-        self.selection_hint.setText(hint)
-        self.export.setEnabled(free and len(rows)==1 and not stages&RELEASED)
+        counts={action:len(self.eligible(rows,action)) for action in ('preview','submit','recover')}
+        for action,count in counts.items():
+            self.buttons[action].setEnabled(free and bool(count))
+        self.more_btn.setEnabled(not self.busy)
+        self.selection_hint.setText(f'已勾选 {len(rows)} 张')
+        self.selection_hint.setToolTip(f"可平台预览 {counts['preview']} 张 · 可确认导入 {counts['submit']} 张 · 可核对原单 {counts['recover']} 张")
+        self.export.setEnabled(free and len(rows)==1 and not stages&RELEASED and not rows[0].get('allocation_superseded'))
         self.export.setText('保存历史原文件' if stages=={'WITHDRAWN'} else '保存核对用 XLS')
-        self.allocation.setEnabled(free and all(r['internal'] and r['stage']!='CANCELLED' for r in rows))
+        self.allocation.setEnabled(free and all(r['internal'] and r['stage']!='CANCELLED'
+                                               and not r.get('allocation_superseded') for r in rows))
         self.payment_history.setEnabled(free and len(rows)==1 and bool(rows[0]['internal']))
         self.redo_btn.setEnabled(free and len(rows)==1 and 'MANUAL_HANDOFF' not in stages
                                   and not rows[0].get('historical'))
+        self.batch_redo_btn.setEnabled(free and len(rows)>1 and any(
+            not r.get('historical') and r['stage']!='MANUAL_HANDOFF' for r in rows))
         self.manual_btn.setEnabled(free and len(rows)==1 and 'WITHDRAWN' not in stages)
 
     def open_manual(self):
@@ -361,7 +436,7 @@ class Orders(QDialog):
         from jst_cancellation import begin_redo
         self.busy = True
         self.controls()
-        self.note.setText(order_label+' · 正在核实聚水潭原单是否取消…')
+        self.set_job('正在核实聚水潭原单是否取消…')
         try:
             owner = manager(self.host).session
             result = run(self,service.run_browser,
@@ -371,7 +446,7 @@ class Orders(QDialog):
             checked = result[0]
             if not checked['ok'] or checked['stage'] != 'CANCELLED':
                 raise service.Check('尚未核实原单已取消。\n'+checked['reason'])
-            self.note.setText(checked['reason'])
+            self.set_job('已核实平台原单取消',[(row['warehouse'],row['number'],row['online'],'原单已取消',checked['reason'])])
             if not confirm(self,'确认沿原仓单重做',
                            f"{order_label} · 聚水潭 {checked['internal']} 已核实取消。\n"
                            '确认后按原记录释放占用，保留历史，并返回本仓单。点「准备新分配批次」按仓刷新库存。'):
@@ -382,14 +457,60 @@ class Orders(QDialog):
             self.redo_target = redo['head']
             self.accept()
         except Cancelled:
-            self.note.setText(order_label+' · 本次操作已取消。')
+            self.set_job('本次操作已取消。')
         except (ValueError, RuntimeError, OSError) as exc:
             detail = f"{order_label}\n聚水潭线上单号 {row['online']}\n{exc}"
-            self.note.setText(detail)
+            self.set_job('取消重做未完成 · 1 张待处理',[(row['warehouse'],row['number'],row['online'],'待处理',str(exc))])
             QMessageBox.warning(self,'取消重做未完成',detail)
         finally:
             self.busy = False
             if self.redo_target is None:
+                self.reload()
+
+    def batch_redo(self):
+        rows = self.selected()
+        if self.busy or len(rows)<2:
+            return
+        from catalog_session_ui import manager
+        from jst_cancellation import preview_redo_batch, register_redo_batch
+
+        self.busy = True
+        self.controls()
+        self.set_job(f'正在核对所选 {len(rows)} 张仓单…')
+        try:
+            owner = manager(self.host).session
+            reviewed = run(self,preview_redo_batch,(self.path,rows,owner),'逐仓核对聚水潭原单')
+            ready = sum(r['approved'] is not None for r in reviewed)
+            summary = f'核对 {len(reviewed)} 张 · 可登记 {ready} 张 · 待处理 {len(reviewed)-ready} 张'
+            review_table = [(r['warehouse'],r['number'],r['online'],r['internal'] or '—',
+                             '可登记' if r['approved'] is not None else '待处理',r['reason']) for r in reviewed]
+            self.set_job(summary,[row[:3]+row[4:] for row in review_table])
+            confirmed = review_rows(
+                self,'批量登记重做 · 核对结果',('仓','补货单号','结果','处理原因','原内部单号','原线上单号'),
+                [(wh,number,status,reason,internal,online) for wh,number,online,internal,status,reason in review_table],
+                summary+'\n确认后释放可登记仓单的本地分配占用、保留原执行记录，并带回分配页。',
+                f'确认登记 {ready} 张' if ready else '',widths=(74,165,85,270,100,218))
+            if not confirmed or not ready:
+                return
+            results = run(self,register_redo_batch,(self.path,reviewed),'批量登记重做')
+            heads = [r['release']['head'] for r in results if r['release']]
+            pending = len(results)-len(heads)
+            self.set_job(f'已登记 {len(heads)} 张 · 待处理 {pending} 张',[
+                (r['warehouse'],r['number'],r['online'],'已登记' if r['release'] else '待处理',r['reason'])
+                for r in results])
+            if heads:
+                if pending:
+                    self.show_details()
+                self.batch_redo_targets = heads
+                self.accept()
+        except Cancelled:
+            self.set_job('本次原单核对已停止。')
+        except (ValueError, RuntimeError, OSError) as exc:
+            self.set_job(f'批量登记重做未完成 · {len(rows)} 张待处理',[
+                (r['warehouse'],r['number'],r['online'],'待处理',str(exc)) for r in rows])
+        finally:
+            self.busy = False
+            if not self.batch_redo_targets:
                 self.reload()
 
     def show_payment_history(self):
@@ -415,7 +536,7 @@ class Orders(QDialog):
             from jst_fulfillment_ui import pull_and_review
             receipt=notify(self,lambda:pull_and_review(self,self.host,[r['online'] for r in rows]))
             if receipt is not None:
-                self.note.setText(f'付款核对完成 {len(receipt)} 单。')
+                self.set_job(f'付款核对完成 {len(receipt)} 张。')
         finally:
             self.busy=False;self.reload()
 
@@ -444,11 +565,8 @@ class Orders(QDialog):
         if self.busy or not rows or not self.buttons[action].isEnabled():
             return
         approved={r['online']:r['sequence'] for r in rows}
-        if action=='submit':
-            lines='\n'.join(f"{r['name'] or r['store']} / {r['warehouse']} / {r['number']} / {r['online']} / "
-                            f"{r['sku_count']}款、{r['quantity']}件 / 预览金额 {r['preview_amount'] or '待核'}" for r in rows)
-            if not confirm(self,'确认导入',f'确认导入以下 {len(rows)} 张仓单？\n\n'+lines):
-                return
+        if action=='submit' and not confirm_import(self,rows):
+            return
         from catalog_session_ui import manager
         owner=manager(self.host).session
         self.busy=True
@@ -460,7 +578,7 @@ class Orders(QDialog):
             if result is not None:
                 replacements={r['replaces']:r['online'] for r in result if r.get('replaces')}
                 self.focus=[replacements.get(key,key) for key in self.focus]
-                self.note.setText('\n'.join(r['online']+'  '+r['reason'] for r in result))
+                self.remember_job(action,result,rows)
         finally:
             self.busy=False
             self.reload()
@@ -470,6 +588,6 @@ def open_orders(parent,host,focus=(),failures=()):
     dialog=Orders(parent,host,focus,failures)
     try:
         dialog.exec()
-        return dialog.redo_target
+        return dialog.batch_redo_targets or ([dialog.redo_target] if dialog.redo_target else [])
     finally:
         dialog.deleteLater()

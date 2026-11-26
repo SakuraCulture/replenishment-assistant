@@ -23,7 +23,7 @@ def _target(db, head, stage):
     if head['revision'] != head['current_revision']:
         raise wr.Conflict('当前打开的是历史签发，请打开本仓单的有效修订')
     purchases.validate_head(db, head)
-    if stage in ('return', 'operations'):
+    if stage == 'return':
         blocker = saved_execution_reason(db, head)
         if blocker:
             raise wr.Conflict(blocker+'。请在对应的下单、付款或收货环节更正')
@@ -34,7 +34,9 @@ def _target(db, head, stage):
 
 
 def _token(db, head, stage, doc):
-    values = [doc['version'], doc['digest'], jst_order_store.active(db, head), jst_tasks.state(db, head)]
+    values = [doc['version'], doc['digest']]
+    if stage != 'operations':
+        values.extend((jst_order_store.active(db, head), jst_tasks.state(db, head)))
     if stage == 'payment':
         values.append(store.latest_version(db, head, 'receipt'))
     return hashlib.sha256(wr.dumps(values).encode()).hexdigest()

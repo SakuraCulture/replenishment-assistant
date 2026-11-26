@@ -1,11 +1,14 @@
 """Verified cancellations, warehouse execution succession and payment review."""
 import hashlib
+import sqlite3
 from contextlib import closing
 
 import jst_auto_order_store as orders
 import jst_order_store as allocations
 import lifecycle_store
+from export_progress import RowProgress
 from order_keys import warehouse_revision
+from runtime_support import Cancelled, CommitProgress, checkpoint
 from sqlite_write import begin, commit
 import work_repository as wr
 
@@ -181,42 +184,65 @@ def save_review(path, head, expected, decision, reviewer, basis, progress=lambda
     return result
 
 
-def begin_redo(path, online, progress=lambda _:None, cancel=None):
-    """Release the original active reservation and reserve one successor identity."""
-    import jst_batches
+def _redo_context(db, online, approved):
     import purchases
     from payment_references import reference_key
-    from runtime_support import CommitProgress
+
+    order = orders.read(db,online)
+    if not order or order['stage'] != 'CANCELLED':
+        raise ValueError('请先核对原单，确认聚水潭明确返回「已取消」')
+    if approved is not None and (order['sequence'],order['internal']) != approved:
+        raise wr.Conflict('原单核对结果已变化，请重新核对后登记')
+    head = order['payload']['head']
+    case = db.execute('SELECT internal,gid,successor,release FROM jst_cancellations WHERE online=?',
+                      (online,)).fetchone() if orders.exists(db,'jst_cancellations') else None
+    if not case or case[:2] != (order['internal'],order['gid']):
+        raise wr.Conflict('缺少可核实的原单取消凭据，请继续核对原任务')
+    if orders.exists(db,'special_packages') and db.execute('SELECT 1 FROM special_packages WHERE oid=?',(head['oid'],)).fetchone():
+        raise ValueError('请在原专项工作台采用已回读的取消原单，再预览原目标的净余量')
+    if case[2]:
+        if approved is not None:
+            raise wr.Conflict('这张仓单已登记重做，请刷新任务')
+        return {'registered':{'online':case[2], **wr.loads(case[3])}}
+    purchases.validate_head(db,head)
+    if lifecycle_store.has_formal_document(db,head['oid'],head['warehouse'],'receipt'):
+        raise ValueError('本仓单已有正式实收，请进入原收货核对处理后续事实')
+    gid = order['gid']
+    active = allocations.active(db,head)
+    newer_allocation = allocations.allocation_round(db,head)
+    if ((active not in (None,gid) and (not newer_allocation or newer_allocation[0]!=active))
+            or allocations.locked(db,head) not in (None,gid)):
+        raise wr.Conflict('当前生成或下单关联已变化，请核对原分配')
+    generation,digest = allocations.read_generation(db,gid)
+    if digest != order['payload']['generation']['digest'] or generation['head']['warehouse'] != head['warehouse']:
+        raise wr.Conflict('原分配依据摘要或仓不符，不能释放占用')
+    reference = reference_key(head)
+    row = db.execute("SELECT payload FROM lifecycle_mappings WHERE stage='payment' AND name=?",
+                     (reference,)).fetchone() if lifecycle_store.exists(db) else None
+    original = wr.loads(row[0]) if row else None
+    if original and original.get('number') != order['internal']:
+        raise wr.Conflict('本机内部订单号关联与原单不同，请先核对订单关联')
+    successor = 'BH'+hashlib.sha256(('replenishment-jst-redo:'+online).encode()).hexdigest()[:24].upper()
+    if orders.read(db,successor):
+        raise wr.Conflict('后继线上单号已关联记录，请核对原任务')
+    return {'order':order,'head':head,'generation':generation,'active':active==gid,
+            'reference':reference,'original':original,'successor':successor}
+
+
+def begin_redo(path, online, progress=lambda _:None, cancel=None, *, approved=None):
+    """Release the original active reservation and reserve one successor identity."""
+    import jst_batches
+
     with closing(orders.connection(path)) as db, db:
         begin(db, cancel)
-        order = orders.read(db,online)
-        if not order or order['stage'] != 'CANCELLED':
-            raise ValueError('请先核对原单，确认聚水潭明确返回「已取消」')
-        head = order['payload']['head']
-        case = db.execute('SELECT internal,gid,successor,release FROM jst_cancellations WHERE online=?',
-                          (online,)).fetchone() if orders.exists(db,'jst_cancellations') else None
-        if not case or case[:2] != (order['internal'],order['gid']):
-            raise wr.Conflict('缺少可核实的原单取消凭据，请继续核对原任务')
-        if orders.exists(db,'special_packages') and db.execute('SELECT 1 FROM special_packages WHERE oid=?',(head['oid'],)).fetchone():
-            raise ValueError('请在原专项工作台采用已回读的取消原单，再预览原目标的净余量')
-        if case[2]:
-            return {'online':case[2], **wr.loads(case[3])}
-        purchases.validate_head(db,head)
-        if lifecycle_store.has_formal_document(db,head['oid'],head['warehouse'],'receipt'):
-            raise ValueError('本仓单已有正式实收，请进入原收货核对处理后续事实')
+        context = _redo_context(db,online,approved)
+        if 'registered' in context:
+            return context['registered']
+        order, head = context['order'], context['head']
+        generation, original = context['generation'], context['original']
+        successor = context['successor']
         gid, wh, oid = order['gid'], head['warehouse'], head['oid']
-        active = allocations.active(db,head)
-        if active not in (None,gid) or allocations.locked(db,head) not in (None,gid):
-            raise wr.Conflict('当前生成或下单关联已变化，请核对原分配')
-        generation,digest = allocations.read_generation(db,gid)
-        if digest != order['payload']['generation']['digest'] or generation['head']['warehouse'] != wh:
-            raise wr.Conflict('原分配依据摘要或仓不符，不能释放占用')
-        reference = reference_key(head)
-        row = db.execute("SELECT payload FROM lifecycle_mappings WHERE stage='payment' AND name=?",
-                         (reference,)).fetchone() if lifecycle_store.exists(db) else None
-        original = wr.loads(row[0]) if row else None
-        if original and original.get('number') != order['internal']:
-            raise wr.Conflict('本机内部订单号关联与原单不同，请先核对订单关联')
+        active = context['active']
         released = dict(db.execute('SELECT sku,quantity FROM jst_reservations WHERE gid=? ORDER BY rowid',
                                    (gid,))) if active else {}
         if active:
@@ -227,10 +253,7 @@ def begin_redo(path, online, progress=lambda _:None, cancel=None):
         db.execute('UPDATE jst_locks SET locked=0,at=?,reason=? WHERE oid=? AND warehouse=? AND gid=?',
                    (wr.now(),'聚水潭原单明确取消，业务确认沿原仓单重做',oid,wh,gid))
         if original:
-            db.execute("DELETE FROM lifecycle_mappings WHERE stage='payment' AND name=?",(reference,))
-        successor = 'BH'+hashlib.sha256(('replenishment-jst-redo:'+online).encode()).hexdigest()[:24].upper()
-        if orders.read(db,successor):
-            raise wr.Conflict('后继线上单号已关联记录，请核对原任务')
+            db.execute("DELETE FROM lifecycle_mappings WHERE stage='payment' AND name=?",(context['reference'],))
         release = {'head':head,'gid':gid,'batch_id':generation.get('batch_id'),'bid':generation['bid'],
                    'released':released,'internal':order['internal'],'reference':original,'at':wr.now()}
         orders.archive_cancelled(db,order)
@@ -243,3 +266,54 @@ def begin_redo(path, online, progress=lambda _:None, cancel=None):
         commit(db,cancel)
     progress(CommitProgress(False))
     return {'online':successor, **release}
+
+
+def preview_redo_batch(path, selected, owner, progress=lambda _:None, cancel=None):
+    """Read each original from its own warehouse and capture the reviewed identity."""
+    from jst_auto_order import browser_session, process
+
+    results = []
+    with browser_session(owner,progress,cancel) as browser:
+        for i, row in enumerate(sorted(selected,key=lambda r:r['warehouse']),1):
+            checkpoint(cancel)
+            online = row['online']
+            progress(RowProgress(f"核对原单 · {row['warehouse']} · {row['number']}",i,len(selected)))
+            result = {**row,'approved':None}
+            try:
+                checked, = process(path,[online],browser,'recover_cancelled',
+                                   cancel=cancel,approved={online:row['sequence']})
+                if not checked['ok'] or checked['stage'] != 'CANCELLED':
+                    raise ValueError(checked['reason'])
+                result['internal'] = checked['internal']
+                approved = (checked['sequence'],checked['internal'])
+                with closing(wr.read_connection(path)) as db:
+                    db.execute('BEGIN')
+                    _redo_context(db,online,approved)
+                result.update(approved=approved,reason='已核实聚水潭原单取消')
+            except (ValueError, RuntimeError, OSError, sqlite3.Error) as exc:
+                result['reason'] = str(exc)
+            results.append(result)
+    checkpoint(cancel)
+    return results
+
+
+def register_redo_batch(path, reviewed, progress=lambda _:None, cancel=None):
+    """Register only reviewed rows, keeping successful transactions on partial failure."""
+    results = []
+    total = sum(row['approved'] is not None for row in reviewed)
+    current = 0
+    for row in reviewed:
+        result = {**row,'release':None}
+        if row['approved'] is not None:
+            current += 1
+            try:
+                checkpoint(cancel)
+                progress(RowProgress(f"登记重做 · {row['warehouse']} · {row['number']}",current,total))
+                result['release'] = begin_redo(path,row['online'],progress,cancel,approved=row['approved'])
+                result['reason'] = '已登记，可返回分配页'
+            except Cancelled:
+                result['reason'] = '未登记，作业已停止'
+            except (ValueError, RuntimeError, OSError, sqlite3.Error) as exc:
+                result['reason'] = str(exc)
+        results.append(result)
+    return results

@@ -81,6 +81,7 @@ class Portal:
         self.audit_rejected=False
         self.price_diff=False
         self.quantity_diff=False
+        self.preview_contact_diff=set()
     def action(self, name, order, **kwargs):
         payload=order['payload']
         wh=payload['head']['warehouse']
@@ -96,6 +97,8 @@ class Portal:
             result['amount']='180.5' if name=='preview' else '192'
         if self.quantity_diff and name in ('preview','stage_import'):
             result['lines'][0][1]='1'
+        if name in ('preview','stage_import') and key in self.preview_contact_diff:
+            result['contact_ok']=False
         if name in ('lookup','stage_audit'):
             existing=self.orders.get(key)
             if not existing:return {'found':False,'online':key,'binding':binding,'exact_absence':True}
@@ -620,6 +623,17 @@ class AutoOrders(unittest.TestCase):
             self.assertEqual(record['proof']['binding']['warehouse'],warehouse)
             sheet=xlrd.open_workbook(file_contents=record['workbook']).sheet_by_index(0)
             self.assertEqual(sheet.cell_value(1,2),buyer)
+
+    def test_one_warehouse_preview_contact_display_difference_allows_both_imports(self):
+        selected=self.dual_selection()
+        keys=service.prepare(self.path,selected)['ready']
+        self.assertEqual(len(keys),2)
+        self.portal.preview_contact_diff.add(keys[1])
+        previews=service.process(self.path,keys,self.portal,'preview')
+        self.assertEqual([r['stage'] for r in previews],['PREVIEWED','PREVIEWED'])
+        imported=service.process(self.path,keys,self.portal,'submit')
+        self.assertEqual([r['stage'] for r in imported],['IMPORTED','IMPORTED'])
+        self.assertEqual([key for name,key in self.portal.calls if name=='import'],keys)
 
     def test_reprepares_both_warehouses_with_existing_online_numbers(self):
         selected=self.dual_selection()

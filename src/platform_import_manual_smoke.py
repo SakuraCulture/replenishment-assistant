@@ -223,7 +223,7 @@ def exercise(app,win,root,fixture,phase):
         jst_window.table.item(row,0).setCheckState(Qt.CheckState.Checked)
         assert jst_window.manual_btn.isEnabled()
         with patch.object(jst_manual_order_ui.ManualOrderDialog,'exec',lambda dialog:present(dialog,windows)):
-            jst_window.manual_btn.click()
+            jst_window.manual_btn.trigger()
         jd=windows[-1]
         assert jd.row['online']==jst_key
         ax_details=None

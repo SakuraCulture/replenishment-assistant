@@ -172,7 +172,7 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
                 store.put_prepared(db,snapshot,workbook,(old or {}).get('sequence'))
             ready.append(online)
         except ValueError as exc:
-            failed.append({'order':show_name(h),'reason':str(exc),'stats':stats})
+            failed.append({'order':show_name(h),'warehouse':h['warehouse'],'number':h['number'],'reason':str(exc),'stats':stats})
     return {'ready':ready,'failed':failed}
 
 
@@ -181,6 +181,10 @@ def export_file(path, online, target, progress=lambda _:None, cancel=None):
         row=store.read(db,online,workbook=True)
         from special_plans import exists as has_special
         special=row and has_special(db,'special_packages') and db.execute('SELECT 1 FROM special_packages WHERE online=?',(online,)).fetchone()
+        if row and not row.get('historical'):
+            head=row['payload']['head']
+            if allocations.allocation_round(db,head) and allocations.active(db,head)!=row['gid']:
+                raise Check('旧分配已失效，请按有效分配重新制表')
     if not row or row['stage'] in store.RELEASED:
         raise Check('此任务已有下单动作，请从原任务核对')
     checkpoint(cancel)
@@ -265,7 +269,7 @@ def _issues(result):
     return '、'.join(labels.get(x,labels['OTHER']) for x in issues) if isinstance(issues,list) else labels['OTHER'] if issues else ''
 
 
-def _preview_evidence(order, result):
+def _preview_evidence(order, result, *, verify_original_buyer=True):
     p=order['payload'];binding=result.get('binding') or {}
     if result.get('exists'):
         raise Check('平台已有同店铺同线上单号，请核对原平台订单')
@@ -275,8 +279,8 @@ def _preview_evidence(order, result):
     issues=_issues(result)
     if issues:
         raise Check('聚水潭预览待核：'+issues)
-    if result.get('contact_ok') is not True:
-        raise Check('买家、手机号或收货地址与送审文件不一致')
+    if verify_original_buyer and result.get('contact_ok') is not True:
+        raise Check('聚水潭原单买家身份待核')
     expected={sku:Decimal(qty) for sku,qty,_ in p['lines']}
     seen=set()
     for row in result.get('lines',[]):
@@ -296,7 +300,7 @@ def _preview_evidence(order, result):
 
 
 def _preview_for_submit(order, result):
-    evidence=_preview_evidence(order,result)
+    evidence=_preview_evidence(order,result,verify_original_buyer=False)
     if order['payload'].get('import_format')==template.SINGLE:
         if result.get('order_count')!=1 or result.get('import_format')!=template.SINGLE or evidence['amount'] is None:
             raise Check('单商品模式缺少一张整单及金额的完整平台预览，请核对原文件')
@@ -453,7 +457,10 @@ def _record_found(path, order, result, cancel, *, identity_only=False, manual_pr
             # The reply belongs to the earlier online number. It cannot change
             # the successor's state, reference, payment or inventory.
             return latest
-        if allocations.active(db,h)!=order['gid']:
+        active_changed=allocations.active(db,h)!=order['gid']
+        superseded=(active_changed and identity_only and manual_proof is None
+                    and allocations.allocation_round(db,h) is not None)
+        if active_changed and not superseded:
             if latest and latest.get('stage')=='CANCELLED' and native_status==CANCELLED and latest.get('internal')==internal:
                 from special_plans import exists as has_special,latest as last_special
                 if has_special(db,'special_packages'):
@@ -461,30 +468,33 @@ def _record_found(path, order, result, cancel, *, identity_only=False, manual_pr
                     if original and original['body']['status']=='已取消' and original['body']['gid']==order['gid']:
                         return latest
             raise wr.Conflict('外部原单已查到，本机原生成版本已变化，请核对关联')
-        if identity_basis or manual_proof is not None:
+        if identity_basis or manual_proof is not None or superseded:
             from warehouse_execution import validate_visibility
             validate_visibility(db, h)
             generation, digest = allocations.read_generation(db, order['gid'])
             if digest != order['payload']['generation']['digest'] or any(generation['head'].get(k) != h[k] for k in HEAD_KEYS):
                 raise wr.Conflict('原仓单签发修订或生成单摘要已变化，请核对原关联')
         current=store.update(db,order,stage,proof=proof,internal=internal,status=state,reason=reason)
-        from special_native import remember_jst
-        remember_jst(db,current,result)
-        lock=allocations.locked(db,h)
-        if lock and lock!=order['gid']:
-            raise wr.Conflict('已存在其他生成版本的下单标记，请核对')
-        if not lock:
-            db.execute('INSERT INTO jst_locks VALUES(?,?,?,?,?,?) ON CONFLICT(oid,warehouse) DO UPDATE SET gid=excluded.gid,locked=1,at=excluded.at,reason=excluded.reason',
-                       (h['oid'],h['warehouse'],order['gid'],1,wr.now(),'聚水潭自动下单已按原单回查'))
-        lifecycle_store.schema(db)
-        ref=reference_key(h)
-        registered=db.execute("SELECT payload FROM lifecycle_mappings WHERE stage='payment' AND name=?",(ref,)).fetchone()
-        if registered and wr.loads(registered[0]).get('number')!=internal:
-            raise wr.Conflict('本机登记的聚水潭内部订单号不同，请核对原关联')
-        if not registered:
-            lifecycle_store.save_mapping(db,'payment',ref,{'head':{k:h[k] for k in HEAD_KEYS},'number':internal,
-                                                          'saved':wr.now(),'source':'聚水潭自动下单'})
+        if not superseded:
+            from special_native import remember_jst
+            remember_jst(db,current,result)
+            lock=allocations.locked(db,h)
+            if lock and lock!=order['gid']:
+                raise wr.Conflict('已存在其他生成版本的下单标记，请核对')
+            if not lock:
+                db.execute('INSERT INTO jst_locks VALUES(?,?,?,?,?,?) ON CONFLICT(oid,warehouse) DO UPDATE SET gid=excluded.gid,locked=1,at=excluded.at,reason=excluded.reason',
+                           (h['oid'],h['warehouse'],order['gid'],1,wr.now(),'聚水潭自动下单已按原单回查'))
+            lifecycle_store.schema(db)
+            ref=reference_key(h)
+            registered=db.execute("SELECT payload FROM lifecycle_mappings WHERE stage='payment' AND name=?",(ref,)).fetchone()
+            if registered and wr.loads(registered[0]).get('number')!=internal:
+                raise wr.Conflict('本机登记的聚水潭内部订单号不同，请核对原关联')
+            if not registered:
+                lifecycle_store.save_mapping(db,'payment',ref,{'head':{k:h[k] for k in HEAD_KEYS},'number':internal,
+                                                              'saved':wr.now(),'source':'聚水潭自动下单'})
         detail={'internal':internal,'stage':stage}
+        if superseded:
+            detail['allocation_superseded']=True
         if identity_basis:
             detail['identity_basis']=identity_basis
         if native_status in (ORDINARY_AUDIT_DONE,'已付款待审核',*SHIPPING_PLATFORM_STATES,*REVIEW_PLATFORM_STATES):
@@ -492,7 +502,7 @@ def _record_found(path, order, result, cancel, *, identity_only=False, manual_pr
         if manual_proof is not None:
             detail['manual_binding']=manual_proof['manual_binding']['digest']
             confirmation.record(db,current,native_status,rows=manual_proof['manual_binding']['rows'])
-        elif (stage=='AUDITED' and not identity_only) or native_status in confirmation.REVERSED:
+        elif not superseded and ((stage=='AUDITED' and not identity_only) or native_status in confirmation.REVERSED):
             confirmation.record(db,current,native_status)
         if stage == 'CANCELLED':
             from jst_fulfillment_store import current as payment_candidate, observe
@@ -501,7 +511,7 @@ def _record_found(path, order, result, cancel, *, identity_only=False, manual_pr
             observe(db,current['online'],'PAYMENT_SOURCE_PENDING',reason,candidate.get('digest'))
         _event(db,current,'聚水潭原单核对',detail)
         commit(db,cancel)
-    return current
+    return {**current,'allocation_superseded':True} if superseded else current
 
 
 def lookup_scoped(browser, order, *, allow_unbound=True):
@@ -626,7 +636,7 @@ def _preview_pending(path,browser,order,cancel):
     if not (rejected or unsent):
         amount=evidence['amount']
         note='原文件预览通过'+(f'，本次平台预览金额 {amount} 元' if amount is not None else '')
-        return {**order,'reason':note+'。原单精确查询为 0 张，上次发送结果仍待核实'}
+        return {**order,'previewed':True,'reason':note+'。原单精确查询为 0 张，上次发送结果仍待核实'}
     with closing(store.connection(path)) as db,db:
         begin(db,cancel)
         fresh=store.update(db,order,'PREVIEWED',proof=evidence,reason='原单已重新预览，等待确认导入')
@@ -750,7 +760,10 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
                   'ok':ok and not result.get('lookup_missing') and stage!='IMPORT_FAILED'
                        and not (action=='submit' and proof.get('import_not_sent')),
                   'sequence':result['sequence'],'internal':result.get('internal')}
-        if (prepare_payment and ok and not result.get('lookup_missing') and action in ('submit','recover','preview') and result.get('internal')
+        if action=='preview':
+            response['previewed']=ok and (stage=='PREVIEWED' or bool(result.get('previewed')))
+        if (prepare_payment and ok and not (result.get('lookup_missing') or result.get('allocation_superseded'))
+                and action in ('submit','recover','preview') and result.get('internal')
                 and result['stage'] in ('IMPORTED','AUDITED','AUDIT_UNKNOWN','REVIEW')):
             payment=prepare_payment(path,[online],browser,progress,cancel)[0]
             response['payment']=payment

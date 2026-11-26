@@ -177,7 +177,10 @@ def start_smoke(app, host, args):
         button(desk,'查看物料订单').click()
 
     def yes(dialog):
-        dialog.button(QMessageBox.StandardButton.Yes).click()
+        from jst_order_dialogs import ImportConfirmation
+
+        assert isinstance(dialog,ImportConfirmation)
+        dialog.confirm_btn.click()
 
     def auto_orders(dialog):
         assert len(dialog.records)==3
