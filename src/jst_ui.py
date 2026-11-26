@@ -78,7 +78,8 @@ class GenerationDialog(QDialog):
         preview_actions=QHBoxLayout();self.preview_btn=button('预览库存分配',self.preview,True);preview_actions.addWidget(self.preview_btn)
         self.recovery_btn=button('恢复分配状态',self.recover_state);preview_actions.addWidget(self.recovery_btn)
         self.evidence_btn=button('导出本批采用仓资料',self.export_stock_evidence);self.evidence_btn.setObjectName('exportAllocationStockEvidence');self.evidence_btn.setToolTip('导出预览或原批实际采用的仓资料和库存依据，不读取当前默认资料替代。');preview_actions.addWidget(self.evidence_btn);v.addLayout(preview_actions)
-        self.summary=label('新批从选用库存开始，不扣其他批占用。预览不保存；确认后固定门店顺序和库存。','muted');self.summary.setWordWrap(True);v.addWidget(self.summary)
+        self.summary=label('选择仓资料后预览。确认生成时固定库存和分配顺序。','muted')
+        self.summary.setMinimumHeight(self.summary.fontMetrics().lineSpacing()+6);v.addWidget(self.summary)
         self.review=AllocationReview(self);v.addWidget(self.review,1)
         self.accept_issues=QCheckBox('已核对缺口及待核原因，同意待核商品本次不安排');v.addWidget(self.accept_issues)
         self.auto_export=QCheckBox('每单保存后立即导出，后续继续生成');self.auto_export.setChecked(False);v.addWidget(self.auto_export)
@@ -207,8 +208,9 @@ class GenerationDialog(QDialog):
             self.order_note.setText('上方列表即本次预览执行顺序；跳过单列在末尾，不参与分配。')
             payment_corrections=sum(bool(p.get('previous_payment')) for p in v['plans'])
             redo_stocks = [wh for wh, b in self.catalogs.items() if b.get('reserve_other_orders')]
-            redo_note = ('\n重做仓扣除其他有效本地占用：'+'、'.join(redo_stocks)) if redo_stocks else ''
+            redo_note = (' 已核对重做仓的其他本地占用（'+'、'.join(redo_stocks)+'）。') if redo_stocks else ''
             self.summary.setText(f"本次预览 {len(v['plans'])} 张仓单；跳过 {len(v['skipped'])} 张（不计入本次汇总）。"+'；'.join(s['head']['number']+'：'+s['reason'] for s in v['skipped'])+(f'\n其中{payment_corrections}单的旧付款依据已因新回传失效：旧付款事实保留；本次仅更新本地分配，生成后需重新核对付款，不自动更改聚水潭或翱象订单。' if payment_corrections else '')+redo_note)
+            self.status.setText('预览完成，请核对分配结果后确认生成。' if v['plans'] else '当前范围没有可生成的仓单。')
             self.generate_btn.setEnabled(bool(v['plans']));self.accept_issues.setChecked(False)
         except Exception as exc:self.plan=None;self.review.replace([],'预览失败，请重新预览');self.generate_btn.setEnabled(False);warn(self,exc)
     def export_stock_evidence(self):

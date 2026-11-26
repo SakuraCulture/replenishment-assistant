@@ -181,7 +181,8 @@ def withdraw(path, approved, reason, owner, progress=lambda _: None, cancel=None
             if stamp != row['stamp'] or order['online'] != row['online'] or _release_blocker(db, head):
                 raise wr.Conflict(head['number'] + '：原任务、占用或下游已变化，请重新核对')
             evidence = {**stamp, 'reason': reason, 'ending': row['ending'], 'lookup': row['lookup'],
-                        'initial_lookup': approvals[row['online']]['lookup'], 'confirmed_at': wr.now()}
+                        'initial_lookup': approvals[row['online']]['lookup'], 'confirmed_at': wr.now(),
+                        'original_stage': order['stage'], 'original_reason': order['reason']}
             tasks.archive_withdrawn(db, order, {**(order['proof'] or {}), 'withdrawal': evidence})
             jst_orders.release_generation(db, head, stamp['gid'], stamp['batch_id'], reason,
                                           online=order['online'], evidence=evidence)
