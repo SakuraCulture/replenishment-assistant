@@ -8,7 +8,7 @@ import json
 import os
 import sqlite3
 import uuid
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from datetime import datetime
 from pathlib import Path
 
@@ -62,6 +62,27 @@ class InstanceLease:
     def close(self):
         if self.db is not None:
             self.db.close(); self.db = None
+
+
+def lease_is_idle(root):
+    """Probe only the instance guard. A live workbench holds a read transaction here."""
+    guard = _paths(Path(root).resolve())[1]
+    try:
+        guard.stat()
+    except FileNotFoundError:
+        return True
+    except OSError:
+        return False
+    try:
+        with closing(sqlite3.connect(guard.as_uri()+'?mode=rw', uri=True, timeout=0)) as db:
+            if db.execute('PRAGMA journal_mode').fetchone()[0] not in ('delete', 'truncate', 'persist'):
+                return False
+            db.execute('BEGIN EXCLUSIVE')
+            db.execute('SELECT id FROM app_instance LIMIT 1').fetchone()
+            db.rollback()
+            return True
+    except sqlite3.Error:
+        return False
 
 
 @contextmanager

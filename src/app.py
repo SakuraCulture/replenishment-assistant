@@ -28,7 +28,7 @@ def _main():
             raise ValueError('Synthetic location acceptance root mismatch')
     app.aboutToQuit.connect(lambda:runtime.transition('EVENT_LOOP_EXIT'))
     from single_instance import SingleInstance,scope
-    primary=SingleInstance(scope(sys.argv,logs),parent=app)
+    primary=SingleInstance(scope(sys.argv,logs),parent=app,data_root=logs)
     runtime.primary=primary
     try:
         if not primary.acquire():return 0

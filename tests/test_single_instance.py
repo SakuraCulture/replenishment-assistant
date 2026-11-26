@@ -1,7 +1,10 @@
 """Real local IPC: second launch restores hidden/minimized first window."""
-import json,os,subprocess,sys,tempfile,time,unittest,uuid
+import json,os,sqlite3,subprocess,sys,tempfile,time,unittest,uuid
+from contextlib import closing,contextmanager
 from pathlib import Path
-from single_instance import scope
+from unittest.mock import Mock,patch
+from application_reset import InstanceLease,lease_is_idle
+from single_instance import SingleInstance,process_endpoint,scope
 
 HELPER='''
 import json,sys
@@ -29,6 +32,56 @@ app.exec();lease.close()
 '''
 
 class SingleInstanceTests(unittest.TestCase):
+    def test_offline_marked_profile_without_test_arguments_has_its_own_scope(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)/'settings'
+            (root.parent/'synthetic.json').write_text('{"synthetic":true,"live_platform":false}')
+            with patch.dict(os.environ,REPLENISHMENT_DATA_DIR=str(root)):
+                self.assertTrue(scope([],root).startswith('qa:'))
+                self.assertEqual(scope([],root.parent/'other'),'main')
+            (root.parent/'synthetic.json').write_text('{"synthetic":true,"live_platform":true}')
+            with patch.dict(os.environ,REPLENISHMENT_DATA_DIR=str(root)):
+                self.assertEqual(scope([],root),'main')
+
+    def test_skip_only_an_established_guarded_workbench_on_other_data(self):
+        with tempfile.TemporaryDirectory() as temp:
+            folder=Path(temp);business=folder/'business/settings';other=folder/'isolated/settings'
+            business.mkdir(parents=True);other.mkdir(parents=True)
+            image=folder/'release/补货助手.exe';(image.parent/'_internal').mkdir(parents=True)
+            (image.parent/'_internal/version.json').write_text(json.dumps(
+                dict(app='补货助手',entry=image.name,version='0.54.16')),'utf-8')
+            main=SingleInstance(folder=folder/'locks',data_root=business)
+            qa=InstanceLease(other)
+            try:
+                self.assertTrue(lease_is_idle(business))
+                self.assertFalse((business.parent/'.settings.instances.sqlite3').exists())
+                self.assertFalse(lease_is_idle(other))
+                self.assertEqual(main.independent_windows({1234:str(image)}),{1234})
+                actual=InstanceLease(business)
+                try:self.assertEqual(main.independent_windows({1234:str(image)}),set())
+                finally:actual.close()
+                self.assertTrue(lease_is_idle(business))
+                # WAL readers coexist with BEGIN EXCLUSIVE and cannot prove an idle data root.
+                with closing(sqlite3.connect(business.parent/'.settings.instances.sqlite3')) as db:
+                    self.assertEqual(db.execute('PRAGMA journal_mode=WAL').fetchone()[0],'wal')
+                self.assertFalse(lease_is_idle(business))
+            finally:qa.close()
+
+    def test_second_click_sends_focus_only_to_the_file_lock_owner(self):
+        with tempfile.TemporaryDirectory() as temp:
+            lease=SingleInstance('private-test',folder=Path(temp))
+            lease.lock=Mock()
+            lease.lock.getLockInfo.return_value=(5678,'local','workbench')
+            responses=iter([None,1234,5678]);addresses=[]
+            @contextmanager
+            def hello(name,**kwargs):
+                addresses.append(name)
+                yield object(),next(responses)
+            with patch('single_instance.greeting',hello),patch.object(lease,'focus',return_value=b'OK') as focus:
+                lease.activate_existing()
+            self.assertEqual(addresses,[process_endpoint(5678),lease.name,process_endpoint(5678)])
+            self.assertEqual([call.args[1] for call in focus.call_args_list],[5678])
+
     def test_main_is_user_global_and_smoke_isolated(self):
         self.assertEqual(scope([],Path('a')),scope([],Path('b')))
         self.assertEqual(scope(['--unmarked-smoke'],Path('a')),'main')

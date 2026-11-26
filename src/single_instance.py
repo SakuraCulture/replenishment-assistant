@@ -3,9 +3,10 @@
 Acquired before opening application data. Worker entrypoints do not call main().
 The lock is outside movable data roots and Qt checks dead owners on next launch.
 """
-import hashlib,os,time
+import hashlib,logging,os,time
+from contextlib import contextmanager
 from pathlib import Path
-from PySide6.QtCore import QObject,QLockFile,Qt
+from PySide6.QtCore import QObject,QLockFile,QStandardPaths,Qt
 from PySide6.QtNetwork import QLocalServer,QLocalSocket
 
 class DetachedGuard:
@@ -16,9 +17,13 @@ class DetachedGuard:
 
 def scope(arguments,data_root):
     import json
-    marker=Path(data_root).resolve().parent/'synthetic.json';marked=False
+    root=Path(data_root).resolve()
+    marker=root.parent/'synthetic.json';marked=False;offline=False
     if marker.is_file() and marker.stat().st_size<=65536:
-        try:marked=json.loads(marker.read_text('utf-8')).get('synthetic') is True
+        try:
+            spec=json.loads(marker.read_text('utf-8'))
+            marked=spec.get('synthetic') is True
+            offline=marked and spec.get('live_platform') is False
         except (ValueError,OSError,AttributeError):pass
     if '--data-location-smoke' in arguments:
         i=arguments.index('--data-location-smoke')
@@ -30,19 +35,63 @@ def scope(arguments,data_root):
             if spec.get('synthetic') is True and spec.get('live_platform') is False and Path(os.environ.get('LOCALAPPDATA','')).resolve()==local and local.parent==Path(os.environ['TEMP']).resolve() and re.fullmatch('replenishment-location-[a-f0-9]{16}',local.name):
                 return 'qa-location:'+str(out).casefold()
         except (ValueError,OSError,IndexError,AttributeError):pass
-    isolated=marked and any(a.startswith('--') and (a.endswith('-smoke') or a=='--business-flow-acceptance') for a in arguments)
+    override=os.environ.get('REPLENISHMENT_DATA_DIR')
+    isolated=offline and override and Path(override).resolve()==root
+    isolated=isolated or marked and any(a.startswith('--') and (a.endswith('-smoke') or a=='--business-flow-acceptance') for a in arguments)
     return 'qa:'+str(Path(data_root).resolve()).casefold() if isolated else 'main'
 
 
+def process_endpoint(pid):
+    return f'Youtuan-Replenishment-Window-{pid}'
+
+
+@contextmanager
+def greeting(name, *, wait=500):
+    """Read the owner's PID without focusing or changing any window."""
+    client=QLocalSocket()
+    try:
+        client.connectToServer(name)
+        pid=None
+        if client.waitForConnected(200):
+            if not client.canReadLine():client.waitForReadyRead(wait)
+            line=bytes(client.readLine()).strip()
+            if line.isdigit():pid=int(line)
+        yield client,pid
+    finally:
+        client.abort()
+
+
 class SingleInstance(QObject):
-    def __init__(self,scope='main',*,folder=None,parent=None):
+    def __init__(self,scope='main',*,folder=None,parent=None,data_root=None):
         super().__init__(parent)
         base=Path(folder or Path(os.environ.get('LOCALAPPDATA',Path.home()))/'YoutuanTools'/'instance')
         base.mkdir(parents=True,exist_ok=True)
         key=hashlib.sha256((str(Path.home()).casefold()+'|'+scope).encode()).hexdigest()[:32]
         self.name='Youtuan-Replenishment-'+key;self.scope=scope
         self.lock=QLockFile(str(base/(key+'.lock')));self.lock.setStaleLockTime(0)
-        self.server=None;self.window=None;self.pending=False;self.owned=False;self.clients=set();self.buffers={};self.closing=False
+        self.data_root=data_root
+        # Older launchers use the user-wide endpoint. A redirected diagnostics
+        # profile must not advertise itself there as the user's business window.
+        canonical=Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.GenericDataLocation))/'YoutuanTools/instance'
+        self.public_alias=scope!='main' or os.name!='nt' or base.resolve()==canonical.resolve()
+        self.servers=[];self.alias_peer=None;self.window=None;self.pending=False;self.owned=False;self.clients=set();self.buffers={};self.closing=False
+
+    def independent_windows(self,peers):
+        from application_reset import lease_is_idle
+        from application_processes import packaged_with_data_lease
+        if not peers or self.data_root is None or not lease_is_idle(self.data_root):
+            return set()
+        # We hold this profile's primary lock. A peer speaking our protocol
+        # with a live window and no lease on our data belongs to another profile.
+        separate={pid for pid,image in peers.items() if packaged_with_data_lease(image)}
+        others=set(peers)-separate
+        if not others:return separate
+        with greeting(self.name) as (_,older_pid):
+            separate.update(others & {older_pid})
+        for pid in others-separate:
+            with greeting(process_endpoint(pid)) as (_,owner):
+                if owner==pid:separate.add(pid)
+        return separate
 
     def acquire(self):
         if not self.lock.tryLock(0):
@@ -51,20 +100,47 @@ class SingleInstance(QObject):
         if self.scope=='main':
             from application_processes import foreground_legacy
             try:
-                if foreground_legacy():self.close();return False
+                if foreground_legacy(self.independent_windows):self.close();return False
             except Exception:self.close();raise
-        self.server=QLocalServer(self)
-        self.server.setSocketOptions(QLocalServer.SocketOption.UserAccessOption)
-        # Only the lock owner may remove a pipe left by a crashed process.
-        QLocalServer.removeServer(self.name)
-        if not self.server.listen(self.name):
-            self.close();raise RuntimeError('已有窗口通信未建立，未打开第二个业务窗口')
-        self.server.newConnection.connect(self.accept)
+        self.listen(process_endpoint(os.getpid()))
+        if self.public_alias:
+            self.publish_alias()
         return True
 
-    def accept(self):
-        while self.server and self.server.hasPendingConnections():
-            client=self.server.nextPendingConnection();self.clients.add(client)
+    def publish_alias(self):
+        if self.alias_peer:
+            self.alias_peer.deleteLater()
+            self.alias_peer=None
+        if self.closing:return
+        peer=QLocalSocket(self)
+        peer.connectToServer(self.name)
+        if peer.waitForConnected(200):
+            # An older isolated build already owns this address. Keep a passive
+            # connection so older business launchers can find us once it exits.
+            self.alias_peer=peer
+            peer.disconnected.connect(self.publish_alias,Qt.ConnectionType.QueuedConnection)
+            return
+        peer.deleteLater()
+        self.listen(self.name,required=False)
+
+    def listen(self,name,*,required=True):
+        server=QLocalServer(self)
+        server.setSocketOptions(QLocalServer.SocketOption.UserAccessOption)
+        QLocalServer.removeServer(name)
+        if not server.listen(name):
+            reason=server.errorString()
+            server.deleteLater()
+            if required:
+                self.close()
+                raise RuntimeError('已有窗口通信未建立，未打开第二个业务窗口：'+reason)
+            logging.warning('旧版工作台唤醒入口未建立：%s',reason)
+            return
+        self.servers.append(server)
+        server.newConnection.connect(lambda:self.accept(server))
+
+    def accept(self,server):
+        while server.hasPendingConnections():
+            client=server.nextPendingConnection();self.clients.add(client)
             client.readyRead.connect(lambda c=client:self.read(c))
             client.disconnected.connect(lambda c=client:self.drop(c))
             client.write((str(os.getpid())+'\n').encode());client.flush()
@@ -109,34 +185,42 @@ class SingleInstance(QObject):
         if message:raise RuntimeError(message)
         deadline=time.monotonic()+12
         while time.monotonic()<deadline:
-            client=QLocalSocket(self);client.connectToServer(self.name)
-            if client.waitForConnected(300):
-                if not client.canReadLine():client.waitForReadyRead(5000)
-                pid=bytes(client.readLine()).strip()
-                if pid.isdigit():
-                    if os.name=='nt':
-                        import ctypes
-                        ctypes.windll.user32.AllowSetForegroundWindow(int(pid))
-                    client.write(b'focus\n');client.waitForBytesWritten(1000)
-                    if not client.canReadLine():client.waitForReadyRead(5000)
-                    reply=bytes(client.readLine()).strip()
-                    if reply==b'OK':client.abort();client.deleteLater();return
-                    if reply==b'BUSY':client.abort();client.deleteLater();raise RuntimeError('原实例正在安全退出或迁入资料；请等待结束，未打开第二个业务窗口')
-            client.abort();client.deleteLater();time.sleep(.05)
+            lock_info=self.lock.getLockInfo()
+            expected=lock_info[0] if lock_info else 0
+            if expected>0:
+                for name in (process_endpoint(expected),self.name):
+                    with greeting(name,wait=1500) as (client,pid):
+                        if pid!=expected:continue
+                        reply=self.focus(client,pid)
+                        if reply==b'OK':return
+                        if reply==b'BUSY':raise RuntimeError('原实例正在安全退出或迁入资料；请等待结束，未打开第二个业务窗口')
+            time.sleep(.05)
         raise RuntimeError('补货助手已在运行，正在启动或未响应。未再打开业务窗口；请稍后再次打开以唤醒原窗口。')
 
+    @staticmethod
+    def focus(client,pid):
+        if os.name=='nt':
+            import ctypes
+            ctypes.windll.user32.AllowSetForegroundWindow(pid)
+        client.write(b'focus\n');client.waitForBytesWritten(1000)
+        if not client.canReadLine():client.waitForReadyRead(5000)
+        return bytes(client.readLine()).strip()
+
     def close(self):
-        self.closing=True;self.window=None
+        self.quiesce()
         for client in list(self.clients):client.abort()
         self.clients.clear()
         self.buffers.clear()
-        if self.server:self.server.close();self.server.deleteLater();self.server=None
+        for server in self.servers:server.deleteLater()
+        self.servers.clear()
         if self.owned:self.lock.unlock();self.owned=False
 
     def quiesce(self):
         # Retain the lock through apply; late activation cannot resurrect widgets.
         self.closing=True;self.window=None
-        if self.server:self.server.close()
+        if self.alias_peer:
+            self.alias_peer.blockSignals(True);self.alias_peer.abort();self.alias_peer.deleteLater();self.alias_peer=None
+        for server in self.servers:server.close()
 
     def take_guard(self):
         """Transfer ownership without a moment in which another writer can enter."""
@@ -144,8 +228,8 @@ class SingleInstance(QObject):
         self.quiesce()
         for client in list(self.clients):client.abort()
         self.clients.clear();self.buffers.clear()
-        if self.server:
-            from shiboken6 import delete
-            self.server.close();delete(self.server);self.server=None
+        from shiboken6 import delete
+        for server in self.servers:delete(server)
+        self.servers.clear()
         guard=DetachedGuard(self.lock);self.lock=None;self.owned=False
         return guard
