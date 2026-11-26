@@ -127,6 +127,9 @@ class Editor(QDialog):
             headers=['商品编码','更正操作','更正前数量','更正后数量','更正前金额','更正后金额']
             note=self.head['number']+' · '+self.head['warehouse']+f" · 共 {len(rows)} 项更正。已核对数量采用库存单位。"
             if plan.get('note'):note+='\n'+plan['note']
+            if self.stage=='operations':
+                from lifecycle_review_layout import OPERATIONS_UPDATE_NOTICE
+                note+='\n'+OPERATIONS_UPDATE_NOTICE
             if not review_rows(self,'核对手动更正',headers,rows,note,'确认保存更正'): return
             self.saved_receipt=self.save(self,self.host,plan['write'])
             self.accept()

@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QMimeData, QPoint, QRect, QTimer, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QFileDialog, QTableView
+from PySide6.QtWidgets import QFileDialog, QLabel, QTableView
 
 import catalog_session_ui
 from catalog_sync_client import ComponentError
@@ -343,6 +343,7 @@ class LayoutExercise(Exercise):
                 plan,=window.plan['plans']
                 assert plan['stage']=='operations' and plan['changed']
                 assert next(r['base_quantity'] for r in plan['payload']['rows'] if r['sku']==row['sku'])==str(new_qty)
+                assert any(w.isVisible() and '旧分配和下游依据失效' in w.text() for w in window.review.findChildren(QLabel))
                 QTest.qWait(60)
                 self.shot(window,'已下单仓单_运营更新核对')
                 window.review.complete.setChecked(True)

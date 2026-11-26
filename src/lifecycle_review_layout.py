@@ -6,6 +6,9 @@ from ui_controls import label
 import lifecycle_io as io
 
 
+OPERATIONS_UPDATE_NOTICE = '运营签发新版保存后，旧分配和下游依据失效。聚水潭原单和历史凭据仍可核对。'
+
+
 def arrange(d,plan,details,disclosure,filters,footer,correction_table=None):
     root=d.layout();notices=[]
     while root.count():
@@ -43,7 +46,9 @@ def arrange(d,plan,details,disclosure,filters,footer,correction_table=None):
     splitter.setSizes([300,900]);splitter.setStretchFactor(0,0);splitter.setStretchFactor(1,1);splitter.setChildrenCollapsible(False);root.addWidget(splitter,1)
     d.view_scope=label('','muted');root.addWidget(d.view_scope)
     root.addWidget(d.complete);root.addWidget(d.extra_ack)
-    root.addWidget(label('确认保存本批全部完整单据，筛选仅用于查看；不累计旧版本，不修改签发和其它环节。','muted'))
+    operations_changed=any(p['stage']=='operations' and p['changed'] and not p['payload']['pending'] for p in plan['plans'])
+    root.addWidget(label(OPERATIONS_UPDATE_NOTICE if operations_changed else
+                         '确认保存本批全部完整单据，筛选仅用于查看。','muted'))
     root.addLayout(footer)
     def selected():
         item=d.scope_tree.currentItem()
