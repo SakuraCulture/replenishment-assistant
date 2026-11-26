@@ -2,12 +2,25 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
-import {CatalogError} from './common.mjs';
+import {CatalogError,sleep} from './common.mjs';
+
+const sharingDelays = [25, 50, 100, 200, 400, 800, 1000, 1000, 1000];
 
 async function atomic(file,data){
   const tmp=file+'.'+crypto.randomUUID()+'.tmp',handle=await fs.open(tmp,'wx');
   try{await handle.writeFile(JSON.stringify(data,null,2));await handle.sync();}finally{await handle.close();}
-  await fs.rename(tmp,file);
+  // The SQLite writer guard and JobStore.tail retain ownership while a Windows
+  // reader briefly denies replacement. Only publish the already synced bytes.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await fs.rename(tmp, file);
+      return;
+    } catch (error) {
+      if (process.platform !== 'win32' || !['EPERM', 'EBUSY', 'EACCES'].includes(error.code)
+          || attempt >= sharingDelays.length) throw error;
+      await sleep(sharingDelays[attempt]);
+    }
+  }
 }
 const exists=async file=>{try{await fs.access(file);return true;}catch(e){if(e.code==='ENOENT')return false;throw e;}};
 export class JobStore {
