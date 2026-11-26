@@ -265,7 +265,7 @@ def _issues(result):
     return '、'.join(labels.get(x,labels['OTHER']) for x in issues) if isinstance(issues,list) else labels['OTHER'] if issues else ''
 
 
-def _preview_evidence(order, result):
+def _preview_evidence(order, result, *, verify_original_buyer=True):
     p=order['payload'];binding=result.get('binding') or {}
     if result.get('exists'):
         raise Check('平台已有同店铺同线上单号，请核对原平台订单')
@@ -275,8 +275,8 @@ def _preview_evidence(order, result):
     issues=_issues(result)
     if issues:
         raise Check('聚水潭预览待核：'+issues)
-    if result.get('contact_ok') is not True:
-        raise Check('买家、手机号或收货地址与送审文件不一致')
+    if verify_original_buyer and result.get('contact_ok') is not True:
+        raise Check('聚水潭原单买家身份待核')
     expected={sku:Decimal(qty) for sku,qty,_ in p['lines']}
     seen=set()
     for row in result.get('lines',[]):
@@ -296,7 +296,7 @@ def _preview_evidence(order, result):
 
 
 def _preview_for_submit(order, result):
-    evidence=_preview_evidence(order,result)
+    evidence=_preview_evidence(order,result,verify_original_buyer=False)
     if order['payload'].get('import_format')==template.SINGLE:
         if result.get('order_count')!=1 or result.get('import_format')!=template.SINGLE or evidence['amount'] is None:
             raise Check('单商品模式缺少一张整单及金额的完整平台预览，请核对原文件')

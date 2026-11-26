@@ -156,11 +156,15 @@ test('native controls preview, import, reconcile and ordinary audit exactly one 
   const {page,account,flow}=await openFixture(t);
   const preview=await flow.run('stage_import',{spec},account);
   assert.deepEqual(preview.lines,[['00001','10']]);
-  assert.equal(preview.contact_ok,true);
+  assert.equal(preview.amount,'20.00');
   assert.equal(await page.evaluate(()=>importCount),0);
   assert.equal(await page.locator('#epaasDialogFrame').filter({visible:true}).count(),1);
   await page.frameLocator('#upload').locator('span.btnImport').last().evaluate(e=>e.hidden=true);
-  await page.frameLocator('#upload').locator('table tr td').nth(17).evaluate(e=>e.textContent='￥25.00 ￥0.00');
+  await page.frameLocator('#upload').locator('table tr').evaluate(row=>{
+    row.cells[5].textContent='平台显示的买家';
+    row.cells[11].textContent='合成收货人 000****0000 平台格式地址';
+    row.cells[17].textContent='￥25.00 ￥0.00';
+  });
   const imported=await flow.run('import',{warehouse:wh,permit:preview.permit,online},account);
   assert.ok(imported.dispatched,imported.not_sent?.reason);
   assert.equal(imported.receipt.success_count,1);
