@@ -1,7 +1,6 @@
 """Home/work/archive shell. Workbench remains a persistent live instance."""
 import export_locations
 import copy,hashlib,json
-from contextlib import contextmanager
 from functools import partial
 from pathlib import Path
 from PySide6.QtCore import Qt,QTimer,QSignalBlocker
@@ -32,45 +31,11 @@ def signing_available(host,action,*,new_signature):
     return reason is None
 
 
-@contextmanager
-def order_upgrade_notice():
-    from PySide6.QtWidgets import QProgressDialog
-    dialog = None
-
-    def update(stage):
-        nonlocal dialog
-        if dialog is None:
-            dialog = QProgressDialog()
-            dialog.setWindowTitle('补货助手 · 正在升级订单资料')
-            dialog.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.CustomizeWindowHint | Qt.WindowType.WindowTitleHint)
-            dialog.setAttribute(Qt.WidgetAttribute.WA_QuitOnClose, False)
-            dialog.setCancelButton(None)
-            dialog.setAutoClose(False)
-            dialog.setAutoReset(False)
-            dialog.setMinimumDuration(0)
-        total = getattr(stage, 'total', 0)
-        dialog.setLabelText(str(stage))
-        dialog.setRange(0, 100 if total else 0)
-        if total:
-            dialog.setValue(100 * stage.current // total)
-        if not dialog.isVisible():
-            dialog.show()
-        dialog.repaint()
-
-    try:
-        yield update
-    finally:
-        if dialog is not None:
-            dialog.hide()
-            dialog.deleteLater()
-
-
 class ApplicationWindow(ArchiveBatchActions,Workbench):
     def __init__(self):
         self.new_bases={};self.new_focus=None;self.preissue_drafts={};self.execution_warehouses={};self.warehouse_deletion_generations={}
         super().__init__()
-        with order_upgrade_notice() as progress:
-            self.orders=normal_orders.Repository(self.work_repository,backup_progress=progress)
+        self.orders=normal_orders.Repository(self.work_repository)
         from history_tasks import HistoryReader
         self.history_reader=HistoryReader(self.work_repository.path,self.repository.folder/'archive_index.sqlite3',self)
         self.archive_orders=[];self.recent_orders=[];self.archive_page=0;self.archive_all=[];self.archive_matches=[]

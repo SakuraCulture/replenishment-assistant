@@ -70,6 +70,8 @@ def _main():
     from workbench import Workbench
     if smokes.use_workbench(sys.argv):win=Workbench()
     else:
+        from startup_order_upgrade import prepare_existing_orders
+        prepare_existing_orders(logs/'workbench.sqlite3')
         from application_window import ApplicationWindow
         win=ApplicationWindow()
     runtime.window=win

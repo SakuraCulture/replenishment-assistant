@@ -21,6 +21,12 @@ def has_legacy_order_key(db):
     return [row[1] for row in db.execute('PRAGMA table_info(normal_orders)') if row[5]] == ['day', 'store', 'kind']
 
 
+def needs_order_header_backup(db):
+    exists = db.execute("SELECT 1 FROM sqlite_master WHERE name='normal_orders'").fetchone()
+    prior = db.execute("SELECT sql FROM sqlite_master WHERE name='normal_orders_standard_key'").fetchone()
+    return not exists or has_legacy_order_key(db) or bool(prior and "'opening'" not in prior[0])
+
+
 def order_header_schema(db):
     """Keep legacy uniqueness while allowing multiple material batches per store/day."""
     definition = ('day TEXT NOT NULL,store TEXT NOT NULL,kind TEXT NOT NULL,'
@@ -115,9 +121,7 @@ class Repository:
         with closing(work.connect()) as db:
             with db:
                 db.execute('BEGIN IMMEDIATE')
-                exists=db.execute("SELECT name FROM sqlite_master WHERE name='normal_orders'").fetchone()
-                prior_index=db.execute("SELECT sql FROM sqlite_master WHERE name='normal_orders_standard_key'").fetchone()
-                if not exists or has_legacy_order_key(db) or prior_index and "'opening'" not in prior_index[0]:
+                if needs_order_header_backup(db):
                     from schema_backup import backup
                     backup(work.path,'before-normal-orders.',backup_progress)
                 order_header_schema(db)
