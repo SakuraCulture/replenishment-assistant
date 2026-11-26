@@ -30,7 +30,9 @@ class Check(ValueError):
 
 
 class PlatformCheck(Check):
-    pass
+    def __init__(self, message, *, code=None):
+        super().__init__(message)
+        self.code=code
 
 
 ORDINARY_AUDIT_DONE = confirmation.AUDITED
@@ -219,9 +221,9 @@ def _client_error(exc):
         'COMPONENT_MISSING':'聚水潭组件缺失，请使用包含组件的完整程序',
     }
     if exc.code in ('ORDER_PAGE_CHANGED','PREVIEW_CHANGED','PREVIEW_ISSUES') and str(exc):
-        return PlatformCheck(str(exc))
+        return PlatformCheck(str(exc),code=exc.code)
     code = exc.code if isinstance(exc.code,str) and re.fullmatch(r'[A-Z][A-Z0-9_]{1,48}',exc.code) else 'FAILED'
-    return PlatformCheck(messages.get(code, f'聚水潭原任务结果待核（{code}），请继续核对原单'))
+    return PlatformCheck(messages.get(code, f'聚水潭原任务结果待核（{code}），请继续核对原单'),code=code)
 
 
 class Browser:

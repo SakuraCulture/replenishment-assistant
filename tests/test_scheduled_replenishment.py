@@ -167,8 +167,22 @@ class ExecutionTests(unittest.TestCase):
         manual=batch_service.run(loaded,basis['jobs'],expected_profile,1)
         for s,result in record['payload']['results'].items():
             expected=wr.loads(wr.dumps(manual[s]))
-            # Exact full trees, except documented process/timing diagnostics.
-            result.pop('task');expected.pop('task');result.pop('created');expected.pop('created');self.assertEqual(result,expected)
+            result=copy.deepcopy(result)
+            # The store-scoped provenance keeps the exact original for this
+            # store, along with the unchanged warehouse/version sources.
+            result.pop('task');expected.pop('task');result.pop('created');expected.pop('created')
+            actual_audit=result.pop('import_audit');batch_audit=expected.pop('import_audit')
+            original=next(item for item in self.manifest['files'] if item['warehouse_code']==s)
+            self.assertEqual([file['path'] for file in actual_audit['files']],[original['file']])
+            src_rows=actual_audit['files'][0]['rows_by_store']
+            self.assertEqual(src_rows,{s:len(result['rows'])})
+            self.assertEqual(actual_audit['identical_duplicates'],batch_audit['identical_duplicates'])
+            self.assertEqual(result.keys(),expected.keys())
+            for key in result:
+                if key=='sources':
+                    self.assertTrue(all(expected[key].get(k)==v for k,v in result[key].items()))
+                    self.assertEqual(result[key][original['file']],original['sha256'])
+                else:self.assertEqual(result[key],expected[key],key)
         self.assertEqual(self.work.list_jobs(),[])
     def test_verified_legacy_arrangement_uses_new_saved_defaults_on_schedule(self):
         now = datetime(2026, 11, 4, 6, 29, tzinfo=sr.TZ)

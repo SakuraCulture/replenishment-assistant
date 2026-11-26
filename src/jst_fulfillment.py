@@ -429,11 +429,12 @@ def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None
                 db.execute('BEGIN')
                 order = _order(db, online)
             progress('读取原订单明细 ' + automatic.show_name(order['payload']['head']))
-            status, candidate = '', None
+            status, candidate, timed_out = '', None, False
             try:
                 receipt = browser.action('payment_detail', order)
             except automatic.PlatformCheck as exc:
                 state, message = 'RETRY_PAYMENT_READ', str(exc)
+                timed_out = exc.code=='RESPONSE_UNKNOWN' or bool(exc.code and 'TIMEOUT' in exc.code)
             else:
                 checkpoint(cancel)
                 binding = (order['proof'] or {}).get('binding')
@@ -464,6 +465,7 @@ def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None
                         else:
                             state, message = 'READY', order_payment.LABEL + '已核验，待人工确认付款'
             result = _observe_payment(path, order, state, message, status, candidate, cancel)
+            if timed_out:result['timed_out']=True
         except ValueError as exc:
             result = {'online': online, 'state': 'NEEDS_REVIEW', 'message': str(exc)}
         results.append(result)
@@ -480,6 +482,7 @@ def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, reta
     reader = pull_order_payment if order_details else pull
     if retained_only:
         import performance_log
+        import time
         results = []
         for online in dict.fromkeys(keys):
             checkpoint(cancel)
@@ -488,7 +491,13 @@ def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, reta
                 with performance_log.begin('jst_fulfillment.background_yield'):
                     progress('后台原单回查已让位，剩余原单留待下次空闲时查询')
                 break
-            results.extend(_read_with_lease(reader, path, [online], lease, True, progress, cancel))
+            started = time.monotonic()
+            rows = _read_with_lease(reader, path, [online], lease, True, progress, cancel)
+            results.extend(rows)
+            if order_details and rows and isinstance(rows[-1],dict) and rows[-1]['state']=='RETRY_PAYMENT_READ':
+                if rows[-1].get('timed_out') or time.monotonic()-started>=45:
+                    rows[-1]['timed_out'] = True
+                    break
         return results
     try:
         lease = owner.acquire()

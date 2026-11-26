@@ -65,6 +65,13 @@ class Session:
         if self.broken:raise RuntimeError('原作业连接已结束，请重新发起操作')
         self.writing=operation in ('save','confirm_normal','delivery_execute','review_export','storage_copy','delete_orders','delete_job')
         staged=operation in draft_spool.OPERATIONS
+        if staged:
+            from scheduled_snapshots import Results
+            results=value[0].get('results')
+            if isinstance(results,Results):
+                # Unmodified results travel as immutable local DB references.
+                # Edited results also retain the normal bounded frame protocol.
+                staged=bool(results.overrides)
         state={'activity':time.monotonic(),'phase':'staging' if staged else 'sending','abort':None}
         context=FailureContext(operation)
         if self.writing:context.commit_state='unknown'

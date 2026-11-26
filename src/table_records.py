@@ -15,7 +15,7 @@ from openpyxl.styles.numbers import is_date_format,is_timedelta_format
 from openpyxl.utils.datetime import from_excel
 
 
-def table_records(header,values,sheet,required):
+def table_records(header,values,sheet,required,*,include=None):
     """Convert already-read cells; retain row positions and duplicate-header rules."""
     if not header:raise ValueError('文件为空')
     header=[str(x).strip() if x is not None else '' for x in header]
@@ -29,7 +29,8 @@ def table_records(header,values,sheet,required):
     for rn,vs in enumerate(values,2):
         if not any(x is not None and x!='' for x in vs):continue
         row={h:vs[idx[0]] if idx[0]<len(vs) else None for h,idx in positions.items() if len(idx)==1}
-        row['_row']=rn;rows.append(row)
+        row['_row']=rn
+        if include is None or include(row):rows.append(row)
     return rows,{'sheet':sheet,'rows':len(rows),'headers':header,
                  'duplicate_unused_headers':[h for h,idx in positions.items() if len(idx)>1]}
 

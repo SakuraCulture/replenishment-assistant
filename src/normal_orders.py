@@ -113,14 +113,13 @@ class Repository:
     def __init__(self, work):
         self.work=work
         with closing(work.connect()) as db:
-            exists=db.execute("SELECT name FROM sqlite_master WHERE name='normal_orders'").fetchone()
-            prior_index=db.execute("SELECT sql FROM sqlite_master WHERE name='normal_orders_standard_key'").fetchone()
-            if not exists or has_legacy_order_key(db) or prior_index and "'opening'" not in prior_index[0]:
-                # SQLite backup API also captures an existing WAL consistently.
-                backup=work.path.with_name('workbench.before-normal-orders.'+uuid.uuid4().hex+'.sqlite3')
-                with closing(sqlite3.connect(backup)) as target:db.backup(target)
             with db:
                 db.execute('BEGIN IMMEDIATE')
+                exists=db.execute("SELECT name FROM sqlite_master WHERE name='normal_orders'").fetchone()
+                prior_index=db.execute("SELECT sql FROM sqlite_master WHERE name='normal_orders_standard_key'").fetchone()
+                if not exists or has_legacy_order_key(db) or prior_index and "'opening'" not in prior_index[0]:
+                    from schema_backup import backup
+                    backup(work.path,'before-normal-orders.')
                 order_header_schema(db)
             with db:db.executescript('''
                 CREATE TABLE IF NOT EXISTS normal_revisions(oid TEXT NOT NULL,revision INTEGER NOT NULL,digest TEXT NOT NULL,saved TEXT NOT NULL,payload BLOB NOT NULL,PRIMARY KEY(oid,revision));

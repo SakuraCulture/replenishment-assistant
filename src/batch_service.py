@@ -11,14 +11,14 @@ from version_info import diagnostic
 from xlsx_exports import write_sheet,export_batch
 from data_contracts import InputBatch,StoreSettings,CalculationResult
 
-def intake(paths,products,progress=lambda s:None,cancel=None):
+def intake(paths,products,progress=lambda s:None,cancel=None,*,checked=None):
     paths=list(dict.fromkeys(str(Path(p).resolve()) for p in paths))
-    catalogs=copy.deepcopy(products) if isinstance(products,dict) else None
-    if catalogs:
+    catalogs=(products if checked is not None else copy.deepcopy(products)) if isinstance(products,dict) else None
+    if catalogs and checked is None:
         for wh,catalog in catalogs.items():
             warehouse_catalog.validate(catalog)
             if wh!=catalog['warehouse']:raise ValueError('仓资料标签不一致')
-    elif catalogs is not None:raise ValueError('请先导入河北仓或山东仓资料')
+    elif catalogs is not None and not catalogs:raise ValueError('请先导入河北仓或山东仓资料')
     products=str(Path(products).resolve()) if catalogs is None else None
     if not paths:raise ValueError('请至少添加一个补货建议文件。')
     if products in paths:raise ValueError('商品资料不能同时作为补货建议。')
@@ -29,15 +29,15 @@ def intake(paths,products,progress=lambda s:None,cancel=None):
         product_snapshot,_=engine.adapter.read_table(products,product_sheet,['商品编码','基本售价','分类','出库箱规'])
     groups=defaultdict(list);files=[];stores={};headers=[];hashes={products:product_hash} if products else {}
     from file_intake import checked_files
-    for checked in checked_files(paths,progress,cancel):
-        report=checked['report'];files.append(report)
+    for item in checked_files(paths,progress,cancel) if checked is None else checked:
+        report=item['report'];files.append(report)
         if report['error']:continue
-        path=report['path'];staged=checked['staged'];names=checked['names']
+        path=report['path'];staged=item['staged'];names=item['names']
         for key,record in staged:groups[key].append(record)
         stores.update({k:v for k,v in names.items() if k not in stores})
-        for h in checked['headers']:
+        for h in item['headers']:
             if h not in headers:headers.append(h)
-        hashes[path]=checked['hash']
+        hashes[path]=item['hash']
     if not groups:raise ValueError('没有可读取的补货建议：\n'+'\n'.join(Path(f['path']).name+'：'+f['error'] for f in files))
     duplicates=0;conflicts=[];selected=[]
     for (store,sku),records in groups.items():
@@ -51,7 +51,7 @@ def intake(paths,products,progress=lambda s:None,cancel=None):
     if products and engine.adapter.digest(Path(products))!=product_hash:raise ValueError('商品资料读取期间发生变化，请重试。')
     return {'files':files,'stores':stores,'headers':headers,'hashes':hashes,'products':products,'products_snapshot':product_snapshot,'catalogs':catalogs,'selected':selected,'conflicts':conflicts,'duplicates':duplicates}
 
-def prepare(data,progress=lambda s:None,cancel=None):
+def prepare(data,progress=lambda s:None,cancel=None,*,catalog_tables=None):
     """Project deduplicated records through the exact historical XLSX cell boundary."""
     for p,h in data['hashes'].items():
         if not data.get('frozen') and engine.adapter.digest(Path(p))!=h:raise ValueError('源文件已变化，请重新检查：'+Path(p).name)
@@ -65,7 +65,7 @@ def prepare(data,progress=lambda s:None,cancel=None):
     from source_binding import bindings,restore
     origins=bindings(sales_table,records,data['headers'])
     if data.get('catalogs'):
-        loaded=warehouse_catalog.prepare_records(sales_table,data['catalogs'],progress,cancel)
+        loaded=warehouse_catalog.prepare_records(sales_table,data['catalogs'],progress,cancel,tables=catalog_tables)
     else:
         products=data['products']
         if data.get('frozen'):
@@ -154,12 +154,14 @@ def calculation_inputs(loaded,jobs,borrow_input):
     warehouses=loaded.get('warehouse_rows')
     if warehouses:
         for store in stores.values():store['warehouse_rows']={w:[] for w in warehouses}
-    for pair in loaded['normalized']:
+    from scheduled_snapshots import Rows
+    normalized=loaded['normalized']
+    for pair in normalized.for_stores(jobs) if isinstance(normalized,Rows) else normalized:
         store=stores.get(pair[0]['B'])
         if store is not None:store['normalized'].append(pair)
     if warehouses:
         for warehouse,rows in warehouses.items():
-            for pair in rows:
+            for pair in rows.for_stores(jobs) if isinstance(rows,Rows) else rows:
                 store=stores.get(pair[0]['B'])
                 if store is not None:store['warehouse_rows'][warehouse].append(pair)
     # The workbench holds its adopted input for the whole batch and replaces it
@@ -173,7 +175,8 @@ def estimated_worker_bytes(store):
     return 128*1024**2+rows*96*1024
 
 
-def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:None,cancel=None,*,borrow_input=False):
+def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:None,cancel=None,*,
+        borrow_input=False,input_for=None,retain_results=True,system=None):
     """Submit only available slots: stop never starts queued stores; running stores finish."""
     if not 1<=max_workers<=4:raise ValueError('并发门店数必须为1至4。')
     from application_runtime import current
@@ -181,11 +184,26 @@ def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:Non
     from performance_counters import Counters
     from performance_log import begin
     from uuid import uuid4
-    with begin('calculation.prepare_input'):
-        common,store_inputs=calculation_inputs(loaded,jobs,borrow_input)
+    if input_for is None:
+        with begin('calculation.prepare_input'):
+            common,store_inputs=calculation_inputs(loaded,jobs,borrow_input)
+    else:
+        common,store_inputs={},{}
     runtime=current()
     prefix=runtime.folder/'worker-errors'/('calculation-'+uuid4().hex) if runtime is not None else None
-    counters=Counters();pending=deque(jobs.items());active={};out={};pool_error=None;waiting=None
+    system=system or Counters().system
+    pending=deque(jobs.items());active={};out={};pool_error=None;waiting=None
+    reserve=256*1024**2
+    def room_bytes():
+        sample=system()
+        return sample['commit_limit_bytes']-sample['commit_total_bytes'] if 'commit_limit_bytes' in sample else None
+    def wait_for_memory(store,room,required):
+        nonlocal waiting
+        unit=64*1024**2
+        state=(store,room//unit,required)
+        if waiting!=state:
+            waiting=state
+            notify(store,'等待内存',None,f'提交余量 {max(0,room)/1024**2:,.0f} MiB，预计需要 {required/1024**2:,.0f} MiB（含保护余量）；恢复后自动继续')
     def fail_pool(exc):
         nonlocal pool_error
         if pool_error is None:pool_error=pool_failure(exc,prefix)
@@ -195,23 +213,34 @@ def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:Non
             nonlocal waiting
             if pool_error or cancel and cancel.is_set():waiting=None;return
             if not pending or len(active)>=max_workers:return
-            system=counters.system()
-            room=system['commit_limit_bytes']-system['commit_total_bytes'] if 'commit_limit_bytes' in system else None
+            room=room_bytes()
             while pending and len(active)<max_workers and not (cancel and cancel.is_set()):
                 store,settings=pending[0]
-                if common.get('blocked',{}).get(store):
-                    pending.popleft();store_inputs.pop(store);notify(store,'计算失败',None,'存在重复冲突，请先处理');out[store]=None;continue
+                if input_for is not None and store not in store_inputs:
+                    if room is not None and room<128*1024**2+reserve:
+                        wait_for_memory(store,room,128*1024**2+reserve)
+                        return
+                    with begin('calculation.prepare_store'):
+                        store_inputs[store]=input_for(store)
+                    room=room_bytes()
+                one=store_inputs[store]
+                if (one.get('blocked') or common.get('blocked',{})).get(store):
+                    waiting=None
+                    pending.popleft();store_inputs.pop(store);notify(store,'计算失败',None,'存在重复冲突，请先处理')
+                    if retain_results:out[store]=None
+                    continue
                 required=estimated_worker_bytes(store_inputs[store])
-                if room is not None and room<required+256*1024**2:
-                    if waiting!=store:
-                        waiting=store;notify(store,'排队中',None,'系统内存提交余量紧张，等待后自动继续')
+                if room is not None and room<required+reserve:
+                    wait_for_memory(store,room,required+reserve)
                     return
                 if room is not None:room-=required
                 waiting=None;pending.popleft();one={**common,**store_inputs.pop(store)}
                 notify(store,'计算中',None,'')
-                try:future=pool.submit(calculate_store,one,store,copy.deepcopy(settings),copy.deepcopy(profile))
+                try:future=pool.submit(calculate_store,one,store,copy.deepcopy(settings),
+                                       profile if input_for is not None else copy.deepcopy(profile))
                 except BrokenProcessPool as exc:
-                    out[store]=None;notify(store,'计算失败',None,fail_pool(exc));return
+                    if retain_results:out[store]=None
+                    notify(store,'计算失败',None,fail_pool(exc));return
                 active[future]=store
         fill()
         while active or waiting is not None:
@@ -220,15 +249,23 @@ def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:Non
                 else:time.sleep(.2)
                 fill();continue
             done,_=wait(active,timeout=.2,return_when=FIRST_COMPLETED)
-            for future in done:
+            while done:
+                future=done.pop()
                 store=active.pop(future)
                 try:
-                    result=future.result();out[store]=result;notify(store,'已完成',result,'')
+                    result=future.result()
                 except BrokenProcessPool as exc:
-                    out[store]=None;notify(store,'计算失败',None,fail_pool(exc))
+                    if retain_results:out[store]=None
+                    notify(store,'计算失败',None,fail_pool(exc))
                 except Exception as exc:
                     from diagnostics import failure
-                    out[store]=None;notify(store,'计算失败',None,failure(exc,stage='门店计算',store=store))
+                    if retain_results:out[store]=None
+                    notify(store,'计算失败',None,failure(exc,stage='门店计算',store=store))
+                else:
+                    notify(store,'已完成',result,'')
+                    if retain_results:out[store]=result
+                    del result
+                del future
             fill()
         for store,_ in pending:notify(store,'已停止',None,('进程池已退出，' if pool_error else '')+'未启动，可重新计算')
     return out

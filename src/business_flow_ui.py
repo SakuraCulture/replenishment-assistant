@@ -237,8 +237,10 @@ def refresh_review(host):
     selected = (None, 'blocking', 'review', 'ready')[host.review_filter.currentIndex()]
     counts = dict.fromkeys(('blocking', 'review', 'pending', 'ready'), 0)
     visible = 0
+    from scheduled_snapshots import fields_for
     for i, store in enumerate(host.overview_codes):
-        kind = business_flow.review_state(host.states[store]['state'], host.results.get(store))
+        state=host.states[store]['state']
+        kind = business_flow.review_state(state, fields_for(host.results,store) if state=='已完成' else None)
         counts[kind] += 1
         show = selected is None or kind == selected or selected == 'ready' and kind == 'review'
         host.overview.setRowHidden(i, not show)

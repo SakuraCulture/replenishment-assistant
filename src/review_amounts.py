@@ -68,6 +68,9 @@ def delta_text(value):
 def count_text(value, key):
     return f"{value[key + '_count']}款" + (f" · {value[key + '_unknown']}款金额待核" if value[key + '_unknown'] else '')
 
+def from_head(head):
+    return {k:Decimal(v) if k in MONEY_KEYS else v for k,v in head['money'].items()}
+
 
 def cached(host, result):
     """Published results are replaced on apply/recompute/restore, never edited.
@@ -76,7 +79,11 @@ def cached(host, result):
     not rescan every store or retain obsolete drafts.
     """
     current = getattr(host, 'results', {})
-    cache = {s:entry for s,entry in getattr(host, '_review_amounts_cache', {}).items() if current.get(s) is entry[0]}
+    from scheduled_snapshots import Results, head_for
+    head=head_for(current,result['store'])
+    if head is not None:return from_head(head)
+    previous = getattr(host, '_review_amounts_cache', {})
+    cache = {} if isinstance(current,Results) else {s:entry for s,entry in previous.items() if current.get(s) is entry[0]}
     key = result['store']
     if key not in cache or cache[key][0] is not result:cache[key] = (result, summarize(result['rows']))
     host._review_amounts_cache = cache

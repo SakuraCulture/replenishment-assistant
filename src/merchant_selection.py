@@ -2,6 +2,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QHBoxLayout,QTableWidget,QTableWidgetItem,QDialogButtonBox,QPushButton,QLabel,QLineEdit,QFileDialog,QMessageBox
 import warehouse_orders
+from scheduled_snapshots import head_for
 
 class MerchantSelection(QDialog):
     def __init__(self,parent,order=None):
@@ -14,7 +15,10 @@ class MerchantSelection(QDialog):
         for s,state in states.items():
             valid=state['state']=='已完成' and s in results;error=state['state'];summaries=[]
             if valid:
-                try:summaries=warehouse_orders.summaries(results[s],profile)
+                try:
+                    head=head_for(results,s)
+                    summaries=head.get('warehouses') if head is not None else None
+                    if summaries is None:summaries=warehouse_orders.summaries(results[s],profile)
                 except ValueError as exc:error=str(exc);valid=False
             if not summaries:summaries=[{'warehouse':None,'moving':0,'new':0,'amount':0}];valid=False;error=error if error!='已完成' else '没有可导出商品'
             from warehouse_execution_ui import retired_warehouses,initial_warehouses

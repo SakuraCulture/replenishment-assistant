@@ -386,21 +386,25 @@ def prepare_warehouses(sales_path,catalogs,tmp,progress,cancel):
     return _prepare_catalogs(catalogs,load)
 
 
-def prepare_records(sales_table,catalogs,progress=lambda s:None,cancel=None):
-    """No temporary Excel: same per-warehouse adapter and provenance assembly."""
+def product_table(warehouse,catalog):
     from table_records import bridge_table
+    raw=({**row,'仓归属':warehouse} for row in catalog['items'].values())
+    fields=FIELDS+([FIRST_FILL_FIELD] if any(FIRST_FILL_FIELD in row for row in catalog['items'].values()) else [])
+    return bridge_table(fields+['仓归属'],raw,'商品资料')
+
+def prepare_records(sales_table,catalogs,progress=lambda s:None,cancel=None,*,tables=None):
+    """No temporary Excel: same per-warehouse adapter and provenance assembly."""
     def load(wh,catalog):
-        raw=({**row,'仓归属':wh} for row in catalog['items'].values())
-        fields=FIELDS+([FIRST_FILL_FIELD] if any(FIRST_FILL_FIELD in r for r in catalog['items'].values()) else [])
-        table=bridge_table(fields+['仓归属'],raw,'商品资料')
+        table=product_table(wh,catalog) if tables is None else tables[wh]
         return engine.load_records(sales_table,table,sales_ref='memory:batch.xlsx',product_ref='memory:'+wh+'.xlsx',progress=progress,cancel=cancel)
-    return _prepare_catalogs(catalogs,load)
+    return _prepare_catalogs(catalogs,load,validate_catalogs=tables is None)
 
 
-def _prepare_catalogs(catalogs,load):
+def _prepare_catalogs(catalogs,load,*,validate_catalogs=True):
     results={};base=None
     for wh,catalog in catalogs.items():
-        validate(catalog);loaded=load(wh,catalog)
+        if validate_catalogs:validate(catalog)
+        loaded=load(wh,catalog)
         for d,m in loaded['normalized']:
             row=catalog['items'].get(d['E'])
             m.update(product_file=catalog['source_path'],product_sheet=catalog['sheet'],product_revision=catalog['revision'])

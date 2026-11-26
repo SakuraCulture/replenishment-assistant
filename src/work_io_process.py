@@ -172,9 +172,10 @@ def serve(connection,path,cancel):
                     tail,order=arguments
                     pending=draft_spool.result_source(tail['results'])
                     checked=draft_spool.result_source(batch['payload']['results'])
-                    ordered={s:checked[s] if s in checked else pending[s] for s in order}
-                    tail['results']=draft_spool.StoreResults(ordered) if name is not None else ordered
-                    del pending,checked,ordered
+                    from scheduled_snapshots import ordered
+                    merged=ordered(order,checked,pending)
+                    tail['results']=draft_spool.StoreResults(merged) if name is not None else merged
+                    del pending,checked,merged
                     tail['execution_warehouses']={**tail.get('execution_warehouses',{}),**batch.get('warehouses',{})}
                     wr.summary(tail);batch['payload']=tail;batch['complete']=True;result=True
                 elif op=='delivery_execute':
@@ -188,7 +189,8 @@ def serve(connection,path,cancel):
                     repository=normal_orders.Repository.from_existing_work(work)
                     executing=batch
                     try:result=normal_delivery.execute_batch(repository,executing,arguments,progress=progress,cancel=cancel,consume=True,
-                                                             on_receipt=lambda task:connection.send(('receipt',task)))
+                                                             on_receipt=lambda task:connection.send(('receipt',task)),
+                                                             release_draft=drafts.close)
                     finally:
                         if executing.get('consumed'):
                             batch=None;drafts.close()

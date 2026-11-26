@@ -7,20 +7,32 @@ import engine
 from runtime_support import checkpoint,Cancelled
 
 
-def check_file(index,path):
+def check_file(index,path,*,store=None,allowed=None,expected=None,cancel=None):
     """Top-level spawn target. Only original sequence number and resolved path cross in."""
     report={'path':path,'rows':0,'stores':0,'error':''}
     try:
         before=engine.adapter.digest(Path(path))
+        if expected is not None and before!=expected:raise ValueError('已验收文件校验值变化')
         cfg=engine.config();sf=cfg['sales_fields']
-        sheet,heads,rows,info=engine.read_identified(path,'sales',[sf[k] for k in ['store_code','sku','daily14','sales7','sales30','stock','inbound','stockout_days']])
+        counts={}
+        def code_for(raw):
+            code,error=engine.adapter.identifier(raw.get(sf['store_code']))
+            if error:raise ValueError(f"第{raw['_row']}行门店编码无效：{error}；请使用文本编码")
+            return code
+        def include(raw):
+            checkpoint(cancel)
+            code=code_for(raw)
+            if code not in allowed:raise ValueError('下载文件包含未获验收的门店：'+code)
+            counts[code]=counts.get(code,0)+1
+            return code==store
+        sheet,heads,rows,info=engine.read_identified(path,'sales',[sf[k] for k in ['store_code','sku','daily14','sales7','sales30','stock','inbound','stockout_days']],
+                                                  include=include if store is not None else None)
         if before!=engine.adapter.digest(Path(path)):raise ValueError('读取期间文件变化，请保存后重试。')
         ambiguous=set(sf.values()) & set(info['duplicate_unused_headers'])
         if ambiguous:raise ValueError('已映射表头重复：'+ '、'.join(sorted(ambiguous)))
         staged=[];names={}
         for raw in rows:
-            code,error=engine.adapter.identifier(raw.get(sf['store_code']))
-            if error:raise ValueError(f"第{raw['_row']}行门店编码无效：{error}；请使用文本编码")
+            code=code_for(raw)
             sku,sku_error=engine.adapter.identifier(raw.get(sf['sku']))
             raw=copy.deepcopy(raw)
             raw['基础单位']=raw.get('基础单位',raw.get('库存单位',raw.get('单位类型')))
@@ -30,7 +42,9 @@ def check_file(index,path):
             staged.append((key,{'values':values,'path':path,'sheet':sheet,'row':raw['_row']}))
             names.setdefault(code,str(raw.get(sf['store_name']) or code))
         if not staged:raise ValueError('文件没有商品记录。')
-        report.update(rows=len(staged),stores=len(names))
+        report.update(rows=sum(counts.values()) if store is not None else len(staged),
+                      stores=len(counts) if store is not None else len(names))
+        if store is not None:report['rows_by_store']=counts
         return {'index':index,'report':report,'staged':staged,'names':names,'headers':sorted(heads|{'基础单位'}),'hash':before}
     except Cancelled:raise
     except Exception as exc:

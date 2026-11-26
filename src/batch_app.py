@@ -17,6 +17,7 @@ from ui_tasks import BatchWorker,BackgroundJobs
 from ui_session import SessionWindow
 import result_semantics as semantics
 import review_amounts
+from scheduled_snapshots import fields_for, head_for, subset
 from ui_review_amounts import ReviewAmounts
 import engine,priority_list,batch_service
 import warehouse_catalog
@@ -150,7 +151,11 @@ class BatchWindow(WarehouseUi,SessionWindow):
         except Exception as exc:budgets={};self.status.setText('历史预算无效，请重新填写：'+str(exc))
         try:routes=self.catalog_repository.routes()
         except Exception as exc:routes={};self.status.setText('主从仓设置未载入，请重新选择：'+str(exc))
-        counts=Counter(d['B'] for d,m in self.loaded['normalized']);local=Counter(d['B'] for d,m in self.loaded['normalized'] if d['_source']=='地采商品')
+        if 'row_counts' in self.loaded:
+            counts={s:pair[0] for s,pair in self.loaded['row_counts'].items()}
+            local={s:pair[1] for s,pair in self.loaded['row_counts'].items()}
+        else:
+            counts=Counter(d['B'] for d,m in self.loaded['normalized']);local=Counter(d['B'] for d,m in self.loaded['normalized'] if d['_source']=='地采商品')
         for i,(s,name) in enumerate(self.loaded['stores'].items()):
             blocked=self.loaded['blocked'].get(s,0);check=QCheckBox();check.setChecked(not blocked);check.setEnabled(not blocked);check.toggled.connect(self.selection_changed);self.store_table.setCellWidget(i,0,check)
             self.store_table.setItem(i,1,QTableWidgetItem(name+'\n'+s));self.store_table.setItem(i,2,QTableWidgetItem(f'{blocked} 组冲突待处理' if blocked else f'{counts[s]} 行 · 地采 {local[s]}'))
@@ -367,27 +372,33 @@ class BatchWindow(WarehouseUi,SessionWindow):
         self.run_progress.setRange(0,max(task_total,1));self.run_progress.setValue(sum(counts[k] for k in ['已完成','计算失败','已停止']))
         keys=list(self.states);finished=sum(s['state']=='已完成' for s in self.states.values());total=len(keys);self.task_table.setRowCount(task_total)
         for i,s in enumerate(self.run_codes):
-            state=self.states[s];r=self.results.get(s) if state['state']=='已完成' else None
+            state=self.states[s];r=fields_for(self.results,s) if state['state']=='已完成' else None
             for j,val in enumerate([state['name'],state['state'],f"¥{r['summary']['amount']:,.2f}" if r else '—',state['error']]):self.task_table.setItem(i,j,QTableWidgetItem(val))
             if state['state'] in ('计算失败','已停止'):
                 b=button('重跑此任务',lambda checked=False,code=s:self.retry_stores([code]));b.setEnabled(s not in getattr(self,'_queued_retries',[]) and not self.input_dirty and not (self.worker and self.worker.cancel.is_set()));self.task_table.setCellWidget(i,4,b)
             else:self.task_table.removeCellWidget(i,4)
-        self.overview_codes=sorted(keys,key=lambda s:(0 if self.states[s]['state'] in {'计算失败','待重算'} else 1 if self.results.get(s,{}).get('summary',{}).get('holding_gaps',0) else 2,s));self.overview.setRowCount(len(keys))
+        results={s:fields_for(self.results,s) for s in keys if self.states[s]['state']=='已完成'}
+        self.overview_codes=sorted(keys,key=lambda s:(0 if self.states[s]['state'] in {'计算失败','待重算'} else 1 if (results.get(s) or {}).get('summary',{}).get('holding_gaps',0) else 2,s));self.overview.setRowCount(len(keys))
         totals=[0,0,0];unpriced=0;review_totals=[]
-        self._risk_counts={s:v for s,v in getattr(self,'_risk_counts',{}).items() if self.results.get(s) is v[0]}
+        self._risk_counts={s:v for s,v in getattr(self,'_risk_counts',{}).items() if results.get(s) is v[0]}
         for i,s in enumerate(self.overview_codes):
-            state=self.states[s];r=self.results.get(s) if state['state']=='已完成' else None
+            state=self.states[s];r=results.get(s);head=head_for(self.results,s)
             if r:
                 a=r['summary'];b=r['budget'];gap=round(a['candidate_amount']-a['amount'],2);totals=[totals[0]+a['candidate_amount'],totals[1]+a['amount'],totals[2]+gap];unpriced+=a['unpriced']
                 values=[state['name'],state['state'],semantics.fmt(b['limit']) if b['enabled'] else '不限预算',semantics.fmt(a['candidate_amount']),semantics.fmt(a['amount']),semantics.fmt(a['must_amount']),semantics.fmt(a['amount']-a['must_amount']),semantics.fmt(gap),semantics.fmt(b.get('remaining')),str(a['holding_gaps']),f"{a['local']} / {a['excluded']}",state['error'] or f"待核 {a['issues']}；补货未计价 {a['unpriced']}"]
-                cache=self.__dict__.setdefault('_risk_counts',{})
-                if s not in cache or cache[s][0] is not r:cache[s]=(r,sum(bool(semantics.inbound_risk(d)) for d in r['rows']))
-                if cache[s][1]:values[-1]+=f'；在途衔接风险 {cache[s][1]} 条（点击提示查看）'
+                if head is not None:
+                    risks=head['risk_count']
+                else:
+                    cache=self._risk_counts
+                    if s not in cache or cache[s][0] is not r:cache[s]=(r,sum(bool(semantics.inbound_risk(d)) for d in r['rows']))
+                    risks=cache[s][1]
+                if risks:values[-1]+=f'；在途衔接风险 {risks} 条（点击提示查看）'
                 over=b.get('overrun',{})
                 if over.get('amount',0)>0:values[-1]+=f"；有限超支 {over['amount']:.2f} 元（商品 {over['sku']}）";values[8]=f"超 {over['amount']:.2f}"
             else:values=[state['name'],state['state']]+['—']*9+[state['error']]
             if r:
-                money=review_amounts.cached(self,r);review_totals.append(money)
+                money=review_amounts.from_head(head) if head is not None else review_amounts.cached(self,r)
+                review_totals.append(money)
                 values += [review_amounts.amount_text(money,'manual')+'\n'+review_amounts.delta_text(money),review_amounts.amount_text(money,'new')]
             else:values += ['—','—']
             for j,val in enumerate(values):self.overview.setItem(i,j,QTableWidgetItem(val));self.overview.item(i,j).setToolTip(s+'\n'+str(val))
@@ -437,12 +448,12 @@ class BatchWindow(WarehouseUi,SessionWindow):
         scroll.setWidgetResizable(True);scroll.setWidget(content);v.addWidget(scroll,1)
         note=label('','muted');v.addWidget(note)
         def refresh():
-            selected=[s for s,c in checks.items() if c.isChecked()];valid=[s for s in selected if self.states[s]['state']=='已完成'];amount=sum(self.results[s]['summary']['amount'] for s in valid)
+            selected=[s for s,c in checks.items() if c.isChecked()];valid=[s for s in selected if self.states[s]['state']=='已完成'];amount=sum(fields_for(self.results,s)['summary']['amount'] for s in valid)
             note.setText(f'选中 {len(selected)} 家，完成 {len(valid)} 家，未完成/待重算 {len(selected)-len(valid)} 家；安排金额 ¥{amount:,.2f}')
         for c in checks.values():c.toggled.connect(refresh)
         refresh();mode=QComboBox();mode.addItems(['汇总为一个 Excel','每店一个 Excel，同时生成汇总']);v.addWidget(mode);v.addWidget(button('选择保存位置',dialog.accept,True));v.addWidget(button('取消',dialog.reject))
         if dialog.exec()!=QDialog.DialogCode.Accepted:return
-        states={s:copy.deepcopy(self.states[s]) for s,c in checks.items() if c.isChecked()};results={s:self.results[s] for s in states if s in self.results}
+        states={s:copy.deepcopy(self.states[s]) for s,c in checks.items() if c.isChecked()};results=subset(self.results,[s for s in states if s in self.results])
         if not any(st['state']=='已完成' for st in states.values()):self.failed('所选门店没有可导出的有效结果。');return
         stamp=datetime.now().strftime('%Y%m%d_%H%M%S');split=mode.currentIndex()==1
         if split:

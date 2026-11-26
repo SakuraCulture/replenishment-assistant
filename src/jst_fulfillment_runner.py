@@ -1,5 +1,6 @@
 """Poll original orders and lock receipt evidence for payments already saved."""
 import sqlite3
+import time
 from PySide6.QtCore import QObject, QTimer, Signal
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout
 
@@ -18,6 +19,8 @@ class Runner(QObject):
         self.legacy_worker = False
         self.stopping = False
         self.blocked = False
+        self.timeout_streak = 0
+        self.next_read = 0.0
         self.close_requested = False
         self.pending = []
         self.message = '等待聚水潭原单付款资料'
@@ -45,6 +48,8 @@ class Runner(QObject):
                 return
         if (self.worker or self.stopping or getattr(h, 'closing', False)
                 or getattr(h, '_data_location_preparing', False) or getattr(h, 'worker', None)):
+            return
+        if time.monotonic()<self.next_read:
             return
         from lifecycle_home_ui import StageDialog
         modal = QApplication.activeModalWidget()
@@ -98,6 +103,15 @@ class Runner(QObject):
     def ready(self, rows):
         count = sum(row['state'] == 'READY' for row in rows)
         self.message = f'付款来源检查 {len(rows)} 单，{count} 单待人工确认付款'
+        if any(row.get('timed_out') for row in rows):
+            if any(not row.get('timed_out') for row in rows):self.timeout_streak=0
+            self.timeout_streak=min(self.timeout_streak+1,5)
+            delay=min(60*2**(self.timeout_streak-1), 900)
+            self.next_read=time.monotonic()+delay
+            self.message+=f'，查询超时；余单将在 {delay} 秒后重新检查'
+        elif rows:
+            self.timeout_streak=0
+            self.next_read=0.0
         locked = sum(bool(row.get('payment_locked')) for row in rows)
         if locked:
             from lifecycle_home_ui import StageDialog

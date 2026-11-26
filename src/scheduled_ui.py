@@ -364,7 +364,7 @@ class Window(QDialog):
         self.detail.setText(f"{r['stage']} · {'本次已用 '+str(elapsed//60)+'分'+str(elapsed%60)+'秒 · ' if active else ''}最后业务更新 {r['updated'][11:19]} · {r['message']}\n关闭窗口不会停止任务；停止需等运行中的门店安全完成。")
         allowed={'核对已完成门店':bool(done) and r['state'] not in sr.ACTIVE,'继续原任务':r['state'] in ('REVIEW','PAUSED'),'重试所选失败门店':False,'暂停本次':r['state'] in ('RUNNING','QUEUED'),'结束本次':r['state'] not in ('ENDED','MISSED'),'删除已结束记录':r['state'] in ('ENDED','MISSED')}
         for name,b in self.run_actions.items():b.setEnabled(allowed[name])
-        labels={'PENDING':'等待','READY':'可核对','RUNNING':'计算中','FAILED':'需处理'}
+        labels={'PENDING':'等待','READY':'可核对','RUNNING':'计算中','FAILED':'需处理','WAITING_MEMORY':'等待内存'}
         failures=self.retryable_stores(r)
         self.checked_stores.intersection_update(s['code'] for s in r['stores'] if s['state']!='READY')
         self.stores.blockSignals(True)
@@ -478,8 +478,8 @@ class Window(QDialog):
             if not h.leave_current():return
             def adopt(value):
                 record,basis=value;h.restore_job(record,owned=True)
-                h._calculation_profile=copy.deepcopy(record['payload']['profile']);h._calculation_input=h.loaded;h._calculation_settings=copy.deepcopy(basis['jobs'])
-                h.show_section(1);h.navigate(3);h.job_dirty=True
+                h._calculation_profile=record['payload']['profile'];h._calculation_input=h.loaded;h._calculation_settings=copy.deepcopy(basis['jobs'])
+                h.show_section(1);h.navigate(3)
                 self.m.repo.change(r['id'],viewed=True);self.accept()
             self.call(lambda _:workbench_record(self.m.repo,r['id']),adopt)
         self.guard(act)

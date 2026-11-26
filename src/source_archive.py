@@ -6,16 +6,27 @@ import work_repository as wr
 from runtime_support import checkpoint
 
 def capture(dbpath,path,expected,progress=lambda _:None,cancel=None):
+    from portable_assets import resolve
     path=Path(path);checkpoint(cancel)
     progress('留存原始文件：'+path.name)
-    data=path.read_bytes();digest=hashlib.sha256(data).hexdigest()
-    if digest!=expected:raise ValueError('原文件在校验后变化，未更新资料：'+path.name)
-    checkpoint(cancel)
-    with closing(sqlite3.connect(dbpath,timeout=10)) as db,db:
+    with resolve(path).open('rb') as source,closing(sqlite3.connect(dbpath,timeout=10)) as db,db:
+        db.execute('BEGIN IMMEDIATE')
         db.execute('CREATE TABLE IF NOT EXISTS source_files(sha TEXT PRIMARY KEY,name TEXT NOT NULL,saved TEXT NOT NULL,content BLOB NOT NULL)')
+        size=os.fstat(source.fileno()).st_size
+        exists=db.execute('SELECT 1 FROM source_files WHERE sha=?',(expected,)).fetchone()
+        digest=hashlib.sha256()
+        def copy(target=None):
+            for data in iter(lambda:source.read(1024**2),b''):
+                checkpoint(cancel);digest.update(data)
+                if target is not None:target.write(data)
+        if exists:
+            copy()
+        else:
+            row=db.execute('INSERT INTO source_files VALUES(?,?,?,zeroblob(?))',(expected,path.name,wr.now(),size)).lastrowid
+            with db.blobopen('source_files','content',row) as blob:copy(blob)
+        if digest.hexdigest()!=expected:raise ValueError('原文件在校验后变化，未更新资料：'+path.name)
         checkpoint(cancel)
-        db.execute('INSERT OR IGNORE INTO source_files VALUES(?,?,?,?)',(digest,path.name,wr.now(),data))
-    return digest
+    return expected
 
 def read(db,digest):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name='source_files'").fetchone():return None

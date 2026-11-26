@@ -54,10 +54,10 @@ def identifier(value):
     return str(value),'编码以数值保存且超过15位或格式无效，需原始文本编码'
 
 
-def read_table(path, sheet, required, *, _cells=None):
+def read_table(path, sheet, required, *, _cells=None, include=None):
     if _cells is not None:
         header,values=_cells
-        return table_records(header,values,sheet,required)
+        return table_records(header,values,sheet,required,include=include)
     warnings.filterwarnings('ignore',message='Workbook contains no default style')
     from portable_assets import resolve
     book=openpyxl.load_workbook(resolve(path),read_only=True,data_only=True,keep_links=False)
@@ -73,7 +73,7 @@ def read_table(path, sheet, required, *, _cells=None):
         ws.reset_dimensions()
         it=ws.iter_rows(values_only=True)
         header=next(it,None)
-        return table_records(header,it,ws.title,required)
+        return table_records(header,it,ws.title,required,include=include)
     finally:book.close()
 
 
