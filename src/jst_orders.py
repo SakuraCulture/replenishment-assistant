@@ -21,7 +21,7 @@ import material_stock
 from runtime_support import checkpoint, CommitProgress, Cancelled
 from export_progress import RowProgress
 from jst_order_guards import allocation_gate, guard_payment, guard_resign, saved_execution_reason
-from jst_order_store import active, baseline, decode, digest, event, exists, get, locked, schema, state
+from jst_order_store import active, allocation_round, baseline, decode, digest, event, exists, get, locked, schema, state
 
 
 def catalogs(path, folder=None, progress=lambda _: None, cancel=None):
@@ -113,6 +113,7 @@ def prepare_checked(path,heads,manual_order=False,correction=False,progress=lamb
 def prepare(path, heads, manual_order=False, correction=False, progress=lambda _: None, cancel=None,*,enforce_admission=False,batch=None,current_catalogs=None):
     import jst_batches
     runid = uuid.uuid4().hex; orders = []; skipped = []; states = {}; bases = {}; seen = set()
+    replace_allocations = bool(batch and batch.get('replace_allocations'))
     with closing(sqlite3.connect(path)) as db:
         db.execute('BEGIN')
         for supplied in heads:
@@ -122,14 +123,14 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
             if key in seen:
                 raise ValueError('重复选择同一店仓订单')
             seen.add(key); old = active(db, h)
-            blocker,previous_payment=allocation_gate(db,h,old,correction)
+            blocker,previous_payment=(None,None) if replace_allocations else allocation_gate(db,h,old,correction)
             if blocker:
                 skipped.append({'head': supplied, 'reason': blocker}); continue
             basis, rows, saved, signed_products = return_basis(db, h)
-            if not any(Decimal(r['base_quantity']) > 0 for r in rows) and not (correction and old):
+            if not replace_allocations and not any(Decimal(r['base_quantity']) > 0 for r in rows) and not (correction and old):
                 skipped.append({'head': supplied, 'reason': '无要货，无需生成'}); continue
             wh = h['warehouse']
-            if batch and old and jst_batches.generation_batch(db,old)!=batch['batch_id']:
+            if batch and old and not replace_allocations and jst_batches.generation_batch(db,old)!=batch['batch_id']:
                 raise wr.Conflict('所选生成单不属于本批，请进入原批次')
             if wh not in bases:bases[wh]=batch['stocks'].get(wh) if batch else baseline(db,wh)
             b=bases[wh]
@@ -139,8 +140,10 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
             compact = {k:v for k,v in h.items() if k != 'products'}
             is_material = material_stock.has_material(db) and material_stock.is_material(db,h['oid'])
             if is_material:
+                if replace_allocations:raise ValueError('物料单请从原物料工作台处理分配')
                 compact['kind'] = 'material'
-            orders.append({'head': compact, 'basis': basis, 'rows': rows, 'saved': saved, 'old': old, 'signed_products':signed_products,'previous_payment':previous_payment,'material':is_material})
+            round_token = (allocation_round(db,h) or (None,))[0]
+            orders.append({'head': compact, 'basis': basis, 'rows': rows, 'saved': saved, 'old': old, 'signed_products':signed_products,'previous_payment':previous_payment,'material':is_material,'old_round':round_token})
         kinds = {o['material'] for o in orders}
         if len(kinds) > 1:
             raise ValueError('物料单和补货单请分别建立库存分配批次')
@@ -214,6 +217,8 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                     member=next((m for m in batch['members'] if (m['head']['oid'],m['head']['warehouse'])==(o['head']['oid'],wh)),None)
                     if not member or member['status']=='cancelled':raise wr.Conflict('订单不在本批有效范围')
                     value['position']=member['position']
+            if replace_allocations:value['replace_allocations']=True
+            if o['old_round'] is not None:value['old_round']=o['old_round']
             if o['signed_products'] is not None:value['signed_products']=o['signed_products']
             if b.get('reserve_other_orders') and (material or not batch):
                 value['reserve_other_orders'] = True
@@ -228,6 +233,12 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
     return {'payload': result, 'digest': digest(result)}
 
 
+def validate_replacement(db,p):
+    head = p['head']
+    if active(db,head)!=p['old'] or (allocation_round(db,head) or (None,))[0]!=p.get('old_round'):
+        raise wr.Conflict('本仓单的分配已变化，请重新预览：'+head['number'])
+
+
 def validate_plan(db, p, catalog_revisions=None):
     h = p['head']
     if p.get('batch_id'):
@@ -240,12 +251,12 @@ def validate_plan(db, p, catalog_revisions=None):
         latest=catalog_revisions if catalog_revisions is not None else {w:c['revision'] for w,c in warehouse_catalog.Repository(folder).catalogs().items()}
         if latest!=p['admission']['default_catalog_revisions']:raise wr.Conflict('仓资料标签依据已更新，请重新分配：'+h['number'])
     purchases.validate_head(db, h)
-    blocker,previous_payment=allocation_gate(db,h,p['old'],True)
-    if blocker:raise wr.Conflict(blocker+'：'+h['number'])
-    if previous_payment!=p.get('previous_payment'):
-        raise wr.Conflict('付款依据已变化，请重新预览分配：'+h['number'])
-    if active(db,h) != p['old']:
-        raise wr.Conflict('生成记录已变化：'+h['number'])
+    validate_replacement(db,p)
+    if not p.get('replace_allocations'):
+        blocker,previous_payment=allocation_gate(db,h,p['old'],True)
+        if blocker:raise wr.Conflict(blocker+'：'+h['number'])
+        if previous_payment!=p.get('previous_payment'):
+            raise wr.Conflict('付款依据已变化，请重新预览分配：'+h['number'])
     if increases:=(p.get('manual_correction') or {}).get('material_increase'):
         from allocation_amendments import validate_material_claims
         validate_material_claims(db,h,p['old'],increases)
@@ -277,6 +288,24 @@ def put_generation(db, p):
     db.execute('INSERT INTO jst_headers VALUES(?,?)',(p['gid'],wr.dumps({'summary':p['summary'],'return':p['basis']['dependencies'].get(stage),'demand_stage':stage,'revision':h['revision'],'saved':p['saved']})))
     db.executemany('INSERT INTO jst_reservations VALUES(?,?,?)', [(p['gid'],r['sku'],r['quantity']) for r in p['rows'] if Decimal(r['quantity'])>0])
     event(db,h,'生成聚水潭订单',{'gid':p['gid'],'summary':p['summary'],'old':p['old']})
+
+
+def supersede_allocation(db, plan):
+    from jst_batches import supersede_members
+    from lifecycle_store import exists as has_documents, latest_version
+
+    h = plan['head']
+    floors = []
+    for stage in ('payment','receipt'):
+        previous = latest_version(db,h,stage) if has_documents(db) else None
+        floors.append(previous[0] if previous else 0)
+    db.execute('''INSERT INTO jst_allocation_rounds VALUES(?,?,?,?,?,?)
+                  ON CONFLICT(oid,warehouse) DO UPDATE SET revision=excluded.revision,token=excluded.token,
+                  payment_version=excluded.payment_version,receipt_version=excluded.receipt_version''',
+               (h['oid'],h['warehouse'],h['revision'],plan['gid'],*floors))
+    supersede_members(db,h,plan['batch_id'])
+    event(db,h,'采用本次分配并作废旧执行资料',{
+        'allocation':plan['gid'],'previous_generation':plan['old'],'payment_through':floors[0],'receipt_through':floors[1]})
 
 
 def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None):
@@ -339,10 +368,12 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                     if actual!=expected[w]:raise wr.Conflict(w+'库存基准或预留已变化，请重新预览')
                 for p in group:checkpoint(cancel);validate_plan(db,p,catalog_revisions)
                 for p in group:
+                    if p.get('replace_allocations'):supersede_allocation(db,p)
                     if p['summary']['positive']:
                         put_generation(db,p)
                     else:
-                        if v['correction'] and p['old']:db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(p['head']['oid'],p['head']['warehouse']))
+                        if (v['correction'] or p.get('replace_allocations')) and p['old']:
+                            db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(p['head']['oid'],p['head']['warehouse']))
                         event(db,p['head'],'手动确认为零分配' if p.get('manual_correction') else '库存不足未生成',{'rows':p['rows'],'runid':v['runid'],'batch_id':p.get('batch_id')})
                     if audit:=p.get('manual_correction'):
                         event(db,p['head'],'手动更正分配',{**audit,'gid':p['gid'] if p['summary']['positive'] else None})

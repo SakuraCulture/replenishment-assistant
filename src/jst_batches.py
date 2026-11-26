@@ -94,13 +94,15 @@ def release_unfinished(path, groups, progress=lambda _:None, cancel=None):
     return count
 
 
-def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda _: None, cancel=None, *, stock_receipts=None):
+def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda _: None, cancel=None, *,
+                stock_receipts=None, replace_allocations=False):
     """No writes/reservations; selecting the same file explicitly is allowed."""
     checkpoint(cancel); stocks = {}; states = {}; batch_id = uuid.uuid4().hex
-    with closing(sqlite3.connect(path)) as db:
-        for h in heads:
-            if exists(db) and db.execute("SELECT 1 FROM jst_batch_members WHERE oid=? AND warehouse=? AND status IN ('pending','failed')", (h['oid'], h['warehouse'])).fetchone():
-                raise wr.Conflict('所选订单已有未完成批次，请继续原批或明确撤销：' + h['number'])
+    if not replace_allocations:
+        with closing(sqlite3.connect(path)) as db:
+            for h in heads:
+                if exists(db) and db.execute("SELECT 1 FROM jst_batch_members WHERE oid=? AND warehouse=? AND status IN ('pending','failed')", (h['oid'], h['warehouse'])).fetchone():
+                    raise wr.Conflict('所选订单已有未完成批次，请继续原批或明确撤销：' + h['number'])
     warehouses=list(dict.fromkeys(h['warehouse'] for h in heads))
     versions={};current_catalogs=None
     if catalogs is None:
@@ -130,6 +132,7 @@ def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda 
                     base['reserve_other_orders'] = True
                 base['included'] = sorted(included(db, wh, base))
     spec = dict(batch_id=batch_id, created=wr.now(), epoch=0, stocks=stocks, states=states, members=[], new=True)
+    if replace_allocations:spec['replace_allocations']=True
     if versions:spec['current_versions']=versions
     if stock_receipts is not None:spec['keep_other_batches']=True
     plan = orders.prepare_checked(path, heads, manual_order, progress=progress, cancel=cancel, batch=spec,current_catalogs=current_catalogs)
@@ -156,8 +159,9 @@ def preview_existing(path, batch_id, heads=None, correction=False, progress=lamb
 
 
 def _pause_other(db, batch_id, operation=None):
-    before=db.execute("SELECT batch_id,epoch FROM jst_batches WHERE batch_id<>? AND status='active' ORDER BY rowid",(batch_id,)).fetchall()
-    db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE batch_id<>? AND status='active'", (batch_id,))
+    condition="batch_id<>? AND status='active' AND COALESCE(json_extract(payload,'$.replace_allocations'),0)=0"
+    before=db.execute('SELECT batch_id,epoch FROM jst_batches WHERE '+condition+' ORDER BY rowid',(batch_id,)).fetchall()
+    db.execute("UPDATE jst_batches SET status='paused',epoch=epoch+1 WHERE "+condition,(batch_id,))
     if before and operation:
         orders.event(db,{},'分配控制切换',{'batch_id':batch_id,'operation':operation,
             'paused':[{'batch_id':bid,'epoch':epoch+1} for bid,epoch in before]})
@@ -187,6 +191,8 @@ def register(path, plan, progress=lambda _:None, cancel=None):
     if orders.digest(v) != plan['digest']: raise ValueError('分配预览已变化，请重新预览')
     if not spec: return plan
     fixed = {k:spec[k] for k in ('batch_id','created','label')}; fixed['preview_digest'] = plan['digest']
+    replace_allocations = spec.get('replace_allocations',False)
+    if replace_allocations:fixed['replace_allocations']=True
     with closing(sqlite3.connect(path)) as db:
         previous = db.execute('SELECT payload,digest FROM jst_batches WHERE batch_id=?',(spec['batch_id'],)).fetchone() if exists(db) else None
         if previous:
@@ -208,7 +214,6 @@ def register(path, plan, progress=lambda _:None, cancel=None):
             if wh in versions:locks.enter_context(acquire(catalog_repository.folder,wh,cancel))
         lc.begin(db,cancel); schema(db)
         previous = db.execute('SELECT payload,digest FROM jst_batches WHERE batch_id=?', (spec['batch_id'],)).fetchone()
-        fixed = {k:spec[k] for k in ('batch_id','created','label')}; fixed['preview_digest'] = plan['digest']
         if previous:
             if orders.decode(previous) != fixed: raise wr.Conflict('批次内容不一致，请重新核对')
         else:
@@ -217,17 +222,20 @@ def register(path, plan, progress=lambda _:None, cancel=None):
                     raise wr.Conflict(wh+'当前仓资料已刷新，请重新预览库存分配')
             for p in v['plans']:
                 h = p['head']; orders.purchases.validate_head(db,h)
-                blocker, payment = orders.allocation_gate(db,h,orders.active(db,h))
-                if blocker or payment != p.get('previous_payment'):
-                    raise wr.Conflict((blocker or '付款或重做依据已变化')+'：'+h['number'])
-                if db.execute("SELECT 1 FROM jst_batch_members WHERE oid=? AND warehouse=? AND status IN ('pending','failed')", (h['oid'],h['warehouse'])).fetchone():
-                    raise wr.Conflict('订单已加入其他未完成批次：'+h['number'])
+                if replace_allocations:
+                    orders.validate_replacement(db,p)
+                else:
+                    blocker, payment = orders.allocation_gate(db,h,orders.active(db,h))
+                    if blocker or payment != p.get('previous_payment'):
+                        raise wr.Conflict((blocker or '付款或重做依据已变化')+'：'+h['number'])
+                    if db.execute("SELECT 1 FROM jst_batch_members WHERE oid=? AND warehouse=? AND status IN ('pending','failed')", (h['oid'],h['warehouse'])).fetchone():
+                        raise wr.Conflict('订单已加入其他未完成批次：'+h['number'])
                 full = {**h,'products':p.get('signed_products',p['basis']['products'])}
                 if lc.upstream(db,full,'payment') != p['basis']: raise wr.Conflict('回传依据已变化：'+h['number'])
-            if spec.get('keep_other_batches') and db.execute(
+            if not replace_allocations and spec.get('keep_other_batches') and db.execute(
                     "SELECT 1 FROM jst_batches WHERE status='active' LIMIT 1").fetchone():
                 raise wr.Conflict('另有分配批次正在处理，请等原批结束后再开始一键作业')
-            _pause_other(db,spec['batch_id'],v['runid'])
+            if not replace_allocations:_pause_other(db,spec['batch_id'],v['runid'])
             db.execute('INSERT INTO jst_batches VALUES(?,?,?,?,?,?,?)', (spec['batch_id'],spec['created'],spec['label'],'active',0,wr.dumps(fixed),orders.digest(fixed)))
             for wh,b in spec['stocks'].items():
                 db.execute('INSERT INTO jst_baselines VALUES(?,?,?,?,?)', (b['bid'],wh,b['created'],wr.dumps(b),orders.digest(b)))
@@ -273,6 +281,17 @@ def cancel_member(db, head, gid=None):
         if gid and generation_batch(db,gid) not in (None,bid): continue
         db.execute("UPDATE jst_batch_members SET status='cancelled',message='业务明确撤销' WHERE batch_id=? AND oid=? AND warehouse=?", (bid,head['oid'],wh))
         db.execute('UPDATE jst_batch_stock SET serial=serial+1 WHERE batch_id=? AND warehouse=?',(bid,wh))
+
+
+def supersede_members(db, head, batch_id):
+    """Only older results and pending work for this selected warehouse order."""
+    oid, wh = head['oid'], head['warehouse']
+    old_batches = db.execute("SELECT batch_id FROM jst_batch_members WHERE oid=? AND warehouse=? AND batch_id<>? AND status<>'cancelled'",
+                             (oid,wh,batch_id)).fetchall()
+    for (old_batch,) in old_batches:
+        db.execute("UPDATE jst_batch_members SET status='cancelled',message='本仓单已按最新库存重新分配' WHERE batch_id=? AND oid=? AND warehouse=?",
+                   (old_batch,oid,wh))
+        db.execute('UPDATE jst_batch_stock SET serial=serial+1 WHERE batch_id=? AND warehouse=?',(old_batch,wh))
 
 
 def pause(path, batch_id, progress=lambda _:None, cancel=None):
@@ -397,7 +416,7 @@ def activate(path, plan, progress=lambda _:None, cancel=None):
         if c['epoch'] != v['batch_epoch']: raise wr.Conflict('批次状态已变化，请重新核对')
         for wh,expected in v['states'].items():
             if state(db,bid,wh) != tuple(expected): raise wr.Conflict('本批占用已变化，请重新预览')
-        _pause_other(db,bid,v['runid'])
+        if not c.get('replace_allocations'):_pause_other(db,bid,v['runid'])
         epoch = c['epoch'] + (c['status'] != 'active')
         db.execute("UPDATE jst_batches SET status='active',epoch=? WHERE batch_id=?",(epoch,bid))
     v['batch_epoch'] = epoch

@@ -209,7 +209,9 @@ def _redo_context(db, online, approved):
         raise ValueError('本仓单已有正式实收，请进入原收货核对处理后续事实')
     gid = order['gid']
     active = allocations.active(db,head)
-    if active not in (None,gid) or allocations.locked(db,head) not in (None,gid):
+    newer_allocation = allocations.allocation_round(db,head)
+    if ((active not in (None,gid) and (not newer_allocation or newer_allocation[0]!=active))
+            or allocations.locked(db,head) not in (None,gid)):
         raise wr.Conflict('当前生成或下单关联已变化，请核对原分配')
     generation,digest = allocations.read_generation(db,gid)
     if digest != order['payload']['generation']['digest'] or generation['head']['warehouse'] != head['warehouse']:
@@ -223,7 +225,7 @@ def _redo_context(db, online, approved):
     successor = 'BH'+hashlib.sha256(('replenishment-jst-redo:'+online).encode()).hexdigest()[:24].upper()
     if orders.read(db,successor):
         raise wr.Conflict('后继线上单号已关联记录，请核对原任务')
-    return {'order':order,'head':head,'generation':generation,'active':active,
+    return {'order':order,'head':head,'generation':generation,'active':active==gid,
             'reference':reference,'original':original,'successor':successor}
 
 

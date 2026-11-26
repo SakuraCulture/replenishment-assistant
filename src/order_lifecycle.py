@@ -159,7 +159,9 @@ def make_plan(db, head, stage, raw_rows, files, duplicates=0, explicit_zero=Fals
             payload['payment_source']={'type':'jst_import_return','external_order_number':None,'amount_basis':'数量×单价'}
     if stage=='receipt' and aoxiang_payment_review:
         payload['aoxiang_payment_review']=aoxiang_payment_review
-    digest=fingerprint(payload);old=current(db,head,stage,_proofs=proofs);prior={r['sku']:r for r in old['payload']['rows']} if old else {}
+    if round_:=store.allocation_round(db,head,stage):
+        payload['allocation_round']=round_[0]
+    digest=fingerprint(payload);old=current(db,head,stage,_proofs=proofs,include_superseded=True);prior={r['sku']:r for r in old['payload']['rows']} if old else {}
     differences=[]
     for r in effective:
         a=prior.get(r['sku'],{})
@@ -326,6 +328,9 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
             checkpoint(cancel); purchases.validate_head(db, p['head'])
             identity=(*key(p['head']),p['stage'])
             if identity in staged:raise ValueError('同一订单同一环节只能保存一份完整单据')
+            round_ = store.allocation_round(db,p['head'],p['stage'])
+            if (round_ or (None,))[0] != p['payload'].get('allocation_round'):
+                raise wr.Conflict('库存分配已重做，请按本次分配重新预览下游资料')
             if p['payload'].get('manual_correction'):
                 target=staged_document(p)
                 saved=store.version_row(db,p['head'],p['stage'],target['version'])
@@ -333,7 +338,7 @@ def _commit_once(path,plan,contents,encoded,positions,progress,cancel,deadline):
                     replayed.add(identity);staged[identity]=target;continue
                 from order_amendments import validate
                 validate(db,p)
-            old = current(db, p['head'], p['stage'],_verified=verified)
+            old = current(db, p['head'], p['stage'],_verified=verified,include_superseded=True)
             from special_settlement import group_for_oid
             if p['stage']=='receipt' and group_for_oid(db,p['head']['oid']):
                 raise ValueError('开业组只登记一份原采购实收，请从新店开业工作台进入该张翱象采购')

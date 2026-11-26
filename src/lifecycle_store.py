@@ -9,6 +9,21 @@ from lifecycle_rules import DOCUMENT_SCHEMA as SCHEMA
 from order_keys import warehouse_revision as key
 
 
+ALLOCATION_STAGES = ('payment','receipt')
+
+
+def allocation_round(db, head, stage):
+    if stage in ALLOCATION_STAGES:
+        from jst_order_store import allocation_round as stock_round
+        return stock_round(db,head)
+    return None
+
+
+def version_is_current(db, head, stage, version):
+    round_ = allocation_round(db,head,stage)
+    return round_ is None or version > round_[1+ALLOCATION_STAGES.index(stage)]
+
+
 def schema(db):
     for sql in (
         'CREATE TABLE IF NOT EXISTS lifecycle_versions(oid TEXT,revision INTEGER,warehouse TEXT,stage TEXT,version INTEGER,saved TEXT,digest TEXT,payload TEXT,PRIMARY KEY(oid,revision,warehouse,stage,version))',
@@ -70,11 +85,12 @@ def save_receipt(head, stage, version, changed, digest):
     return receipt
 
 
-def latest_version(db, head, stage):
-    return db.execute(
+def latest_version(db, head, stage, *, effective=False):
+    row = db.execute(
         'SELECT version,digest FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=? ORDER BY version DESC LIMIT 1',
         (*key(head), stage),
     ).fetchone()
+    return None if effective and row and not version_is_current(db,head,stage,row[0]) else row
 
 
 def saved_at(db, head, stage, version):

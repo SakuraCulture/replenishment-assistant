@@ -8,6 +8,7 @@ from pathlib import Path
 from aoxiang_jobs import encoded
 from app_defaults import WAREHOUSES
 from jst_auto_order_store import LEGACY_CANCELLATION, legacy_cancellation_history
+from lifecycle_store import version_is_current
 from runtime_support import checkpoint
 from sqlite_write import begin
 import work_repository as wr
@@ -34,6 +35,8 @@ def facts(db, head):
     child = one('warehouse_execution_heads', 'SELECT source_revision,child_revision,state,epoch FROM warehouse_execution_heads WHERE oid=? AND warehouse=?', (oid, warehouse)) if managed else None
     signed = one('warehouse_execution_revisions', 'SELECT identity_digest,snapshot_digest FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?', (oid, warehouse, revision)) if managed else one('normal_revisions', 'SELECT digest FROM normal_revisions WHERE oid=? AND revision=?', (oid, revision))
     versions = {s: one('lifecycle_versions', 'SELECT version,digest FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=? ORDER BY version DESC LIMIT 1', (oid, revision, warehouse, s)) for s in ('return', 'operations', 'payment')}
+    if versions['payment'] and not version_is_current(db,head,'payment',versions['payment'][0]):
+        versions['payment']=None
     route = one('lifecycle_routes', 'SELECT version FROM lifecycle_routes WHERE oid=? AND revision=?', (oid, revision))
     legacy = None if versions['return'] else one('merchant_feedback', 'SELECT version,payload FROM merchant_feedback WHERE oid=? AND revision=? ORDER BY version DESC LIMIT 1', (oid, revision))
     if legacy is not None:

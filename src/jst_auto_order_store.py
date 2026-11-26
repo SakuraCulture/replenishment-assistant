@@ -334,20 +334,24 @@ def _archive(db, order):
 
 def list_orders(path):
     with closing(wr.read_connection(path)) as db:
+        db.execute('BEGIN')
         if not exists(db):return []
         rows = []
+        rounds = {(o,w,r):g for o,w,r,g in db.execute('''SELECT r.oid,r.warehouse,r.revision,a.gid
+            FROM jst_allocation_rounds r LEFT JOIN jst_active a ON a.oid=r.oid AND a.warehouse=r.warehouse''')
+        } if exists(db,'jst_allocation_rounds') else {}
         for table in ('jst_auto_orders', HISTORY):
             if not exists(db, table):
                 continue
             fields = ('online','stage','sequence','store','name','warehouse','number','shop',
-                      'sku_count','quantity','amount','preview_amount','internal','status','reason','import_receipt','import_not_sent','manual_handoff','manual_proposal')
+                      'sku_count','quantity','amount','preview_amount','internal','status','reason','import_receipt','import_not_sent','manual_handoff','manual_proposal','oid','gid','revision')
             for row in db.execute('''SELECT online,stage,sequence,json_extract(payload,'$.head.store'),
                    json_extract(payload,'$.head.name'),warehouse,json_extract(payload,'$.head.number'),
                    json_extract(payload,'$.shop.name'),json_extract(payload,'$.stats.sku_count'),
                    json_extract(payload,'$.stats.quantity'),json_extract(payload,'$.stats.amount'),
                    json_extract(proof,'$.amount'),internal,platform_status,reason,
                    json_extract(proof,'$.import_receipt'),json_extract(proof,'$.import_not_sent'),json_extract(proof,'$.manual_handoff.id'),
-                   json_extract(proof,'$.manual_proposal.id')
+                   json_extract(proof,'$.manual_proposal.id'),oid,gid,json_extract(payload,'$.head.revision')
                    FROM '''+table+' ORDER BY created DESC,rowid'):
                 record=dict(zip(fields,row))
                 raw=record.pop('import_receipt')
@@ -366,6 +370,14 @@ def list_orders(path):
                 if record['stage']=='IMPORT_UNKNOWN':
                     record['stage_label']=('导入已受理，待核原单' if record['import_outcome']=='accepted' else
                                            '未发送，待重新预览' if not_sent else '导入结果待核')
+                scope=(record.pop('oid'),record['warehouse'],record.pop('revision'))
+                gid=record.pop('gid')
+                if table!=HISTORY and scope in rounds and rounds[scope]!=gid:
+                    record['allocation_superseded']=True
+                    if record['stage'] in RELEASED:
+                        record['reason']='旧分配已失效，可核对聚水潭原单。'+record['reason']
+                    else:
+                        record.update(stage_label='旧分配已失效',reason='请按本次分配重新制表')
                 rows.append({**record, 'historical':table == HISTORY})
         return rows
 

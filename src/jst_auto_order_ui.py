@@ -389,9 +389,10 @@ class Orders(QDialog):
     def eligible(self,rows,action):
         if action=='preview':
             return [r for r in rows if r['stage'] in ('PREPARED','PREVIEWED','IMPORT_UNKNOWN','IMPORT_FAILED')
-                    and not (r['historical'] or r['internal'] or r['import_outcome']=='accepted')]
+                    and not (r['historical'] or r['internal'] or r.get('allocation_superseded') or r['import_outcome']=='accepted')]
         if action=='submit':
-            return [r for r in rows if r['stage']=='PREVIEWED' and not (r['historical'] or r['internal'])]
+            return [r for r in rows if r['stage']=='PREVIEWED'
+                    and not (r['historical'] or r['internal'] or r.get('allocation_superseded'))]
         if action=='recover':
             return [r for r in rows if r['stage'] in RELEASED and r['stage']!='MANUAL_HANDOFF']
         return rows
@@ -407,9 +408,10 @@ class Orders(QDialog):
         self.more_btn.setEnabled(not self.busy)
         self.selection_hint.setText(f'已勾选 {len(rows)} 张')
         self.selection_hint.setToolTip(f"可平台预览 {counts['preview']} 张 · 可确认导入 {counts['submit']} 张 · 可核对原单 {counts['recover']} 张")
-        self.export.setEnabled(free and len(rows)==1 and not stages&RELEASED)
+        self.export.setEnabled(free and len(rows)==1 and not stages&RELEASED and not rows[0].get('allocation_superseded'))
         self.export.setText('保存历史原文件' if stages=={'WITHDRAWN'} else '保存核对用 XLS')
-        self.allocation.setEnabled(free and all(r['internal'] and r['stage']!='CANCELLED' for r in rows))
+        self.allocation.setEnabled(free and all(r['internal'] and r['stage']!='CANCELLED'
+                                               and not r.get('allocation_superseded') for r in rows))
         self.payment_history.setEnabled(free and len(rows)==1 and bool(rows[0]['internal']))
         self.redo_btn.setEnabled(free and len(rows)==1 and 'MANUAL_HANDOFF' not in stages
                                   and not rows[0].get('historical'))
@@ -484,10 +486,10 @@ class Orders(QDialog):
                              '可登记' if r['approved'] is not None else '待处理',r['reason']) for r in reviewed]
             self.set_job(summary,[row[:3]+row[4:] for row in review_table])
             confirmed = review_rows(
-                self,'批量登记重做 · 核对结果',('仓','补货单号','原线上单号','原内部单号','结果','处理原因'),
-                review_table,
+                self,'批量登记重做 · 核对结果',('仓','补货单号','结果','处理原因','原内部单号','原线上单号'),
+                [(wh,number,status,reason,internal,online) for wh,number,online,internal,status,reason in review_table],
                 summary+'\n确认后释放可登记仓单的本地分配占用、保留原执行记录，并带回分配页。',
-                f'确认登记 {ready} 张' if ready else '',widths=(76,205,222,100,82,370))
+                f'确认登记 {ready} 张' if ready else '',widths=(74,165,85,270,100,218))
             if not confirmed or not ready:
                 return
             results = run(self,register_redo_batch,(self.path,reviewed),'批量登记重做')

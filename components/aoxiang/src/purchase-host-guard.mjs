@@ -55,6 +55,8 @@ export function hostFacts(db,b){
   const child=managed?one('warehouse_execution_heads','SELECT source_revision,child_revision,state,epoch FROM warehouse_execution_heads WHERE oid=? AND warehouse=?',[oid,warehouse]):null;
   const signed=managed?one('warehouse_execution_revisions','SELECT identity_digest,snapshot_digest FROM warehouse_execution_revisions WHERE oid=? AND warehouse=? AND source_revision=?',[oid,warehouse,revision]):one('normal_revisions','SELECT digest FROM normal_revisions WHERE oid=? AND revision=?',[oid,revision]);
   const versions=Object.fromEntries(['return','operations','payment'].map(s=>[s,one('lifecycle_versions','SELECT version,digest FROM lifecycle_versions WHERE oid=? AND revision=? AND warehouse=? AND stage=? ORDER BY version DESC LIMIT 1',[oid,revision,warehouse,s])]));
+  const paymentFloor=one('jst_allocation_rounds','SELECT payment_version FROM jst_allocation_rounds WHERE oid=? AND warehouse=? AND revision=?',[oid,warehouse,revision]);
+  if(paymentFloor&&versions.payment&&versions.payment[0]<=paymentFloor[0])versions.payment=null;
   const route=one('lifecycle_routes','SELECT version FROM lifecycle_routes WHERE oid=? AND revision=?',[oid,revision]);
   const legacy=versions.return?null:one('merchant_feedback','SELECT version,payload FROM merchant_feedback WHERE oid=? AND revision=? ORDER BY version DESC LIMIT 1',[oid,revision]);
   if(legacy)legacy[1]=sha256(legacy[1]);

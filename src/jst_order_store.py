@@ -27,6 +27,7 @@ def schema(db):
         'CREATE TABLE IF NOT EXISTS jst_headers(gid TEXT PRIMARY KEY,payload TEXT NOT NULL)',
         'CREATE TABLE IF NOT EXISTS jst_locks(oid TEXT,warehouse TEXT,gid TEXT NOT NULL,locked INTEGER NOT NULL,at TEXT NOT NULL,reason TEXT NOT NULL,PRIMARY KEY(oid,warehouse))',
         'CREATE TABLE IF NOT EXISTS jst_reservations(gid TEXT,sku TEXT,quantity TEXT NOT NULL,PRIMARY KEY(gid,sku))',
+        'CREATE TABLE IF NOT EXISTS jst_allocation_rounds(oid TEXT,warehouse TEXT,revision INTEGER,token TEXT NOT NULL,payment_version INTEGER NOT NULL,receipt_version INTEGER NOT NULL,PRIMARY KEY(oid,warehouse))',
         'CREATE TABLE IF NOT EXISTS jst_events(id INTEGER PRIMARY KEY,at TEXT,day TEXT,oid TEXT,warehouse TEXT,action TEXT,detail TEXT)',
         'CREATE TABLE IF NOT EXISTS jst_files(sha TEXT PRIMARY KEY,name TEXT,content BLOB)',
         'CREATE TABLE IF NOT EXISTS jst_runs(runid TEXT PRIMARY KEY,created TEXT,payload TEXT,digest TEXT)',
@@ -55,6 +56,14 @@ def locked(db, head):
         return None
     row = db.execute('SELECT gid FROM jst_locks WHERE oid=? AND warehouse=? AND locked=1', (head['oid'], head['warehouse'])).fetchone()
     return row[0] if row else None
+
+
+def allocation_round(db, head):
+    if not db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_allocation_rounds'").fetchone():
+        return None
+    return db.execute(
+        'SELECT token,payment_version,receipt_version FROM jst_allocation_rounds WHERE oid=? AND warehouse=? AND revision=?',
+        (head['oid'],head['warehouse'],head['revision'])).fetchone()
 
 
 def list_generation_state(db, batches, cancel=None):

@@ -181,6 +181,10 @@ def export_file(path, online, target, progress=lambda _:None, cancel=None):
         row=store.read(db,online,workbook=True)
         from special_plans import exists as has_special
         special=row and has_special(db,'special_packages') and db.execute('SELECT 1 FROM special_packages WHERE online=?',(online,)).fetchone()
+        if row and not row.get('historical'):
+            head=row['payload']['head']
+            if allocations.allocation_round(db,head) and allocations.active(db,head)!=row['gid']:
+                raise Check('库存分配已重做，请用本次分配重新制表')
     if not row or row['stage'] in store.RELEASED:
         raise Check('此任务已有下单动作，请从原任务核对')
     checkpoint(cancel)

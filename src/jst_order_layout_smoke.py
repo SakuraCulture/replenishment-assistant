@@ -1,5 +1,6 @@
 """Visible Windows acceptance of small-window automatic order operations."""
 from contextlib import closing
+from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -14,6 +15,7 @@ from jst_auto_order_ui import Orders
 from jst_order_store import active
 from jst_order_dialogs import ImportConfirmation, JobDetails
 from jst_results import key as scope_key
+from jst_ui import GenerationDialog
 from order_redo_smoke import Exercise, button
 from platform_import_manual_fixture import JstManual
 import work_repository as wr
@@ -31,6 +33,9 @@ LONG_REASON = (
 
 
 class Portal(JstManual):
+    def acquire_wait(self,warehouses,cancel,progress):
+        return self.acquire()
+
     def order(self,action,spec,args):
         if action=='order.preview' and spec['online'] in self.layout_errors:
             raise ComponentError('PREVIEW_CHANGED',LONG_REASON)
@@ -195,10 +200,10 @@ class LayoutExercise(Exercise):
                 def review(d):
                     self.small(d)
                     model = d.findChild(QTableView).model()
-                    assert {r[2] for r in model.rows}==selected
-                    assert {r[2] for r in model.rows if r[4]=='可登记'}==ready
-                    assert all(r[3]==original[r[2]]['internal'] for r in model.rows)
-                    assert '尚未核实' in next(r[5] for r in model.rows if r[2]==pending)
+                    assert {r[5] for r in model.rows}==selected
+                    assert {r[5] for r in model.rows if r[2]=='可登记'}==ready
+                    assert all(r[4]==original[r[5]]['internal'] for r in model.rows)
+                    assert '尚未核实' in next(r[3] for r in model.rows if r[5]==pending)
                     cancel = button(d,'取消')
                     go = button(d,'确认登记 2 张')
                     assert cancel.isDefault()
@@ -235,6 +240,60 @@ class LayoutExercise(Exercise):
         return {'registered':sorted(ready),'pending':[pending],'unselected_cancelled':excluded,
                 'cancel_before_confirm_left_allocations':True,'platform_requests':lookups,
                 'returned_warehouses':sorted(h['warehouse'] for h in page.scope)}
+
+    def fresh_stock(self,page,imported,redo):
+        from jst_orders import lock
+
+        page.clear_scope()
+        self.wait(lambda:not page.reading and page.scope is None,'返回全部仓单')
+        with closing(wr.read_connection(self.path)) as db:
+            originals={k:read(db,k) for k in imported if k not in redo['registered']}
+        wh_keys={wh:[k for k,o in originals.items() if o['payload']['head']['warehouse']==wh]
+                 for wh in ('河北仓','山东仓')}
+        picked=wh_keys['河北仓'][:2]+wh_keys['山东仓'][:1]
+        other=wh_keys['河北仓'][2]
+        selected={scope_key(originals[k]['payload']['head']) for k in picked}
+        assert len(selected)==3
+        lock(self.path,[originals[picked[0]]['gid']],'合成历史下单标记')
+        page.chosen=selected
+        page.render()
+        page.controls()
+        self.portal.stock={'河北仓':3,'山东仓':1}
+        first_call=len(self.portal.calls)
+        evidence={}
+
+        def allocate(d):
+            self.click(d.preview_btn)
+            assert d.plan is not None,d.status.text()
+            p=d.plan['payload']
+            assert {scope_key(item['head']) for item in p['plans']}==selected
+            assert p['reserved']=={'河北仓':{},'山东仓':{}}
+            totals={wh:sum(Decimal(item['summary']['quantity']) for item in p['plans'] if item['head']['warehouse']==wh)
+                    for wh in self.portal.stock}
+            assert totals==self.portal.stock,totals
+            evidence['quantities']={wh:str(q) for wh,q in totals.items()}
+            self.shot(d,'重新分配_双仓最新库存预览')
+            def confirm_allocation(confirm):
+                assert confirm.findChild(QTableView).model().rowCount()==3
+                self.click(button(confirm,'确认生成'))
+            self.dialog(lambda:self.click(d.generate_btn),'确认本次库存分配',confirm_allocation)
+            self.wait(lambda:d.receipt is not None and not d.worker,'保存本次分配')
+            assert not d.receipt['errors'] and len(d.receipt['generated'])==3,d.receipt
+            self.shot(d,'重新分配_本次已保存')
+            self.click(button(d,'关闭'))
+        self.dialog(lambda:self.click(page.reallocate_btn),GenerationDialog,allocate)
+        self.wait(lambda:not page.reading and all(r['gid'] for r in page.records if scope_key(r['head']) in selected),'读取新分配')
+        with closing(wr.read_connection(self.path)) as db:
+            for k in picked:
+                original=originals[k]
+                head=original['payload']['head']
+                assert active(db,head) not in (None,original['gid'])
+                assert read(db,k)==original
+            assert active(db,originals[other]['payload']['head'])==originals[other]['gid']
+        calls=self.portal.calls[first_call:]
+        assert sorted(calls)==[('sync.start',('山东仓',)),('sync.start',('河北仓',))],calls
+        return {**evidence,'selected':picked,'untouched_control':other,'platform_requests':calls,
+                'original_orders_unchanged':True}
 
     def run(self):
         count=self.fixture['count']
@@ -304,6 +363,7 @@ class LayoutExercise(Exercise):
             self.dialog(lambda:self.click(page.auto_tasks_btn),Orders,on_orders)
             if count==27:
                 result['batch_redo']=self.redo_batch(page,result['imports'])
+                result['fresh_stock']=self.fresh_stock(page,result['imports'],result['batch_redo'])
         with patch.object(catalog_session_ui,'manager',return_value=SimpleNamespace(session=self.portal)):
             self.enter('聚水潭导入单','jst',results_page)
         with closing(wr.read_connection(self.path)) as db:

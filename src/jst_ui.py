@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (QDialog,QVBoxLayout,QHBoxLayout,QComboBox,QListWi
 from ui_controls import button,label
 from business_ui import run,grid
 from ui_tasks import Worker
-from interaction_ui import confirm
+from interaction_ui import confirm, review_rows
 from lifecycle_ui import warn,Review,commit as commit_lifecycle
 import jst_orders as service
 import jst_batches as batches
@@ -56,15 +56,43 @@ def payment(parent,host,head):
     except Exception as exc:warn(parent,exc)
 
 
+def preview_fresh(path, heads, owner, manual_order, progress=lambda _:None, cancel=None):
+    from catalog_sync_ui import collect_scoped
+    from runtime_support import checkpoint
+
+    receipts = {}
+    for wh in dict.fromkeys(h['warehouse'] for h in heads):
+        checkpoint(cancel)
+        progress('从聚水潭获取'+wh+'最新可用库存')
+        result = collect_scoped(owner,Path(path).parent,path,[wh],'default_catalog',None,[wh],progress,cancel)
+        checkpoint(cancel)
+        batch = result['batch']
+        items = batch['items']
+        item = items[0] if len(items)==1 else {}
+        receipt = item.get('adoption') or {}
+        if (result['stopped'] or batch['purpose']!='default_catalog' or item.get('retirement')
+                or receipt.get('warehouse')!=wh or receipt.get('purpose')!='default_catalog'
+                or not all(receipt.get(k) for k in ('apply_id','revision','source_sha256'))):
+            reason = item.get('adoption_error') or (item.get('error') or {}).get('message')
+            raise ValueError(wh+'未取得本次库存刷新回执。'+(reason or '请核对本仓聚水潭连接后重新预览。'))
+        receipts[wh] = receipt
+    return batches.preview_new(path,heads,None,manual_order,progress,cancel,
+                               stock_receipts=receipts,replace_allocations=True)
+
+
 class GenerationDialog(QDialog):
-    def __init__(self,parent,host,heads,batch_id=None,correction=False):
+    def __init__(self,parent,host,heads,batch_id=None,correction=False,*,fresh=False):
         super().__init__(parent);self.batch_id=batch_id;self.correction_mode=correction;self.host=host;self.path=host.work_repository.path;self.heads=list(heads);self.plan=None;self.worker=None;self.export_worker=None;self.export_queue=[];self.saved=[];self.close_pending=False;self.committing=False;self.catalogs={};self.receipt=None;self.setObjectName('jstGeneration')
         self._completed=False;self.stop_requested=False
+        self.fresh=fresh
         self.setWindowTitle('重新分配本批所选' if correction else '继续原分配批次' if batch_id else '准备新分配批次');self.resize(1220,820);self.setAcceptDrops(True)
-        v=QVBoxLayout(self);v.addWidget(label('选订单和本批仓资料 → 预览 → 分配 → 导出；每批库存独立，同批按顺序扣减。','section'))
+        v=QVBoxLayout(self);v.addWidget(label('刷新所选仓的聚水潭库存，在本次所选仓单内按顺序分配。' if fresh else '选订单和本批仓资料 → 预览 → 分配 → 导出；每批库存独立，同批按顺序扣减。','section'))
         top=QHBoxLayout();self.warehouse=QComboBox();self.warehouse.addItems(warehouse_catalog.WAREHOUSES);top.addWidget(self.warehouse)
         self.update_btn=button('更新该仓当前资料',self.choose);top.addWidget(self.update_btn);self.default_btn=button('读取当前仓资料',self.defaults);top.addWidget(self.default_btn);top.addWidget(button('下载仓资料模板',self.template));v.addLayout(top)
         self.sync_btn=button('从聚水潭刷新当前仓资料',self.sync_catalog);v.addWidget(self.sync_btn)
+        if fresh:
+            for widget in (self.update_btn,self.default_btn,self.sync_btn):widget.hide()
+            self.warehouse.setCurrentText(heads[0]['warehouse'])
         self.source=label('正在读取仓资料…','muted');self.source.setWordWrap(True);v.addWidget(self.source)
         self.order_list=QListWidget();self.order_list.setMaximumHeight(90);self.order_list.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         for h in heads:
@@ -96,7 +124,7 @@ class GenerationDialog(QDialog):
         for w in (self.update_btn,self.default_btn,self.sync_btn,self.order_mode,self.restore_order_btn,self.order_list):w.setEnabled(not self.batch_id)
         if self.batch_id:self.order_note.setText('沿用本批冻结顺序；不能通过拖动或切换策略改变。')
         self.correction.setEnabled(False)
-        self.setAcceptDrops(not self.batch_id)
+        self.setAcceptDrops(not self.batch_id and not self.fresh)
     def sync_catalog(self):
         if self.worker or self.export_worker or self.batch_id:return
         from catalog_sync_ui import open_sync
@@ -107,12 +135,12 @@ class GenerationDialog(QDialog):
                 with closing(sqlite3.connect(self.path)) as db:spec=batches.context(db,self.batch_id)
                 self.catalogs=spec['stocks']
                 self.summary.setText('原批依据：冻结仓资料、原分配顺序和本批已保存占用。')
-            else:self.catalogs=run(self,service.catalogs,(self.path,self.host.repository.folder),'读取可选仓资料')
+            elif not self.fresh:self.catalogs=run(self,service.catalogs,(self.path,self.host.repository.folder),'读取可选仓资料')
             self.describe()
         except Exception as exc:warn(self,exc)
     def describe(self):
         c=self.catalogs.get(self.warehouse.currentText())
-        if not c:self.source.setText('该仓暂无资料，请导入文件或从聚水潭获取。');return
+        if not c:self.source.setText('点击预览时自动获取所选各仓的最新库存。' if self.fresh else '该仓暂无资料，请导入文件或从聚水潭获取。');return
         x=c['catalog'];self.source.setText(f"{x['warehouse']} · {Path(x.get('source_path','')).name} · 导入 {x.get('imported_at','')} · {len(x['items'])}款 · 版本 {x['revision']} · "+('本批冻结依据' if self.batch_id else '当前仓资料')+'\n'+warehouse_catalog.execution_warning(x))
         self.source.setToolTip(x.get('source_path',''))
     def invalidate(self,*_):
@@ -199,10 +227,15 @@ class GenerationDialog(QDialog):
         try:
             heads=[self.order_list.item(i).data(Qt.ItemDataRole.UserRole) for i in range(self.order_list.count())]
             self.describe()
-            if not self.batch_id and not self.recover_pending(heads):return
+            if not self.batch_id and not self.fresh and not self.recover_pending(heads):return
             if self.batch_id:self.plan=run(self,batches.preview_existing,(self.path,self.batch_id,heads if self.correction_mode else None,self.correction_mode),'核对本批剩余库存')
             else:
-                self.plan=run(self,batches.preview_new,(self.path,heads,None,self.order_mode.currentIndex()==1),'预览新批库存分配')
+                manual_order=self.order_mode.currentIndex()==1
+                if self.fresh:
+                    from catalog_session_ui import manager
+                    self.plan=run(self,preview_fresh,(self.path,heads,manager(self.host).session,manual_order),'刷新聚水潭库存并预览分配')
+                else:
+                    self.plan=run(self,batches.preview_new,(self.path,heads,None,manual_order),'预览新批库存分配')
                 self.catalogs.update(self.plan['payload']['new_batch']['stocks']);self.describe()
             v=self.plan['payload'];self.show_order(v['plans'],v['skipped']);self.review.replace(v['plans'])
             self.order_note.setText('上方列表即本次预览执行顺序；跳过单列在末尾，不参与分配。')
@@ -235,8 +268,14 @@ class GenerationDialog(QDialog):
         if not self.plan or self.worker:return
         v=self.plan['payload']
         if any(p['summary']['issues'] for p in v['plans']) and not self.accept_issues.isChecked():QMessageBox.warning(self,'请核对待核商品','请先核对并勾选待核商品本次不安排。');return
-        payment_notice='\n旧付款保留；更正分配后请重新核对付款。此处不修改平台订单。' if any(p.get('previous_payment') for p in v['plans']) else ''
-        if not confirm(self,'确认生成聚水潭订单',f"将按预览顺序生成{len(v['plans'])}单，保存库存预留与待核对付款草稿；并不表示已经付款。\n"+'\n'.join(p['head']['number']+'：'+p['summary']['amount']+'元' for p in v['plans'])+payment_notice):return
+        if self.fresh:
+            rows=[(p['head']['warehouse'],p['head']['number'],p['summary']['amount']) for p in v['plans']]
+            if not review_rows(self,'确认本次库存分配',('仓','补货单号','分配金额（元）'),rows,
+                               f'确认后保存这 {len(rows)} 张仓单的本次分配，旧分配及其下游资料随即失效。原平台单和历史凭据可继续核对。',
+                               '确认生成',widths=(86,238,138)):return
+        else:
+            payment_notice='\n旧付款保留；更正分配后请重新核对付款。此处不修改平台订单。' if any(p.get('previous_payment') for p in v['plans']) else ''
+            if not confirm(self,'确认生成聚水潭订单',f"将按预览顺序生成{len(v['plans'])}单，保存库存预留与待核对付款草稿；并不表示已经付款。\n"+'\n'.join(p['head']['number']+'：'+p['summary']['amount']+'元' for p in v['plans'])+payment_notice):return
         self.folder=export_locations.initial_directory(self);self.saved=[];self.completed.clear();self.completed.show();self.receipt=None;self.stop_requested=False
         w=Worker(batches.execute,(self.path,self.plan,self.accept_issues.isChecked()),self);self.worker=w
         w.status.connect(self.status.setText);w.row_progress.connect(self.progress);w.commit_state.connect(self.boundary);w.business_event.connect(self.saved_order);w.success.connect(self.generation_done);w.failed.connect(lambda s:warn(self,RuntimeError(s)));w.cancelled.connect(lambda:self.status.setText('已停止，已保存订单保留'));w.finished.connect(self.worker_finished)
@@ -315,12 +354,16 @@ class GenerationDialog(QDialog):
         else:self._completed=True;event.accept()
 
 
-def generate(parent,host,heads,batch_id=None,correction=False):
+def generate(parent,host,heads,batch_id=None,correction=False,*,fresh=False):
     if not heads:QMessageBox.information(parent,'请选择订单','先勾选要生成的店仓订单。');return
-    d=GenerationDialog(parent,host,heads,batch_id,correction);previous=getattr(host,'_large_io_dialog',None);host._large_io_dialog=d
-    try:d.exec()
-    finally:host._large_io_dialog=previous;d.deleteLater()
-    if host.closing:QTimer.singleShot(0,host.close)
+    d=GenerationDialog(parent,host,heads,batch_id,correction,fresh=fresh);previous=getattr(host,'_large_io_dialog',None);host._large_io_dialog=d
+    try:
+        d.exec()
+        return d.receipt
+    finally:
+        host._large_io_dialog=previous
+        d.deleteLater()
+        if host.closing:QTimer.singleShot(0,host.close)
 
 
 def reconcile_legacy_orders(parent,host,gids):
