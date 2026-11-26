@@ -1,6 +1,6 @@
 """Durable schedules and isolated calculation results. No Qt or platform actions."""
 import copy, hashlib, json, sqlite3, uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from datetime import datetime, timedelta, timezone, date, time
 from pathlib import Path
 import work_repository as wr
@@ -301,12 +301,12 @@ class Repository:
         with self.db() as db:
             return dict(db.execute('SELECT name,digest FROM scheduled_values WHERE run_id=?',(rid,)))
 
-    def value(self,rid,name,default=None,*,expected=None):
-        with self.db() as db:
+    def value(self,rid,name,default=None,*,expected=None,db=None):
+        with (self.db() if db is None else nullcontext(db)) as db:
             row=db.execute('SELECT digest,payload FROM scheduled_values WHERE run_id=? AND name=?',(rid,name)).fetchone()
-            if expected is not None and (row is None or row['digest']!=expected):
+            if expected is not None and (row is None or row[0]!=expected):
                 raise wr.Conflict('定时任务原快照已变化或不存在，请重新打开运行记录')
-            return chunks.load(row['payload'],db,expected=row['digest']) if row else default
+            return chunks.load(row[1],db,expected=row[0]) if row else default
 
     def store_state(self,rid,code,state,message,epoch):
         with self.db(True) as db:

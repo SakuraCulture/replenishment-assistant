@@ -12,9 +12,9 @@ class Reference:
     name: str
     digest: str
 
-    def read(self):
+    def read(self, db=None):
         from scheduled_replenishment import Repository
-        return Repository(self.path).value(self.run, self.name, expected=self.digest)
+        return Repository(self.path).value(self.run, self.name, expected=self.digest, db=db)
 
 
 def projection(result, focus):
@@ -63,6 +63,13 @@ class Results(MutableMapping):
             self.cached_value = self.refs[key].read()
             self.cached_key = key
         return self.cached_value
+
+    def in_transaction(self, key, db):
+        if key in self.overrides:
+            return self.overrides[key]
+        # Verify the pinned result on the signing connection even if the UI
+        # or the preparation pass already cached this store.
+        return self.refs[key].read(db)
 
     def __setitem__(self, key, value):
         self.overrides[key] = value
@@ -117,6 +124,16 @@ class OrderedResults(Mapping):
 
     def __getitem__(self, key):
         return self.checked[key] if key in self.checked else self.remaining[key]
+
+    def in_transaction(self, key, db):
+        values = self.checked if key in self.checked else self.remaining
+        return result_in_transaction(values, key, db)
+
+
+def result_in_transaction(results, key, db):
+    if isinstance(results, (Results, OrderedResults)):
+        return results.in_transaction(key, db)
+    return results[key]
 
 
 def ordered(keys, checked, remaining):
