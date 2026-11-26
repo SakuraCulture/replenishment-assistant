@@ -50,13 +50,17 @@ def known(db):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name='snapshot_chunks'").fetchone():return set()
     return {r[0] for r in db.execute('SELECT hash FROM snapshot_chunks')}
 
-def backup_before_write(path,progress=lambda _:None):
+def backup_before_write(path,progress=lambda _:None,*,cancel=None):
     """Back up once before creating any new-format record."""
     path=Path(path)
-    with closing(sqlite3.connect(path,timeout=30)) as src,src:
-        src.execute('BEGIN IMMEDIATE')
-        present=src.execute("SELECT 1 FROM sqlite_master WHERE name='snapshot_storage_meta'").fetchone()
-        if present and src.execute("SELECT 1 FROM snapshot_storage_meta WHERE key='initial_backup'").fetchone():return
+    def complete(src):
+        return (src.execute("SELECT 1 FROM sqlite_master WHERE name='snapshot_storage_meta'").fetchone()
+                and src.execute("SELECT 1 FROM snapshot_storage_meta WHERE key='initial_backup'").fetchone())
+    with closing(sqlite3.connect(path,timeout=.1)) as src,src:
+        if complete(src):return
+        from sqlite_write import begin
+        begin(src,cancel)
+        if complete(src):return
         from schema_backup import backup
         with stage('备份首次写入前的完整数据库',progress):
             dest=backup(path,'before-chunks-',progress)
@@ -108,6 +112,7 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None,r
     def count_blocks(v,depth=0):
         v=result_source(v)
         if isinstance(v,(Results,OrderedResults)):return len(v)
+        if isinstance(v,Rows):return sum((count+BLOCK_ROWS-1)//BLOCK_ROWS for _,count in v.parts.values())
         if isinstance(v,_MAPS) and len(v)>BLOCK_ROWS:return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS
         if isinstance(v,_MAPS) and depth<5:return sum(count_blocks(x,depth+1) for x in v.values())
         return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS if isinstance(v,_ARRAYS) and len(v)>BLOCK_ROWS else 1
@@ -164,8 +169,11 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None,r
             feed(b'}');return ['dict',items]
         if isinstance(v,_ARRAYS) and len(v)>BLOCK_ROWS:
             feed(b'[');parts=[]
-            values=iter(v)
-            while group:=list(islice(values,BLOCK_ROWS)):
+            if isinstance(v,Rows):groups=v.blocks(BLOCK_ROWS)
+            else:
+                values=iter(v)
+                groups=iter(lambda:list(islice(values,BLOCK_ROWS)),[])
+            for group in groups:
                 if parts:feed(b', ')
                 parts.append(block(group,True))
             feed(b']');return ['array',parts]

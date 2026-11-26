@@ -313,7 +313,7 @@ class Repository:
         # transaction starts. Their existence is still checked against the DB;
         # preparing an identity never constitutes successful signing.
         if prepared_heads is not None:prepared_heads(heads)
-        if changed_job or prepared:chunks.backup_before_write(self.work.path,progress)
+        if changed_job or prepared:chunks.backup_before_write(self.work.path,progress,cancel=cancel)
         checkpoint(cancel)
         with closing(self.work.connect()) as db,db:
             progress('等待归档写锁（可取消）…')

@@ -146,6 +146,13 @@ class Rows(Sequence):
                     data = data[segment]
                 yield from data
 
+    def blocks(self, size):
+        """Keep each immutable store's row block boundaries on re-archive."""
+        for store in self.parts:
+            remaining=self.for_stores((store,))
+            while group:=list(islice(remaining,size)):
+                yield group
+
     def __getitem__(self, index):
         if isinstance(index, slice):
             first, stop, step = index.indices(len(self))
