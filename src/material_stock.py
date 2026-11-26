@@ -51,7 +51,8 @@ def _locally_unsubmitted(db, oid, warehouse, gid):
 def cross_reservations(db, warehouse, baseline, skus, *, material=False, batch_id=None, exclude=()):
     """Return additional reservations and SKU-specific uncertainties. Caller owns the snapshot."""
     reserved, uncertain = {}, {}
-    if not skus or not stock.exists(db) or not (material or shared_ledger(db)):
+    reserve_other = baseline.get('reserve_other_orders')
+    if not skus or not stock.exists(db) or not (material or reserve_other or shared_ledger(db)):
         return {'reserved': reserved, 'uncertain': uncertain}
     tables = {row[0] for row in db.execute('SELECT name FROM sqlite_master WHERE type=\'table\'')}
     has_batches = 'jst_generation_batches' in tables
@@ -63,7 +64,7 @@ def cross_reservations(db, warehouse, baseline, skus, *, material=False, batch_i
                JOIN normal_orders n ON n.oid=a.oid
                LEFT JOIN jst_baselines b ON b.bid=json_extract(g.payload,'$.bid')
                {joins} WHERE a.warehouse=? AND r.sku IN (SELECT value FROM json_each(?))'''
-    if not material:
+    if not material and not reserve_other:
         sql += " AND n.kind IN ('material','policy','opening')"
     included_gids = set(baseline.get('included', ()))
     excluded = included_gids | set(exclude)
@@ -103,13 +104,16 @@ def cross_reservations(db, warehouse, baseline, skus, *, material=False, batch_i
         local = False
         if (old_revision, old_sha) != (revision, sha):
             if gid not in local_only:
-                local_only[gid] = _locally_unsubmitted(db, oid, warehouse, gid)
+                unresolved = reserve_other and 'jst_auto_orders' in tables and db.execute(
+                    "SELECT 1 FROM jst_auto_orders WHERE oid=? AND warehouse=? AND gid=? AND internal IS NULL "
+                    "AND stage IN ('IMPORT_UNKNOWN','IMPORT_FAILED','MANUAL_HANDOFF')", (oid,warehouse,gid)).fetchone()
+                local_only[gid] = bool(unresolved) or _locally_unsubmitted(db, oid, warehouse, gid)
             local = local_only[gid]
         add(gid, sku, qty, old_revision, old_sha, number, local)
     if 'material_retired_stock' in tables:
         sql = '''SELECT gid,sku,quantity,catalog_revision,source_sha,batch_id FROM material_retired_stock
                  WHERE warehouse=? AND sku IN (SELECT value FROM json_each(?))'''
-        if not material:
+        if not material and not reserve_other:
             sql += " AND kind IN ('material','policy','opening')"
         for gid, sku, qty, old_revision, old_sha, parent in db.execute(sql, (warehouse, wr.dumps(sorted(skus)))):
             if batch_id is None or batch_id != parent:

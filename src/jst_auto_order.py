@@ -1,5 +1,5 @@
 """Prepare, submit and reconcile exact, warehouse-scoped 聚水潭 order tasks."""
-from contextlib import closing
+from contextlib import closing, contextmanager
 from decimal import Decimal
 from hashlib import sha256
 from pathlib import Path
@@ -140,7 +140,7 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
                 if old and old['stage'] in store.RELEASED:
                     ready.append(old['online'])
                     continue
-                online = old['online'] if old else (_successor_online(db,h) or _online(h))
+                online = old['online'] if old else store.after_withdrawals(db,_successor_online(db,h) or _online(h))
                 proof=_generation_proof(db,generation,digest)
                 reason=saved_execution_reason(db,h,allow_redo=True)
                 if reason:
@@ -467,7 +467,7 @@ def _record_found(path, order, result, cancel, *, identity_only=False, manual_pr
             generation, digest = allocations.read_generation(db, order['gid'])
             if digest != order['payload']['generation']['digest'] or any(generation['head'].get(k) != h[k] for k in HEAD_KEYS):
                 raise wr.Conflict('原仓单签发修订或生成单摘要已变化，请核对原关联')
-        current=store.update(db,order,stage,proof=manual_proof,internal=internal,status=state,reason=reason)
+        current=store.update(db,order,stage,proof=proof,internal=internal,status=state,reason=reason)
         from special_native import remember_jst
         remember_jst(db,current,result)
         lock=allocations.locked(db,h)
@@ -502,6 +502,24 @@ def _record_found(path, order, result, cancel, *, identity_only=False, manual_pr
         _event(db,current,'聚水潭原单核对',detail)
         commit(db,cancel)
     return current
+
+
+def lookup_scoped(browser, order, *, allow_unbound=True):
+    """Resolve the saved warehouse and shop, then look up only the original order."""
+    proof = dict(order['proof'] or {})
+    binding = proof.get('binding')
+    if not binding and allow_unbound:
+        binding = browser.action('probe', order).get('binding')
+    if (not binding or binding.get('warehouse') != order['payload']['head']['warehouse']
+            or binding.get('shop') != order['payload']['shop']['name']
+            or not all(binding.get(k) for k in ('company', 'coid', 'uid', 'shop_id'))
+            or binding.get('version') is None):
+        raise Check('缺少原仓企业和店铺绑定凭据')
+    row = {**order, 'proof': {**proof, 'binding': binding, 'file_sha': order['file_sha']}}
+    result = browser.action('lookup', row, identity_only=True)
+    if result.get('binding') != binding or result.get('online') != order['online']:
+        raise Check('回查的企业、店铺或线上单号与原任务不同')
+    return row, result
 
 
 def _review(path, browser, order, cancel, *, identity_only=False):
@@ -626,7 +644,7 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
     if order.get('historical'):
         if action in ('recover','recover_delete'):
             return order
-        raise Check('这是已经取消的历史原单，请打开后继下单任务')
+        raise Check('这是已经结束的历史下单任务，请打开当前任务')
     if store.manual_pending(order):
         raise Check('本次已转人工处理，请按原线上单号核对已有订单')
     if action=='probe':
@@ -637,6 +655,11 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
         if order['stage']!='PREPARED':
             return {**order,'reason':'已核对本仓企业、店铺和导入入口'}
         return _save(path,order,order['stage'],cancel,reason='已核对本仓企业、店铺和导入入口')
+    if action == 'recover_cancelled':
+        scoped, result = lookup_scoped(browser, order, allow_unbound=order['stage'] in ('PREPARED', 'PREVIEWED'))
+        if result.get('found') is not True or result.get('native_status') != '已取消':
+            raise Check('尚未核实聚水潭原单已取消，请先核对平台原单状态')
+        return _record_found(path, scoped, result, cancel, identity_only=True)
     if action in ('recover','recover_delete'):
         if order['stage'] not in store.RELEASED:
             raise Check('此任务尚未导入，请先完成预览')
@@ -710,7 +733,7 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
             ok=False
             with closing(wr.read_connection(path)) as db:
                 current=store.read(db,online)
-            read_only=action=='probe' or order['stage'] in ('IMPORT_UNKNOWN','IMPORT_FAILED')
+            read_only=action in ('probe','recover_cancelled') or order['stage'] in ('IMPORT_UNKNOWN','IMPORT_FAILED')
             if (current and current['sequence']==order['sequence'] and not read_only and not current.get('historical')
                     and not store.manual_pending(current) and not _legacy_audit_not_dispatched(current)
                     and (current['stage']!='CANCELLED' or action in ('recover','recover_delete'))):
@@ -736,7 +759,8 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
     return responses
 
 
-def run_browser(path, keys, owner, action, approved=None, progress=lambda _:None, cancel=None, *, prepare_payment=None):
+@contextmanager
+def browser_session(owner, progress, cancel):
     checkpoint(cancel)
     try:
         lease=owner.acquire()
@@ -747,11 +771,16 @@ def run_browser(path, keys, owner, action, approved=None, progress=lambda _:None
             lease.start()
         except ComponentError as exc:
             raise _client_error(exc) from None
-        return process(path,keys,Browser(lease),action,progress,cancel,approved=approved,prepare_payment=prepare_payment)
+        yield Browser(lease)
     finally:
         while not lease.close(timeout=.5):
             progress('等待聚水潭当前动作安全结束，保留原任务')
             time.sleep(.2)
+
+
+def run_browser(path, keys, owner, action, approved=None, progress=lambda _:None, cancel=None, *, prepare_payment=None):
+    with browser_session(owner, progress, cancel) as browser:
+        return process(path, keys, browser, action, progress, cancel, approved=approved, prepare_payment=prepare_payment)
 
 
 def recover_for_deletion(path, pending, owner, progress=lambda _:None, cancel=None):

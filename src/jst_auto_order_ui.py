@@ -337,11 +337,12 @@ class Orders(QDialog):
             hint+='。上次发送结果不明的仓单只可预览、核对'
         self.selection_hint.setText(hint)
         self.export.setEnabled(free and len(rows)==1 and not stages&RELEASED)
+        self.export.setText('保存历史原文件' if stages=={'WITHDRAWN'} else '保存核对用 XLS')
         self.allocation.setEnabled(free and all(r['internal'] and r['stage']!='CANCELLED' for r in rows))
         self.payment_history.setEnabled(free and len(rows)==1 and bool(rows[0]['internal']))
-        self.redo_btn.setEnabled(free and len(rows)==1 and stages<=RELEASED
-                                  and 'MANUAL_HANDOFF' not in stages and not rows[0].get('historical'))
-        self.manual_btn.setEnabled(free and len(rows)==1)
+        self.redo_btn.setEnabled(free and len(rows)==1 and 'MANUAL_HANDOFF' not in stages
+                                  and not rows[0].get('historical'))
+        self.manual_btn.setEnabled(free and len(rows)==1 and 'WITHDRAWN' not in stages)
 
     def open_manual(self):
         rows=self.selected()
@@ -364,7 +365,7 @@ class Orders(QDialog):
         try:
             owner = manager(self.host).session
             result = run(self,service.run_browser,
-                         (self.path,[row['online']],owner,'recover'),'核实聚水潭原单是否取消')
+                         (self.path,[row['online']],owner,'recover_cancelled'),'核实聚水潭原单是否取消')
             if not result:
                 raise service.Check('未取得原单回查结果，请继续核对原任务。')
             checked = result[0]
@@ -373,7 +374,7 @@ class Orders(QDialog):
             self.note.setText(checked['reason'])
             if not confirm(self,'确认沿原仓单重做',
                            f"{order_label} · 聚水潭 {checked['internal']} 已核实取消。\n"
-                           '确认后按原记录释放占用，保留原单和付款，并返回本仓单。维持需求可直接一键分配下单，改量请先更正回传。'):
+                           '确认后按原记录释放占用，保留历史，并返回本仓单。点「准备新分配批次」按仓刷新库存。'):
                 return
             redo = run(self,begin_redo,(self.path,row['online']),'登记后继执行并核销原占用')
             if not redo:
@@ -431,7 +432,8 @@ class Orders(QDialog):
 
     def save_file(self):
         r=self.selected()[0]
-        dest,_=QFileDialog.getSaveFileName(self,'保存核对用 XLS',r['online']+'.xls','Excel 97-2003 (*.xls)')
+        suffix = '_撤销历史' if r['stage']=='WITHDRAWN' else ''
+        dest,_=QFileDialog.getSaveFileName(self,self.export.text(),r['online']+suffix+'.xls','Excel 97-2003 (*.xls)')
         if dest:
             target=Path(dest)
             if target.suffix.lower()!='.xls':target=target.with_suffix('.xls')

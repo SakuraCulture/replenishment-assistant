@@ -215,6 +215,7 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                     if not member or member['status']=='cancelled':raise wr.Conflict('订单不在本批有效范围')
                     value['position']=member['position']
             if o['signed_products'] is not None:value['signed_products']=o['signed_products']
+            if b.get('reserve_other_orders'): value['reserve_other_orders'] = True
             if any(overlap.values()):
                 value['material_cross'] = overlap
                 value['material_cross_exclude'] = sorted(x for x in exclude if x)
@@ -247,7 +248,7 @@ def validate_plan(db, p, catalog_revisions=None):
     if increases:=(p.get('manual_correction') or {}).get('material_increase'):
         from allocation_amendments import validate_material_claims
         validate_material_claims(db,h,p['old'],increases)
-    if material_stock.shared_ledger(db):
+    if p.get('reserve_other_orders') or material_stock.shared_ledger(db):
         base = decode(db.execute('SELECT payload,digest FROM jst_baselines WHERE bid=?',(p['bid'],)).fetchone())
         seen = material_stock.cross_reservations(db,h['warehouse'],base,{r['sku'] for r in p['rows']},
             material=material_stock.is_material(db,h['oid']),batch_id=p.get('batch_id'),
@@ -454,7 +455,6 @@ def payment_plan(path, gid, progress=lambda _:None, cancel=None):
 
 
 def cancel_generated(path,gids,reason,progress=lambda _:None,cancel=None):
-    import jst_batches
     if not reason.strip():raise ValueError('撤销生成单须填写原因')
     orders=[get(path,g,cancel=cancel) for g in gids]
     storage_chunks.backup_before_write(Path(path),progress);checkpoint(cancel)
@@ -471,12 +471,22 @@ def cancel_generated(path,gids,reason,progress=lambda _:None,cancel=None):
                 from special_settlement import release_unsubmitted
                 release_unsubmitted(db,h['oid'],'撤销生成单',reason)
         for p in orders:
-            h=p['head'];db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(h['oid'],h['warehouse']))
-            jst_batches.cancel_member(db,h,p['gid'])
-            if not p.get('batch_id'):db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(h['warehouse'],))
-            event(db,h,'撤销未下单生成单',{'gid':p['gid'],'reason':reason})
+            release_generation(db,p['head'],p['gid'],p.get('batch_id'),reason)
         checkpoint(cancel);progress(CommitProgress(True));db.commit()
     progress(CommitProgress(False));return gids
+
+
+def release_generation(db, head, gid, batch_id, reason, **evidence):
+    """Retire one confirmed live reference in the caller's write transaction."""
+    import jst_batches
+
+    if db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=? AND gid=?',
+                  (head['oid'],head['warehouse'],gid)).rowcount != 1:
+        raise wr.Conflict('原生成单已变化，请重新核对')
+    jst_batches.cancel_member(db,head,gid)
+    if not batch_id:
+        db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(head['warehouse'],))
+    event(db,head,'撤销未下单生成单',{'gid':gid,'reason':reason,**evidence})
 
 
 def export_source(path,gid,target,progress=lambda _:None,cancel=None):

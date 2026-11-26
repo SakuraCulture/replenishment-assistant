@@ -21,6 +21,7 @@ STAGES = {
     'AUDITED':'普通审核完成',
     'REVIEW':'异常待处理',
     'CANCELLED':'原单已取消',
+    'WITHDRAWN':'未成单分配已撤销',
 }
 RELEASED = frozenset(('IMPORT_UNKNOWN','IMPORT_FAILED','MANUAL_HANDOFF','IMPORTED','AUDIT_UNKNOWN','AUDITED','REVIEW','CANCELLED'))
 UNRESOLVED = ('IMPORT_UNKNOWN','AUDIT_UNKNOWN')
@@ -294,6 +295,33 @@ def archive_cancelled(db, order):
     """Move a terminal attempt out of the single live warehouse slot."""
     if order['stage'] != 'CANCELLED' or not order['internal'] or order.get('historical'):
         raise wr.Conflict('原单取消尚未核实，不能释放下单范围')
+    _archive(db, order)
+
+
+def archive_withdrawn(db, order, proof):
+    if order.get('historical') or order['internal']:
+        raise wr.Conflict('原下单任务已结束或已关联内部单号')
+    saved = update(db, order, 'WITHDRAWN', proof=proof, reason='原分配已撤销，历史原件可核对')
+    _archive(db, saved)
+    if exists(db, 'jst_cancellations'):
+        # The unsubmitted attempt can itself be the successor of a cancelled original.
+        db.execute('UPDATE jst_cancellations SET successor=? WHERE successor=? AND oid=? AND warehouse=?',
+                   (_withdrawal_successor(order['online']), order['online'],
+                    order['payload']['head']['oid'], order['payload']['head']['warehouse']))
+
+
+def _withdrawal_successor(online):
+    return 'BH' + sha256(('replenishment-jst-withdrawn:' + online).encode()).hexdigest()[:24].upper()
+
+
+def after_withdrawals(db, online):
+    if exists(db, HISTORY):
+        while db.execute('SELECT 1 FROM '+HISTORY+" WHERE online=? AND stage='WITHDRAWN'", (online,)).fetchone():
+            online = _withdrawal_successor(online)
+    return online
+
+
+def _archive(db, order):
     if not exists(db, HISTORY):
         db.execute('CREATE TABLE '+HISTORY+' AS SELECT * FROM jst_auto_orders WHERE 0')
         db.execute('CREATE UNIQUE INDEX jst_auto_history_online ON '+HISTORY+'(online)')

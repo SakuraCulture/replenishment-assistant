@@ -1,5 +1,5 @@
 """Read-only platform proof and durable manual handling of one frozen JST import."""
-from contextlib import closing, contextmanager
+from contextlib import closing
 from decimal import Decimal
 from hashlib import sha256
 import re
@@ -53,42 +53,8 @@ def _source(db, order):
     automatic.require_generation(db,original,digest,historical=True)
 
 
-@contextmanager
-def _browser(owner, progress, cancel):
-    import time
-
-    checkpoint(cancel)
-    try:
-        lease=owner.acquire()
-    except automatic.ComponentError as exc:
-        raise automatic._client_error(exc) from None
-    try:
-        try:
-            lease.start()
-        except automatic.ComponentError as exc:
-            raise automatic._client_error(exc) from None
-        yield automatic.Browser(lease)
-    finally:
-        while not lease.close(timeout=.5):
-            progress('等待原单查询安全结束')
-            time.sleep(.2)
-
-
-def _lookup(browser, order):
-    proof=dict(order['proof'] or {})
-    binding=proof.get('binding')
-    if not binding:
-        binding=browser.action('probe',order).get('binding')
-    if (not binding or binding.get('warehouse')!=order['payload']['head']['warehouse']
-            or binding.get('shop')!=order['payload']['shop']['name']
-            or not all(binding.get(k) for k in ('company','coid','uid','shop_id','version'))):
-        raise automatic.Check('原仓账号和店铺尚未核实')
-    proof.update(binding=binding,file_sha=order['file_sha'])
-    row={**order,'proof':proof}
-    result=browser.action('lookup',row,identity_only=True)
-    if result.get('binding')!=binding or result.get('online')!=order['online']:
-        raise automatic.Check('回查的企业、店铺或线上单号与原任务不同')
-    return row,result
+_browser = automatic.browser_session
+_lookup = automatic.lookup_scoped
 
 
 def _ready_for_handoff(order):

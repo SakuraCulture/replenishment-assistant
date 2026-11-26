@@ -206,7 +206,9 @@ class GenerationDialog(QDialog):
             v=self.plan['payload'];self.show_order(v['plans'],v['skipped']);self.review.replace(v['plans'])
             self.order_note.setText('上方列表即本次预览执行顺序；跳过单列在末尾，不参与分配。')
             payment_corrections=sum(bool(p.get('previous_payment')) for p in v['plans'])
-            self.summary.setText(f"本次预览 {len(v['plans'])} 张仓单；跳过 {len(v['skipped'])} 张（不计入本次汇总）。"+'；'.join(s['head']['number']+'：'+s['reason'] for s in v['skipped'])+(f'\n其中{payment_corrections}单的旧付款依据已因新回传失效：旧付款事实保留；本次仅更新本地分配，生成后需重新核对付款，不自动更改聚水潭或翱象订单。' if payment_corrections else ''))
+            redo_stocks = [wh for wh, b in self.catalogs.items() if b.get('reserve_other_orders')]
+            redo_note = ('\n重做仓扣除其他有效本地占用：'+'、'.join(redo_stocks)) if redo_stocks else ''
+            self.summary.setText(f"本次预览 {len(v['plans'])} 张仓单；跳过 {len(v['skipped'])} 张（不计入本次汇总）。"+'；'.join(s['head']['number']+'：'+s['reason'] for s in v['skipped'])+(f'\n其中{payment_corrections}单的旧付款依据已因新回传失效：旧付款事实保留；本次仅更新本地分配，生成后需重新核对付款，不自动更改聚水潭或翱象订单。' if payment_corrections else '')+redo_note)
             self.generate_btn.setEnabled(bool(v['plans']));self.accept_issues.setChecked(False)
         except Exception as exc:self.plan=None;self.review.replace([],'预览失败，请重新预览');self.generate_btn.setEnabled(False);warn(self,exc)
     def export_stock_evidence(self):
@@ -338,14 +340,69 @@ def reconcile_legacy_orders(parent,host,gids):
 
 
 def cancel_orders(parent,host,heads):
+    from catalog_session_ui import manager
+    from interaction_ui import show_rows
+    from table_readability import fit_window
+    import jst_withdrawal
+    from runtime_support import Cancelled
+
+    path = host.work_repository.path
+    owner = manager(host).session
+    title = '撤销未下单生成单'
+    decisions = {'ready': '可撤销', 'platform': '需先取消平台原单',
+                 'cancelled': '已取消，转原单重做', 'blocked': '证据不足或待处理'}
     try:
-        gids=run(parent,selected_ids,(host.work_repository.path,heads),'读取所选生成单')
-        if not gids:raise ValueError('所选单尚未生成')
-        reason,ok=QInputDialog.getText(parent,'撤销未下单生成单','核实这批生成单尚未在聚水潭下单后，填写撤销原因。')
-        if not ok:return
-        if not confirm(parent,'撤销未下单生成单',f'撤销所选{len(gids)}份生成与付款草稿的当前有效引用，历史保留；释放尚未包含在仓资料中的预留，原回传不变。'):return
-        run(parent,service.cancel_generated,(host.work_repository.path,gids,reason),'撤销未下单生成单')
-    except Exception as exc:warn(parent,exc)
+        checked = run(parent,jst_withdrawal.preview,(path,heads,owner),'逐单核对原聚水潭订单')
+        approved = [r for r in checked if r['result']=='ready']
+        rows = []
+        for r in checked:
+            h = r['head']
+            reserved = r['stamp']['reserved'] if r['result']=='ready' else {}
+            amount = service.allocation.text(sum((Decimal(q) for q in reserved.values()), Decimal(0)))
+            rows.append((h['number'], h['warehouse'] + '\n' + (r['company'] or '企业待核'),
+                         r['shop'] or '—', r['online'] or '—', decisions[r['result']],
+                         f'{len(reserved)}款 / {amount}件' if r['result']=='ready' else '—', r['message']))
+        d = QDialog(parent); d.setWindowTitle(title); fit_window(d,1250,700)
+        v = QVBoxLayout(d)
+        note = label(f'已核对 {len(checked)} 张仓单，可撤销 {len(approved)} 张。确认后复查可撤销清单，释放对应占用。'
+                     '双击可撤销行查看逐款占用。')
+        note.setWordWrap(True); v.addWidget(note)
+        table, _ = grid(d, ('补货单号','原仓及企业','聚水潭店铺','线上单号','核对结果','将释放占用','依据或阻塞'), rows)
+        table.setProperty('wrap_business_rows',True)
+        table.reading_controller.apply()
+        for i, width in enumerate((166,143,143,220,115,100,285)):
+            table.setColumnWidth(i,width)
+        table.horizontalHeader().setStretchLastSection(True)
+        table.verticalHeader().setSectionResizeMode(table.verticalHeader().ResizeMode.ResizeToContents)
+        v.addWidget(table,1)
+        def quantities(index):
+            row = checked[index.row()]
+            if row['result']=='ready':
+                show_rows(d,'将释放的商品占用 · '+row['head']['number'],('商品编码','占用数量'),
+                          list(row['stamp']['reserved'].items()))
+        table.doubleClicked.connect(quantities)
+        actions = QHBoxLayout()
+        close = button('取消' if approved else '关闭',d.reject); close.setDefault(True); actions.addWidget(close)
+        reason = QLineEdit(); reason.setPlaceholderText('填写本次撤销原因')
+        reason.setAccessibleName('撤销原因')
+        if approved:
+            v.addWidget(reason)
+            apply = button(f'确认撤销 {len(approved)} 张',d.accept,True)
+            apply.setEnabled(False); reason.textChanged.connect(lambda value:apply.setEnabled(bool(value.strip())))
+            actions.addWidget(apply)
+        v.addLayout(actions)
+        try:
+            accepted = d.exec()==QDialog.DialogCode.Accepted
+            entered = reason.text() if approved else ''
+        finally:
+            d.deleteLater()
+        if accepted and approved and not host.closing:
+            return run(parent,jst_withdrawal.withdraw,(path,approved,entered,owner),'复查并撤销所确认仓单')
+    except Cancelled:
+        return None
+    except Exception as exc:
+        warn(parent,exc)
+    return None
 
 
 def detail(parent,host,heads):

@@ -135,8 +135,10 @@ class ResultsPage(QWidget):
         if self.last_plan and new-old:self.status.setText(f'新增 {len(new-old)} 份可导出结果；不会加入已开始的导出，可再次导出。')
         elif self.last_plan is None:self.status.setText('查询完成；业务进度见各单状态。可重复导出有效结果，不重新分配。' if c['ready'] else '旧分配已失效，不能直接导出；请勾选要更正的订单，点击“按原批重新分配勾选单”。旧付款保留，新分配后需重新核对付款。' if any((r.get('gid') or r.get('original_zero')) and r['state']=='stale' for r in self.records) else '当前范围没有可导出结果：尚未回传请先确认回传；已回传请准备分配批次，或选择原批继续。')
         if self.payment_notice:self.status.setText(self.payment_notice)
+        if any(r.get('withdrawn') and service.key(r['head']) in self.chosen for r in self.records):
+            self.status.setText('已勾选撤销完成的仓单。点「准备新分配批次」，按仓刷新资料，再预览并确认生成。')
         if getattr(self,'redo_target',None) in self.chosen:
-            self.status.setText('已返回重做仓单。维持需求可点击「一键分配下单」；改量请先在订单跟踪更正本仓回传。')
+            self.status.setText('已返回重做仓单。点「准备新分配批次」按仓刷新资料；改量请先在订单跟踪更正本仓回传。')
         self.progress.hide();self.controls()
         if getattr(self,'auto_payment_scope',None):QTimer.singleShot(0,self.prepare_payment_automatically)
 
@@ -372,7 +374,23 @@ class ResultsPage(QWidget):
         def action(fn):
             if heads:fn(d,self.host,heads);d.accept()
             else:QMessageBox.information(d,'请先勾选','返回结果页勾选要操作的门店或仓单。')
-        for title,fn in [('撤销未下单生成单',jst_ui.cancel_orders),('查看当时资料依据',jst_ui.detail)]:v.addWidget(button(title,lambda checked=False,f=fn:action(f)))
+        def withdraw_selected():
+            if not heads:
+                QMessageBox.information(d,'请先勾选','返回结果页勾选要核对的仓单。')
+                return
+            self.reviewing=True;self.reader.cancel();self.reading=False;self.controls()
+            try:
+                released = jst_ui.cancel_orders(d,self.host,heads)
+                if released:
+                    self.batch_id = None
+                    self.chosen = {service.key(r['head']) for r in released}
+                    self.last_plan = None
+                    self.redo_target = None
+                d.accept()
+            finally:
+                self.reviewing=False;self.controls()
+        v.addWidget(button('撤销未下单生成单',withdraw_selected))
+        v.addWidget(button('查看当时资料依据',lambda:action(jst_ui.detail)))
         if legacy_gids:
             def reconcile():
                 if jst_ui.reconcile_legacy_orders(d,self.host,legacy_gids):d.accept()

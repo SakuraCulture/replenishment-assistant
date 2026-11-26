@@ -17,7 +17,7 @@ from PySide6.QtTest import QTest
 def start_smoke(app, win, args):
     root, phase = Path(args[0]).resolve(), args[1]
     fixture = json.loads((root/'import-failure-fixture.json').read_text('utf-8'))
-    if (phase not in ('exercise','reopen','preview') or fixture.get('synthetic') is not True
+    if (phase not in ('exercise','reopen','preview','withdrawal') or fixture.get('synthetic') is not True
             or fixture.get('live_platform') is not False
             or Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve()!=root/'settings'
             or win.work_repository.path.resolve()!=root/'settings/workbench.sqlite3'):
@@ -44,12 +44,17 @@ def start_smoke(app, win, args):
         for task in (manager,win.jst_generator,win.jst_fulfillment_runner,win.browser_status,win.scheduled):
             task.timer.stop()
 
-        if phase=='preview':
+        if phase in ('preview','withdrawal'):
             try:
-                report.update(preview_case(app,win,root,fixture),passed=True,build=diagnostic())
+                if phase=='withdrawal':
+                    from jst_withdrawal_smoke import WithdrawalExercise
+                    evidence = WithdrawalExercise(app,win,root,fixture).run()
+                else:
+                    evidence = preview_case(app,win,root,fixture)
+                report.update(evidence,passed=True,build=diagnostic())
             except Exception:
                 report['error']=traceback.format_exc()
-            (root/'preview-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
+            (root/f'{phase}-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
             win.job_dirty=False
             win._discard_close=True
             win.close()

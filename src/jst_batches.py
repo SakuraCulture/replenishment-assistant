@@ -121,9 +121,14 @@ def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda 
         stocks[wh] = dict(bid=bid, warehouse=wh, catalog=c, included=[], created=wr.now(), batch_id=batch_id)
         states[wh] = (bid, 0)
     from material_stock import shared_ledger, included
+    from jst_withdrawal import released_warehouses
     with closing(wr.read_connection(path)) as db:
-        if shared_ledger(db):
-            for wh, base in stocks.items():
+        redo = released_warehouses(db,heads)
+        shared = shared_ledger(db)
+        for wh, base in stocks.items():
+            if wh in redo:
+                base['reserve_other_orders'] = True
+            if wh in redo or shared:
                 base['included'] = sorted(included(db,wh,base))
     spec = dict(batch_id=batch_id, created=wr.now(), epoch=0, stocks=stocks, states=states, members=[], new=True)
     if versions:spec['current_versions']=versions

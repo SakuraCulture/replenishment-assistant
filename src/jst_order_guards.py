@@ -67,9 +67,9 @@ def guard_payment(db, p):
     if gid and active(db,p['head'])!=gid:raise Conflict('付款草稿对应生成单已变化，请重新核对')
 
 
-def saved_execution_reason(db, head, *, allow_redo=False):
+def saved_execution_reason(db, head, *, allow_redo=False, check_automatic=True):
     """A saved fact survives later changes to the upstream comparison basis."""
-    order=automatic.state(db,head)
+    order=automatic.state(db,head) if check_automatic else None
     if order and order[0] in automatic.RELEASED:
         return '聚水潭自动下单已关联' if order[1] else '聚水潭自动下单提交待核'
     if locked(db, head):
