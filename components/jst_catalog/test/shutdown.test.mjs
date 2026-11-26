@@ -19,6 +19,32 @@ async function fixture(t,driver){
   });return {root,service};
 }
 
+test('Windows sharing violations publish the same synced receipt before the next warehouse writes',
+  {skip: process.platform !== 'win32'}, async t => {
+    const {root,service} = await fixture(t, {});
+    const file = path.join(root, 'jobs.json');
+    const rename = fs.rename.bind(fs);
+    const attempts = [];
+    t.mock.method(fs, 'rename', async (from, to) => {
+      if (to === file) {
+        attempts.push(from);
+        if (attempts.length < 3) throw Object.assign(new Error('sharing violation'), {code:'EPERM'});
+      }
+      return rename(from, to);
+    });
+    let mutations = 0;
+    await Promise.all([
+      service.store.write(data => { mutations++; data.batches.original.nativeTaskRef = 'accepted-once'; }),
+      service.store.write(data => { data.batches.other = {id:'other'}; }),
+    ]);
+    assert.equal(mutations, 1);
+    assert.deepEqual(attempts.slice(0, 3), Array(3).fill(attempts[0]));
+    assert.equal(attempts.length, 4);
+    const saved = JSON.parse(await fs.readFile(file,'utf8'));
+    assert.equal(saved.batches.original.nativeTaskRef, 'accepted-once');
+    assert.equal(saved.batches.other.id, 'other');
+  });
+
 test('browser disconnect failure must still release the task-state guard and preserve jobs',async t=>{
   const {root,service}=await fixture(t,{close:async()=>{throw Error('synthetic browser disconnect failure');}});
   const before=await fs.readFile(path.join(root,'jobs.json'),'utf8');

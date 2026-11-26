@@ -41,10 +41,11 @@ def sheet_name(path,kind):
         return candidates[0]
     finally:book.close()
 
-def read_identified(path,kind,required,*,alternate=None):
+def read_identified(path,kind,required,*,alternate=None,include=None):
     """Recognize and read using one open archive; callers retain both hashes."""
     warnings.filterwarnings('ignore',message='Workbook contains no default style')
-    book=openpyxl.load_workbook(path,read_only=True,data_only=True,keep_links=False)
+    from portable_assets import resolve
+    book=openpyxl.load_workbook(resolve(path),read_only=True,data_only=True,keep_links=False)
     try:
         required_sheet={'商品编码','日销','周销','月销','仓库/门店编码'} if kind=='sales' else {'商品编码','基本售价','分类','出库箱规'}
         candidates=[]
@@ -57,7 +58,7 @@ def read_identified(path,kind,required,*,alternate=None):
         if not candidates:raise ValueError(('补货建议' if kind=='sales' else '商品资料')+'未找到唯一可用工作表。必需列：'+ '、'.join(sorted(required_sheet)))
         if len(candidates)!=1:raise ValueError('发现多个可用工作表：'+ '、'.join(x[0] for x in candidates)+'；请保留本次要使用的一张表。')
         sheet,heads,header,it,fields=candidates[0]
-        rows,info=adapter.read_table(path,sheet,fields,_cells=(header,it))
+        rows,info=adapter.read_table(path,sheet,fields,_cells=(header,it),include=include)
         if alternate is not None:info['alternate']=fields is alternate
         return sheet,heads,rows,info
     finally:book.close()

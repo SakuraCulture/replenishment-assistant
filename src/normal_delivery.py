@@ -9,6 +9,7 @@ from io_stages import stage
 import export_receipts as receipts
 import export_settings
 from export_files import sha256,explain_error
+from scheduled_snapshots import subset
 
 
 def job_head(work,day):
@@ -28,7 +29,7 @@ def probe_payload(full,codes):
     slim={k:full[k] for k in ('day','input_dirty')}
     slim['new_focus']=full.get('new_focus')
     if 'execution_warehouses' in full:slim['execution_warehouses']=copy.deepcopy(full['execution_warehouses'])
-    slim.update(states={s:full['states'][s] for s in codes},results={s:full['results'][s] for s in codes},
+    slim.update(states={s:full['states'][s] for s in codes},results=subset(full['results'],codes),
                 model_version=full['model_version'],_draft_summary=wr.summary(full),
                 preissue_drafts={s:v for s,v in full.get('preissue_drafts',{}).items() if s in codes})
     return slim
@@ -57,7 +58,7 @@ def prepare_export(full, codes, warehouses, request, allow_signature):
     if signing:
         if not allow_signature():
             return None
-        tail = {**full, 'results': {s: r for s, r in full['results'].items() if s not in codes}}
+        tail = {**full, 'results': subset(full['results'],[s for s in full['results'] if s not in codes])}
         request('delivery_expand', [tail, list(full['results'])])
     return prepared, signing
 
@@ -176,7 +177,8 @@ def selected_heads(repository,orders,warehouses):
     return result
 
 
-def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=None,*,consume=False,on_receipt=lambda task:None):
+def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=None,*,consume=False,
+                  on_receipt=lambda task:None,release_draft=lambda:None):
     """One archive transaction, sequential files, explicit partial-failure receipt."""
     import tempfile,os
     import export_progress as ep
@@ -237,6 +239,7 @@ def execute_batch(repository,batch,destination,progress=lambda s:None,cancel=Non
         # draft and exact warehouse identities have already committed. Subsequent
         # files are read from those immutable revisions, not this input tree.
         payload.clear();batch['consumed']=True
+        release_draft()
         import gc
         gc.collect()
         progress('签发归档已核实，已释放工作进程私有输入；按原签发修订导出…')

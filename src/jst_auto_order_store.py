@@ -11,8 +11,8 @@ from sqlite_write import begin
 
 
 STAGES = {
-    'PREPARED':'尚未导入',
-    'PREVIEWED':'尚未导入',
+    'PREPARED':'待平台预览',
+    'PREVIEWED':'已预览，待确认导入',
     'IMPORT_UNKNOWN':'导入结果待核',
     'IMPORT_FAILED':'导入失败',
     'MANUAL_HANDOFF':'人工处理待核',
@@ -21,6 +21,7 @@ STAGES = {
     'AUDITED':'普通审核完成',
     'REVIEW':'异常待处理',
     'CANCELLED':'原单已取消',
+    'WITHDRAWN':'未成单分配已撤销',
 }
 RELEASED = frozenset(('IMPORT_UNKNOWN','IMPORT_FAILED','MANUAL_HANDOFF','IMPORTED','AUDIT_UNKNOWN','AUDITED','REVIEW','CANCELLED'))
 UNRESOLVED = ('IMPORT_UNKNOWN','AUDIT_UNKNOWN')
@@ -195,11 +196,24 @@ def manual_pending(order):
     return not order['internal'] and bool(proof.get('manual_handoff') or proof.get('manual_proposal'))
 
 
-def display_reason(stage, reason, receipt):
-    if stage != 'IMPORT_FAILED' or not receipt:
+def display_reason(stage, reason, receipt, not_sent=None):
+    if stage=='IMPORT_FAILED' and receipt:
+        summary=f"聚水潭导入失败（成功 {receipt['success_count']} 张、失败 {receipt['fail_count']} 张），可重新平台预览"
+    elif stage=='IMPORT_UNKNOWN':
+        if receipt and receipt.get('success_count')==1:
+            summary='平台回执成功 1 张，请核对原单取得内部单号'
+        elif not_sent:
+            summary='最终导入未发送，可重新平台预览'
+            if not_sent.get('reason'):
+                summary+='。'+not_sent['reason']
+        else:
+            summary='尚无最终导入回执，可预览原文件。确认导入需先核实上次提交结果'
+    else:
         return reason
-    summary=f"聚水潭导入失败（成功 {receipt['success_count']} 张、失败 {receipt['fail_count']} 张），原导入记录已保留"
-    return summary+('。最近一次核对：'+reason if reason else '。')
+    if reason and reason not in ('已核对本仓企业、店铺和导入入口','已保存导入意图，等待原单回查',
+                                 '已取得导入回执，等待核对原线上单号',summary):
+        return summary+'。'+reason
+    return summary
 
 
 def _put_profile(db, store, warehouse, values, expected):
@@ -281,6 +295,33 @@ def archive_cancelled(db, order):
     """Move a terminal attempt out of the single live warehouse slot."""
     if order['stage'] != 'CANCELLED' or not order['internal'] or order.get('historical'):
         raise wr.Conflict('原单取消尚未核实，不能释放下单范围')
+    _archive(db, order)
+
+
+def archive_withdrawn(db, order, proof):
+    if order.get('historical') or order['internal']:
+        raise wr.Conflict('原下单任务已结束或已关联内部单号')
+    saved = update(db, order, 'WITHDRAWN', proof=proof, reason='原分配已撤销，历史原件可核对')
+    _archive(db, saved)
+    if exists(db, 'jst_cancellations'):
+        # The unsubmitted attempt can itself be the successor of a cancelled original.
+        db.execute('UPDATE jst_cancellations SET successor=? WHERE successor=? AND oid=? AND warehouse=?',
+                   (_withdrawal_successor(order['online']), order['online'],
+                    order['payload']['head']['oid'], order['payload']['head']['warehouse']))
+
+
+def _withdrawal_successor(online):
+    return 'BH' + sha256(('replenishment-jst-withdrawn:' + online).encode()).hexdigest()[:24].upper()
+
+
+def after_withdrawals(db, online):
+    if exists(db, HISTORY):
+        while db.execute('SELECT 1 FROM '+HISTORY+" WHERE online=? AND stage='WITHDRAWN'", (online,)).fetchone():
+            online = _withdrawal_successor(online)
+    return online
+
+
+def _archive(db, order):
     if not exists(db, HISTORY):
         db.execute('CREATE TABLE '+HISTORY+' AS SELECT * FROM jst_auto_orders WHERE 0')
         db.execute('CREATE UNIQUE INDEX jst_auto_history_online ON '+HISTORY+'(online)')
@@ -299,23 +340,32 @@ def list_orders(path):
             if not exists(db, table):
                 continue
             fields = ('online','stage','sequence','store','name','warehouse','number','shop',
-                      'sku_count','quantity','amount','preview_amount','internal','status','reason','import_receipt','manual_handoff','manual_proposal')
+                      'sku_count','quantity','amount','preview_amount','internal','status','reason','import_receipt','import_not_sent','manual_handoff','manual_proposal')
             for row in db.execute('''SELECT online,stage,sequence,json_extract(payload,'$.head.store'),
                    json_extract(payload,'$.head.name'),warehouse,json_extract(payload,'$.head.number'),
                    json_extract(payload,'$.shop.name'),json_extract(payload,'$.stats.sku_count'),
                    json_extract(payload,'$.stats.quantity'),json_extract(payload,'$.stats.amount'),
                    json_extract(proof,'$.amount'),internal,platform_status,reason,
-                   json_extract(proof,'$.import_receipt'),json_extract(proof,'$.manual_handoff.id'),
+                   json_extract(proof,'$.import_receipt'),json_extract(proof,'$.import_not_sent'),json_extract(proof,'$.manual_handoff.id'),
                    json_extract(proof,'$.manual_proposal.id')
                    FROM '''+table+' ORDER BY created DESC,rowid'):
                 record=dict(zip(fields,row))
                 raw=record.pop('import_receipt')
                 receipt=wr.loads(raw) if raw else None
+                raw=record.pop('import_not_sent')
+                not_sent=wr.loads(raw) if raw else None
                 record['stage']=display_stage(record['stage'],receipt)
-                record['reason']=display_reason(record['stage'],record['reason'],receipt)
+                record['import_outcome']=('accepted' if receipt and receipt.get('success_count')==1 else
+                                          'rejected' if receipt and receipt.get('fail_count')==1 else
+                                          'not_sent' if not_sent else None)
                 if (record['stage'] in ('IMPORT_UNKNOWN','IMPORT_FAILED') and
                         not record['internal'] and (record['manual_handoff'] or record['manual_proposal'])):
                     record['stage']='MANUAL_HANDOFF'
+                record['reason']=display_reason(record['stage'],record['reason'],receipt,not_sent)
+                record['stage_label']=STAGES[record['stage']]
+                if record['stage']=='IMPORT_UNKNOWN':
+                    record['stage_label']=('导入已受理，待核原单' if record['import_outcome']=='accepted' else
+                                           '未发送，待重新预览' if not_sent else '导入结果待核')
                 rows.append({**record, 'historical':table == HISTORY})
         return rows
 

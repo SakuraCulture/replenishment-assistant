@@ -192,6 +192,8 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         table.resizeColumnsToContents();table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
 
     def show_section(self,index):
+        if index==0 and self.sections.currentIndex()==1 and self.loaded and not self.worker and not self.job_dirty:
+            self.reset_job()
         self.sections.setCurrentIndex(index)
         if index==0 and hasattr(self,'home_tasks'):self.home_tasks.refresh()
         if index in (0,2) and not self.archive_all:self.refresh_archive()
@@ -377,7 +379,9 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
         self.new_bases=clone(record['payload'].get('new_product_bases',{}));self.new_focus=clone(record['payload'].get('new_focus'));super().restore_job(record,owned=owned);self.refresh_focus()
 
     def reset_job(self):
+        self._review_amounts_cache={};self._risk_counts={}
         self.new_bases={};self.preissue_drafts={};self.execution_warehouses={};self.warehouse_deletion_generations={};super().reset_job()
+        self.set_rows([],False)
         try:self.new_focus=self.focus_repository.load()
         except Exception as exc:self.new_focus=None;self.status.setText("新品关注清单未加载："+str(exc))
         self.refresh_focus()
@@ -535,8 +539,10 @@ class ApplicationWindow(ArchiveBatchActions,Workbench):
             dialog=MerchantSelection(self)
             if dialog.exec()!=QDialog.DialogCode.Accepted:signing_feedback(self,'已取消本次导出范围选择；本次未发起签发或导出。');return
             codes=dialog.codes();warehouses=dialog.warehouses();destination=dialog.destination.text()
-            self.execution_warehouses={**getattr(self,'execution_warehouses',{}),**warehouses}
-            self.touch()
+            old=getattr(self,'execution_warehouses',{})
+            if any(old.get(s)!=values for s,values in warehouses.items()):
+                self.execution_warehouses={**old,**warehouses}
+                self.touch()
         if not codes:signing_feedback(self,'本次未发起签发或导出：尚未选择有效完成门店。');return
         from signing_guidance import require_applied
         if not require_applied(self,codes):signing_feedback(self,'本次未发起签发或导出：请完成最终清单核对并应用，再重新点击。');return

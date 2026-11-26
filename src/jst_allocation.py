@@ -31,7 +31,7 @@ def status_issue(item):
     return ''
 
 
-def allocate(rows, items, balances, *, material=False):
+def allocate(rows, items, balances, *, material=False, exact=False):
     """Mutate this run's balance only; preserve return row order and raw sources."""
     output = []
     for row in rows:
@@ -64,7 +64,7 @@ def allocate(rows, items, balances, *, material=False):
             stock = number(item.get('可用数'), '可用库存')
             before = balances.setdefault(sku, stock)
             out.update(step=text(step), price=text(price), stock=text(stock), before=text(before), after=text(before), amount='0')
-            carton_demand = demand if material else (demand / step).to_integral_value(rounding=ROUND_CEILING) * step
+            carton_demand = demand if material or exact else (demand / step).to_integral_value(rounding=ROUND_CEILING) * step
             increment = carton_demand - demand
             # Keep the original tail's meaning in saved rows; record the upward
             # padding separately instead of turning that tail into a negative.
@@ -80,6 +80,8 @@ def allocate(rows, items, balances, *, material=False):
                       else '库存不足，按剩余可用库存分配（含不足整箱）' if qty < carton_demand else '按回传分配')
             if material and qty == demand:
                 reason = '按物料核对需求分配'
+            if exact and qty == demand:
+                reason = '按手动更正数量分配'
             if increment:
                 reason += '；回传按箱规向上规整 '+text(demand)+'→'+text(carton_demand)+'，补齐'+text(increment)
             out.update(quantity=text(qty), amount=text(qty * price), after=text(before-qty), missing=text(max(demand-qty, Decimal(0))), reason=reason)

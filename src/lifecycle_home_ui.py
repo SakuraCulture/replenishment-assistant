@@ -23,7 +23,7 @@ class LifecycleWidget(QWidget):
             self.status.addItem(daily_batch.PURCHASE_FILTER)
         self.warehouse_filter=QComboBox();self.warehouse_filter.addItems(['全部仓','河北仓','山东仓'])
         self.order_kind=QComboBox()
-        for title,key in (('补货单','normal_model'),('物料单','material'),('全部类型','all')):
+        for title,key in (('补货单','normal_model'),('物料单','material'),('全部类型','all'),('政策订单','policy'),('新店开业','opening')):
             self.order_kind.addItem(title,key)
         if scope and any(h.get('kind')=='material' for h in scope):
             self.order_kind.setCurrentIndex(1 if all(h.get('kind')=='material' for h in scope) else 2)
@@ -116,7 +116,17 @@ class LifecycleWidget(QWidget):
         if stage:er.addWidget(button('查看本环节全部',lambda:self.status.setCurrentText('本环节全部')))
         er.addStretch();self.empty_actions.hide();v.insertWidget(5,self.empty_actions)
         self.selection_label();self.setAcceptDrops(True)
-        self.recovery_btn=button('恢复并继续原操作',self.recover_operation);v.addWidget(self.recovery_btn)
+        actions=QHBoxLayout();self.recovery_btn=button('恢复并继续原操作',self.recover_operation);actions.addWidget(self.recovery_btn)
+        if self.stage in TITLES:actions.addWidget(button('手动更正勾选单',self.correct_stage))
+        v.addLayout(actions)
+
+    def correct_stage(self):
+        selected=list(self.checked.values())
+        if len(selected)!=1:
+            QMessageBox.information(self,'手动更正','请勾选一张仓单。')
+            return
+        from order_amendments_ui import open_editor
+        if open_editor(self,self.host,selected[0],self.stage):self.query(keep_page=True)
 
     def recover_operation(self):
         from lifecycle_recovery_ui import show
@@ -316,7 +326,7 @@ class LifecycleWidget(QWidget):
                 values[4:4]=['、'.join(tracking.get('jst_numbers',[])) or '未提供',
                              '、'.join(tracking.get('ax_numbers',[])) or ('待绑定' if tracking.get('await_binding') else '未关联'),
                              '待人工核对' if receipt_review else tracking.get('receipt_status','未记录收货')]
-            values.append('物料单' if h.get('kind')=='material' else '补货单')
+            values.append({'material':'物料单','policy':'政策订单','opening':'新店开业'}.get(h.get('kind'),'补货单'))
             for j,x in enumerate(values,3):self.table.setItem(i,j,QTableWidgetItem(str(x)))
             self.table.item(i,self.table.columnCount()-2).setToolTip(values[-2])
             if self.stage is None:

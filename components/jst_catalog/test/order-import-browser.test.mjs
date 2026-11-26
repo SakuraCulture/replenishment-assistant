@@ -157,6 +157,7 @@ test('native controls preview, import, reconcile and ordinary audit exactly one 
   assert.deepEqual(preview.lines,[['00001','10']]);
   assert.equal(preview.contact_ok,true);
   assert.equal(await page.evaluate(()=>importCount),0);
+  await page.frameLocator('#upload').locator('span.btnImport').last().evaluate(e=>e.hidden=true);
   await page.frameLocator('#upload').locator('table tr td').nth(17).evaluate(e=>e.textContent='￥25.00 ￥0.00');
   await flow.run('import',{warehouse:wh,permit:preview.permit,online},account);
   const bound={...spec,binding:preview.binding};
@@ -181,8 +182,20 @@ test('changed preview cannot release the order',{skip:!fs.existsSync(edge),timeo
   const {page,account,flow}=await openFixture(t);
   const preview=await flow.run('stage_import',{spec},account);
   await page.frameLocator('#upload').locator('table tr td').nth(13).locator('span').evaluate(e=>e.textContent='合成°商品 * 9');
-  await assert.rejects(flow.run('import',{warehouse:wh,permit:preview.permit,online},account),{code:'PREVIEW_CHANGED'});
+  const result=await flow.run('import',{warehouse:wh,permit:preview.permit,online},account);
+  assert.equal(result.dispatched,false);
+  assert.deepEqual([result.not_sent.online,result.not_sent.binding,result.not_sent.file_sha,result.not_sent.permit],
+    [online,preview.binding,spec.sha,preview.permit]);
   assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[0,0,0]);
+});
+
+test('missing receipt after dispatch keeps the original outcome unknown',{skip:!fs.existsSync(edge),timeout:60000},async t=>{
+  const {page,account,flow}=await openFixture(t);
+  const staged=await flow.run('stage_import',{spec},account);
+  await page.route('**/receipt',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:'<div>处理中</div>'}));
+  await assert.rejects(flow.run('import',{warehouse:wh,permit:staged.permit,online},account),
+    {code:'ORDER_IMPORT_RECEIPT_UNKNOWN'});
+  assert.equal(await page.evaluate(()=>importCount),1);
 });
 
 test('the native rejection receipt reports 0/1; later lookup and retry never confirm a second import',
@@ -217,7 +230,9 @@ test('native single-SKU rows preserve a 2000-item order and reopen a stale previ
   assert.deepEqual(submittedFormats,['SingleCommodity']);
   const staged=await flow.run('stage_import',{spec:{...local,binding:preview.binding}},account);
   await page.frameLocator('#upload').locator('table tr td').nth(17).evaluate(e=>e.textContent='￥21.00 ￥0.00');
-  await assert.rejects(flow.run('import',{warehouse:wh,permit:staged.permit,online},account),{code:'PREVIEW_CHANGED'});
+  const result=await flow.run('import',{warehouse:wh,permit:staged.permit,online},account);
+  assert.equal(result.dispatched,false);
+  assert.match(result.not_sent.reason,/预览内容已变化/);
   const checked=await flow.run('stage_import',{spec:{...local,binding:preview.binding}},account);
   await flow.run('import',{warehouse:wh,permit:checked.permit,online},account);
   const found=await flow.run('lookup',{spec:{...local,binding:preview.binding}},account);

@@ -9,6 +9,7 @@ from version_info import MODEL_VERSION
 from io_stages import stage,digest as digest_bytes
 from snapshot_json import decode_object, dumps, encode_default, loads
 from draft_spool import result_source
+from scheduled_snapshots import fields_for
 
 def now():return datetime.now(timezone(timedelta(hours=8))).isoformat(timespec='seconds')
 def today():return now()[:10]
@@ -16,11 +17,14 @@ class Conflict(ValueError):pass
 
 def summary(payload):
     states=payload.get('states',{});results=result_source(payload.get('results',{}));ready=[s for s,st in states.items() if st['state']=='已完成']
+    ready_results=[]
     for s in ready:
-        if s not in results or not results[s]:raise ValueError('已完成门店缺少结果：'+s)
+        fields=fields_for(results,s)
+        if not fields:raise ValueError('已完成门店缺少结果：'+s)
+        ready_results.append(fields['summary']['amount'])
     if ready and payload.get('input_dirty'):raise ValueError('输入已变化，不能把旧结果保存为已完成')
     if any(st['state'] in {'计算中','排队中'} for st in states.values()):raise ValueError('请等待任务结束后保存')
-    return {'stores':{s:{'name':st['name'],'state':st['state']} for s,st in states.items()},'completed':len(ready),'amount':round(sum(results[s]['summary']['amount'] for s in ready),2) if ready else None,'model_version':payload['model_version'],'input_dirty':payload.get('input_dirty',True),'phase':'全部完成' if states and len(ready)==len(states) else '部分完成' if ready else '准备中 / 需重算'}
+    return {'stores':{s:{'name':st['name'],'state':st['state']} for s,st in states.items()},'completed':len(ready),'amount':round(sum(ready_results),2) if ready else None,'model_version':payload['model_version'],'input_dirty':payload.get('input_dirty',True),'phase':'全部完成' if states and len(ready)==len(states) else '部分完成' if ready else '准备中 / 需重算'}
 
 def read_connection(path, *, timeout=5):
     """Open an existing business database without allowing initialization."""

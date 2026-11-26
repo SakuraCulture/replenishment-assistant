@@ -3,6 +3,7 @@ from importlib import import_module
 
 
 WINDOW_SMOKES = {
+    '--special-orders-smoke': 'special_smoke',
     '--poisson-display-smoke': 'poisson_display_smoke',
     '--warehouse-must-sell-smoke': 'warehouse_must_sell_smoke',
     '--data-location-smoke': 'data_location_smoke',
@@ -37,6 +38,7 @@ WINDOW_SMOKES = {
     '--purchase-recovery-smoke': 'purchase_recovery_smoke',
     '--platform-import-failure-smoke': 'platform_import_failure_smoke',
     '--platform-import-manual-smoke': 'platform_import_manual_smoke',
+    '--order-amendments-smoke': 'order_amendments_smoke',
     '--payment-preview-smoke': 'payment_preview_smoke',
     '--purchase-pipeline-smoke': 'purchase_pipeline_smoke',
     '--catalog-lifetime-smoke': 'catalog_lifetime_smoke',
@@ -49,6 +51,7 @@ WINDOW_SMOKES = {
     '--coverage-smoke': 'coverage_smoke',
     '--analytics-smoke': 'analytics_smoke',
     '--scheduled-smoke': 'scheduled_smoke',
+    '--scheduled-pressure-smoke': 'scheduled_pressure_smoke',
     '--app-recovery-smoke': 'application_recovery_smoke',
     '--business-flow-acceptance': 'business_flow_acceptance',
     '--automation-smoke': 'automation_smoke',

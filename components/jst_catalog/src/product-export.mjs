@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {CatalogError,check,sleep,atomic,safeError} from './common.mjs';
+import {locationError} from './browser-recovery.mjs';
 const execFileAsync=promisify(execFile);
 
 export const COMPANY=null;
@@ -74,22 +75,22 @@ export async function openProducts(page,{reload=false,expectedCompany=COMPANY}={
   else{
     await activateControl(page.locator('a[class^="menuItem"]').filter({hasText:/^商品$/}));
     const entries=page.locator('div[class^="title"]').filter({hasText:new RegExp('^'+label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'$')}).filter({visible:true});
-    const n=await entries.count();if(n!==2)throw Error('商品原生入口结构发生变化');
+    const n=await entries.count();if(n!==2)throw locationError('商品原生入口结构发生变化');
     await activateControl(entries.nth(1));
   }
   const productFrame=page.locator('iframe[src*="/erp-scm-goods/goodsInventoryManagement"]');
   await productFrame.waitFor({state:'attached',timeout:60000});
-  if(await productFrame.count()!==1)throw Error('商品业务页不唯一，未继续');
+  if(await productFrame.count()!==1)throw locationError('商品业务页不唯一，未继续');
   let frame;for(let n=0;n<150;n++){
     frame=await (await productFrame.elementHandle())?.contentFrame();
     if(frame&&await frame.getByPlaceholder('商品编码',{exact:true}).count())break;
     await wait(200);
   }
-  if(!frame)throw Error('商品业务页未就绪');
+  if(!frame)throw locationError('商品业务页未就绪');
   await frame.getByPlaceholder('商品编码',{exact:true}).waitFor({timeout:60000});
   await activateControl(page.getByRole('tab').filter({hasText:label}));
   await page.waitForFunction(text=>[...document.querySelectorAll('[role="tab"]')].some(e=>e.textContent.includes(text)&&e.getAttribute('aria-selected')==='true'),label,{timeout:15000,polling:100});
-  if(!await productFrame.isVisible())throw Error('商品业务页未激活，未继续');
+  if(!await productFrame.isVisible())throw locationError('商品业务页未激活，未继续');
   return frame;
 }
 function countsIn(json){
@@ -139,7 +140,7 @@ export async function openHistory(page){
     if(frame&&await frame.locator('#_jt_body_list').count())break;
     await wait(200);
   }
-  if(!frame)throw Error('未取得原生下载结果页');
+  if(!frame)throw locationError('未取得原生下载结果页');
   await frame.locator('#_jt_body_list').waitFor({timeout:30000});return frame;
 }
 export function nativeTaskId(value){

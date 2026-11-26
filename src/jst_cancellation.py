@@ -197,6 +197,8 @@ def begin_redo(path, online, progress=lambda _:None, cancel=None):
                           (online,)).fetchone() if orders.exists(db,'jst_cancellations') else None
         if not case or case[:2] != (order['internal'],order['gid']):
             raise wr.Conflict('缺少可核实的原单取消凭据，请继续核对原任务')
+        if orders.exists(db,'special_packages') and db.execute('SELECT 1 FROM special_packages WHERE oid=?',(head['oid'],)).fetchone():
+            raise ValueError('请在原专项工作台采用已回读的取消原单，再预览原目标的净余量')
         if case[2]:
             return {'online':case[2], **wr.loads(case[3])}
         purchases.validate_head(db,head)

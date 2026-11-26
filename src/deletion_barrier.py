@@ -1,8 +1,10 @@
 """Technical deletion fences. No retained product/payment/receipt payloads."""
 import json,sqlite3,uuid
+from collections.abc import Mapping
 from contextlib import closing
 from pathlib import Path
-from draft_spool import StagedMap, result_source
+from draft_spool import result_source
+from scheduled_snapshots import head_for
 
 class SourceDeleted(ValueError):
     code='SOURCE_ORDER_DELETED'
@@ -45,7 +47,7 @@ def basis(payload):
     results=result_source(payload.get('results') or {})
     for k in ('states','results','store_presets','store_ui','overrides','default_by_store','preissue_drafts','new_product_bases','_calculation_settings'):
         value=results if k=='results' else payload.get(k)
-        if isinstance(value,(dict,StagedMap)):codes.update(value)
+        if isinstance(value,Mapping):codes.update(value)
     for k in ('stores','blocked'):codes.update((payload.get('loaded') or {}).get(k,{}) or {})
     scopes={}
     def add_scope(store,warehouse):
@@ -53,7 +55,12 @@ def basis(payload):
     def edits_scope(store,value):
         for item in (value.get('edits') or {}).values():add_scope(store,item.get('warehouse'))
         for item in value.get('risks') or []:add_scope(store,item.get('warehouse'))
-    for store,result in results.items():
+    for store in results:
+        head=head_for(results,store)
+        if head is not None:
+            for warehouse in head['row_warehouses']:add_scope(store,warehouse)
+            continue
+        result=results[store]
         for row in result.get('rows',[]):
             add_scope(store,row.get('AU'))
         edits_scope(store,result.get('preissue') or {})

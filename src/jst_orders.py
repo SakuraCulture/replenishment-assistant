@@ -93,8 +93,8 @@ def return_basis(db, head):
 def reservations(db, wh, included, exclude=()):
     values = {}
     sql = 'SELECT a.gid,r.sku,r.quantity FROM jst_active a JOIN jst_reservations r ON a.gid=r.gid WHERE a.warehouse=?'
-    if material_stock.has_material(db):
-        sql += " AND NOT EXISTS(SELECT 1 FROM normal_orders o WHERE o.oid=a.oid AND o.kind='material')"
+    if material_stock.shared_ledger(db):
+        sql += " AND NOT EXISTS(SELECT 1 FROM normal_orders o WHERE o.oid=a.oid AND o.kind IN ('material','policy','opening'))"
     for gid, sku, qty in db.execute(sql+' ORDER BY a.rowid,r.rowid', (wh,)):
         if gid in included or gid in exclude:
             continue
@@ -117,6 +117,8 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
         db.execute('BEGIN')
         for supplied in heads:
             checkpoint(cancel); h = lc.full_head(path, supplied); key = (h['oid'], h['warehouse'])
+            if db.execute("SELECT 1 FROM normal_orders WHERE oid=? AND kind IN ('policy','opening')",(h['oid'],)).fetchone():
+                raise ValueError('专项执行包请从原工作台按目标行预览和认领，已生成的包可继续原平台任务')
             if key in seen:
                 raise ValueError('重复选择同一店仓订单')
             seen.add(key); old = active(db, h)
@@ -213,6 +215,7 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                     if not member or member['status']=='cancelled':raise wr.Conflict('订单不在本批有效范围')
                     value['position']=member['position']
             if o['signed_products'] is not None:value['signed_products']=o['signed_products']
+            if b.get('reserve_other_orders'): value['reserve_other_orders'] = True
             if any(overlap.values()):
                 value['material_cross'] = overlap
                 value['material_cross_exclude'] = sorted(x for x in exclude if x)
@@ -242,7 +245,10 @@ def validate_plan(db, p, catalog_revisions=None):
         raise wr.Conflict('付款依据已变化，请重新预览分配：'+h['number'])
     if active(db,h) != p['old']:
         raise wr.Conflict('生成记录已变化：'+h['number'])
-    if material_stock.has_material(db):
+    if increases:=(p.get('manual_correction') or {}).get('material_increase'):
+        from allocation_amendments import validate_material_claims
+        validate_material_claims(db,h,p['old'],increases)
+    if p.get('reserve_other_orders') or material_stock.shared_ledger(db):
         base = decode(db.execute('SELECT payload,digest FROM jst_baselines WHERE bid=?',(p['bid'],)).fetchone())
         seen = material_stock.cross_reservations(db,h['warehouse'],base,{r['sku'] for r in p['rows']},
             material=material_stock.is_material(db,h['oid']),batch_id=p.get('batch_id'),
@@ -329,7 +335,9 @@ def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None
                         put_generation(db,p)
                     else:
                         if v['correction'] and p['old']:db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(p['head']['oid'],p['head']['warehouse']))
-                        event(db,p['head'],'库存不足未生成',{'rows':p['rows'],'runid':v['runid'],'batch_id':p.get('batch_id')})
+                        event(db,p['head'],'手动确认为零分配' if p.get('manual_correction') else '库存不足未生成',{'rows':p['rows'],'runid':v['runid'],'batch_id':p.get('batch_id')})
+                    if audit:=p.get('manual_correction'):
+                        event(db,p['head'],'手动更正分配',{**audit,'gid':p['gid'] if p['summary']['positive'] else None})
                     db.execute('INSERT INTO jst_steps VALUES(?,?,?)',(p['operation'],v['runid'],wr.dumps({'gid':p['gid'] if p['summary']['positive'] else None,'number':p['head']['number']})))
                     jst_batches.record(db,p)
                 for w in whs:
@@ -447,7 +455,6 @@ def payment_plan(path, gid, progress=lambda _:None, cancel=None):
 
 
 def cancel_generated(path,gids,reason,progress=lambda _:None,cancel=None):
-    import jst_batches
     if not reason.strip():raise ValueError('撤销生成单须填写原因')
     orders=[get(path,g,cancel=cancel) for g in gids]
     storage_chunks.backup_before_write(Path(path),progress);checkpoint(cancel)
@@ -456,16 +463,30 @@ def cancel_generated(path,gids,reason,progress=lambda _:None,cancel=None):
         for p in orders:
             checkpoint(cancel);h=p['head'];purchases.validate_head(db,h)
             if active(db,h)!=p['gid']:raise wr.Conflict('生成单已变化，请重新核对')
-            reason=saved_execution_reason(db,h)
-            if reason or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):
-                raise ValueError((reason or '已有付款或收货资料')+'，不可作为未下单生成单撤销')
+            guard=saved_execution_reason(db,h)
+            if guard or lc.current(db,h,'payment') or lc.current(db,h,'receipt'):
+                raise ValueError((guard or '已有付款或收货资料')+'，不可作为未下单生成单撤销')
+            from special_plans import exists as has_special
+            if has_special(db,'special_packages') and db.execute('SELECT 1 FROM special_packages WHERE oid=?',(h['oid'],)).fetchone():
+                from special_settlement import release_unsubmitted
+                release_unsubmitted(db,h['oid'],'撤销生成单',reason)
         for p in orders:
-            h=p['head'];db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=?',(h['oid'],h['warehouse']))
-            jst_batches.cancel_member(db,h,p['gid'])
-            if not p.get('batch_id'):db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(h['warehouse'],))
-            event(db,h,'撤销未下单生成单',{'gid':p['gid'],'reason':reason})
+            release_generation(db,p['head'],p['gid'],p.get('batch_id'),reason)
         checkpoint(cancel);progress(CommitProgress(True));db.commit()
     progress(CommitProgress(False));return gids
+
+
+def release_generation(db, head, gid, batch_id, reason, **evidence):
+    """Retire one confirmed live reference in the caller's write transaction."""
+    import jst_batches
+
+    if db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=? AND gid=?',
+                  (head['oid'],head['warehouse'],gid)).rowcount != 1:
+        raise wr.Conflict('原生成单已变化，请重新核对')
+    jst_batches.cancel_member(db,head,gid)
+    if not batch_id:
+        db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(head['warehouse'],))
+    event(db,head,'撤销未下单生成单',{'gid':gid,'reason':reason,**evidence})
 
 
 def export_source(path,gid,target,progress=lambda _:None,cancel=None):

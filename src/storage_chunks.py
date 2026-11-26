@@ -5,6 +5,7 @@ not a mutable cache: its checksum covers its ordered tree and every block hash.
 Only version-2 manifests are supported. Garbage collection lives in maintenance.
 """
 import hashlib,json,zlib,sqlite3,uuid,os
+from itertools import islice
 from dataclasses import dataclass
 from pathlib import Path
 from io import BytesIO
@@ -13,6 +14,10 @@ from io_stages import stage
 from export_progress import RowProgress
 import snapshot_json as codec
 from draft_spool import StagedArray, StagedMap, result_source
+from scheduled_snapshots import OrderedResults, Results, Rows
+
+_MAPS=(dict,StagedMap,OrderedResults,Results)
+_ARRAYS=(list,tuple,StagedArray,Rows)
 
 MAGIC=b'YTCHUNK2\x00'
 BLOCK_ROWS=256
@@ -45,23 +50,22 @@ def known(db):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE name='snapshot_chunks'").fetchone():return set()
     return {r[0] for r in db.execute('SELECT hash FROM snapshot_chunks')}
 
-def backup_before_write(path,progress=lambda _:None):
-    """Online consistent backup; before creating any new-format record.
-
-    Copies are never overwritten or auto-restored. Concurrent initial writers may
-    create two backups; both are valid, and transaction CAS still decides writes.
-    """
+def backup_before_write(path,progress=lambda _:None,*,cancel=None):
+    """Back up once before creating any new-format record."""
     path=Path(path)
-    with closing(sqlite3.connect(path)) as src:
-        present=src.execute("SELECT 1 FROM sqlite_master WHERE name='snapshot_storage_meta'").fetchone()
-        if present and src.execute("SELECT 1 FROM snapshot_storage_meta WHERE key='initial_backup'").fetchone():return
-        dest=path.with_name(path.stem+'.before-chunks-'+os.urandom(16).hex()+'.sqlite3')
-        with stage('备份首次写入前的完整数据库',progress),closing(sqlite3.connect(dest)) as target:
-            src.backup(target,pages=1024,progress=lambda status,left,total:progress(RowProgress('备份数据库',total-left,total)))
-            if target.execute('PRAGMA quick_check').fetchone()[0]!='ok':raise ValueError('备份完整性检查失败')
-        with src:
-            schema(src)
-            src.execute("INSERT OR IGNORE INTO snapshot_storage_meta VALUES('initial_backup',?)",(str(dest),))
+    def complete(src):
+        return (src.execute("SELECT 1 FROM sqlite_master WHERE name='snapshot_storage_meta'").fetchone()
+                and src.execute("SELECT 1 FROM snapshot_storage_meta WHERE key='initial_backup'").fetchone())
+    with closing(sqlite3.connect(path,timeout=.1)) as src,src:
+        if complete(src):return
+        from sqlite_write import begin
+        begin(src,cancel)
+        if complete(src):return
+        from schema_backup import backup
+        with stage('备份首次写入前的完整数据库',progress):
+            dest=backup(path,'before-chunks-',progress)
+        schema(src)
+        src.execute("INSERT INTO snapshot_storage_meta VALUES('initial_backup',?)",(str(dest),))
 
 @dataclass
 class Prepared:
@@ -107,9 +111,11 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None,r
     h=hashlib.sha256();size=0;count=0
     def count_blocks(v,depth=0):
         v=result_source(v)
-        if isinstance(v,(dict,StagedMap)) and len(v)>BLOCK_ROWS:return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS
-        if isinstance(v,(dict,StagedMap)) and depth<5:return sum(count_blocks(x,depth+1) for x in v.values())
-        return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS if isinstance(v,(list,tuple,StagedArray)) and len(v)>BLOCK_ROWS else 1
+        if isinstance(v,(Results,OrderedResults)):return len(v)
+        if isinstance(v,Rows):return sum((count+BLOCK_ROWS-1)//BLOCK_ROWS for _,count in v.parts.values())
+        if isinstance(v,_MAPS) and len(v)>BLOCK_ROWS:return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS
+        if isinstance(v,_MAPS) and depth<5:return sum(count_blocks(x,depth+1) for x in v.values())
+        return (len(v)+BLOCK_ROWS-1)//BLOCK_ROWS if isinstance(v,_ARRAYS) and len(v)>BLOCK_ROWS else 1
     total=count_blocks(value)
     def feed(raw):
         nonlocal size
@@ -125,7 +131,7 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None,r
             digest,raw_size=store.encode(v,feed,fragment)
             blocks.keys[digest]=None
         count+=1
-        if count%32==0:progress(RowProgress(f'编码内容块：{count:,}/{total:,}；复用 {count-len(blocks):,} 块',count,total))
+        if count%32==0:progress(RowProgress(f'编码内容块：{count:,}；复用 {count-len(blocks):,} 块',count,max(total,count)))
         return ['ref',digest,raw_size]
     def copy_rows():
         nonlocal count
@@ -144,14 +150,14 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None,r
         return rows_from
     def walk(v,depth=0,target=False):
         v=result_source(v)
-        if isinstance(v,(dict,StagedMap)) and len(v)>BLOCK_ROWS:
+        if isinstance(v,_MAPS) and len(v)>BLOCK_ROWS:
             feed(b'{');parts=[];keys=sorted(v)
             for start in range(0,len(keys),BLOCK_ROWS):
                 if start:feed(b', ')
                 group=keys[start:start+BLOCK_ROWS]
                 parts.append(block(v.select(group) if isinstance(v,StagedMap) else {k:v[k] for k in group},True))
             feed(b'}');return ['map',parts]
-        if isinstance(v,(dict,StagedMap)) and depth<5:
+        if isinstance(v,_MAPS) and depth<5:
             feed(b'{');items=[]
             for i,k in enumerate(sorted(v)):
                 if not isinstance(k,(str,int,float,bool)) and k is not None:raise TypeError('无效JSON对象键')
@@ -161,12 +167,18 @@ def prepare(value,existing=(),progress=lambda _:None,binding=None,*,store=None,r
                 child = copy_rows() if target and key=='rows' else walk(v[k],depth+1,rows_from is not None and depth==0 and key=='result')
                 items.append([key,child])
             feed(b'}');return ['dict',items]
-        if isinstance(v,(list,tuple,StagedArray)) and len(v)>BLOCK_ROWS:
+        if isinstance(v,_ARRAYS) and len(v)>BLOCK_ROWS:
             feed(b'[');parts=[]
-            for start in range(0,len(v),BLOCK_ROWS):
-                if start:feed(b', ')
-                parts.append(block(v[start:start+BLOCK_ROWS],True))
+            if isinstance(v,Rows):groups=v.blocks(BLOCK_ROWS)
+            else:
+                values=iter(v)
+                groups=iter(lambda:list(islice(values,BLOCK_ROWS)),[])
+            for group in groups:
+                if parts:feed(b', ')
+                parts.append(block(group,True))
             feed(b']');return ['array',parts]
+        if isinstance(v,Rows):return block(list(v))
+        if isinstance(v,(Results,OrderedResults)):return block(dict(v))
         return block(v)
     with stage('按内容块编码及校验完整快照',progress):tree=walk(value)
     progress(RowProgress(f'快照编码完成：{count:,} 块，新增 {len(blocks):,} 块',count,total))

@@ -17,7 +17,7 @@ from PySide6.QtTest import QTest
 def start_smoke(app, win, args):
     root, phase = Path(args[0]).resolve(), args[1]
     fixture = json.loads((root/'import-failure-fixture.json').read_text('utf-8'))
-    if (phase not in ('exercise','reopen') or fixture.get('synthetic') is not True
+    if (phase not in ('exercise','reopen','preview','withdrawal') or fixture.get('synthetic') is not True
             or fixture.get('live_platform') is not False
             or Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve()!=root/'settings'
             or win.work_repository.path.resolve()!=root/'settings/workbench.sqlite3'):
@@ -43,6 +43,23 @@ def start_smoke(app, win, args):
         win.browser_status.initial.stop()
         for task in (manager,win.jst_generator,win.jst_fulfillment_runner,win.browser_status,win.scheduled):
             task.timer.stop()
+
+        if phase in ('preview','withdrawal'):
+            try:
+                if phase=='withdrawal':
+                    from jst_withdrawal_smoke import WithdrawalExercise
+                    evidence = WithdrawalExercise(app,win,root,fixture).run()
+                else:
+                    evidence = preview_case(app,win,root,fixture)
+                report.update(evidence,passed=True,build=diagnostic())
+            except Exception:
+                report['error']=traceback.format_exc()
+            (root/f'{phase}-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
+            win.job_dirty=False
+            win._discard_close=True
+            win.close()
+            QTimer.singleShot(100,lambda:app.exit(0 if report['passed'] else 1))
+            return
 
         job_id=fixture['ax_batch']
         row=manager.store.get(job_id)['items'][0]
@@ -180,3 +197,91 @@ def start_smoke(app, win, args):
             (root/f'{phase}-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),'utf-8')
             QTimer.singleShot(100,lambda:app.exit(0 if report['passed'] else 1))
     QTimer.singleShot(250,run)
+
+
+def preview_case(app,win,root,fixture):
+    from PySide6.QtWidgets import QMessageBox
+    import catalog_session_ui
+    import jst_auto_order_store as store
+    from jst_auto_order_ui import Orders
+    from lifecycle_home_ui import StageDialog
+    from platform_import_manual_fixture import JstManual
+    import work_repository as wr
+
+    case=json.loads((root/'pending-preview.json').read_text('utf-8'))
+    keys=fixture['jst_keys']
+    portal=JstManual(root/'jst-test')
+    path=win.work_repository.path
+    ready=case['ready']
+    report={'expected_ready':ready,'keys':keys}
+    errors=[]
+
+    def handle():
+        dialog=app.activeModalWidget()
+        if not isinstance(dialog,Orders):
+            errors.append('自动下单任务窗口未打开')
+            if dialog:dialog.reject()
+            return
+        try:
+            for i,row in enumerate(dialog.records):
+                if row['online'] in keys:
+                    dialog.table.item(i,0).setCheckState(Qt.CheckState.Checked)
+            others={r['online']:(r['stage'],r['sequence']) for r in dialog.records if r['online'] not in keys}
+            assert set(keys)=={r['online'] for r in dialog.selected()}
+            assert dialog.buttons['preview'].isEnabled() and not dialog.buttons['submit'].isEnabled()
+            dialog.buttons['probe'].click()
+            dialog.buttons['preview'].click()
+            report['rows_after_preview']={r['online']:{k:r[k] for k in ('stage','stage_label','reason','preview_amount')}
+                                          for r in dialog.records if r['online'] in keys}
+            assert [key for key in keys if report['rows_after_preview'][key]['stage']=='PREVIEWED']==ready
+            report['hint']=dialog.selection_hint.text()
+            report['preview_calls']=[key for action,wh,key in portal.calls if action=='order.preview']
+            assert set(report['preview_calls'])==set(case['preview']) and len(report['preview_calls'])==len(case['preview'])
+            assert not any(action=='order.import' for action,wh,key in portal.calls)
+            assert dialog.buttons['submit'].isEnabled()==bool(ready)
+            dialog.table.horizontalScrollBar().setValue(dialog.table.horizontalScrollBar().maximum())
+            QTest.qWait(80)
+            assert dialog.grab().save(str(root/'预览后按钮.png'))
+            if ready:
+                answer=[]
+                def choose(button):
+                    box=app.activeModalWidget()
+                    if not isinstance(box,QMessageBox):return
+                    answer.append(box.text())
+                    box.button(button).click()
+                for button in (QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Yes):
+                    QTimer.singleShot(100,lambda b=button:choose(b))
+                    dialog.buttons['submit'].click()
+                    assert all(k in answer[-1] for k in ready) and all(k not in answer[-1] for k in keys if k not in ready)
+                    if button==QMessageBox.StandardButton.Cancel:
+                        assert not any(a=='order.import' for a,wh,k in portal.calls)
+                report['confirmation']=answer[-1]
+            report['actual_submissions']=[key for a,wh,key in portal.calls if a=='order.import']
+            assert report['actual_submissions']==ready
+            assert others=={r['online']:(r['stage'],r['sequence']) for r in dialog.records if r['online'] not in keys}
+            with closing(wr.read_connection(path)) as db:
+                for key in keys:
+                    original=store.read(db,key)
+                    assert bool(original['internal'])==(key in ready)
+                    assert original['file_sha']==case['file_sha'][key]
+            report['calls']=portal.calls
+        except Exception:
+            errors.append(traceback.format_exc())
+        finally:
+            dialog.reject()
+
+    stage=StageDialog(win.followup,'jst')
+    try:
+        stage.setModal(True)
+        stage.show()
+        deadline=time.monotonic()+25
+        while stage.panel.data is None and time.monotonic()<deadline:QTest.qWait(20)
+        assert stage.panel.data is not None
+        with patch.object(catalog_session_ui,'manager',return_value=SimpleNamespace(session=portal)):
+            QTimer.singleShot(150,handle)
+            stage.panel.auto_tasks_btn.click()
+        assert not errors,errors
+        assert 'actual_submissions' in report
+    finally:
+        stage.reject()
+    return report

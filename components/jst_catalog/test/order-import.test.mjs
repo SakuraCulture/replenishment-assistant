@@ -65,6 +65,19 @@ test('account changes, wrong internal number and lease release invalidate permit
   assert.equal(calls.filter(([op])=>op==='submit'||op==='audit').length,0);
 });
 
+test('only a matching unused expired permit proves that this import was not sent',async()=>{
+  const {service,calls}=setup();
+  const staged=await service.command({action:'order.stage_import',spec});
+  service.orders.permits.get(staged.permit).expires=0;
+  const request={action:'order.import',warehouse,online,permit:staged.permit};
+  const result=await service.command(request);
+  assert.equal(result.dispatched,false);
+  assert.equal(result.not_sent.permit,staged.permit);
+  assert.deepEqual(result.not_sent.binding,staged.binding);
+  await assert.rejects(service.command(request),{code:'PREVIEW_CHANGED'});
+  assert.equal(calls.filter(([op])=>op==='submit').length,0);
+});
+
 test('an active native order action makes the shared browser busy',async()=>{
   const {service,orderPages}=setup();
   let waiting,release;

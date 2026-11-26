@@ -1,6 +1,6 @@
 """Durable schedules and isolated calculation results. No Qt or platform actions."""
 import copy, hashlib, json, sqlite3, uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from datetime import datetime, timedelta, timezone, date, time
 from pathlib import Path
 import work_repository as wr
@@ -22,7 +22,7 @@ def has_verified_bindings(schedule):
 def check_unsigned(db, day, codes):
     if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='normal_orders'").fetchone():
         return
-    signed = {row[0] for row in db.execute("SELECT store FROM normal_orders WHERE day=? AND kind<>'material'", (day,))}
+    signed = {row[0] for row in db.execute("SELECT store FROM normal_orders WHERE day=? AND kind NOT IN ('material','policy','opening')", (day,))}
     conflicts = [code for code in codes if code in signed]
     if conflicts:
         raise ValueError('本日已有签发：' + '、'.join(conflicts) + '，请沿原单处理')
@@ -252,7 +252,7 @@ class Repository:
                     message='原任务已跨业务日，请先核对原平台回执和资料日期' if after_process_exit and r['day']!=day and not r.get('control') else '上次中断；继续前核对原平台任务，不重新提交'
                     self._save(db,r,message)
 
-    def save_value(self,rid,name,value,epoch,*,store=None,adoption=None):
+    def save_value(self,rid,name,value,epoch,*,store=None,adoption=None,input_head=None,review=None):
         # Encode outside the write transaction; immutable blocks deduplicate shared data.
         with self.db() as db:known=chunks.known(db)
         p=chunks.prepare(value,known)
@@ -286,15 +286,27 @@ class Repository:
                     'warehouse_deletion_generations':basis.get('warehouse_deletion_generations',{})}))
             blob=chunks.put(db,p)
             db.execute('INSERT INTO scheduled_values VALUES(?,?,?,?) ON CONFLICT(run_id,name) DO UPDATE SET digest=excluded.digest,payload=excluded.payload',(rid,name,p.digest,blob))
+            if input_head is not None:
+                code=name.removeprefix('input:')
+                item=next(i for i in r['stores'] if i['code']==code)
+                item['input']=input_head
+                self._save(db,r,f"{item['name']}已准备 {input_head['rows']:,} 行")
             if store:
                 item=next(i for i in r['stores'] if i['code']==store)
                 item.update(state='READY',message='已计算并保存，尚未签发',amount=value['summary']['amount'])
+                if review is not None:item['review']=review
                 self._save(db,r, item['name']+'计算结果已保存')
 
-    def value(self,rid,name,default=None):
+    def digests(self,rid):
         with self.db() as db:
+            return dict(db.execute('SELECT name,digest FROM scheduled_values WHERE run_id=?',(rid,)))
+
+    def value(self,rid,name,default=None,*,expected=None,db=None):
+        with (self.db() if db is None else nullcontext(db)) as db:
             row=db.execute('SELECT digest,payload FROM scheduled_values WHERE run_id=? AND name=?',(rid,name)).fetchone()
-            return chunks.load(row['payload'],db,expected=row['digest']) if row else default
+            if expected is not None and (row is None or row[0]!=expected):
+                raise wr.Conflict('定时任务原快照已变化或不存在，请重新打开运行记录')
+            return chunks.load(row[1],db,expected=row[0]) if row else default
 
     def store_state(self,rid,code,state,message,epoch):
         with self.db(True) as db:
@@ -302,7 +314,9 @@ class Repository:
             if r['epoch']!=epoch:raise wr.Conflict('本次执行轮次已过期')
             item=next(i for i in r['stores'] if i['code']==code)
             if item['state']=='READY':return r
-            item.update(state=state,message=str(message));return self._save(db,r)
+            item.update(state=state,message=str(message))
+            event=f'{code} · {message}' if state in ('RUNNING','WAITING_MEMORY') else None
+            return self._save(db,r,event)
 
     def events(self,rid,after=0,limit=100):
         if not 1<=limit<=100:raise ValueError('每页最多100条')

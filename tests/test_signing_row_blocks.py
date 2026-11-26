@@ -70,6 +70,43 @@ class SigningRowBlocks(unittest.TestCase):
             return [chunks.require_manifest(db.execute(f'SELECT payload FROM {table}').fetchone()[0])
                     for table in ('jobs','normal_revisions','warehouse_execution_revisions')]
 
+    def test_scheduled_signing_reads_pinned_results_through_the_write_connection(self):
+        from scheduled_replenishment import Repository
+        from scheduled_snapshots import Reference, Results, projection
+
+        payload = signing_fixture([('A', ('河北仓', '山东仓'), 12), ('B', ('河北仓', '山东仓'), 24)])
+        scheduled = Repository(self.work.path)
+        schedule = {'name': '签发写锁', 'plan_id': 'test-plan', 'kind': 'weekly',
+                    'weekdays': list(range(7)), 'time': '06:30', 'workers': 1, 'enabled': False}
+        run = scheduled.claim(scheduled.manual(schedule)['id'])
+        expected = payload['results']
+        for code, value in expected.items():
+            scheduled.save_value(run['id'], 'result:' + code, value, run['epoch'])
+        digests = scheduled.digests(run['id'])
+        payload['results'] = Results(
+            {code: Reference(self.work.path, run['id'], 'result:' + code, digests['result:' + code])
+             for code in expected},
+            {code: projection(value, None) for code, value in expected.items()},
+        )
+
+        class ExclusiveConnection(sqlite3.Connection):
+            def execute(self, sql, parameters=()):
+                # Windows reproduced this stronger lock after dirty pages spilled.
+                if sql == 'BEGIN IMMEDIATE':
+                    sql = 'BEGIN EXCLUSIVE'
+                return super().execute(sql, parameters)
+
+        def signing_connection():
+            return sqlite3.connect(self.work.path, factory=ExclusiveConnection)
+
+        with patch.object(self.work, 'connect', signing_connection):
+            heads = self.confirm(payload)
+        self.assertEqual(len(heads), 2)
+        for head in heads:
+            self.assertEqual(len(head['warehouse_heads']), 2)
+            self.assertEqual(self.repo.get(payload['day'], head['store'])['payload']['result'],
+                             expected[head['store']])
+
     def test_single_warehouse_skips_reencoding_both_targets_and_verifies_once(self):
         payload = signing_fixture([('A',('山东仓',),12)])
         verify = Store.verify_row_block

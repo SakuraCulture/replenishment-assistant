@@ -39,6 +39,8 @@ class Browser(automatic.Browser):
     def request(self, action, **values):
         from catalog_sync_client import ComponentError
         try:
+            if action == 'payment_detail':
+                return self._payment_detail(values)
             return self.lease.request('order.' + action, timeout=180, **values)
         except ComponentError as exc:
             if self.retained_only and exc.code in ('SESSION_NOT_RETAINED', 'LOGIN_REQUIRED'):
@@ -48,6 +50,29 @@ class Browser(automatic.Browser):
             if exc.code.startswith('ALLOCATION_'):
                 raise automatic.PlatformCheck(str(exc)) from None
             raise automatic._client_error(exc) from None
+
+    def _payment_detail(self, values):
+        from catalog_sync_client import ComponentError
+        import performance_log
+        warehouse = values['spec']['warehouse']
+        reentered = reconnected = False
+        while True:
+            try:
+                return self.lease.request('order.payment_detail', timeout=180, **values)
+            except ComponentError as exc:
+                if exc.code not in ('JST_CONNECTION_LOST', 'JST_PAGE_LOCATION') or reconnected:
+                    raise
+                if self.retained_only and self.lease.owner.scheduled_waiting:
+                    # Finish this read as retryable and release before another browser action.
+                    raise
+                if exc.code == 'JST_PAGE_LOCATION' and not reentered:
+                    with performance_log.begin('jst_fulfillment.reenter_page'):
+                        reentered = True
+                    continue
+                with performance_log.begin('jst_fulfillment.reconnect_warehouse'):
+                    self.lease.request('session.reset', warehouse=warehouse)
+                reconnected = True
+                values = {**values, 'retained_only': False}
 
     def action(self, action, order, **extra):
         if action not in ('allocation', 'payment_detail'):
@@ -404,11 +429,12 @@ def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None
                 db.execute('BEGIN')
                 order = _order(db, online)
             progress('读取原订单明细 ' + automatic.show_name(order['payload']['head']))
-            status, candidate = '', None
+            status, candidate, timed_out = '', None, False
             try:
                 receipt = browser.action('payment_detail', order)
             except automatic.PlatformCheck as exc:
                 state, message = 'RETRY_PAYMENT_READ', str(exc)
+                timed_out = exc.code=='RESPONSE_UNKNOWN' or bool(exc.code and 'TIMEOUT' in exc.code)
             else:
                 checkpoint(cancel)
                 binding = (order['proof'] or {}).get('binding')
@@ -439,6 +465,7 @@ def pull_order_payment(path, keys, browser, progress=lambda _: None, cancel=None
                         else:
                             state, message = 'READY', order_payment.LABEL + '已核验，待人工确认付款'
             result = _observe_payment(path, order, state, message, status, candidate, cancel)
+            if timed_out:result['timed_out']=True
         except ValueError as exc:
             result = {'online': online, 'state': 'NEEDS_REVIEW', 'message': str(exc)}
         results.append(result)
@@ -449,19 +476,48 @@ def run_order_actions(path, keys, owner, action, approved=None, progress=lambda 
     return automatic.run_browser(path, keys, owner, action, approved, progress, cancel, prepare_payment=pull_order_payment)
 
 
-def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, retained_only=False, order_details=False):
+def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, retained_only=False, order_details=False,
+                round_deadline=None):
     from catalog_sync_client import ComponentError
     checkpoint(cancel)
+    reader = pull_order_payment if order_details else pull
+    if retained_only:
+        import performance_log
+        import time
+        results = []
+        for online in dict.fromkeys(keys):
+            checkpoint(cancel)
+            lease = owner.acquire_background()
+            if lease is None:
+                with performance_log.begin('jst_fulfillment.background_yield'):
+                    progress('后台原单回查已让位，剩余原单留待下次空闲时查询')
+                break
+            started = time.monotonic()
+            rows = _read_with_lease(reader, path, [online], lease, True, progress, cancel, round_deadline)
+            results.extend(rows)
+            if order_details and rows and isinstance(rows[-1],dict) and rows[-1]['state']=='RETRY_PAYMENT_READ':
+                if rows[-1].get('timed_out') or time.monotonic()-started>=45:
+                    rows[-1]['timed_out'] = True
+                    break
+        return results
     try:
         lease = owner.acquire()
     except ComponentError as exc:
         raise automatic._client_error(exc) from None
+    return _read_with_lease(reader, path, keys, lease, False, progress, cancel)
+
+
+def _read_with_lease(reader, path, keys, lease, retained_only, progress, cancel, round_deadline=None):
+    from catalog_sync_client import ComponentError
     try:
         try:
             lease.start()
         except ComponentError as exc:
             raise automatic._client_error(exc) from None
-        reader = pull_order_payment if order_details else pull
+        if round_deadline is not None:
+            from jst_fulfillment_round import take
+            if not take(path, round_deadline, keys[0], cancel):
+                return []
         return reader(path, keys, Browser(lease, retained_only), progress, cancel)
     finally:
         import time
@@ -480,6 +536,11 @@ def run_order_payment(path, keys, owner, progress=lambda _: None, cancel=None, *
 
 def retry_order_payment(path, keys, owner, progress=lambda _: None, cancel=None):
     return run_order_payment(path, keys, owner, progress, cancel, retained_only=True)
+
+
+def read_background_round(path, keys, owner, deadline, historical, progress=lambda _: None, cancel=None):
+    return run_browser(path, keys, owner, progress, cancel, retained_only=True,
+                       order_details=not historical, round_deadline=deadline)
 
 
 def verify_order_before_commit(path, guards, owner, progress=lambda _: None, cancel=None):

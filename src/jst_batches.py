@@ -120,10 +120,15 @@ def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda 
         if c['warehouse'] != wh: raise ValueError('选用资料与供货仓不一致')
         stocks[wh] = dict(bid=bid, warehouse=wh, catalog=c, included=[], created=wr.now(), batch_id=batch_id)
         states[wh] = (bid, 0)
-    from material_stock import has_material, included
+    from material_stock import shared_ledger, included
+    from jst_withdrawal import released_warehouses
     with closing(wr.read_connection(path)) as db:
-        if has_material(db):
-            for wh, base in stocks.items():
+        redo = released_warehouses(db,heads)
+        shared = shared_ledger(db)
+        for wh, base in stocks.items():
+            if wh in redo:
+                base['reserve_other_orders'] = True
+            if wh in redo or shared:
                 base['included'] = sorted(included(db,wh,base))
     spec = dict(batch_id=batch_id, created=wr.now(), epoch=0, stocks=stocks, states=states, members=[], new=True)
     if versions:spec['current_versions']=versions
@@ -241,7 +246,9 @@ def validate_member(db, p, *, replay=False):
     bid = p['batch_id']; row = db.execute('SELECT status,epoch FROM jst_batches WHERE batch_id=?',(bid,)).fetchone()
     member = db.execute('SELECT status FROM jst_batch_members WHERE batch_id=? AND oid=? AND warehouse=?', (bid,p['head']['oid'],p['head']['warehouse'])).fetchone()
     if not row or not member or member[0]=='cancelled': raise wr.Conflict('本批任务已撤销或不存在')
-    if not replay and (row[0]!='active' or row[1]!=p['batch_epoch']): raise wr.Conflict('本批已暂停或任务状态变化，请继续原批次')
+    amendment=p.get('manual_correction') and member[0]=='done' and row[0] in ('active','paused','complete')
+    if not replay and (row[1]!=p['batch_epoch'] or (row[0]!='active' and not amendment)):
+        raise wr.Conflict('本批已暂停或任务状态变化，请继续原批次')
     if not replay and member[0] in ('pending','failed') and db.execute("SELECT 1 FROM jst_batch_members WHERE batch_id=? AND warehouse=? AND position<? AND status IN ('pending','failed')",(bid,p['head']['warehouse'],p['position'])).fetchone():
         raise wr.Conflict('该仓前序任务未完成，请按原顺序重试')
 

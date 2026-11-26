@@ -52,6 +52,11 @@ def install(host, home_layout, nav):
     from material_ui import open_desk
     host.material_entry = button('物料单',lambda:open_desk(host))
     nav.insertWidget(nav.indexOf(tracking),host.material_entry)
+    from special_ui import open_desk as open_special
+    for kind,title in (('policy','政策订单'),('opening','新店开业')):
+        nav.insertWidget(nav.indexOf(tracking),button(title,lambda checked=False,k=kind:open_special(host,k)))
+    from special_schedule import install as install_special_schedule
+    install_special_schedule(host)
 
     clear_layout(home_layout, (host.home_status, host.recent))
     home_layout.addWidget(label('今天要完成什么？', 'title'))

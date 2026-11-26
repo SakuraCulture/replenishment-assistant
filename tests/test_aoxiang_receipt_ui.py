@@ -114,6 +114,20 @@ class ReceiptUiTests(unittest.TestCase):
         self.assertEqual(d.current['state'], 'NEEDS_REVIEW')
         self.assertFalse(d.save_btn.isEnabled())
 
+    def test_existing_purchase_awaits_manual_receipt_after_scope_correction(self):
+        d = self.d
+        self.proof()
+        block = {'eligible':False,'retain_receipt':True,'head':d.head,'reason':'原采购单和实收待办保留'}
+        with (patch('aoxiang_receipt_ui.assess',return_value={'p1':block}),
+              patch('aoxiang_receipt_ui.existing_receipt',return_value=None),
+              patch('aoxiang_receipt_ui.synchronize') as save):
+            d.refresh_current()
+            self.wait(lambda:d.worker is None and d.current['state']=='READY')
+            save.assert_not_called()
+        self.assertIn(block['reason'],d.basis_note.text())
+        self.assertFalse(d.save_btn.isEnabled())
+        self.assertFalse(any(a=='receipt.synced' for a,_ in d.client.calls))
+
     def test_missing_host_package_keeps_final_pending_and_can_retry_without_new_download(self):
         d = self.d
         self.proof()

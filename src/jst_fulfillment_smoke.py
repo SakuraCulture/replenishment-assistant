@@ -65,8 +65,10 @@ def start_smoke(app, win, args):
                         calls.append(kwargs['retained_only'])
                         return native
 
-                owner = SimpleNamespace(lease=None, ready=True, client=SimpleNamespace(running=True), acquire=Lease)
-                catalog_session_ui.manager = lambda _: SimpleNamespace(session=owner)
+                owner = SimpleNamespace(lease=None, ready=True, scheduled_waiting=False,
+                                        client=SimpleNamespace(running=True), acquire=Lease, acquire_background=Lease)
+                idle = original_manager(win).idle
+                catalog_session_ui.manager = lambda _: SimpleNamespace(session=owner, idle=idle)
                 if not native_order:
                     # Exercise opt-in historical collection with the historical fixture.
                     jobs.due_order_payment = lambda _: []

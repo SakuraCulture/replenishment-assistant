@@ -43,14 +43,15 @@ def arguments(command):
         ctypes.windll.kernel32.LocalFree.argtypes=[ctypes.c_void_p]
         ctypes.windll.kernel32.LocalFree(ctypes.cast(pointer,ctypes.c_void_p))
 
-def main_windows(ids):
+def main_windows(ids,*,workbench_only=False):
     if os.name!='nt':return {}
     user=ctypes.windll.user32;found={};callback_type=ctypes.WINFUNCTYPE(ctypes.c_bool,ctypes.c_void_p,ctypes.c_void_p)
     def visit(handle,_):
         pid=ctypes.c_ulong();user.GetWindowThreadProcessId(ctypes.c_void_p(handle),ctypes.byref(pid))
         if pid.value not in ids:return True
         title=ctypes.create_unicode_buffer(512);user.GetWindowTextW(ctypes.c_void_p(handle),title,512)
-        if title.value.startswith('补货助手') and 'AI启动器' not in title.value:found[pid.value]=handle
+        if title.value.startswith('补货助手') and 'AI启动器' not in title.value:
+            if not workbench_only or title.value.endswith(' · 多店工作台'):found[pid.value]=handle
         return True
     callback=callback_type(visit);user.EnumWindows(callback,0);return found
 
@@ -208,17 +209,41 @@ def discover(*,guarded=False):
                 state['state']='ABANDONED_CHILD'
                 if guarded:continue
         remnant=state['state']=='ABANDONED_CHILD'
-        matches.append({'pid':row['pid'],'name':row['name'],'main':value['main'] and not remnant,'state':state['state'],'created':row.get('created'),
+        matches.append({'pid':row['pid'],'name':row['name'],'main':value['main'] and not remnant,'state':state['state'],'created':row.get('created'),'image':row.get('image'),
                         'role':'abandoned_child' if remnant else 'main' if value['main'] else 'worker','probe':state})
     return matches
 
-def foreground_legacy():
+def packaged_with_data_lease(image):
+    """Versions with the single-instance protocol acquire InstanceLease before showing their workbench."""
+    if not image or Path(image).name!='补货助手.exe':return False
+    from version_info import VERSION
+    try:
+        metadata=Path(image).parent/'_internal/version.json'
+        if metadata.stat().st_size>65536:return False
+        info=json.loads(metadata.read_text('utf-8-sig'))
+        version=tuple(int(n) for n in info['version'].split('.'))
+        return (info.get('app')=='补货助手' and info.get('entry')=='补货助手.exe'
+                and len(version)==3 and (0,51,0)<=version<=tuple(map(int,VERSION.split('.'))))
+    except (OSError,ValueError,KeyError,TypeError,AttributeError):
+        return False
+
+
+def foreground_legacy(independent_windows=None):
     """Activate an older GUI which predates our local activation pipe."""
     if os.name!='nt':return False
     # SingleInstance invokes this only after acquiring its user-global lock.
     candidates=[p for p in discover(guarded=True) if p['main']]
     if not candidates:return False
-    ids={p['pid'] for p in candidates};user=ctypes.windll.user32;found=list(main_windows(ids).values())
+    ids={p['pid'] for p in candidates};user=ctypes.windll.user32;windows=main_windows(ids)
+    if independent_windows and windows:
+        # Only an established workbench has acquired its lifetime data lease.
+        # A windowless/unknown process still guards startup and maintenance.
+        visible=main_windows(set(windows),workbench_only=True)
+        peers={p['pid']:p.get('image') for p in candidates if p['pid'] in visible}
+        ids -= independent_windows(peers)
+        if not ids:return False
+    found=[handle for pid,handle in windows.items() if pid in ids]
     if not found:raise ValueError('已有补货助手主进程正在启动或等待响应，未打开第二个窗口。进程号：'+','.join(str(p) for p in sorted(ids)))
+    if len(found)>1:raise ValueError('已有多个工作台，无法确认哪个正在使用本次资料目录。请核对现有窗口。')
     handle=ctypes.c_void_p(found[0]);user.ShowWindow(handle,9);user.BringWindowToTop(handle);user.SetForegroundWindow(handle)
     return True

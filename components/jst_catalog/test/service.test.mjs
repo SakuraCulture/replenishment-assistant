@@ -31,6 +31,56 @@ async function fixture(t){
   t.after(async()=>{await service.close();await fs.rm(root,{recursive:true,force:true});});return {service,counts,failure,root};
 }
 const request=(operation='operation_1',order=warehouses)=>({action:'sync.start',operation_id:operation,purpose:'default_catalog',items:order.map(warehouse=>({warehouse,expected_catalog_digest:null}))});
+test('scheduled pair reopens the failing page first, then resets only its warehouse',async t=>{
+  const {service:s,counts}=await fixture(t);
+  const reset=[],query=s.driver.query;let misses=0;
+  s.driver.disconnect=async a=>reset.push(a.warehouse);
+  s.driver.query=async(p,a)=>{
+    if(a.warehouse===warehouses[0]&&misses++<2)throw new CatalogError('CONTROL_NOT_READY','未找到商品控件');
+    return query(p,a);
+  };
+  const r={...request(),scoped:true,lease_id:'scheduled',scope:warehouses,purpose:'scheduled_replenishment'};
+  const {batch_id}=await s.command(r);
+  const batch=await finish(s,batch_id);
+  assert.equal(batch.state,'FILES_READY');
+  assert.deepEqual(reset,[warehouses[0]]);
+  assert.deepEqual(batch.items[0].recovery.map(e=>e.action),['reenter','reconnect']);
+  assert.equal(batch.items[1].recovery,undefined);
+  assert.deepEqual(counts.exports.sort(),[...warehouses].sort());
+});
+test('accepted export loses connection and recovers only its original receipt',async t=>{
+  const {service:s,counts}=await fixture(t);
+  const reset=[],sent=s.driver.export;
+  s.driver.disconnect=async a=>reset.push(a.warehouse);
+  s.driver.export=async(p,o)=>{
+    if(p.warehouse===warehouses[1])return sent(p,o);
+    counts.exports.push(p.warehouse);
+    await o.onManifest({stage:'ACCEPTED',submissions:1,nativeTaskRef:'7878',scope:{coid:p.expectedCoid,uid:p.expectedUid,expectedRows:1}});
+    throw Error('Target page, context or browser has been closed');
+  };
+  const r={...request(),purpose:'scheduled_replenishment'};
+  const {batch_id}=await s.command(r),batch=await finish(s,batch_id);
+  assert.equal(batch.state,'FILES_READY');
+  assert.deepEqual(reset,[warehouses[0]]);
+  assert.deepEqual(counts.recovers,[[warehouses[0],'7878']]);
+  assert.deepEqual(counts.exports,warehouses);
+  assert.equal((await s.command(r)).batch_id,batch_id);
+});
+test('scheduled browser failure after dispatch without receipt stays unknown',async t=>{
+  const {service:s}=await fixture(t);let submits=0,resets=0;
+  s.driver.disconnect=async()=>{resets++;};
+  s.driver.export=async(_,o)=>{
+    submits++;
+    await o.onManifest({stage:'SUBMITTING',submissions:1});
+    throw Error('Target page, context or browser has been closed');
+  };
+  const {batch_id}=await s.command({...request('scheduled_unknown',[warehouses[0]]),purpose:'scheduled_replenishment'});
+  const [item]=(await finish(s,batch_id)).items;
+  assert.equal(item.stage,'SUBMISSION_UNKNOWN');
+  await s.command({action:'sync.resume',batch_id,item_ids:[item.id]});
+  await finish(s,batch_id);
+  assert.equal(submits,1);assert.equal(resets,0);
+});
 test('shared enterprise with two operators cannot claim two default warehouse inventories',async t=>{
   const {service:s,counts}=await fixture(t);
   s.driver.exportArchive=s.driver.export;

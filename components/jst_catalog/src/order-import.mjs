@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {locationError} from './browser-recovery.mjs';
 import {CatalogError, canonical, check, sha} from './common.mjs';
 import {activateControl} from './product-export.mjs';
 import {LIST_PATH, ordinaryAudit, queryOrder, readImportResult, readNativeOrder, readOrder} from './order-list.mjs';
@@ -27,7 +28,10 @@ function originAllowed(url) {
 async function one(locator, label, code='ORDER_PAGE_CHANGED') {
   const matches=locator.filter({visible:true});
   await matches.first().waitFor({state:'visible',timeout:15000}).catch(()=>{});
-  if (await matches.count()!==1) fail(code,'未找到唯一'+label);
+  if (await matches.count()!==1) {
+    if(code==='ORDER_PAGE_CHANGED')throw locationError('未找到唯一'+label,code);
+    fail(code,'未找到唯一'+label);
+  }
   return matches;
 }
 
@@ -94,13 +98,13 @@ async function tab(page, name) {
     // The captured ERP menu renders two matching labels. The second is the
     // clickable sub-menu in that known structure.
     const count=await entries.count();
-    if (count!==1&&count!==2) fail('ORDER_PAGE_CHANGED','未定位原生'+name+'入口');
+    if (count!==1&&count!==2) throw locationError('未定位原生'+name+'入口','ORDER_PAGE_CHANGED');
     await activateControl(entries.nth(count-1));
   }
   const target=await one(tabs,name+'标签');
   if (await target.getAttribute('aria-selected')!=='true') await activateControl(target);
   if (await target.getAttribute('aria-selected')!=='true')
-    fail('ORDER_PAGE_CHANGED',name+'标签尚未激活');
+    throw locationError(name+'标签尚未激活','ORDER_PAGE_CHANGED');
 }
 
 async function orderFrame(page, signature, allowed, title, timeout=12000) {
@@ -117,13 +121,13 @@ async function orderFrame(page, signature, allowed, title, timeout=12000) {
       }
     }
     if (found.length===1) return found[0];
-    if (found.length>1) fail('ORDER_PAGE_CHANGED','订单页面不唯一');
+    if (found.length>1) throw locationError('订单页面不唯一','ORDER_PAGE_CHANGED');
     await new Promise(resolve=>setTimeout(resolve,200));
   }
   if (process.env.JST_AUTO_ORDER_DIAGNOSTIC==='1')
     console.error('订单页面诊断 '+JSON.stringify({phase:title,paths:page.frames().map(f=>f.url().split(/[?#]/)[0]),
       tabs:await page.getByRole('tab').evaluateAll(nodes=>nodes.map(n=>[n.textContent.trim(),n.getAttribute('aria-selected')]))}));
-  fail('ORDER_PAGE_CHANGED','未取得聚水潭'+title+'的可核验控件');
+  throw locationError('未取得聚水潭'+title+'的可核验控件','ORDER_PAGE_CHANGED');
 }
 
 async function visible(frame) {
@@ -358,12 +362,12 @@ export class OrderPages {
     return {...result,shop_id,preview,page};
   }
 
-  async finishImport(staged, spec, signal) {
+  async dispatchImport(staged, spec, signal, beforeClick) {
     const {preview,page}=staged;
     const controls=preview.locator('span.btnImport').filter({hasText:/^确定导入$/,visible:true});
     const actions=await controls.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('onclick')));
-    // The native template duplicates the same primary control above and below the single preview.
-    if (actions.length!==2 || actions.some(action=>action!=='Confirm()'))
+    // The single preview can show the same native action above and below the table.
+    if (![1,2].includes(actions.length) || actions.some(action=>action!=='Confirm()'))
       fail('ORDER_PAGE_CHANGED','未找到可核验的单张订单最终导入控件');
     const receiptFrame=page.locator('#epaasDialogFrame');
     if(await receiptFrame.filter({visible:true}).count())
@@ -380,7 +384,21 @@ export class OrderPages {
         if (!same(scope,staged.evidence)||(spec.import_format===SINGLE&&amount!==staged.amount))
           fail('PREVIEW_CHANGED','最终导入前预览内容已变化');
         check(signal);
+        beforeClick();
       }});
+    return {newReceipt,receipt,summaryText};
+  }
+
+  async finishImport(staged, spec, signal) {
+    let mayHaveClicked=false;
+    let response;
+    try {
+      response=await this.dispatchImport(staged,spec,signal,()=>{mayHaveClicked=true;});
+    } catch (error) {
+      if (mayHaveClicked) throw error;
+      fail('ORDER_IMPORT_NOT_DISPATCHED',error instanceof CatalogError ? error.message : '最终导入页面未就绪');
+    }
+    const {newReceipt,receipt,summaryText}=response;
     if(newReceipt)await newReceipt.catch(()=>fail('ORDER_IMPORT_RECEIPT_UNKNOWN','未读到本次导入的新回执，请核对原线上单号'));
     const summary=await one(summaryText,'本次导入回执','ORDER_IMPORT_RECEIPT_UNKNOWN');
     const text=(await summary.innerText()).trim(),match=text.match(IMPORT_COUNTS);
@@ -403,21 +421,28 @@ export class OrderFlow {
     this.driver=driver;this.pages=pages;
     this.permits=new Map();
   }
-  async run(action, input, account, signal) {
+  async run(action, input, account, signal, onPage) {
     check(signal);
     if (action==='import'||action==='audit'){
       const hold=this.permits.get(input.permit);
       this.permits.delete(input.permit);
-      if (!hold||hold.action!==action||hold.spec.online!==input.online||hold.expires<Date.now()
-          ||(action==='audit'&&hold.spec.internal!==input.internal))
+      if (!hold||hold.action!==action||hold.spec.online!==input.online
+          ||(action==='audit'&&(hold.spec.internal!==input.internal||hold.expires<Date.now())))
         fail('PREVIEW_CHANGED','原预览或普通审核许可已失效');
       if (hold.spec.warehouse!==account?.warehouse||hold.binding.coid!==account.expectedCoid||
           hold.binding.uid!==account.expectedUid||hold.binding.company!==account.expectedCompany
           ||hold.binding.version!==account.bindingVersion)
         fail('ACCOUNT_CHANGED','聚水潭仓账号绑定已变化');
       if (action==='import'){
-        const receipt=await this.pages.finishImport(hold.staged,hold.spec,signal);
-        return {dispatched:true,...(receipt?{receipt:{...receipt,online:hold.spec.online,binding:hold.binding}}:{})};
+        try {
+          if (hold.expires<Date.now()) fail('ORDER_IMPORT_NOT_DISPATCHED','本次预览许可已到期');
+          const receipt=await this.pages.finishImport(hold.staged,hold.spec,signal);
+          return {dispatched:true,...(receipt?{receipt:{...receipt,online:hold.spec.online,binding:hold.binding}}:{})};
+        } catch (error) {
+          if (error.code!=='ORDER_IMPORT_NOT_DISPATCHED') throw error;
+          return {dispatched:false,not_sent:{permit:input.permit,online:hold.spec.online,binding:hold.binding,
+            file_sha:hold.spec.sha,reason:error.message,observed_at:new Date().toISOString()}};
+        }
       }
       await this.pages.finishAudit(hold.staged,hold.spec,signal);
       return {dispatched:true};
@@ -427,6 +452,7 @@ export class OrderFlow {
     if (!spec||!/^BH[A-F0-9]{24}$/.test(spec.online||'')||spec.warehouse!==account?.warehouse||
         typeof spec.shop!=='string'||!spec.shop.trim()) fail('ACCOUNT_UNVERIFIED','缺少原订单和已核验仓账号');
     const page=await this.driver.page(account,signal,{retainedOnly:action==='payment_detail'&&input.retained_only===true});
+    onPage?.(page);
     const {scope}=await this.driver.query(page,account);
     if (scope.coid!==account.expectedCoid||scope.uid!==account.expectedUid||scope.company!==account.expectedCompany)
       fail('ACCOUNT_CHANGED','浏览器企业或用户身份与原仓账号不同');

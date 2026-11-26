@@ -1,4 +1,5 @@
 import {CatalogError,check,sleep} from './common.mjs';
+import {locationError} from './browser-recovery.mjs';
 import {activateControl,displayedCompany,downloadResponseUrl,nativeTaskId,observe,openHistory,receiveKnownExport} from './product-export.mjs';
 import {receiveArchiveFile} from './archive-download.mjs';
 
@@ -114,11 +115,11 @@ async function reportFrame(page,leaf,parent,signal){
   while(Date.now()<until){
     check(signal);
     const frames=page.frames().filter(f=>fromFrame(f,leaf)&&(!parent||f.parentFrame()===parent));
-    if(frames.length>1)throw scopeError('业务报表页不唯一');
+    if(frames.length>1)throw locationError('业务报表页不唯一','REPORT_SCOPE');
     if(frames.length===1)return frames[0];
     await sleep(150);
   }
-  throw scopeError('未取得平台报表页');
+  throw locationError('未取得平台报表页','REPORT_SCOPE');
 }
 
 async function readFilters(filter){
@@ -150,7 +151,7 @@ async function displayScopedArchive(page,account,signal){
   await activateControl(menu);
   const entries=page.locator('div[class^="title"]').filter({hasText:/^商品主题分析$/}).filter({visible:true});
   const count=await entries.count();
-  if(count<1||count>2)throw scopeError('商品主题分析菜单结构发生变化');
+  if(count<1||count>2)throw locationError('商品主题分析菜单结构发生变化','REPORT_SCOPE');
   await activateControl(entries.last());
   const report=await reportFrame(page,'default.aspx',page.mainFrame(),signal);
   const filters=await reportFrame(page,'filter.aspx',report,signal);

@@ -252,6 +252,7 @@ class Workbench(ParameterUi,BatchWindow):
         self.deletion_generations=copy.deepcopy(p.get('deletion_generations',{}))
         if p.get('schema')!=1:raise ValueError('不支持的作业格式')
         self.reset_calculation_snapshot()
+        self._review_amounts_cache={};self._risk_counts={}
         self.active_plan=clone(p.get('active_plan'))
         self._hydrating=True;self._restoring=True;self.initializing=True
         try:
@@ -265,6 +266,7 @@ class Workbench(ParameterUi,BatchWindow):
                 self.populate_stores();self.initializing=True
                 for s,ui in p['store_ui'].items():self.set_store_ui(s,ui)
             else:self.store_widgets={};self.store_table.setRowCount(0)
+            self.set_rows([],False)
             self.file_report.setRowCount(0);self.import_note.setText('已恢复当时数据快照；不会自动换成当前资料。若输入尚未检查，原文件仍需可访问。');self.refresh_tables();self.navigate(3 if self.states else 0)
         finally:self.initializing=False;self._restoring=False;self.selection_changed();self._hydrating=False;self.job_dirty=False;self.update_controls()
         __import__('replenishment_plans').refresh(self)

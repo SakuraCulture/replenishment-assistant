@@ -177,6 +177,8 @@ def read(path,cache,day,scope=None,progress=lambda _:None,cancel=None,batch_id=N
                     pr=cached_projection(idx,source_id,'zero:'+str(eid),orders.digest(p),lambda:p)
                     current=batches.state(db,p['batch_id'],h['warehouse']) if p.get('batch_id') else orders.state(db,h['warehouse']);valid=current and current[0]==p['bid']
                     item.update(state='zero' if valid else 'stale',reason='分配为0，无下单商品' if valid else '上次分配为0，仓资料已更新，请重新核对',projection=pr,batch_id=p.get('batch_id'))
+            if not hit and key(h) in events and events[key(h)][1]=='撤销未下单生成单' and item['state'] in ('pending','waiting'):
+                item.update(state='pending',reason='旧分配已撤销，可准备新分配批次',withdrawn=True)
             if not hit and h['present']['return'] and h['next'] is None and not h['present']['payment']:
                 item.update(state='zero',reason='回传无要货，无需生成')
             records.append(item);progress(RowProgress('汇总门店结果',n+1,len(heads)))

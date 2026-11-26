@@ -104,8 +104,10 @@ def start_smoke(app, win, args):
                 finally:
                     assert component.close()
 
-            session = SimpleNamespace(acquire=Lease, lease=None, ready=True, client=SimpleNamespace(running=True))
-            catalog_session_ui.manager = lambda _: SimpleNamespace(session=session)
+            session = SimpleNamespace(acquire=Lease, acquire_background=Lease, lease=None, scheduled_waiting=False,
+                                      ready=True, client=SimpleNamespace(running=True))
+            idle = original(win).idle
+            catalog_session_ui.manager = lambda _: SimpleNamespace(session=session, idle=idle)
             dialog = Orders(win, win, [online])
             dialog.show()
             qtimer.start(25)

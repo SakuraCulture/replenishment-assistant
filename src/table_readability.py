@@ -70,7 +70,11 @@ class TableReading(QObject):
         table.verticalHeader().setDefaultSectionSize(max(30,size+padding))
         table.horizontalHeader().setMinimumHeight(size+18)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        table.setWordWrap(False);table.setTextElideMode(Qt.TextElideMode.ElideRight)
+        wrap = bool(table.property('wrap_business_rows'))
+        if wrap and model.columnCount():
+            table.horizontalHeader().setSectionResizeMode(model.columnCount()-1,QHeaderView.ResizeMode.Stretch)
+        table.setWordWrap(wrap)
+        table.setTextElideMode(Qt.TextElideMode.ElideNone if wrap else Qt.TextElideMode.ElideRight)
         headers=tuple(str(model.headerData(c,Qt.Orientation.Horizontal) or '') for c in range(model.columnCount()))
         if headers!=self.headers:
             import hashlib,json

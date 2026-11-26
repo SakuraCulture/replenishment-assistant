@@ -10,6 +10,7 @@ import work_repository as wr
 import scheduled_replenishment as sr
 import priority_list
 from runtime_support import Cancelled, checkpoint
+import scheduled_snapshots as snapshots
 
 
 def freeze(folder, schedule, day):
@@ -109,6 +110,60 @@ def adopted_catalogs(repo,rid,warehouses):
             raise wr.Conflict(wh+'仓资料与原采用回执不符，请核对原任务')
         catalogs[wh]=catalog
     return catalogs
+
+
+class PendingInputs:
+    def __init__(self, runner, manifest, catalogs, allowed):
+        from warehouse_catalog import product_table
+        self.runner, self.catalogs = runner, catalogs
+        self.files, self.scopes, self.hashes = {}, {}, {}
+        for item in manifest['files']:
+            code, path, digest = item['warehouse_code'], item['file'], item['sha256']
+            if code not in allowed or self.hashes.setdefault(path, digest)!=digest:
+                raise ValueError('已验收原文件的门店范围或校验值冲突')
+            self.files.setdefault(code, {})[path]=digest
+            self.scopes.setdefault(path, set()).add(code)
+        self.tables = {wh: product_table(wh, catalog) for wh, catalog in catalogs.items()}
+        self.archived = set()
+        self.digests = runner.repo.digests(runner.rid)
+
+    def __call__(self, code):
+        from file_intake import check_file
+        from source_archive import capture
+        from performance_log import begin
+        r=self.runner
+        name='input:'+code
+        if name in self.digests:
+            loaded=r.repo.value(r.rid,name,expected=self.digests[name])
+        else:
+            paths=self.files[code]
+            checked=[]
+            for index,(path,digest) in enumerate(paths.items()):
+                checkpoint(r.cancel)
+                value=check_file(index,path,store=code,allowed=self.scopes[path],expected=digest,cancel=r.cancel)
+                if value['report']['error']:
+                    raise ValueError(f'{code} · {Path(path).name}：{value["report"]["error"]}')
+                checked.append(value)
+                if (path,digest) not in self.archived:
+                    capture(r.repo.path,path,digest,r.progress,r.cancel)
+                    self.archived.add((path,digest))
+            intake=batch_service.intake(paths,self.catalogs,checked=checked)
+            # Source identity has been checked around the read and archived by hash.
+            intake['frozen']=True
+            if not intake['selected'] and intake['conflicts']:
+                from warehouse_catalog import metadata
+                loaded={'intake':intake,'stores':intake['stores'],'normalized':[],
+                        'blocked':{code:len(intake['conflicts'])},'warehouses':list(self.catalogs),
+                        'config':batch_service.engine.config(),'hashes':intake['hashes'],
+                        'catalogs':{w:metadata(c) for w,c in self.catalogs.items()}}
+            else:
+                loaded=batch_service.prepare(intake,cancel=r.cancel,catalog_tables=self.tables)
+            head=snapshots.input_head(loaded)
+            loaded['intake']={k:v for k,v in loaded['intake'].items() if k!='catalogs'}
+            with begin('calculation.persist_store_input'):
+                r.repo.save_value(r.rid,name,loaded,r.epoch,input_head=head)
+        common,stores=batch_service.calculation_inputs(loaded,{code:None},True)
+        return {**common,**stores[code]}
 
 
 class Runner:
@@ -211,31 +266,27 @@ class Runner:
                         while not resources.try_heavy(self,self.repo.path.parent):
                             self.update('等待本地作业','计算等待本地名额、内存和资料卷余量')
                             self.cancel.wait(.5);checkpoint(self.cancel)
-                self.update('检查文件','按原规则检查已验收文件，保留冲突及来源顺序')
-                paths=[f['file'] for f in manifest['files']]
-                loaded=batch_service.load(paths,catalogs,lambda m:self.update('检查文件',m),self.cancel)
-                from aoxiang_acquisition import verify_loaded
-                verify_loaded(manifest,loaded)
-                if set(loaded['stores'])-set(frozen['records']):raise ValueError('下载文件包含预案外门店，未自动采用')
-                from source_archive import retained_import
-                retained_import(batch_service.load,(),loaded,self.repo.path,lambda m:self.update('留存原件',m),self.cancel)
-                self.repo.save_value(rid,'loaded',loaded,self.epoch)
-                self.repo.save_value(rid,'catalogs',catalogs,self.epoch)
-                jobs={s:frozen['jobs'][s] for s in eligible if s in loaded['stores']}
-                for s in eligible:
-                    if s not in jobs:self.repo.store_state(rid,s,'FAILED','文件没有该门店记录',self.epoch)
+                self.update('检查文件','逐店准备待算门店，保留已验收原件及原行号')
+                inputs=PendingInputs(self,manifest,catalogs,frozen['records'])
+                if 'catalogs' not in inputs.digests or missing:
+                    self.repo.save_value(rid,'catalogs',catalogs,self.epoch)
+                jobs={s:frozen['jobs'][s] for s in eligible}
                 self.update('计算门店',f'同时计算最多{workers}家；运行中的门店安全完成后暂停')
                 persistence=[]
                 def notify(s,state,result,error):
                     if result is not None:
-                        try:self.repo.save_value(rid,'result:'+s,result,self.epoch,store=s)
+                        try:self.repo.save_value(rid,'result:'+s,result,self.epoch,store=s,
+                                                 review=snapshots.projection(result,frozen.get('new_focus')))
                         except Exception as exc:persistence.append(exc);self.cancel.set();raise
-                    else:self.repo.store_state(rid,s,'RUNNING' if state=='计算中' else 'FAILED',error or state,self.epoch)
+                    else:
+                        self.repo.store_state(rid,s,{'计算中':'RUNNING','等待内存':'WAITING_MEMORY',
+                                                  '已停止':'PENDING'}.get(state,'FAILED'),error or state,self.epoch)
                     self.progress(s+' · '+state)
                 profile=frozen['profile']
                 if priority_list.is_catalog_profile(profile):
                     profile=priority_list.catalog_profile(catalogs)
-                batch_service.run(loaded,jobs,profile,workers,notify,self.cancel)
+                batch_service.run(None,jobs,profile,workers,notify,self.cancel,input_for=inputs,retain_results=False,
+                                  system=getattr(self.backend,'commit_sample',None))
                 if resources:resources.release_heavy(self)
                 if persistence:raise persistence[0]
             checkpoint(self.cancel)
@@ -260,13 +311,22 @@ class Runner:
 def workbench_record(repo,rid):
     """Use the existing restore/save/sign path. Opening is explicit and never saves a draft."""
     from version_info import VERSION
-    run=repo.get(rid);basis=repo.value(rid,'basis');loaded=repo.value(rid,'loaded')
+    run=repo.get(rid);basis=repo.value(rid,'basis')
+    if not basis:raise ValueError('尚无通过检查的数据，请先处理失败原因')
+    catalogs=adopted_catalogs(repo,rid,basis['warehouses'])
+    digests=repo.digests(rid)
+    loaded=snapshots.input_view(repo,run,catalogs,digests)
+    if 'loaded' in digests:
+        # Older partial runs retain their original input for already ready stores.
+        legacy=repo.value(rid,'loaded')
+        loaded=snapshots.merge_legacy_inputs(legacy,loaded)
     if not basis or not loaded:raise ValueError('尚无通过检查的数据，请先处理失败原因')
-    results={s['code']:repo.value(rid,'result:'+s['code']) for s in run['stores'] if s['state']=='READY'}
+    entries={s['code']:s for s in run['stores'] if s['state']=='READY'}
+    results=snapshots.Results({s:snapshots.Reference(repo.path,rid,'result:'+s,digests['result:'+s]) for s in entries},
+                              {s:item['review'] for s,item in entries.items() if 'review' in item})
     if not results:raise ValueError('尚无计算完成的门店')
     records=basis['records'];codes=[s['code'] for s in run['stores'] if s['code'] in loaded['stores']]
     loaded['stores']={s:loaded['stores'][s] for s in codes}
-    catalogs=repo.value(rid,'catalogs')
     profile=basis['profile']
     if priority_list.is_catalog_profile(profile):
         profile=priority_list.catalog_profile(catalogs)

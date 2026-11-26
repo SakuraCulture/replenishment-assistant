@@ -8,12 +8,19 @@ from runtime_support import checkpoint
 
 
 class SessionOwner:
-    def __init__(self, folder, factory=Client, resources=None):
+    def __init__(self, folder, factory=Client, resources=None, *, on_idle=None):
         self.folder, self.factory = Path(folder).resolve(), factory
         self.client, self.capabilities = None, {}
         self.ready, self.resources = False, resources
         self.lock = threading.RLock()
         self.leases = {}
+        self.scheduled_waiters = 0
+        self.scheduled_queued = False
+        self.on_idle = on_idle
+
+    def _notify_idle(self):
+        if self.on_idle and not (self.leases or self.scheduled_waiters or self.scheduled_queued):
+            self.on_idle()
 
     @property
     def lease(self):
@@ -37,7 +44,38 @@ class SessionOwner:
             self.leases[lease.id] = lease
             return lease
 
-    def acquire_wait(self, warehouses, cancel, progress):
+    def acquire_background(self):
+        """Reserve one original-order read atomically with the scheduled wait queue."""
+        with self.lock:
+            if self.scheduled_waiters or self.scheduled_queued or self.leases:
+                return None
+            return self.acquire()
+
+    @property
+    def scheduled_waiting(self):
+        with self.lock:
+            return self.scheduled_queued or self.scheduled_waiters > 0
+
+    def set_scheduled_queue(self, queued):
+        with self.lock:
+            previously_queued = self.scheduled_queued
+            self.scheduled_queued = bool(queued)
+            if previously_queued and not self.scheduled_queued:
+                self._notify_idle()
+
+    def acquire_wait(self, warehouses, cancel, progress, *, scheduled=False):
+        if scheduled:
+            with self.lock:
+                self.scheduled_waiters += 1
+        try:
+            return self._wait_for_warehouses(warehouses, cancel, progress)
+        finally:
+            if scheduled:
+                with self.lock:
+                    self.scheduled_waiters -= 1
+                    self._notify_idle()
+
+    def _wait_for_warehouses(self, warehouses, cancel, progress):
         deadline = time.monotonic() + 900
         while True:
             checkpoint(cancel)
@@ -65,6 +103,7 @@ class SessionOwner:
             self.ready = False
             self.capabilities = self.client.start() or {}
             self.ready = True
+            self._notify_idle()
 
     def read_status(self, **values):
         with self.lock:
@@ -143,4 +182,5 @@ class SessionLease:
                 return False
             del self.owner.leases[self.id]
             self.released = True
+            self.owner._notify_idle()
         return True

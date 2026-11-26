@@ -1,4 +1,5 @@
 import {CatalogError, check} from './common.mjs';
+import {browserFault,locationError} from './browser-recovery.mjs';
 import {activateControl} from './product-export.mjs';
 import {buyerEvidence,canReadPayment,checkBuyer,combinedBuyerCheck,fullOrder,nativeStatus} from './order-facts.mjs';
 
@@ -56,8 +57,8 @@ async function orderControl(control, label, options) {
   try {
     await activateControl(control,options);
   } catch (error) {
-    if (error.code==='CONTROL_NOT_READY') fail(label+'尚未就绪');
-    if (error.code==='CONTROL_AMBIGUOUS') fail(label+'不唯一');
+    if (error.code==='CONTROL_NOT_READY') throw locationError(label+'尚未就绪','ORDER_PAGE_CHANGED');
+    if (error.code==='CONTROL_AMBIGUOUS') throw locationError(label+'不唯一','ORDER_PAGE_CHANGED');
     throw error;
   }
 }
@@ -76,7 +77,7 @@ export async function queryOrder(page, frame, spec, status, signal) {
   const online = filters.locator('input#so_id');
   const search = filters.locator('span.btn_search[onclick="FullSearch()"]').filter({hasText:/^组合查询$/});
   await orderControl(filters.locator('span[onclick="ClearSearch()"]').filter({hasText:/^清空$/}),'订单筛选的清空按钮');
-  await online.fill(spec.online, {timeout:8000}).catch(()=>fail('线上订单号输入框尚未就绪'));
+  await online.fill(spec.online, {timeout:8000}).catch(()=>{throw locationError('线上订单号输入框尚未就绪','ORDER_PAGE_CHANGED');});
   if (status) {
     const id = 'status_'+status;
     await checkBox(filters.locator('input#'+id),'订单状态筛选（'+statuses[status][1]+'）',undefined,
@@ -184,7 +185,7 @@ export async function readNativeOrder(page,frame,spec,{payment=false}={},signal)
     return {...result,...facts,...buyerEvidence(buyer)};
   } catch(error) {
     check(signal);
-    if(!payment) throw error;
+    if(!payment||browserFault(error,page)) throw error;
     return {...result,detail_error:error.code==='ORDER_PAGE_CHANGED'?error.message:'原单状态已查回，整单明细暂未完整读回'};
   }
 }

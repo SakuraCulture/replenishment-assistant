@@ -21,6 +21,12 @@ def has_legacy_order_key(db):
     return [row[1] for row in db.execute('PRAGMA table_info(normal_orders)') if row[5]] == ['day', 'store', 'kind']
 
 
+def needs_order_header_backup(db):
+    exists = db.execute("SELECT 1 FROM sqlite_master WHERE name='normal_orders'").fetchone()
+    prior = db.execute("SELECT sql FROM sqlite_master WHERE name='normal_orders_standard_key'").fetchone()
+    return not exists or has_legacy_order_key(db) or bool(prior and "'opening'" not in prior[0])
+
+
 def order_header_schema(db):
     """Keep legacy uniqueness while allowing multiple material batches per store/day."""
     definition = ('day TEXT NOT NULL,store TEXT NOT NULL,kind TEXT NOT NULL,'
@@ -32,7 +38,11 @@ def order_header_schema(db):
         db.execute('ALTER TABLE normal_orders_upgrade RENAME TO normal_orders')
     else:
         db.execute(f'CREATE TABLE IF NOT EXISTS normal_orders({definition})')
-    db.execute("CREATE UNIQUE INDEX IF NOT EXISTS normal_orders_standard_key ON normal_orders(day,store,kind) WHERE kind<>'material'")
+    predicate = "kind NOT IN ('material','policy','opening')"
+    old = db.execute("SELECT sql FROM sqlite_master WHERE type='index' AND name='normal_orders_standard_key'").fetchone()
+    if old and predicate not in old[0]:
+        db.execute('DROP INDEX normal_orders_standard_key')
+    db.execute('CREATE UNIQUE INDEX IF NOT EXISTS normal_orders_standard_key ON normal_orders(day,store,kind) WHERE '+predicate)
     db.execute('CREATE INDEX IF NOT EXISTS normal_orders_business_lookup ON normal_orders(day,store,kind)')
 
 
@@ -106,16 +116,14 @@ def revision_source(db, day, store, revision=None):
 
 
 class Repository:
-    def __init__(self, work):
+    def __init__(self, work, *, backup_progress=lambda _: None):
         self.work=work
         with closing(work.connect()) as db:
-            exists=db.execute("SELECT name FROM sqlite_master WHERE name='normal_orders'").fetchone()
-            if not exists or has_legacy_order_key(db):
-                # SQLite backup API also captures an existing WAL consistently.
-                backup=work.path.with_name('workbench.before-normal-orders.'+uuid.uuid4().hex+'.sqlite3')
-                with closing(sqlite3.connect(backup)) as target:db.backup(target)
             with db:
                 db.execute('BEGIN IMMEDIATE')
+                if needs_order_header_backup(db):
+                    from schema_backup import backup
+                    backup(work.path,'before-normal-orders.',backup_progress)
                 order_header_schema(db)
             with db:db.executescript('''
                 CREATE TABLE IF NOT EXISTS normal_revisions(oid TEXT NOT NULL,revision INTEGER NOT NULL,digest TEXT NOT NULL,saved TEXT NOT NULL,payload BLOB NOT NULL,PRIMARY KEY(oid,revision));
@@ -155,11 +163,12 @@ class Repository:
         return dict(zip(('day','store','oid','number','revision','digest','saved'),row)) if row else None
 
     def headers(self, *, order_kind='normal_model'):
-        condition = { 'normal_model': "o.kind<>'material'", 'material': "o.kind='material'", 'all': '1' }[order_kind]
+        condition = {'normal_model': "o.kind NOT IN ('material','policy','opening')", 'material': "o.kind='material'",
+                     'policy': "o.kind='policy'", 'opening': "o.kind='opening'", 'all': '1'}[order_kind]
         with closing(self.work.connect()) as db:
             rows=db.execute('SELECT o.day,o.store,o.oid,o.number,o.current,r.digest,r.saved,o.kind FROM normal_orders o JOIN normal_revisions r ON o.oid=r.oid AND o.current=r.revision WHERE '+condition+' ORDER BY o.day DESC,o.store,o.rowid').fetchall()
         return [dict(zip(('day','store','oid','number','revision','digest','saved'),r[:7]),
-                     **({'kind':'material'} if r[7]=='material' else {})) for r in rows]
+                     **({'kind':r[7]} if r[7] in ('material','policy','opening') else {})) for r in rows]
 
     def list(self):
         records=[]
@@ -215,14 +224,16 @@ class Repository:
             selected_warehouses[s]=list(selected)
         del r
         focus.require_for(payload.get('new_focus'),day,(payload['results'][s] for s in codes))
+        import deletion_barrier
+        from scheduled_snapshots import result_in_transaction
+        result_guard=deletion_barrier.basis(payload)
         # Freeze preparation outside the write transaction. Compare every revision
         # again inside BEGIN IMMEDIATE before publishing any prepared content.
         with closing(self.work.connect()) as db:
             planned_job=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
             from admission import verify_result
             for s in codes:verify_result(db,payload['results'][s],required=bool(payload.get('admission_required')))
-            import deletion_barrier
-            deletion_barrier.validate(db,deletion_barrier.basis(payload))
+            deletion_barrier.validate(db,result_guard)
             planned={}
             planned_children={}
             for s in codes:
@@ -308,7 +319,7 @@ class Repository:
         # transaction starts. Their existence is still checked against the DB;
         # preparing an identity never constitutes successful signing.
         if prepared_heads is not None:prepared_heads(heads)
-        if changed_job or prepared:chunks.backup_before_write(self.work.path,progress)
+        if changed_job or prepared:chunks.backup_before_write(self.work.path,progress,cancel=cancel)
         checkpoint(cancel)
         with closing(self.work.connect()) as db,db:
             progress('等待归档写锁（可取消）…')
@@ -322,8 +333,9 @@ class Repository:
             checkpoint(cancel)
             # Guard the complete day payload again under the commit lock: a
             # deletion during preparation must not revive an unselected store.
-            deletion_barrier.validate(db,deletion_barrier.basis(payload))
-            for s in codes:verify_result(db,payload['results'][s],required=bool(payload.get('admission_required')))
+            deletion_barrier.validate(db,result_guard)
+            for s in codes:
+                verify_result(db,result_in_transaction(payload['results'],s,db),required=bool(payload.get('admission_required')))
             old=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
             if (old[0] if old else None)!=expected_job or old!=planned_job:
                 first=heads[0];where=signing_row_blocks.location(first,'、'.join(selected_warehouses[first['store']]))
@@ -369,16 +381,18 @@ class Repository:
                 db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,oid,rev,'确认归档' if rev==1 else '同日覆盖修订',wr.dumps({'number':number,'day':day,'store':s,'summary':summary,'previous_revision':rev-1 or None})))
             for head in heads:
                 s=head['store']
+                result=result_in_transaction(payload['results'],s,db)
                 record={'schema':1,'model_version':MODEL_VERSION,'work_revision':work_revision,
-                        'result':payload['results'][s],'preset':payload.get('store_presets',{}).get(s),
+                         'result':result,'preset':payload.get('store_presets',{}).get(s),
                         'new_focus':copy.deepcopy(payload.get('new_focus')),
-                        'item_ids':{d['E']:item_id(head['oid'],d['E']) for d in payload['results'][s]['rows']}}
+                         'item_ids':{d['E']:item_id(head['oid'],d['E']) for d in result['rows']}}
                 try:
                     execution.publish(db,head['oid'],head['revision'],head['digest'],head['saved'],record,selected_warehouses[s],progress,cancel,prepared=publications[s],checked_rows=checked_rows)
                 except wr.Conflict as exc:
                     if s not in reused:raise
                     raise wr.Conflict(f'{reused[s][0].location}：{exc}') from exc
                 head['warehouse_heads']=[h for h in execution.heads(db,[head]) if h['warehouse'] in selected_warehouses[s]]
+            result=record=None
             progress('事务内容准备完成，检查最终取消请求…')
             checkpoint(cancel)
             # Linearization boundary: after this check, commit must finish or fail.

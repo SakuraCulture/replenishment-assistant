@@ -60,6 +60,8 @@ def _prepare(path, head, configuration, suppliers, receipt, directory, contract_
         intent.update(pricePolicy=POLICY, paymentTotalAmount=plan['payment_total_amount'], roundingDelta=plan['rounding_delta'])
         for output, row in zip(intent['rows'], plan['rows']):
             output.update(unitPrice=row['unit_price'], paymentAmount=row['payment_amount'], roundingDelta=row['rounding_delta'])
+    if plan.get('opening_group'):
+        intent['openingGroup']={k:plan['opening_group'][k] for k in ('id','sha','version')}
     validate_basis(path, plan, configuration, suppliers, cancel=cancel)
     _write_new(target / '付款采购依据.json', plan)
     _write_new(target / '采购文件核验.json', generated)

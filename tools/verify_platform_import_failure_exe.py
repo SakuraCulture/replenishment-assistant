@@ -68,10 +68,43 @@ def run(exe,case,phase):
     return report
 
 
+def seed_pending(case, outcomes):
+    import jst_auto_order as automatic
+    import jst_auto_order_store as store
+    from platform_import_manual_fixture import JstManual
+    seed(case,'山东仓')
+    path=case/'settings/workbench.sqlite3'
+    keys=json.loads((case/'import-failure-fixture.json').read_text('utf-8'))['jst_keys']
+    portal=JstManual(case/'fixture')
+    previews=automatic.run_browser(path,keys,portal,'preview')
+    assert all(r['ok'] and r['stage']=='PREVIEWED' for r in previews)
+    ready=[]
+    allowed=[]
+    hashes={}
+    with closing(store.connection(path)) as db,db:
+        for key,outcome in zip(keys,outcomes,strict=True):
+            row=store.read(db,key,workbook=True)
+            proof=dict(row['proof'])
+            hashes[key]=row['file_sha']
+            at='2026-11-25T12:15:17Z'
+            if outcome in ('rejected','accepted'):
+                success=int(outcome=='accepted')
+                proof['import_receipt']=dict(online=key,success_count=success,fail_count=1-success,
+                    text=f'成功条数：{success}，失败条数：{1-success}',observed_at=at)
+            if outcome=='not_sent':
+                proof['import_not_sent']=dict(online=key,file_sha=row['file_sha'],binding=proof['binding'],
+                    reason='最终导入页面未就绪',observed_at=at)
+            if outcome in ('rejected','not_sent'):ready.append(key)
+            if outcome!='accepted':allowed.append(key)
+            store.update(db,row,'IMPORT_UNKNOWN',proof=proof,reason='已核对本仓企业、店铺和导入入口')
+    write(case/'pending-preview.json',dict(ready=ready,preview=allowed,file_sha=hashes,outcomes=outcomes))
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--zip',type=Path)
     parser.add_argument('--out',type=Path,required=True)
+    parser.add_argument('--preview',action='store_true',help='验证原单重新预览和确认范围')
     args=parser.parse_args()
     out=args.out.resolve()
     out.mkdir(parents=True,exist_ok=False)
@@ -87,6 +120,17 @@ def main():
                 '_internal/components/aoxiang/integrity.manifest.json',
                 '_internal/components/jst_catalog/integrity.manifest.json'} <= files.keys()
     cases={}
+    if args.preview:
+        for name,outcomes in [('旧单均无回执',['unknown','unknown']),('明确失败与无回执',['rejected','unknown']),
+                              ('未发送与已受理',['not_sent','accepted'])]:
+            case=out/name
+            seed_pending(case,outcomes)
+            cases[name]=run(exe,case,'preview')
+        if exe:assert contents(app)==files
+        write(out/'report.json',dict(passed=True,synthetic=True,live_platform=False,cases=cases,
+              zip_sha256=sha(args.zip) if exe else None,exe_sha256=sha(exe) if exe else None))
+        print(out/'report.json')
+        return
     for warehouse in ('山东仓','河北仓'):
         case=out/warehouse
         seed(case,warehouse)

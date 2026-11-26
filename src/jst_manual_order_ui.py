@@ -41,6 +41,10 @@ class ManualOrderDialog(QDialog):
         for control in (self.lookup,self.details,self.bind):
             binding.addWidget(control)
         layout.addLayout(binding)
+        corrections=QHBoxLayout()
+        self.amend=button('手动更正本仓分配',self.correct)
+        self.remainder=button('核对平台差额',self.compare_remainder)
+        corrections.addWidget(self.amend);corrections.addWidget(self.remainder);layout.addLayout(corrections)
         layout.addStretch()
         layout.addWidget(button('关闭',self.accept))
         self.checked = None
@@ -78,6 +82,19 @@ class ManualOrderDialog(QDialog):
         self.details.setEnabled(bool(self.checked))
         self.bind.setEnabled(live and bool(proposal) and not bound and not self.row['internal']
                              and proposal['sequence']==self.row['sequence'])
+        self.amend.setEnabled(live and self.row['stage'] in ('PREPARED','PREVIEWED','PREVIEW_FAILED'))
+        self.remainder.setEnabled(live and bool(bound))
+
+    def correct(self):
+        from order_amendments_ui import open_editor
+        if open_editor(self,self.host,self.row['payload']['head'],'allocation'):
+            self.reload()
+
+    def compare_remainder(self):
+        import platform_remainders
+        from platform_remainders_ui import show
+        report=self.action('读取聚水潭实际数量和差额',platform_remainders.jst,(self.path,self.row['online']))
+        if report:show(self,self.host,report)
 
     def owner(self):
         from catalog_session_ui import manager

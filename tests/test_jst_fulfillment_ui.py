@@ -113,7 +113,8 @@ class FulfillmentUI(unittest.TestCase):
         self.assertEqual(widget.table.rowCount(),1)
         self.assertEqual(widget.table.item(0,3).text(),self.fixture.head['day'])
         self.assertEqual(widget.table.item(0,7).text(),'待收货')
-        notice = widget.table.item(0,widget.table.columnCount()-1)
+        hints = next(i for i in range(widget.table.columnCount()) if widget.table.horizontalHeaderItem(i).text()=='资料提示')
+        notice = widget.table.item(0,hints)
         self.assertIn('已锁定付款 V001',notice.text())
         self.assertIn('聚水潭原单 '+self.fixture.order['internal'],notice.text())
         self.assertNotIn('历史下单标记',notice.text())
@@ -142,14 +143,23 @@ class FulfillmentUI(unittest.TestCase):
         finally:dialog.deleteLater()
 
     def test_timer_does_not_open_a_browser_or_login_without_a_retained_idle_session(self):
+        import jst_fulfillment_round as rounds
         runner=Runner(self.host)
         try:
-            with patch('catalog_session_ui.manager') as manager:
+            with patch('catalog_session_ui.manager') as manager, patch.object(rounds, 'now_ms', return_value=1) as clock:
                 runner.tick()
                 manager.assert_not_called()
                 jobs.configure(self.fixture.path,True)
-                manager.return_value.session=SimpleNamespace(lease=None,ready=False,client=None)
+                clock.return_value = rounds.INTERVAL_MS
                 runner.tick()
+                manager.assert_not_called()
+                self.assertEqual(runner.timer.interval(), 1)
+                clock.return_value += 1
+                manager.return_value.session=SimpleNamespace(lease=None,ready=False,client=None,scheduled_waiting=False)
+                with patch.object(jobs, 'due', return_value=self.fixture.keys):
+                    runner.tick()
+                self.assertTrue(runner.timer.isSingleShot())
+                self.assertEqual(runner.timer.interval(), 43_200_000)
                 self.assertIsNone(runner.worker)
                 self.assertIn('未发起新登录',runner.message)
             self.assertTrue(runner.prepare_close())

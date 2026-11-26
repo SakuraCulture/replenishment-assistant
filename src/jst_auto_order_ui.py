@@ -9,7 +9,7 @@ from business_ui import grid, run
 from interaction_ui import confirm
 from app_defaults import WAREHOUSES
 import jst_auto_order as service
-from jst_auto_order_store import RELEASED, STAGES, list_orders, save_profiles
+from jst_auto_order_store import RELEASED, list_orders, save_profiles
 from jst_auto_order_template import CONTACT
 import jst_delivery_profiles as delivery
 import jst_delivery_profiles_xlsx as delivery_xlsx
@@ -223,7 +223,7 @@ class Orders(QDialog):
         self.setWindowTitle('聚水潭自动下单')
         self.resize(1280,580)
         pane=QVBoxLayout(self)
-        pane.addWidget(label('核对仓单、店铺和商品数量后确认导入。原单查回后自动准备付款资料。'))
+        pane.addWidget(label('先平台预览，再确认导入。已受理的仓单可核对原单，查回后自动准备付款资料。'))
         pane.addWidget(label('聚水潭的「已付款待审核」表示导入完成。实际付款由业务在付款核对中确认。','muted'))
         headers=('选择','门店','仓','补货单号','聚水潭店铺','款数','数量','分配金额','平台预览金额','线上单号','内部单号','下单状态','付款资料','处理提示')
         self.table=QTableWidget(0,len(headers))
@@ -246,6 +246,8 @@ class Orders(QDialog):
         self.auto_allocation.toggled.connect(self.configure_allocation)
         select.addWidget(self.auto_allocation)
         pane.addLayout(select)
+        self.selection_hint=label('','muted')
+        pane.addWidget(self.selection_hint)
         self.note=label('\n'.join(e['order']+'：'+e['reason'] for e in failures),'muted')
         self.note.setWordWrap(True)
         pane.addWidget(self.note)
@@ -290,11 +292,13 @@ class Orders(QDialog):
                     'RETRY_PAYMENT_READ':'等待补取付款资料','PAYMENT_SOURCE_PENDING':'平台原单待核',
                     'MATCHES_PAYMENT':'沿用已确认付款'}
             values=(r['name'] or r['store'],r['warehouse'],r['number'],r['shop'],r['sku_count'],r['quantity'],
-                    r['amount'],r['preview_amount'],r['online'],r['internal'],STAGES[r['stage']],
+                    r['amount'],r['preview_amount'],r['online'],r['internal'],r['stage_label'],
                     labels.get((state or {}).get('state'),'尚未拉取'),
-                    r['reason'] if r['stage']=='IMPORT_FAILED' else (state or {}).get('message') or r['reason'])
+                    r['reason'] if r['stage'] in ('IMPORT_UNKNOWN','IMPORT_FAILED') else (state or {}).get('message') or r['reason'])
             for j,value in enumerate(values,1):
                 cell=QTableWidgetItem(str(value if value is not None else '—'))
+                if j==13:
+                    cell.setToolTip(cell.text())
                 cell.setFlags(Qt.ItemFlag.ItemIsEnabled|Qt.ItemFlag.ItemIsSelectable)
                 self.table.setItem(i,j,cell)
         self.table.resizeColumnsToContents()
@@ -310,20 +314,35 @@ class Orders(QDialog):
         for i in range(self.table.rowCount()):
             self.table.item(i,0).setCheckState(Qt.CheckState.Checked if wanted else Qt.CheckState.Unchecked)
 
+    def eligible(self,rows,action):
+        if action=='preview':
+            return [r for r in rows if r['stage'] in ('PREPARED','PREVIEWED','IMPORT_UNKNOWN','IMPORT_FAILED')
+                    and not (r['historical'] or r['internal'] or r['import_outcome']=='accepted')]
+        if action=='submit':
+            return [r for r in rows if r['stage']=='PREVIEWED' and not (r['historical'] or r['internal'])]
+        if action=='recover':
+            return [r for r in rows if r['stage'] in RELEASED and r['stage']!='MANUAL_HANDOFF']
+        return rows
+
     def controls(self,*_):
         rows=self.selected()
         stages={r['stage'] for r in rows}
         free=not self.busy and bool(rows)
         self.buttons['probe'].setEnabled(free and 'MANUAL_HANDOFF' not in stages and not any(r.get('historical') for r in rows))
-        self.buttons['preview'].setEnabled(free and not stages&RELEASED)
-        self.buttons['submit'].setEnabled(free and stages=={'PREVIEWED'})
-        self.buttons['recover'].setEnabled(free and stages<=RELEASED and 'MANUAL_HANDOFF' not in stages)
+        for action in ('preview','submit','recover'):
+            self.buttons[action].setEnabled(free and bool(self.eligible(rows,action)))
+        counts=[len(self.eligible(rows,a)) for a in ('preview','submit','recover')]
+        hint=f'已勾选 {len(rows)} 张，可平台预览 {counts[0]} 张，可确认导入 {counts[1]} 张，可核对原单 {counts[2]} 张'
+        if any(r['stage']=='IMPORT_UNKNOWN' and r['import_outcome'] is None for r in rows):
+            hint+='。上次发送结果不明的仓单只可预览、核对'
+        self.selection_hint.setText(hint)
         self.export.setEnabled(free and len(rows)==1 and not stages&RELEASED)
+        self.export.setText('保存历史原文件' if stages=={'WITHDRAWN'} else '保存核对用 XLS')
         self.allocation.setEnabled(free and all(r['internal'] and r['stage']!='CANCELLED' for r in rows))
         self.payment_history.setEnabled(free and len(rows)==1 and bool(rows[0]['internal']))
-        self.redo_btn.setEnabled(free and len(rows)==1 and stages<=RELEASED
-                                  and 'MANUAL_HANDOFF' not in stages and not rows[0].get('historical'))
-        self.manual_btn.setEnabled(free and len(rows)==1)
+        self.redo_btn.setEnabled(free and len(rows)==1 and 'MANUAL_HANDOFF' not in stages
+                                  and not rows[0].get('historical'))
+        self.manual_btn.setEnabled(free and len(rows)==1 and 'WITHDRAWN' not in stages)
 
     def open_manual(self):
         rows=self.selected()
@@ -346,7 +365,7 @@ class Orders(QDialog):
         try:
             owner = manager(self.host).session
             result = run(self,service.run_browser,
-                         (self.path,[row['online']],owner,'recover'),'核实聚水潭原单是否取消')
+                         (self.path,[row['online']],owner,'recover_cancelled'),'核实聚水潭原单是否取消')
             if not result:
                 raise service.Check('未取得原单回查结果，请继续核对原任务。')
             checked = result[0]
@@ -355,7 +374,7 @@ class Orders(QDialog):
             self.note.setText(checked['reason'])
             if not confirm(self,'确认沿原仓单重做',
                            f"{order_label} · 聚水潭 {checked['internal']} 已核实取消。\n"
-                           '确认后按原记录释放占用，保留原单和付款，并返回本仓单。维持需求可直接一键分配下单，改量请先更正回传。'):
+                           '确认后按原记录释放占用，保留历史，并返回本仓单。点「准备新分配批次」按仓刷新库存。'):
                 return
             redo = run(self,begin_redo,(self.path,row['online']),'登记后继执行并核销原占用')
             if not redo:
@@ -413,22 +432,23 @@ class Orders(QDialog):
 
     def save_file(self):
         r=self.selected()[0]
-        dest,_=QFileDialog.getSaveFileName(self,'保存核对用 XLS',r['online']+'.xls','Excel 97-2003 (*.xls)')
+        suffix = '_撤销历史' if r['stage']=='WITHDRAWN' else ''
+        dest,_=QFileDialog.getSaveFileName(self,self.export.text(),r['online']+suffix+'.xls','Excel 97-2003 (*.xls)')
         if dest:
             target=Path(dest)
             if target.suffix.lower()!='.xls':target=target.with_suffix('.xls')
             notify(self,lambda:run(self,service.export_file,(self.path,r['online'],target),'保存核对文件'))
 
     def perform(self,action):
-        rows=self.selected()
-        if self.busy or not rows:
+        rows=self.eligible(self.selected(),action)
+        if self.busy or not rows or not self.buttons[action].isEnabled():
             return
-        approved=None
+        approved={r['online']:r['sequence'] for r in rows}
         if action=='submit':
-            lines='\n'.join(f"{r['name'] or r['store']} / {r['warehouse']} / {r['number']} / {r['online']} / {r['sku_count']}款、{r['quantity']}件" for r in rows)
+            lines='\n'.join(f"{r['name'] or r['store']} / {r['warehouse']} / {r['number']} / {r['online']} / "
+                            f"{r['sku_count']}款、{r['quantity']}件 / 预览金额 {r['preview_amount'] or '待核'}" for r in rows)
             if not confirm(self,'确认导入',f'确认导入以下 {len(rows)} 张仓单？\n\n'+lines):
                 return
-            approved={r['online']:r['sequence'] for r in rows}
         from catalog_session_ui import manager
         owner=manager(self.host).session
         self.busy=True
@@ -436,7 +456,7 @@ class Orders(QDialog):
         try:
             from jst_fulfillment import run_order_actions
             result=notify(self,lambda:run(self,run_order_actions,
-                (self.path,[r['online'] for r in rows],owner,action,approved),'聚水潭下单作业'))
+                (self.path,[r['online'] for r in rows],owner,action,approved),self.buttons[action].text()))
             if result is not None:
                 replacements={r['replaces']:r['online'] for r in result if r.get('replaces')}
                 self.focus=[replacements.get(key,key) for key in self.focus]
