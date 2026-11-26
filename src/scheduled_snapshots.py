@@ -203,3 +203,32 @@ def input_view(repo, run, catalogs, digests):
                        'conflicts': rows(('intake', 'conflicts'), lambda entry: entry['conflicts']),
                        'duplicates': sum(entry['duplicates'] for entry in entries.values())},
             'row_counts': {s: [entry['rows'], entry['local']] for s, entry in entries.items()}}
+
+
+def merge_legacy_inputs(legacy, current):
+    """Keep the exact old rows for stores saved before store-scoped snapshots."""
+    if current is None:return legacy
+    old_codes=legacy['stores'].keys()-current['stores'].keys()
+    if not old_codes:return current
+    def old_rows(rows):
+        return [pair for pair in rows if pair[0]['B'] in old_codes]
+    legacy_intake,current_intake=legacy['intake'],current['intake']
+    stores={**{s:legacy['stores'][s] for s in legacy['stores'] if s in old_codes},**current['stores']}
+    files={item['path']:item for item in [*legacy_intake['files'],*current_intake['files']]}
+    from app_defaults import load_default_config
+    store_field=load_default_config()['sales_fields']['store_code']
+    from input_adapter import identifier
+    current_intake.update(stores=stores,files=list(files.values()),
+                          hashes={**legacy_intake['hashes'],**current_intake['hashes']},
+                          headers=sorted(set(legacy_intake['headers'])|set(current_intake['headers'])),
+                          selected=[row for row in legacy_intake['selected']
+                                    if identifier(row['values'].get(store_field))[0] in old_codes]+list(current_intake['selected']),
+                          conflicts=[row for row in legacy_intake['conflicts'] if row['store'] in old_codes]+list(current_intake['conflicts']))
+    current.update(stores=stores,normalized=old_rows(legacy['normalized'])+list(current['normalized']),
+                   hashes={**legacy['hashes'],**current['hashes']},
+                   sales=[file['path'] for file in files.values() if not file['error']],
+                   blocked={**{s:v for s,v in legacy['blocked'].items() if s in old_codes},**current['blocked']},
+                   warehouse_rows={wh:old_rows(legacy.get('warehouse_rows',{}).get(wh,()))+list(rows)
+                                   for wh,rows in current['warehouse_rows'].items()})
+    current.pop('row_counts')
+    return current

@@ -261,7 +261,7 @@ class BatchWindow(WarehouseUi,SessionWindow):
 
     def resolve_conflicts(self):
         if not self.loaded:return
-        data=copy.deepcopy(self.loaded['intake']);conflicts=data['conflicts']
+        data=copy.deepcopy(self.loaded['intake']);conflicts=data['conflicts']=list(data['conflicts'])
         if not conflicts:return
         dialog=QDialog(self);dialog.setWindowTitle('处理重复冲突 · 选择保留来源');dialog.resize(1060,650);v=QVBoxLayout(dialog);v.addWidget(label('同店同商品内容不同，不叠加。查看字段差异后选择保留哪条；未选择的门店暂不能计算。','muted'))
         table=QTableWidget(len(conflicts),3);table.setHorizontalHeaderLabels(['门店 / 商品','差异及来源','保留记录']);table.setColumnWidth(0,200);table.setColumnWidth(1,560);table.setColumnWidth(2,250);table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);v.addWidget(table,1);combos=[]

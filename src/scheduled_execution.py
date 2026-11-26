@@ -319,7 +319,7 @@ def workbench_record(repo,rid):
     if 'loaded' in digests:
         # Older partial runs retain their original input for already ready stores.
         legacy=repo.value(rid,'loaded')
-        if loaded is None or set(legacy['stores'])-set(loaded['stores']):loaded=legacy
+        loaded=snapshots.merge_legacy_inputs(legacy,loaded)
     if not basis or not loaded:raise ValueError('尚无通过检查的数据，请先处理失败原因')
     entries={s['code']:s for s in run['stores'] if s['state']=='READY'}
     results=snapshots.Results({s:snapshots.Reference(repo.path,rid,'result:'+s,digests['result:'+s]) for s in entries},

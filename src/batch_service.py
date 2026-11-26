@@ -203,7 +203,8 @@ def run(loaded,jobs,profile,max_workers=2,notify=lambda s,state,result,error:Non
         state=(store,room//unit,required)
         if waiting!=state:
             waiting=state
-            notify(store,'等待内存',None,f'提交余量 {max(0,room)/1024**2:,.0f} MiB，预计需要 {required/1024**2:,.0f} MiB（含保护余量）；恢复后自动继续')
+            notify(store,'等待内存' if input_for is not None else '排队中',None,
+                   f'提交余量 {max(0,room)/1024**2:,.0f} MiB，预计需要 {required/1024**2:,.0f} MiB（含保护余量）；恢复后自动继续')
     def fail_pool(exc):
         nonlocal pool_error
         if pool_error is None:pool_error=pool_failure(exc,prefix)
