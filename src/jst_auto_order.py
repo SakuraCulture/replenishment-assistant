@@ -241,7 +241,7 @@ class Browser:
         p=order['payload']
         spec={'warehouse':p['head']['warehouse'],'shop':p['shop']['name'],'online':p['online'],
                'internal':order['internal'],'phase':order['stage'],
-              'binding':None if action=='preview' else (order['proof'] or {}).get('binding')}
+              'binding':(order['proof'] or {}).get('binding')}
         if action=='payment_detail' or action=='lookup' and extra.get('identity_only'):
             spec['contact']={'buyer':p['profile']['values']['buyer']}
         elif action in ('preview','lookup','stage_import','stage_audit'):
@@ -364,6 +364,8 @@ def _record_found(path, order, result, cancel, *, identity_only=False, manual_pr
     if result.get('found') is not True:
         if not_dispatched:
             return {**order,'reason':'尚未查到唯一原单，请继续核对'}
+        if order['stage'] in ('IMPORT_UNKNOWN','IMPORT_FAILED'):
+            return {**order,'lookup_missing':True,'reason':'本次查询尚未查到唯一原单'}
         saved = _save(path,order,order['stage'],cancel,reason='按原线上单号尚未查到唯一订单，保留原状态，请继续核对')
         return {**saved,'lookup_missing':True}
     proof=manual_proof if manual_proof is not None else order['proof']
@@ -508,6 +510,18 @@ def _review(path, browser, order, cancel, *, identity_only=False):
     return _record_found(path,order,result,cancel,identity_only=identity_only)
 
 
+def _send_intent(path,browser,intent,action,permit,**extra):
+    try:
+        return browser.request(action,permit=permit,online=intent['online'],
+                               warehouse=intent['payload']['head']['warehouse'],**extra)
+    except ValueError as exc:
+        try:
+            _save(path,intent,intent['stage'],None,reason=str(exc))
+        except wr.Conflict:
+            pass  # A newer observation already superseded this intent.
+        raise
+
+
 def _audit(path, browser, order, cancel):
     # Verify current platform facts again, and use this exact pending order only.
     order=_review(path,browser,order,cancel)
@@ -519,34 +533,93 @@ def _audit(path, browser, order, cancel):
     if not _same_order(_preview_evidence(order,result),order['proof']):
         raise Check('普通审核前原订单内容已变化，请继续核对')
     intent=_save(path,order,'AUDIT_UNKNOWN',cancel,reason='已记下原单，正在核对普通审核结果')
-    browser.request('audit',permit=result['permit'],online=order['online'],internal=order['internal'],
-                    warehouse=order['payload']['head']['warehouse'])
+    _send_intent(path,browser,intent,'audit',result['permit'],internal=order['internal'])
     return _review(path,browser,intent,cancel)
 
 
-def _save_import_receipt(path, order, dispatched):
+def _receipt_counts(receipt):
+    if not isinstance(receipt,dict):
+        return None
+    success,failed=(receipt.get(k) for k in ('success_count','fail_count'))
+    text=receipt.get('text')
+    match=re.fullmatch(r'成功条数\s*[：:]\s*(\d+)\s*[，,]\s*失败条数\s*[：:]\s*(\d+)',
+                       text if isinstance(text,str) and len(text)<=80 else '')
+    if (type(success) is int and type(failed) is int and (success,failed) in ((1,0),(0,1))
+            and match and (int(match[1]),int(match[2]))==(success,failed)
+            and isinstance(receipt.get('observed_at'),str)
+            and re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z',receipt['observed_at'])):
+        return success,failed
+    return None
+
+
+def _save_import_receipt(path, order, dispatched, permit):
     if dispatched is not None and not isinstance(dispatched,dict):
         raise Check('聚水潭回执格式无法核实，请继续核对原线上单号')
+    if (dispatched or {}).get('dispatched') is False:
+        fact=dispatched.get('not_sent')
+        if (not isinstance(fact,dict) or dispatched.get('receipt') is not None or fact.get('permit')!=permit
+                or fact.get('online')!=order['online'] or fact.get('file_sha')!=order['file_sha']
+                or fact.get('binding')!=order['proof']['binding'] or not isinstance(fact.get('reason'),str)
+                or not isinstance(fact.get('observed_at'),str)):
+            raise Check('未能核实最终导入是否发送，请核对原线上单号')
+        saved={k:fact[k] for k in ('online','file_sha','binding','observed_at','reason')}
+        return _save(path,order,'IMPORT_UNKNOWN',None,proof={**order['proof'],'import_not_sent':saved})
     receipt=(dispatched or {}).get('receipt')
     if receipt is None:
         return order
     if not isinstance(receipt,dict) or dispatched.get('dispatched') is not True:
         raise Check('聚水潭回执格式无法核实，请继续核对原线上单号')
-    success, failed = (receipt.get(k) for k in ('success_count','fail_count'))
-    at=receipt.get('observed_at')
-    text=receipt.get('text')
-    counts=re.fullmatch(r'成功条数\s*[：:]\s*(\d+)\s*[，,]\s*失败条数\s*[：:]\s*(\d+)',
-                        text if isinstance(text,str) and len(text)<=80 else '')
+    counts=_receipt_counts(receipt)
     if (receipt.get('online')!=order['online'] or receipt.get('binding')!=order['proof']['binding']
-            or type(success) is not int or type(failed) is not int or (success,failed) not in ((1,0),(0,1))
-            or not counts or (int(counts[1]),int(counts[2]))!=(success,failed)
-            or not isinstance(at,str) or not re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z',at)):
+            or counts is None):
         raise Check('聚水潭回执的仓账号、店铺、线上单号或张数与原任务不符，请继续核对原单')
     saved={k:receipt[k] for k in ('online','success_count','fail_count','text','observed_at')}
     # The platform already answered. Commit this receipt even if the user
     # stopped the work while the response was arriving.
     return _save(path,order,'IMPORT_UNKNOWN',None,proof={**order['proof'],'import_receipt':saved},
-                 reason='' if failed else '已取得导入回执，等待核对原线上单号')
+                 reason='' if counts==(0,1) else '已取得导入回执，等待核对原线上单号')
+
+
+def _preview_pending(path,browser,order,cancel):
+    proof=order['proof'] or {}
+    binding=proof.get('binding')
+    if order['internal'] or not binding or proof.get('file_sha')!=order['file_sha']:
+        raise Check('原文件或店铺绑定无法核实，请核对原单')
+    lookup=browser.action('lookup',order,identity_only=True)
+    if lookup.get('binding')!=binding or lookup.get('online')!=order['online']:
+        raise Check('本次查询的仓账号、店铺或线上单号与原任务不同')
+    if lookup.get('found') is True:
+        return _record_found(path,order,lookup,cancel,identity_only=True)
+    receipt=proof.get('import_receipt') or {}
+    if (_receipt_counts(receipt)==(1,0) or lookup.get('found') is not False
+            or lookup.get('exact_absence') is not True):
+        raise Check('请继续核对原单及原导入回执')
+    with closing(wr.read_connection(path)) as db:
+        db.execute('BEGIN')
+        _require_inputs(db,order['payload'])
+        order['preview_names']=_preview_names(db,order)
+    evidence=_preview_for_submit(order,browser.action('preview',order))
+    if evidence['binding']!=binding:
+        raise Check('本次预览的仓账号或店铺与原任务不同')
+    not_sent=proof.get('import_not_sent') or {}
+    rejected=_receipt_counts(receipt)==(0,1) and receipt.get('online')==order['online']
+    unsent=(not receipt and not_sent.get('online')==order['online']
+            and not_sent.get('file_sha')==order['file_sha'] and not_sent.get('binding')==binding)
+    if not (rejected or unsent):
+        amount=evidence['amount']
+        note='原文件预览通过'+(f'，本次平台预览金额 {amount} 元' if amount is not None else '')
+        return {**order,'reason':note+'。原单精确查询为 0 张，上次发送结果仍待核实'}
+    with closing(store.connection(path)) as db,db:
+        begin(db,cancel)
+        fresh=store.update(db,order,'PREVIEWED',proof=evidence,reason='原单已重新预览，等待确认导入')
+        # Perform the ordinary execution checks in the same transaction after
+        # clearing this one guarded intent. Every other execution fact still blocks.
+        _require_plan(db,order['payload'])
+        _event(db,fresh,'聚水潭原单重新预览',{'file_sha':order['file_sha'],'binding':binding,
+              'previous_sequence':order['sequence'],'import_receipt':receipt or None,
+              'import_not_sent':not_sent or None,'exact_absence':True})
+        commit(db,cancel)
+    return fresh
 
 
 def _process(path, browser, order, action, cancel, *, expected_binding=None):
@@ -557,7 +630,12 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
     if store.manual_pending(order):
         raise Check('本次已转人工处理，请按原线上单号核对已有订单')
     if action=='probe':
-        browser.action('probe',order)
+        observed=browser.action('probe',order)
+        binding=(order['proof'] or {}).get('binding')
+        if binding and observed.get('binding')!=binding:
+            raise Check('本次核验的账号或店铺与原任务不同')
+        if order['stage']!='PREPARED':
+            return {**order,'reason':'已核对本仓企业、店铺和导入入口'}
         return _save(path,order,order['stage'],cancel,reason='已核对本仓企业、店铺和导入入口')
     if action in ('recover','recover_delete'):
         if order['stage'] not in store.RELEASED:
@@ -567,6 +645,8 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
         if order['stage']!='IMPORTED':
             raise Check('请先核对原单，确认已导入且待普通审核')
         return _audit(path,browser,order,cancel)
+    if action=='preview' and order['stage'] in ('IMPORT_UNKNOWN','IMPORT_FAILED'):
+        return _preview_pending(path,browser,order,cancel)
     if store.display_stage(order['stage'],(order['proof'] or {}).get('import_receipt'))=='IMPORT_FAILED':
         return order
     if order['stage'] in store.RELEASED:
@@ -577,6 +657,9 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
         order['preview_names']=_preview_names(db,order)
     if action=='preview':
         evidence=_preview_for_submit(order,browser.action('preview',order))
+        prior=(order['proof'] or {}).get('binding')
+        if prior and evidence['binding']!=prior:
+            raise Check('本次预览的仓账号或店铺与原任务不同')
         if expected_binding is not None and evidence['binding']!=expected_binding:
             raise Check('本次核验的企业、仓账号或店铺标识与已通过的配置不同，请人工核对')
         return _save(path,order,'PREVIEWED',cancel,check_plan=True,proof=evidence,reason='平台预览通过，等待确认导入')
@@ -586,9 +669,9 @@ def _process(path, browser, order, action, cancel, *, expected_binding=None):
     if not _same_order(_preview_for_submit(order,fresh),order['proof']) or not fresh.get('permit'):
         raise Check('平台预览或目标店铺已变化，请重新预览')
     intent=_save(path,order,'IMPORT_UNKNOWN',cancel,check_plan=True,reason='已保存导入意图，等待原单回查')
-    dispatched=browser.request('import',permit=fresh['permit'],online=order['online'],warehouse=order['payload']['head']['warehouse'])
-    intent=_save_import_receipt(path,intent,dispatched)
-    if store.display_stage(intent['stage'],(intent['proof'] or {}).get('import_receipt'))=='IMPORT_FAILED':
+    dispatched=_send_intent(path,browser,intent,'import',fresh['permit'])
+    intent=_save_import_receipt(path,intent,dispatched,fresh['permit'])
+    if intent['proof'].get('import_not_sent') or store.display_stage(intent['stage'],intent['proof'].get('import_receipt'))=='IMPORT_FAILED':
         return intent
     return _review(path,browser,intent,cancel,identity_only=True)
 
@@ -615,6 +698,11 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
         progress(RowProgress(show_name(order['payload']['head']),i,len(keys)))
         ok=True
         try:
+            if action=='preview' and order['stage']=='PREVIEWED' and not order.get('historical') and not store.manual_pending(order):
+                original_file=order['workbook']
+                scope={'binding':(order['proof'] or {}).get('binding'),'file_sha':order['file_sha']}
+                order=_save(path,order,'PREPARED',cancel,proof=scope,reason='重新预览通过后可确认导入')
+                order['workbook']=original_file
             result=_process(path,browser,order,action,cancel,expected_binding=expected_binding)
         except Cancelled:
             raise
@@ -622,17 +710,24 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
             ok=False
             with closing(wr.read_connection(path)) as db:
                 current=store.read(db,online)
-            if (current and not current.get('historical') and not store.manual_pending(current) and not _legacy_audit_not_dispatched(current)
+            read_only=action=='probe' or order['stage'] in ('IMPORT_UNKNOWN','IMPORT_FAILED')
+            if (current and current['sequence']==order['sequence'] and not read_only and not current.get('historical')
+                    and not store.manual_pending(current) and not _legacy_audit_not_dispatched(current)
                     and (current['stage']!='CANCELLED' or action in ('recover','recover_delete'))):
                 current=_save(path,current,current['stage'],cancel if action in ('recover','recover_delete') else None,reason=str(exc))
             result={**(current or order),'reason':str(exc)}
-        receipt=(result.get('proof') or {}).get('import_receipt')
+        proof=result.get('proof') or {}
+        receipt=proof.get('import_receipt')
         stage=store.display_stage(result['stage'],receipt)
-        reason=store.display_reason(stage,result['reason'],receipt)
+        if ok and (action=='probe' or action=='preview' and stage=='IMPORT_UNKNOWN'):
+            reason=result['reason']
+        else:
+            reason=store.display_reason(stage,result['reason'],receipt,proof.get('import_not_sent'))
         response={'online':online,'stage':stage,'reason':reason,
-                  'ok':ok and not result.get('lookup_missing') and stage!='IMPORT_FAILED',
+                  'ok':ok and not result.get('lookup_missing') and stage!='IMPORT_FAILED'
+                       and not (action=='submit' and proof.get('import_not_sent')),
                   'sequence':result['sequence'],'internal':result.get('internal')}
-        if (prepare_payment and ok and not result.get('lookup_missing') and action in ('submit','recover') and result.get('internal')
+        if (prepare_payment and ok and not result.get('lookup_missing') and action in ('submit','recover','preview') and result.get('internal')
                 and result['stage'] in ('IMPORTED','AUDITED','AUDIT_UNKNOWN','REVIEW')):
             payment=prepare_payment(path,[online],browser,progress,cancel)[0]
             response['payment']=payment

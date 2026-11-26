@@ -98,7 +98,7 @@ class Portal:
             result['lines'][0][1]='1'
         if name in ('lookup','stage_audit'):
             existing=self.orders.get(key)
-            if not existing:return {'found':False}
+            if not existing:return {'found':False,'online':key,'binding':binding,'exact_absence':True}
             return {**result,**existing,'found':True}
         if name in ('preview','stage_import') and key in self.orders:
             return {'exists':True}
@@ -291,6 +291,108 @@ class AutoOrders(unittest.TestCase):
         self.assertEqual(actual['proof']['import_receipt']['fail_count'],1)
         self.assertEqual(actual['workbook'],original['workbook'])
         self.assertEqual([op for op,_ in self.portal.calls].count('import'),1)
+
+    def test_pending_preview_requires_positive_evidence_before_another_confirmation(self):
+        key,=self.prepared()
+        def action(name,**kwargs):
+            return service.process(self.path,[key],self.portal,name,**kwargs)[0]
+        action('preview')
+        original=self.read(key,workbook=True)
+        with patch.object(self.portal,'request',side_effect=service.PlatformCheck('本次连接中断')):
+            action('submit')
+        pending=self.read(key,workbook=True)
+        self.assertEqual(pending['stage'],'IMPORT_UNKNOWN')
+        action('probe')
+        self.assertEqual(action('preview')['stage'],'IMPORT_UNKNOWN')
+        self.assertEqual(self.read(key,workbook=True),pending)
+        self.assertEqual(action('recover')['stage'],'IMPORT_UNKNOWN')
+        self.assertFalse(action('submit')['ok'])
+        self.assertNotIn(('import',key),self.portal.calls)
+        receipt={'online':key,'success_count':0,'fail_count':1,'text':'成功条数：0，失败条数：1',
+                 'observed_at':'2026-11-25T12:15:17Z'}
+        with closing(store.connection(self.path)) as db,db:
+            row=store.read(db,key)
+            store.update(db,row,row['stage'],proof={**row['proof'],'import_receipt':receipt})
+        before=self.read(key)
+        native_action=self.portal.action
+        for bad in ({'found':False},{'found':False,'online':key,'binding':original['proof']['binding']},
+                    {'found':False,'exact_absence':True,'online':key,'binding':{}}):
+            with patch.object(self.portal,'action',side_effect=lambda name,*a,**kw:bad if name=='lookup' else native_action(name,*a,**kw)):
+                self.assertFalse(action('preview')['ok'])
+            self.assertEqual(self.read(key),before)
+        fresh=action('preview')
+        self.assertEqual(fresh['stage'],'PREVIEWED')
+        self.assertNotIn(('import',key),self.portal.calls)
+        replay=action('submit',approved={key:pending['sequence']})
+        self.assertFalse(replay['ok'])
+        self.assertEqual(action('submit',approved={key:fresh['sequence']})['stage'],'IMPORTED')
+        self.assertEqual(self.read(key,workbook=True)['workbook'],original['workbook'])
+        self.assertEqual(self.portal.calls.count(('import',key)),1)
+        with closing(wr.read_connection(self.path)) as db:
+            detail,=db.execute("SELECT detail FROM jst_events WHERE action='聚水潭原单重新预览'").fetchone()
+            self.assertEqual(wr.loads(detail)['import_receipt'],receipt)
+
+    def test_not_sent_is_scoped_to_one_permit_and_does_not_survive_the_next_intent(self):
+        key,=self.prepared()
+        def action(name):
+            return service.process(self.path,[key],self.portal,name)[0]
+        action('preview')
+        original=self.read(key)
+        fact={'online':key,'file_sha':original['file_sha'],'binding':original['proof']['binding'],
+              'permit':'only-once','reason':'原控件已关闭','observed_at':'2026-11-25T12:15:17Z'}
+        for field,value in [('permit','old'),('file_sha','other'),('online','other'),('binding',{})]:
+            with self.assertRaises(service.Check):
+                service._save_import_receipt(self.path,original,{'dispatched':False,'not_sent':{**fact,field:value}},'only-once')
+        with patch.object(self.portal,'request',return_value={'dispatched':False,'not_sent':fact}):
+            self.assertFalse(action('submit')['ok'])
+        self.assertEqual(store.list_orders(self.path)[0]['import_outcome'],'not_sent')
+        self.assertEqual(action('preview')['stage'],'PREVIEWED')
+        with patch.object(self.portal,'request',side_effect=service.PlatformCheck('本次连接中断')):
+            action('submit')
+        self.assertNotIn('import_not_sent',self.read(key)['proof'])
+        self.assertEqual(action('preview')['stage'],'IMPORT_UNKNOWN')
+
+    def test_accepted_receipt_cannot_unlock_on_absence_and_probes_preserve_first_result(self):
+        key,=self.prepared()
+        def action(name):
+            return service.process(self.path,[key],self.portal,name)[0]
+        action('preview')
+        binding=self.read(key)['proof']['binding']
+        receipt={'online':key,'binding':binding,'success_count':1,'fail_count':0,
+                 'text':'成功条数：1，失败条数：0','observed_at':'2026-11-25T12:15:17Z'}
+        with patch.object(self.portal,'request',return_value={'dispatched':True,'receipt':receipt}):
+            action('submit')
+        stored=self.read(key)
+        action('probe')
+        self.assertFalse(action('preview')['ok'])
+        self.assertEqual(stored,self.read(key))
+        self.assertEqual(store.list_orders(self.path)[0]['import_outcome'],'accepted')
+        self.assertEqual(self.portal.calls.count(('preview',key)),1)
+
+    def test_pending_preview_binds_late_original_without_uploading_or_resubmitting(self):
+        key,=self.prepared()
+        service.process(self.path,[key],self.portal,'preview')
+        self.portal.disconnected=True
+        service.process(self.path,[key],self.portal,'submit')
+        self.portal.calls.clear()
+        with patch('jst_fulfillment.pull_order_payment',return_value=[{'state':'READY'}]) as payment:
+            result,=service.process(self.path,[key],self.portal,'preview',prepare_payment=payment)
+        self.assertEqual((result['stage'],result['internal']),('IMPORTED','6001'))
+        self.assertEqual(self.portal.calls,[('lookup',key)])
+        self.assertEqual(payment.call_args.args[1],[key])
+
+    def test_failed_repreview_withdraws_old_confirmation_and_preserves_original_shop(self):
+        key,=self.prepared()
+        preview,=service.process(self.path,[key],self.portal,'preview')
+        binding=self.read(key)['proof']['binding']
+        self.portal.quantity_diff=True
+        failed,=service.process(self.path,[key],self.portal,'preview')
+        self.assertFalse(failed['ok'])
+        self.assertEqual(failed['stage'],'PREPARED')
+        self.assertIsNone(self.read(key)['proof'].get('amount'))
+        self.assertEqual(self.read(key)['proof']['binding'],binding)
+        self.assertFalse(service.process(self.path,[key],self.portal,'submit',approved={key:preview['sequence']})[0]['ok'])
+        self.assertNotIn(('import',key),self.portal.calls)
 
     def test_audit_rejected_can_continue_on_original_internal_order(self):
         keys=self.prepared()

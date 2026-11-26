@@ -362,12 +362,12 @@ export class OrderPages {
     return {...result,shop_id,preview,page};
   }
 
-  async finishImport(staged, spec, signal) {
+  async dispatchImport(staged, spec, signal, beforeClick) {
     const {preview,page}=staged;
     const controls=preview.locator('span.btnImport').filter({hasText:/^确定导入$/,visible:true});
     const actions=await controls.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('onclick')));
-    // The native template duplicates the same primary control above and below the single preview.
-    if (actions.length!==2 || actions.some(action=>action!=='Confirm()'))
+    // The single preview can show the same native action above and below the table.
+    if (![1,2].includes(actions.length) || actions.some(action=>action!=='Confirm()'))
       fail('ORDER_PAGE_CHANGED','未找到可核验的单张订单最终导入控件');
     const receiptFrame=page.locator('#epaasDialogFrame');
     if(await receiptFrame.filter({visible:true}).count())
@@ -384,7 +384,21 @@ export class OrderPages {
         if (!same(scope,staged.evidence)||(spec.import_format===SINGLE&&amount!==staged.amount))
           fail('PREVIEW_CHANGED','最终导入前预览内容已变化');
         check(signal);
+        beforeClick();
       }});
+    return {newReceipt,receipt,summaryText};
+  }
+
+  async finishImport(staged, spec, signal) {
+    let mayHaveClicked=false;
+    let response;
+    try {
+      response=await this.dispatchImport(staged,spec,signal,()=>{mayHaveClicked=true;});
+    } catch (error) {
+      if (mayHaveClicked) throw error;
+      fail('ORDER_IMPORT_NOT_DISPATCHED',error instanceof CatalogError ? error.message : '最终导入页面未就绪');
+    }
+    const {newReceipt,receipt,summaryText}=response;
     if(newReceipt)await newReceipt.catch(()=>fail('ORDER_IMPORT_RECEIPT_UNKNOWN','未读到本次导入的新回执，请核对原线上单号'));
     const summary=await one(summaryText,'本次导入回执','ORDER_IMPORT_RECEIPT_UNKNOWN');
     const text=(await summary.innerText()).trim(),match=text.match(IMPORT_COUNTS);
@@ -412,16 +426,23 @@ export class OrderFlow {
     if (action==='import'||action==='audit'){
       const hold=this.permits.get(input.permit);
       this.permits.delete(input.permit);
-      if (!hold||hold.action!==action||hold.spec.online!==input.online||hold.expires<Date.now()
-          ||(action==='audit'&&hold.spec.internal!==input.internal))
+      if (!hold||hold.action!==action||hold.spec.online!==input.online
+          ||(action==='audit'&&(hold.spec.internal!==input.internal||hold.expires<Date.now())))
         fail('PREVIEW_CHANGED','原预览或普通审核许可已失效');
       if (hold.spec.warehouse!==account?.warehouse||hold.binding.coid!==account.expectedCoid||
           hold.binding.uid!==account.expectedUid||hold.binding.company!==account.expectedCompany
           ||hold.binding.version!==account.bindingVersion)
         fail('ACCOUNT_CHANGED','聚水潭仓账号绑定已变化');
       if (action==='import'){
-        const receipt=await this.pages.finishImport(hold.staged,hold.spec,signal);
-        return {dispatched:true,...(receipt?{receipt:{...receipt,online:hold.spec.online,binding:hold.binding}}:{})};
+        try {
+          if (hold.expires<Date.now()) fail('ORDER_IMPORT_NOT_DISPATCHED','本次预览许可已到期');
+          const receipt=await this.pages.finishImport(hold.staged,hold.spec,signal);
+          return {dispatched:true,...(receipt?{receipt:{...receipt,online:hold.spec.online,binding:hold.binding}}:{})};
+        } catch (error) {
+          if (error.code!=='ORDER_IMPORT_NOT_DISPATCHED') throw error;
+          return {dispatched:false,not_sent:{permit:input.permit,online:hold.spec.online,binding:hold.binding,
+            file_sha:hold.spec.sha,reason:error.message,observed_at:new Date().toISOString()}};
+        }
       }
       await this.pages.finishAudit(hold.staged,hold.spec,signal);
       return {dispatched:true};
