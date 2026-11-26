@@ -98,7 +98,10 @@ export class AccountSessions {
     const key=sha(canonical(account.binding));
     const retained=()=>this.sessions.get(key);
     const unavailable=()=>new CatalogError('SESSION_NOT_RETAINED','等待本仓已核验连接，后台实配未打开浏览器');
-    if(retainedOnly&&(!retained()||!this.healthy(retained())))throw unavailable();
+    if(retainedOnly&&!retained())throw unavailable();
+    if(retainedOnly&&!this.healthy(retained())){
+      const error=unavailable();error.connectionLost=true;throw error;
+    }
     await this.initialize();check(signal);
     const binding=await this.binding({profilePath:account.binding.actualProfilePath,edgeExecutable:account.binding.edgeExecutable});
     if(!sameBinding(binding,account.binding,this.storageAliases))throw new CatalogError('BINDING_CHANGED','本机专用浏览器绑定已变化，请重新核验');

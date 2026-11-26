@@ -85,6 +85,8 @@ class Manager(QObject):
             if value is None:return
             self.schedules,self.recent,queued=value
             self.queued_for_execution=bool(queued)
+            if self.owner:
+                self.catalog_owner.set_scheduled_queue(bool(queued) and not self.worker)
             stockout=getattr(self.host,'stockout',None)
             from unattended_resources import configured
             if queued and stockout and stockout.worker and not configured(self.folder):stockout.pause('定时补货已排队，分析安全让行；可稍后继续原分析任务')

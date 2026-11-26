@@ -39,6 +39,8 @@ class Browser(automatic.Browser):
     def request(self, action, **values):
         from catalog_sync_client import ComponentError
         try:
+            if action == 'payment_detail':
+                return self._payment_detail(values)
             return self.lease.request('order.' + action, timeout=180, **values)
         except ComponentError as exc:
             if self.retained_only and exc.code in ('SESSION_NOT_RETAINED', 'LOGIN_REQUIRED'):
@@ -48,6 +50,29 @@ class Browser(automatic.Browser):
             if exc.code.startswith('ALLOCATION_'):
                 raise automatic.PlatformCheck(str(exc)) from None
             raise automatic._client_error(exc) from None
+
+    def _payment_detail(self, values):
+        from catalog_sync_client import ComponentError
+        import performance_log
+        warehouse = values['spec']['warehouse']
+        reentered = reconnected = False
+        while True:
+            try:
+                return self.lease.request('order.payment_detail', timeout=180, **values)
+            except ComponentError as exc:
+                if exc.code not in ('JST_CONNECTION_LOST', 'JST_PAGE_LOCATION') or reconnected:
+                    raise
+                if self.retained_only and self.lease.owner.scheduled_waiting:
+                    # Finish this read as retryable and release before another browser action.
+                    raise
+                if exc.code == 'JST_PAGE_LOCATION' and not reentered:
+                    with performance_log.begin('jst_fulfillment.reenter_page'):
+                        reentered = True
+                    continue
+                with performance_log.begin('jst_fulfillment.reconnect_warehouse'):
+                    self.lease.request('session.reset', warehouse=warehouse)
+                reconnected = True
+                values = {**values, 'retained_only': False}
 
     def action(self, action, order, **extra):
         if action not in ('allocation', 'payment_detail'):
@@ -452,16 +477,33 @@ def run_order_actions(path, keys, owner, action, approved=None, progress=lambda 
 def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, retained_only=False, order_details=False):
     from catalog_sync_client import ComponentError
     checkpoint(cancel)
+    reader = pull_order_payment if order_details else pull
+    if retained_only:
+        import performance_log
+        results = []
+        for online in dict.fromkeys(keys):
+            checkpoint(cancel)
+            lease = owner.acquire_background()
+            if lease is None:
+                with performance_log.begin('jst_fulfillment.background_yield'):
+                    progress('后台原单回查已让位，剩余原单留待下次空闲时查询')
+                break
+            results.extend(_read_with_lease(reader, path, [online], lease, True, progress, cancel))
+        return results
     try:
         lease = owner.acquire()
     except ComponentError as exc:
         raise automatic._client_error(exc) from None
+    return _read_with_lease(reader, path, keys, lease, False, progress, cancel)
+
+
+def _read_with_lease(reader, path, keys, lease, retained_only, progress, cancel):
+    from catalog_sync_client import ComponentError
     try:
         try:
             lease.start()
         except ComponentError as exc:
             raise automatic._client_error(exc) from None
-        reader = pull_order_payment if order_details else pull
         return reader(path, keys, Browser(lease, retained_only), progress, cancel)
     finally:
         import time

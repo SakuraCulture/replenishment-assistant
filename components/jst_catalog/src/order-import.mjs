@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {locationError} from './browser-recovery.mjs';
 import {CatalogError, canonical, check, sha} from './common.mjs';
 import {activateControl} from './product-export.mjs';
 import {LIST_PATH, ordinaryAudit, queryOrder, readImportResult, readNativeOrder, readOrder} from './order-list.mjs';
@@ -27,7 +28,10 @@ function originAllowed(url) {
 async function one(locator, label, code='ORDER_PAGE_CHANGED') {
   const matches=locator.filter({visible:true});
   await matches.first().waitFor({state:'visible',timeout:15000}).catch(()=>{});
-  if (await matches.count()!==1) fail(code,'未找到唯一'+label);
+  if (await matches.count()!==1) {
+    if(code==='ORDER_PAGE_CHANGED')throw locationError('未找到唯一'+label,code);
+    fail(code,'未找到唯一'+label);
+  }
   return matches;
 }
 
@@ -94,13 +98,13 @@ async function tab(page, name) {
     // The captured ERP menu renders two matching labels. The second is the
     // clickable sub-menu in that known structure.
     const count=await entries.count();
-    if (count!==1&&count!==2) fail('ORDER_PAGE_CHANGED','未定位原生'+name+'入口');
+    if (count!==1&&count!==2) throw locationError('未定位原生'+name+'入口','ORDER_PAGE_CHANGED');
     await activateControl(entries.nth(count-1));
   }
   const target=await one(tabs,name+'标签');
   if (await target.getAttribute('aria-selected')!=='true') await activateControl(target);
   if (await target.getAttribute('aria-selected')!=='true')
-    fail('ORDER_PAGE_CHANGED',name+'标签尚未激活');
+    throw locationError(name+'标签尚未激活','ORDER_PAGE_CHANGED');
 }
 
 async function orderFrame(page, signature, allowed, title, timeout=12000) {
@@ -117,13 +121,13 @@ async function orderFrame(page, signature, allowed, title, timeout=12000) {
       }
     }
     if (found.length===1) return found[0];
-    if (found.length>1) fail('ORDER_PAGE_CHANGED','订单页面不唯一');
+    if (found.length>1) throw locationError('订单页面不唯一','ORDER_PAGE_CHANGED');
     await new Promise(resolve=>setTimeout(resolve,200));
   }
   if (process.env.JST_AUTO_ORDER_DIAGNOSTIC==='1')
     console.error('订单页面诊断 '+JSON.stringify({phase:title,paths:page.frames().map(f=>f.url().split(/[?#]/)[0]),
       tabs:await page.getByRole('tab').evaluateAll(nodes=>nodes.map(n=>[n.textContent.trim(),n.getAttribute('aria-selected')]))}));
-  fail('ORDER_PAGE_CHANGED','未取得聚水潭'+title+'的可核验控件');
+  throw locationError('未取得聚水潭'+title+'的可核验控件','ORDER_PAGE_CHANGED');
 }
 
 async function visible(frame) {
@@ -403,7 +407,7 @@ export class OrderFlow {
     this.driver=driver;this.pages=pages;
     this.permits=new Map();
   }
-  async run(action, input, account, signal) {
+  async run(action, input, account, signal, onPage) {
     check(signal);
     if (action==='import'||action==='audit'){
       const hold=this.permits.get(input.permit);
@@ -427,6 +431,7 @@ export class OrderFlow {
     if (!spec||!/^BH[A-F0-9]{24}$/.test(spec.online||'')||spec.warehouse!==account?.warehouse||
         typeof spec.shop!=='string'||!spec.shop.trim()) fail('ACCOUNT_UNVERIFIED','缺少原订单和已核验仓账号');
     const page=await this.driver.page(account,signal,{retainedOnly:action==='payment_detail'&&input.retained_only===true});
+    onPage?.(page);
     const {scope}=await this.driver.query(page,account);
     if (scope.coid!==account.expectedCoid||scope.uid!==account.expectedUid||scope.company!==account.expectedCompany)
       fail('ACCOUNT_CHANGED','浏览器企业或用户身份与原仓账号不同');

@@ -36,7 +36,7 @@ class Platforms:
     def jst_client(self,warehouses=None,progress=None):
         checkpoint(self.cancel)
         if self.jst is None:
-            self.jst=(self.catalog_owner.acquire_wait(warehouses,self.cancel,progress)
+            self.jst=(self.catalog_owner.acquire_wait(warehouses,self.cancel,progress,scheduled=True)
                       if self.resources and warehouses else self.catalog_owner.acquire())
             self.jst.start()
         return self.jst

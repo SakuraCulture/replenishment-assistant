@@ -14,6 +14,8 @@ class SessionOwner:
         self.ready, self.resources = False, resources
         self.lock = threading.RLock()
         self.leases = {}
+        self.scheduled_waiters = 0
+        self.scheduled_queued = False
 
     @property
     def lease(self):
@@ -37,7 +39,34 @@ class SessionOwner:
             self.leases[lease.id] = lease
             return lease
 
-    def acquire_wait(self, warehouses, cancel, progress):
+    def acquire_background(self):
+        """Reserve one original-order read atomically with the scheduled wait queue."""
+        with self.lock:
+            if self.scheduled_waiters or self.scheduled_queued or self.leases:
+                return None
+            return self.acquire()
+
+    @property
+    def scheduled_waiting(self):
+        with self.lock:
+            return self.scheduled_queued or self.scheduled_waiters > 0
+
+    def set_scheduled_queue(self, queued):
+        with self.lock:
+            self.scheduled_queued = bool(queued)
+
+    def acquire_wait(self, warehouses, cancel, progress, *, scheduled=False):
+        if scheduled:
+            with self.lock:
+                self.scheduled_waiters += 1
+        try:
+            return self._wait_for_warehouses(warehouses, cancel, progress)
+        finally:
+            if scheduled:
+                with self.lock:
+                    self.scheduled_waiters -= 1
+
+    def _wait_for_warehouses(self, warehouses, cancel, progress):
         deadline = time.monotonic() + 900
         while True:
             checkpoint(cancel)

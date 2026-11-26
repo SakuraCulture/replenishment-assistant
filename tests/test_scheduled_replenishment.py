@@ -150,6 +150,7 @@ class ExecutionTests(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name)
         self.work,self.s,self.basis,self.catalogs,self.manifest=fixture(self.root)
         self.repo=sr.Repository(self.work.path,lambda:datetime(2026,11,4,6,30,tzinfo=sr.TZ))
+        self.enterContext(patch.object(sr, 'stamp', lambda: self.repo.clock()))
         self.backend=LocalBackend(self.catalogs,self.manifest)
     def tearDown(self):self.tmp.cleanup()
     def run_one(self):

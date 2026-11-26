@@ -202,6 +202,8 @@ def _client_error(exc):
         'SHOP_DUPLICATE':'聚水潭导入页存在多条同名店铺，尚未选店，请核对店铺',
         'SHOP_SELECTION_FAILED':'聚水潭网页选店未生效或回读不一致，请核对后重试',
         'ORDER_PAGE_CHANGED':'平台页面结构待核，未取得可操作的订单控件',
+        'JST_PAGE_LOCATION':'原单查询页的控件未就绪，本仓原单留待继续核对',
+        'JST_CONNECTION_LOST':'本仓原单查询连接已断，原单留待继续核对',
         'ORDER_EXISTS':'平台已有相同店铺和线上单号，请核对原单',
         'PREVIEW_ISSUES':'聚水潭预览有异常，请在专用浏览器核对缺货、禁用或地址等提示',
         'PREVIEW_CONTACT':'聚水潭预览的买家或收货资料与本次制表不一致',

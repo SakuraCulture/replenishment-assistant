@@ -13,6 +13,7 @@ import {sameBinding} from './storage-paths.mjs';
 import {OrderFlow} from './order-import.mjs';
 import {AllocationFlow} from './order-allocation.mjs';
 import {SaleoutPages} from './saleout-allocation.mjs';
+import {browserFault} from './browser-recovery.mjs';
 
 const businessAccount=a=>({id:a.id,warehouse:a.warehouse,expectedCompany:a.expectedCompany,expectedCoid:a.expectedCoid,expectedUid:a.expectedUid,mappingVerified:a.mappingVerified,bindingVersion:a.bindingVersion,binding:a.binding});
 const unresolved=i=>!retired(i)&&(i.native?.submissions>0||i.native?.nativeTaskRef)&&!['FAILED_CONFIRMED','DOWNLOADED'].includes(i.native.stage)&&!i.adoption;
@@ -33,6 +34,7 @@ export class CatalogService {
       automaticBinding:(...a)=>this.sessions.automaticBinding(...a),
       inspect:(...a)=>this.sessions.inspect(...a),
       page:(...a)=>this.sessions.page(...a),
+      disconnect:account=>this.sessions.disconnect(account.binding),
       query:(page,a)=>native.queryAll(page,a),
       export:(page,o)=>native.exportAll(page,o),
       recover:(page,o)=>native.receiveKnownExport(page,o),
@@ -185,8 +187,9 @@ export class CatalogService {
     const active={id:crypto.randomUUID(),kind:'order',owner:c.lease_id,controller:new AbortController(),
       phase:{phase:'ORDER',message:'聚水潭订单操作',warehouse:wh,at:now()}};
     this.ordersActive=active;
+    let page;
     try{
-      active.promise=this.operation.run(active,()=>c.action==='order.allocation'?this.allocations.run(c,account,active.controller.signal):this.orders.run(c.action.slice(6),c,account,active.controller.signal));
+      active.promise=this.operation.run(active,()=>c.action==='order.allocation'?this.allocations.run(c,account,active.controller.signal):this.orders.run(c.action.slice(6),c,account,active.controller.signal,p=>{page=p;}));
       return await active.promise;
     }catch(e){
       if (process.env.JST_AUTO_ORDER_DIAGNOSTIC==='1') {
@@ -194,6 +197,11 @@ export class CatalogService {
         const operation=String(e?.message||'').match(/^(?:page|frame|locator)\.[a-zA-Z]+(?=:)/)?.[0];
         console.error('订单页面诊断 '+JSON.stringify({action:c.action,name:e?.name,
           code:e instanceof CatalogError?e.code:undefined,operation,location}));
+      }
+      if(c.action==='order.payment_detail'){
+        const fault=browserFault(e,page);
+        if(fault==='connection')throw new CatalogError('JST_CONNECTION_LOST','查询原单时本仓浏览器连接中断');
+        if(fault==='location')throw new CatalogError('JST_PAGE_LOCATION','本仓原订单查询页面未能定位所需控件');
       }
       if(e instanceof CatalogError)throw e;
       // Browser exception traces may embed fields from a locator or a form.
@@ -331,62 +339,97 @@ export class CatalogService {
     await this.store.write(d=>{const b=d.batches[batchId];b.state=signal.aborted?'STOPPED':b.items.every(i=>i.receipt||i.adoption)?'FILES_READY':'NEEDS_ATTENTION';b.finishedAt=now();});
   }
   async runItem(batchId,initial,signal,active){
-      if(signal.aborted)return;
-      const id=initial.id,a=initial.account;let item=this.current(batchId,id);
-      const archive=item.sourceFormat===ARCHIVE;
-      const phase=async(stage,message)=>{active.phase={phase:stage,message,warehouse:a.warehouse,at:now()};};
-      try{
-        const accounts=this.store.read().accounts||{};
-        const latest=accounts[a.warehouse];
-        if(!latest||canonical(businessAccount(latest))!==canonical(a))throw new CatalogError('CONFIG_CHANGED','原任务账号配置已变化，未使用新账号执行');
-        if(!latest.enabled)throw new CatalogError('ACCOUNT_DISABLED','本仓自动同步已停用；请先启用本仓再继续原任务，原任务和文件已保留');
-        if(archive&&(!item.native?.nativeTaskRef||item.native.scope?.reportScope==='account_default')
-          &&Object.values(accounts).some(other=>other.warehouse!==a.warehouse&&other.expectedCoid===a.expectedCoid))
-          throw new CatalogError('REPORT_SCOPE','两仓绑定同一聚水潭企业，无法区分默认库存归属，请核验分仓账号');
-        if(['SUBMITTING','SUBMISSION_UNKNOWN'].includes(item.native?.stage))throw new CatalogError('SUBMISSION_UNKNOWN','原导出受理不明，请核对原任务，不自动重提');
-        let validFile=false;
-        if(item.native?.file)validFile=await fs.readFile(item.native.file).then(b=>sha(b)===item.native.sha256,()=>false);
-        if(!validFile){
-          await phase('CONNECTING','连接'+a.warehouse+'专用浏览器');const page=await this.driver.page(a,signal);check(signal);
-          await this.patch(batchId,id,{connection_state:'READY',error:null});
-          if(item.native?.nativeTaskRef){
-            if(archive){
-              const identity=await this.driver.query(page,a);check(signal);
-              native.requireWarehouseAccount(identity.scope,a);
-            }
-            await phase('RECOVERING','恢复原任务 '+item.native.nativeTaskRef);
-            const receive=archive?this.driver.recoverArchive:this.driver.recover;
-            const received=await receive.call(this.driver,page,{recordId:item.native.nativeTaskRef,scope:item.native.scope,
-              expectedRows:item.native.scope.expectedRows,output:path.join(this.stateRoot,'downloads',batchId,id),
-              expectedPath:item.native.nativeFilePath?new URL(item.native.nativeFilePath).pathname:undefined,signal,onProgress:phase});
-            await this.patch(batchId,id,{native:{...item.native,...received,stage:'DOWNLOADED',nativeFilePath:received.nativePath},stage:'DOWNLOADED'});
-          }else{
-            if(item.native?.submissions>0)throw new CatalogError('SUBMISSION_UNKNOWN','缺少原任务号，禁止再次提交');
-            await this.observation(batchId,id,signal);check(signal);
-            await phase('QUERYING','查询'+a.warehouse+'全部商品');const queried=await this.driver.query(page,a);check(signal);
-            native.requireWarehouseAccount(queried.scope,a);
-            const exportFile=archive?this.driver.exportArchive:this.driver.export;
-            await exportFile.call(this.driver,page,{...a,queried,output:path.join(this.stateRoot,'downloads',batchId,id),signal,onProgress:phase,
-              onManifest:async native=>{await this.patch(batchId,id,{native,stage:native.stage});}});
-          }
+    if(signal.aborted)return;
+    const id=initial.id,a=initial.account;
+    const unattended=['scheduled_replenishment','stockout_analysis'].includes(this.store.batch(batchId).purpose);
+    let page,lastPhase='CONNECTING',reentered=false,reconnected=false;
+    const phase=async(stage,message)=>{
+      lastPhase=stage;
+      active.phase={phase:stage,message,warehouse:a.warehouse,at:now()};
+    };
+    const getPage=async()=>{page=null;page=await this.driver.page(a,signal);return page;};
+    try{
+      for(;;){
+        try{
+          await this.collectItem(batchId,id,a,signal,phase,getPage,reentered||reconnected);
+          return;
+        }catch(error){
+          check(signal);
+          const item=this.current(batchId,id),n=item.native;
+          if(!unattended||reconnected||n?.submissions>0&&!n.nativeTaskRef||
+              ['SUBMITTING','SUBMISSION_UNKNOWN'].includes(n?.stage))throw error;
+          const fault=browserFault(error,page);
+          if(!fault)throw error;
+          const reconnect=fault==='connection'||reentered;
+          if(reconnect&&!this.driver.disconnect)throw error;
+          const event={at:now(),step:lastPhase,action:reconnect?'reconnect':'reenter',reason:fault,
+            code:safeError(error).code,warehouse:a.warehouse,nativeTaskRef:n?.nativeTaskRef||null};
+          await this.patch(batchId,id,{recovery:[...(item.recovery||[]),event].slice(-12)});
+          await phase('RECOVERING_BROWSER',a.warehouse+(reconnect?'重新连接本仓专用浏览器':'重新进入原业务页面'));
+          check(signal);
+          if(reconnect){reconnected=true;await this.driver.disconnect(a);}
+          else reentered=true;
         }
-        item=this.current(batchId,id);check(signal);
-        if(!item.native?.file||!item.native.scope?.expectedRows)throw Error('缺少原文件或平台计数证据');
-        let receipt=item.receipt;
-        if(!receipt||await fs.readFile(receipt.candidate).then(b=>sha(b)!==receipt.candidate_sha256,()=>true)){
-          await phase('VALIDATING','校验'+a.warehouse+'文件与商品字段');
-          receipt=await this.driver.validate(item.native.file,{expectedRows:item.native.scope.expectedRows,warehouse:a.warehouse,output:path.dirname(item.native.file),signal,
-            evidence:archive?item.native.scope:undefined});
-        }
-        if(receipt.source_sha256!==item.native.sha256||receipt.warehouse!==a.warehouse)throw Error('校验回执与原任务不一致');
-        if(archive&&(receipt.source_format!==ARCHIVE||receipt.raw_rows!==item.native.scope.expectedRows))
-          throw Error('全商品档案可用及待核条数与平台回执不一致');
-        await this.patch(batchId,id,{receipt,stage:'READY_TO_ADOPT',error:null});
-      }catch(e){
-        item=this.current(batchId,id);const stage=item.native?.stage==='SUBMITTING'?'SUBMISSION_UNKNOWN':item.native?.stage||'QUEUED';
-        await this.patch(batchId,id,{stage,connection_state:e.code==='LOGIN_REQUIRED'?'LOGIN_REQUIRED':item.connection_state,
-          error:safeError(e),stopped:signal.aborted});
       }
+    }catch(error){
+      const item=this.current(batchId,id);
+      const uncertain=item.native?.stage==='SUBMITTING';
+      await this.patch(batchId,id,{stage:uncertain?'SUBMISSION_UNKNOWN':item.native?.stage||'QUEUED',
+        connection_state:error.code==='LOGIN_REQUIRED'?'LOGIN_REQUIRED':item.connection_state,
+        error:safeError(error),stopped:signal.aborted});
+    }
+  }
+  async collectItem(batchId,id,a,signal,phase,getPage,retrying){
+    check(signal);
+    let item=this.current(batchId,id);
+    const archive=item.sourceFormat===ARCHIVE;
+    const accounts=this.store.read().accounts||{};
+    const latest=accounts[a.warehouse];
+    if(!latest||canonical(businessAccount(latest))!==canonical(a))throw new CatalogError('CONFIG_CHANGED','原任务账号配置已变化，未使用新账号执行');
+    if(!latest.enabled)throw new CatalogError('ACCOUNT_DISABLED','本仓自动同步已停用；请先启用本仓再继续原任务，原任务和文件已保留');
+    if(archive&&(!item.native?.nativeTaskRef||item.native.scope?.reportScope==='account_default')
+      &&Object.values(accounts).some(other=>other.warehouse!==a.warehouse&&other.expectedCoid===a.expectedCoid))
+      throw new CatalogError('REPORT_SCOPE','两仓绑定同一聚水潭企业，无法区分默认库存归属，请核验分仓账号');
+    if(['SUBMITTING','SUBMISSION_UNKNOWN'].includes(item.native?.stage))throw new CatalogError('SUBMISSION_UNKNOWN','原导出受理不明，请核对原任务，不自动重提');
+    let validFile=false;
+    if(item.native?.file)validFile=await fs.readFile(item.native.file).then(b=>sha(b)===item.native.sha256,()=>false);
+    if(!validFile){
+      await phase('CONNECTING','连接'+a.warehouse+'专用浏览器');const page=await getPage();check(signal);
+      await this.patch(batchId,id,{connection_state:'READY',error:null});
+      if(item.native?.nativeTaskRef){
+        if(archive||retrying){
+          const identity=await this.driver.query(page,a);check(signal);
+          native.requireWarehouseAccount(identity.scope,a);
+        }
+        await phase('RECOVERING','恢复原任务 '+item.native.nativeTaskRef);
+        const receive=archive?this.driver.recoverArchive:this.driver.recover;
+        const received=await receive.call(this.driver,page,{recordId:item.native.nativeTaskRef,scope:item.native.scope,
+          expectedRows:item.native.scope.expectedRows,output:path.join(this.stateRoot,'downloads',batchId,id),
+          expectedPath:item.native.nativeFilePath?new URL(item.native.nativeFilePath).pathname:undefined,signal,onProgress:phase});
+        await this.patch(batchId,id,{native:{...item.native,...received,stage:'DOWNLOADED',nativeFilePath:received.nativePath},stage:'DOWNLOADED'});
+      }else{
+        if(item.native?.submissions>0)throw new CatalogError('SUBMISSION_UNKNOWN','缺少原任务号，禁止再次提交');
+        if(!retrying||!item.observation)await this.observation(batchId,id,signal);
+        check(signal);
+        await phase('QUERYING','查询'+a.warehouse+'全部商品');const queried=await this.driver.query(page,a);check(signal);
+        native.requireWarehouseAccount(queried.scope,a);
+        const exportFile=archive?this.driver.exportArchive:this.driver.export;
+        await exportFile.call(this.driver,page,{...a,queried,output:path.join(this.stateRoot,'downloads',batchId,id),signal,onProgress:phase,
+          onManifest:async native=>{await this.patch(batchId,id,{native,stage:native.stage});}});
+      }
+    }
+    item=this.current(batchId,id);check(signal);
+    if(!item.native?.file||!item.native.scope?.expectedRows)throw Error('缺少原文件或平台计数证据');
+    let receipt=item.receipt;
+    if(!receipt||await fs.readFile(receipt.candidate).then(b=>sha(b)!==receipt.candidate_sha256,()=>true)){
+      await phase('VALIDATING','校验'+a.warehouse+'文件与商品字段');
+      receipt=await this.driver.validate(item.native.file,{expectedRows:item.native.scope.expectedRows,warehouse:a.warehouse,output:path.dirname(item.native.file),signal,
+        evidence:archive?item.native.scope:undefined});
+    }
+    if(receipt.source_sha256!==item.native.sha256||receipt.warehouse!==a.warehouse)throw Error('校验回执与原任务不一致');
+    if(archive&&(receipt.source_format!==ARCHIVE||receipt.raw_rows!==item.native.scope.expectedRows))
+      throw Error('全商品档案可用及待核条数与平台回执不一致');
+    await this.patch(batchId,id,{receipt,stage:'READY_TO_ADOPT',error:null});
   }
   close({disconnectTimeout=3000}={}){
     if(this.closePromise)return this.closePromise;
