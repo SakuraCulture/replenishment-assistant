@@ -474,7 +474,9 @@ class ResultsPage(QWidget):
             result=run(self,jst_auto_order.prepare,(self.path,selected),'按勾选仓单制表')
             if not self.closing and not self.host.closing:
                 if result['ready']:self.focus_redo(open_orders(self,self.host,result['ready'],result['failed']))
-                else:raise ValueError('\n'.join(e['order']+'：'+e['reason'] for e in result['failed']))
+                elif result['failed']:
+                    from jst_order_dialogs import failure_rows,show_job_details
+                    show_job_details(self,failure_rows(result['failed']))
         try:notify(self,prepare)
         finally:self.reviewing=False;self.refresh()
 

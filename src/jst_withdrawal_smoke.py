@@ -106,7 +106,7 @@ class WithdrawalExercise(Exercise):
     def browser_redo(self,page,number):
         def tasks_dialog(dialog):
             self.task_selection(dialog,self.rows[number]['online'])
-            self.confirmation(dialog.redo_btn.click,'确认沿原仓单重做','17082')
+            self.confirmation(dialog.redo_btn.trigger,'确认沿原仓单重做','17082')
         self.dialog(page.auto_tasks_btn.click,Orders,tasks_dialog)
         self.wait(lambda:not page.reading and page.scope and len(page.records)==1,'返回重做原仓单')
         page.clear_scope()

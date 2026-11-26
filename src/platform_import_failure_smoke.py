@@ -17,7 +17,7 @@ from PySide6.QtTest import QTest
 def start_smoke(app, win, args):
     root, phase = Path(args[0]).resolve(), args[1]
     fixture = json.loads((root/'import-failure-fixture.json').read_text('utf-8'))
-    if (phase not in ('exercise','reopen','preview','withdrawal') or fixture.get('synthetic') is not True
+    if (phase not in ('exercise','reopen','preview','withdrawal','layout') or fixture.get('synthetic') is not True
             or fixture.get('live_platform') is not False
             or Path(os.environ.get('REPLENISHMENT_DATA_DIR','')).resolve()!=root/'settings'
             or win.work_repository.path.resolve()!=root/'settings/workbench.sqlite3'):
@@ -44,11 +44,14 @@ def start_smoke(app, win, args):
         for task in (manager,win.jst_generator,win.jst_fulfillment_runner,win.browser_status,win.scheduled):
             task.timer.stop()
 
-        if phase in ('preview','withdrawal'):
+        if phase in ('preview','withdrawal','layout'):
             try:
                 if phase=='withdrawal':
                     from jst_withdrawal_smoke import WithdrawalExercise
                     evidence = WithdrawalExercise(app,win,root,fixture).run()
+                elif phase=='layout':
+                    from jst_order_layout_smoke import LayoutExercise
+                    evidence = LayoutExercise(app,win,root,fixture).run()
                 else:
                     evidence = preview_case(app,win,root,fixture)
                 report.update(evidence,passed=True,build=diagnostic())
@@ -200,7 +203,7 @@ def start_smoke(app, win, args):
 
 
 def preview_case(app,win,root,fixture):
-    from PySide6.QtWidgets import QMessageBox
+    from jst_order_dialogs import ImportConfirmation
     import catalog_session_ui
     import jst_auto_order_store as store
     from jst_auto_order_ui import Orders
@@ -229,7 +232,7 @@ def preview_case(app,win,root,fixture):
             others={r['online']:(r['stage'],r['sequence']) for r in dialog.records if r['online'] not in keys}
             assert set(keys)=={r['online'] for r in dialog.selected()}
             assert dialog.buttons['preview'].isEnabled() and not dialog.buttons['submit'].isEnabled()
-            dialog.buttons['probe'].click()
+            dialog.buttons['probe'].trigger()
             dialog.buttons['preview'].click()
             report['rows_after_preview']={r['online']:{k:r[k] for k in ('stage','stage_label','reason','preview_amount')}
                                           for r in dialog.records if r['online'] in keys}
@@ -244,16 +247,16 @@ def preview_case(app,win,root,fixture):
             assert dialog.grab().save(str(root/'预览后按钮.png'))
             if ready:
                 answer=[]
-                def choose(button):
+                def choose(accepted):
                     box=app.activeModalWidget()
-                    if not isinstance(box,QMessageBox):return
-                    answer.append(box.text())
-                    box.button(button).click()
-                for button in (QMessageBox.StandardButton.Cancel,QMessageBox.StandardButton.Yes):
-                    QTimer.singleShot(100,lambda b=button:choose(b))
+                    if not isinstance(box,ImportConfirmation):return
+                    answer.append([row[2] for row in box.model.rows])
+                    (box.confirm_btn if accepted else box.cancel_btn).click()
+                for accepted in (False,True):
+                    QTimer.singleShot(100,lambda yes=accepted:choose(yes))
                     dialog.buttons['submit'].click()
-                    assert all(k in answer[-1] for k in ready) and all(k not in answer[-1] for k in keys if k not in ready)
-                    if button==QMessageBox.StandardButton.Cancel:
+                    assert answer[-1]==ready
+                    if not accepted:
                         assert not any(a=='order.import' for a,wh,k in portal.calls)
                 report['confirmation']=answer[-1]
             report['actual_submissions']=[key for a,wh,key in portal.calls if a=='order.import']

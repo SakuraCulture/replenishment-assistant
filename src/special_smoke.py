@@ -34,10 +34,25 @@ class Drive:
         with (self.root/'ui-events.jsonl').open('a',encoding='utf8') as s:s.write(json.dumps(self.log[-1],ensure_ascii=False)+'\n')
     def press(self,w,label):
         b=next((x for x in w.findChildren(QPushButton) if x.text()==label and x.isVisible()),None)
-        if not b or not b.isEnabled():raise ValueError('操作入口未启用 '+label+' '+getattr(w,'status',w).text() if hasattr(w,'status') else label)
+        action=None
+        if b is None and hasattr(w,'more_menu'):
+            action=next((a for a in w.more_menu.actions() if a.text()==label),None)
+        control=b or action
+        if not control or not control.isEnabled():raise ValueError('操作入口未启用 '+label+' '+getattr(w,'status',w).text() if hasattr(w,'status') else label)
         self.log_action(w.windowTitle()+' / '+label)
-        QTest.mouseClick(b,Qt.MouseButton.LeftButton)
+        if b:
+            QTest.mouseClick(b,Qt.MouseButton.LeftButton)
+        else:
+            action.trigger()
         self.app.processEvents()
+    def confirm_jst(self,window):
+        from jst_order_dialogs import ImportConfirmation
+
+        def accept(dialog):
+            assert isinstance(dialog,ImportConfirmation)
+            self.press(dialog,'确认导入')
+        self.modal(lambda:self.press(window,'确认导入'),accept)
+
     def wait(self,pred,sec=20):
         until=time.monotonic()+sec
         while not pred():
@@ -147,7 +162,9 @@ class Drive:
                 assert Path(self.export).is_file(),w.note.text()
                 stage('platform_preview','平台预览')
                 assert w.buttons['submit'].isEnabled(),str(w.note.text())
-                stage('confirmed_import','确认导入')
+                t=time.perf_counter()
+                self.confirm_jst(w)
+                self.measure.setdefault('confirmed_import',[]).append(time.perf_counter()-t)
             stage('original_readback','核对原单')
             rec=w.selected()[0]
             assert rec['internal']==self.jst.orders[p['online']]['internal'],str(w.note.text())

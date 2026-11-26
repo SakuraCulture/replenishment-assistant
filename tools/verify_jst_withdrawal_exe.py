@@ -9,7 +9,7 @@ from verify_jst_one_click_exe import contents, read, sha, write
 from verify_platform_import_failure_exe import run
 
 
-def seed(root):
+def seed_orders(root, scenarios):
     import jst_auto_order as automatic
     import jst_auto_order_store as tasks
     import jst_batches
@@ -24,18 +24,12 @@ def seed(root):
     from test_jst_one_click import OneClick
     from test_lifecycle import LifecycleTests
     import work_repository as wr
-    import openpyxl
-    import warehouse_catalog
 
     root.mkdir(parents=True)
     sample = LifecycleTests()
     sample.root = root
     sample.work, sample.repo, sample.payload = signed(root)
     sample.path, sample.count = sample.work.path, 0
-    hb, sd = '河北仓', '山东仓'
-    scenarios = [('unsent',sd,11),('rejected',hb,13),('cancelled',hb,7),('platform',sd,3)]
-    scenarios += [('unknown',wh,2) for wh in (sd,hb) for _ in range(5)]
-    scenarios += [('control',sd,3),('control',hb,3)]
     case = {}
     with closing(sample.work.connect()) as db, db:
         db.execute("DELETE FROM normal_revisions WHERE oid='oid'")
@@ -68,7 +62,7 @@ def seed(root):
     scenario.path = sample.path
     scenario.component = JstManual(root/'component')
     with scenario.sync_once(100):
-        for wh in (hb,sd):
+        for wh in ('河北仓','山东仓'):
             scenario.refresh(wh)
     batch = jst_batches.preview_new(sample.path,sample.heads)
     saved = jst_batches.execute(sample.path,batch)
@@ -97,6 +91,20 @@ def seed(root):
                 proof['import_receipt'] = dict(online=online,success_count=0,fail_count=1,
                                                text='成功条数：0，失败条数：1',observed_at=at)
             tasks.update(db,order,'IMPORT_UNKNOWN',proof=proof,reason='已核对本仓企业、店铺和导入入口')
+    return rows
+
+
+def seed(root):
+    import openpyxl
+    import warehouse_catalog
+    import work_repository as wr
+    from jst_one_click_fixture import SKUS
+
+    hb, sd = '河北仓', '山东仓'
+    scenarios = [('unsent',sd,11),('rejected',hb,13),('cancelled',hb,7),('platform',sd,3)]
+    scenarios += [('unknown',wh,2) for wh in (sd,hb) for _ in range(5)]
+    scenarios += [('control',sd,3),('control',hb,3)]
+    rows = seed_orders(root,scenarios)
     latest = {sd:22,hb:29}
     for wh in (hb,sd):
         with closing(openpyxl.Workbook()) as book:

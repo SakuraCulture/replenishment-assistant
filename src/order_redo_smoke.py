@@ -144,7 +144,7 @@ class Exercise:
         def task(dialog):
             self.task_selection(dialog,self.original['online'])
             if redo:
-                self.confirmation(dialog.redo_btn.click,'确认沿原仓单重做',self.original['internal'])
+                self.confirmation(dialog.redo_btn.trigger,'确认沿原仓单重做',self.original['internal'])
             else:
                 dialog.buttons['recover'].click()
                 row,=dialog.selected()
@@ -371,7 +371,7 @@ class Exercise:
                     self.task_selection(dialog,self.original['online'])
                     assert not dialog.redo_btn.isEnabled()
                     for _ in range(2):
-                        dialog.redo_btn.click()
+                        dialog.redo_btn.trigger()
                     self.shot(dialog,'历史原单禁止重复重做')
                 self.dialog(page.auto_tasks_btn.click,Orders,task)
             self.enter('聚水潭导入单','jst',check_redo)

@@ -109,7 +109,7 @@ def start_smoke(app,win,args):
                     if reuse:
                         tasks={r['warehouse']:[r['online'],r['stage']] for r in window.records}
                         check(tasks==reuse['ready'],'准备结果未打开原仓单任务')
-                        hint=window.note.text()
+                        hint='\n'.join(row[-1] for row in window.job_rows)
                         check(all(text in hint for text in reuse.get('expected_hints', [])),
                               '部分仓单失败时未提示原因')
                         check(all(not r['internal'] for r in window.records),'制表触发了平台原单关联')

@@ -172,7 +172,7 @@ def prepare(path, selected, progress=lambda _:None, cancel=None, *, order_phone=
                 store.put_prepared(db,snapshot,workbook,(old or {}).get('sequence'))
             ready.append(online)
         except ValueError as exc:
-            failed.append({'order':show_name(h),'reason':str(exc),'stats':stats})
+            failed.append({'order':show_name(h),'warehouse':h['warehouse'],'number':h['number'],'reason':str(exc),'stats':stats})
     return {'ready':ready,'failed':failed}
 
 
@@ -626,7 +626,7 @@ def _preview_pending(path,browser,order,cancel):
     if not (rejected or unsent):
         amount=evidence['amount']
         note='原文件预览通过'+(f'，本次平台预览金额 {amount} 元' if amount is not None else '')
-        return {**order,'reason':note+'。原单精确查询为 0 张，上次发送结果仍待核实'}
+        return {**order,'previewed':True,'reason':note+'。原单精确查询为 0 张，上次发送结果仍待核实'}
     with closing(store.connection(path)) as db,db:
         begin(db,cancel)
         fresh=store.update(db,order,'PREVIEWED',proof=evidence,reason='原单已重新预览，等待确认导入')
@@ -750,6 +750,8 @@ def process(path, keys, browser, action, progress=lambda _:None, cancel=None, *,
                   'ok':ok and not result.get('lookup_missing') and stage!='IMPORT_FAILED'
                        and not (action=='submit' and proof.get('import_not_sent')),
                   'sequence':result['sequence'],'internal':result.get('internal')}
+        if action=='preview':
+            response['previewed']=ok and (stage=='PREVIEWED' or bool(result.get('previewed')))
         if (prepare_payment and ok and not result.get('lookup_missing') and action in ('submit','recover','preview') and result.get('internal')
                 and result['stage'] in ('IMPORTED','AUDITED','AUDIT_UNKNOWN','REVIEW')):
             payment=prepare_payment(path,[online],browser,progress,cancel)[0]

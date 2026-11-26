@@ -170,7 +170,7 @@ def original_2000(ui):
             row=o.selected()[0]
             assert row['sku_count']==2000,row['sku_count']
             ui.export=str(ui.root/'普通2000款整单.xls')
-            ui.press(o,'保存核对用 XLS');ui.press(o,'平台预览');ui.press(o,'确认导入');ui.press(o,'核对原单')
+            ui.press(o,'保存核对用 XLS');ui.press(o,'平台预览');ui.confirm_jst(o);ui.press(o,'核对原单')
             got=ui.jst.orders[row['online']]
             assert len(got['items'])==2000 and len(ui.jst.orders)==1
             stats.update(lines=2000,orders=1,online=row['online'],internal=got['internal'],xlsx=ui.export)
