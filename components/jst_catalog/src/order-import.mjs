@@ -370,7 +370,12 @@ export class OrderPages {
     if (![1,2].includes(actions.length) || actions.some(action=>action!=='Confirm()'))
       fail('ORDER_PAGE_CHANGED','未找到可核验的单张订单最终导入控件');
     const receiptFrame=page.locator('#epaasDialogFrame');
-    if(await receiptFrame.filter({visible:true}).count())
+    // Epaas leaves the dialog iframe behind the workspace while it is closed.
+    const receiptOpen=await receiptFrame.filter({visible:true}).evaluateAll(frames=>frames.some(frame=>{
+      const {zIndex}=getComputedStyle(frame);
+      return zIndex==='auto'||Number(zIndex)>=0;
+    }));
+    if(receiptOpen)
       fail('ORDER_PAGE_CHANGED','已有平台回执窗口，未发起本次导入');
     const receipt=page.frameLocator('#epaasDialogFrame');
     const summaryText=receipt.getByText(IMPORT_COUNTS);

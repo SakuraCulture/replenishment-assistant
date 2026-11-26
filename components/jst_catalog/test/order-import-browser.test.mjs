@@ -35,7 +35,8 @@ const pages = {
   '/': '<button id="listTab" role="tab" onclick="selectTab(true)" aria-selected="false">订单</button>'+
     '<button id="importTab" role="tab" onclick="selectTab(false)" aria-selected="true">导入订单</button>'+
     '<iframe id="listing" src="'+listPath+'" hidden></iframe>'+
-    '<iframe id="upload" src="/app/order/import/import.aspx"></iframe><iframe id="epaasDialogFrame" src="/empty" hidden></iframe>'+
+    '<iframe id="upload" src="/app/order/import/import.aspx"></iframe>'+
+    '<iframe id="epaasDialogFrame" src="/empty" style="position:absolute;inset:0;width:100%;height:100%;z-index:-10"></iframe>'+
     '<script>window.statusValue="";window.itemPopoverAvailable=true;window.importCount=0;window.auditCount=0;window.otherAction=0;'+
     'function selectTab(list){listing.hidden=!list;upload.hidden=list;listTab.setAttribute("aria-selected",String(list));'+
     'importTab.setAttribute("aria-selected",String(!list));}</script>',
@@ -51,8 +52,8 @@ const pages = {
     '<input type="hidden" id="txt_exception_datas" value="">'+confirmation+
     '<table><tr>'+fields.map(value=>'<td>'+value+'</td>').join('')+'</tr></table>'+confirmation+'</form>'+
     '<script>function Confirm(){parent.importCount++;parent.statusValue="waitconfirm";'+
-    'parent.epaasDialogFrame.src="/receipt";parent.epaasDialogFrame.hidden=false;}</script>',
-  '/receipt': '<div>成功条数：1，失败条数：0</div><a href="#" onclick="parent.epaasDialogFrame.hidden=true">关闭</a>',
+    'parent.epaasDialogFrame.src="/receipt";parent.epaasDialogFrame.style.zIndex=10;}</script>',
+  '/receipt': '<div>成功条数：1，失败条数：0</div><a href="#" onclick="parent.epaasDialogFrame.style.zIndex=-10">关闭</a>',
   '/empty': '<div></div>',
   '/filters': '<input id="so_id">'+
     '<input type="checkbox" id="status_waitconfirm" hidden><label for="status_waitconfirm">已付款待审核</label>'+
@@ -157,9 +158,12 @@ test('native controls preview, import, reconcile and ordinary audit exactly one 
   assert.deepEqual(preview.lines,[['00001','10']]);
   assert.equal(preview.contact_ok,true);
   assert.equal(await page.evaluate(()=>importCount),0);
+  assert.equal(await page.locator('#epaasDialogFrame').filter({visible:true}).count(),1);
   await page.frameLocator('#upload').locator('span.btnImport').last().evaluate(e=>e.hidden=true);
   await page.frameLocator('#upload').locator('table tr td').nth(17).evaluate(e=>e.textContent='￥25.00 ￥0.00');
-  await flow.run('import',{warehouse:wh,permit:preview.permit,online},account);
+  const imported=await flow.run('import',{warehouse:wh,permit:preview.permit,online},account);
+  assert.ok(imported.dispatched,imported.not_sent?.reason);
+  assert.equal(imported.receipt.success_count,1);
   const bound={...spec,binding:preview.binding};
   const found=await flow.run('lookup',{spec:bound},account);
   assert.equal(found.internal,'9001');
@@ -176,6 +180,31 @@ test('native controls preview, import, reconcile and ordinary audit exactly one 
   assert.deepEqual(payment.items.map(({sku,qty,price,amount})=>[sku,qty,price,amount]),[['00001','10','2','20']]);
   assert.deepEqual(await page.evaluate(()=>[importCount,auditCount,otherAction]),[1,1,0]);
   await assert.rejects(flow.run('stage_import',{spec:bound},account),{code:'ORDER_EXISTS'});
+});
+
+test('an open receipt blocks dispatch and a closed receipt is replaced on the next import',
+  {skip:!fs.existsSync(edge),timeout:60000},async t=>{
+  const {page,account,flow}=await openFixture(t);
+  const staged=await flow.run('stage_import',{spec},account);
+  const dialog=page.frameLocator('#epaasDialogFrame');
+  await page.locator('#epaasDialogFrame').evaluate(frame=>{
+    frame.src='/receipt';
+    frame.style.zIndex=10;
+  });
+  const summary=dialog.getByText('成功条数：1，失败条数：0',{exact:true});
+  await summary.waitFor();
+  const blocked=await flow.run('import',{warehouse:wh,permit:staged.permit,online},account);
+  assert.equal(blocked.dispatched,false);
+  assert.match(blocked.not_sent.reason,/已有平台回执窗口/);
+  assert.equal(await page.evaluate(()=>importCount),0);
+
+  await dialog.getByRole('link',{name:'关闭',exact:true}).click();
+  assert.equal(await summary.count(),1);
+  const retry=await flow.run('stage_import',{spec},account);
+  const imported=await flow.run('import',{warehouse:wh,permit:retry.permit,online},account);
+  assert.ok(imported.dispatched,imported.not_sent?.reason);
+  assert.equal(imported.receipt.success_count,1);
+  assert.equal(await page.evaluate(()=>importCount),1);
 });
 
 test('changed preview cannot release the order',{skip:!fs.existsSync(edge),timeout:60000},async t=>{
