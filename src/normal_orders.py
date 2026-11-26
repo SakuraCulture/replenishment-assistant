@@ -220,14 +220,16 @@ class Repository:
             selected_warehouses[s]=list(selected)
         del r
         focus.require_for(payload.get('new_focus'),day,(payload['results'][s] for s in codes))
+        import deletion_barrier
+        from scheduled_snapshots import result_in_transaction
+        result_guard=deletion_barrier.basis(payload)
         # Freeze preparation outside the write transaction. Compare every revision
         # again inside BEGIN IMMEDIATE before publishing any prepared content.
         with closing(self.work.connect()) as db:
             planned_job=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
             from admission import verify_result
             for s in codes:verify_result(db,payload['results'][s],required=bool(payload.get('admission_required')))
-            import deletion_barrier
-            deletion_barrier.validate(db,deletion_barrier.basis(payload))
+            deletion_barrier.validate(db,result_guard)
             planned={}
             planned_children={}
             for s in codes:
@@ -327,8 +329,9 @@ class Repository:
             checkpoint(cancel)
             # Guard the complete day payload again under the commit lock: a
             # deletion during preparation must not revive an unselected store.
-            deletion_barrier.validate(db,deletion_barrier.basis(payload))
-            for s in codes:verify_result(db,payload['results'][s],required=bool(payload.get('admission_required')))
+            deletion_barrier.validate(db,result_guard)
+            for s in codes:
+                verify_result(db,result_in_transaction(payload['results'],s,db),required=bool(payload.get('admission_required')))
             old=db.execute('SELECT revision,digest FROM jobs WHERE day=?',(day,)).fetchone()
             if (old[0] if old else None)!=expected_job or old!=planned_job:
                 first=heads[0];where=signing_row_blocks.location(first,'、'.join(selected_warehouses[first['store']]))
@@ -374,16 +377,18 @@ class Repository:
                 db.execute('INSERT INTO normal_events(at,oid,revision,action,detail) VALUES(?,?,?,?,?)',(stamp,oid,rev,'确认归档' if rev==1 else '同日覆盖修订',wr.dumps({'number':number,'day':day,'store':s,'summary':summary,'previous_revision':rev-1 or None})))
             for head in heads:
                 s=head['store']
+                result=result_in_transaction(payload['results'],s,db)
                 record={'schema':1,'model_version':MODEL_VERSION,'work_revision':work_revision,
-                        'result':payload['results'][s],'preset':payload.get('store_presets',{}).get(s),
+                         'result':result,'preset':payload.get('store_presets',{}).get(s),
                         'new_focus':copy.deepcopy(payload.get('new_focus')),
-                        'item_ids':{d['E']:item_id(head['oid'],d['E']) for d in payload['results'][s]['rows']}}
+                         'item_ids':{d['E']:item_id(head['oid'],d['E']) for d in result['rows']}}
                 try:
                     execution.publish(db,head['oid'],head['revision'],head['digest'],head['saved'],record,selected_warehouses[s],progress,cancel,prepared=publications[s],checked_rows=checked_rows)
                 except wr.Conflict as exc:
                     if s not in reused:raise
                     raise wr.Conflict(f'{reused[s][0].location}：{exc}') from exc
                 head['warehouse_heads']=[h for h in execution.heads(db,[head]) if h['warehouse'] in selected_warehouses[s]]
+            result=record=None
             progress('事务内容准备完成，检查最终取消请求…')
             checkpoint(cancel)
             # Linearization boundary: after this check, commit must finish or fail.
