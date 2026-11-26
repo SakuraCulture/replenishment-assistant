@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QFileDialog, QLineEdit, QPushButton, QTableView
+from PySide6.QtWidgets import QCheckBox, QFileDialog, QLineEdit, QListWidget, QPushButton, QTableView
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -59,25 +59,44 @@ class WithdrawalExercise(Exercise):
                     item.setCheckState(0,checked)
         assert len(page.chosen)==len(numbers), (page.chosen,numbers)
 
-    def withdrawal_dialog(self,page,numbers,name,accept=False):
+    def withdrawal_dialog(self,page,numbers,name,accept=False,attest=()):
         self.select_rows(page,numbers)
         evidence = {}
         def tools(dialog):
             def review(d):
                 model = d.findChild(QTableView).model()
+                if attest:
+                    def attest_scope(dialog):
+                        options = dialog.findChild(QListWidget)
+                        options_found = set()
+                        for i in range(options.count()):
+                            item = options.item(i)
+                            number = item.text().split(' · ',1)[0]
+                            options_found.add(number)
+                            if number in attest:
+                                item.setCheckState(Qt.CheckState.Checked)
+                        assert options_found==numbers
+                        entry = {field.accessibleName():field for field in dialog.findChildren(QLineEdit)}
+                        entry['核对人'].setText('隔离验收经办人')
+                        entry['未发送核对依据'].setText('本人停在平台预览，已核对未点最终确认且无其他渠道上传')
+                        add = button(dialog,'加入撤销清单')
+                        assert not add.isEnabled()
+                        dialog.findChild(QCheckBox).setChecked(True)
+                        assert add.isEnabled()
+                        add.click()
+                    self.dialog(button(d,'补记未发送凭据').click,'补记最终导入未发送',attest_scope)
                 record = model.rows
                 assert set(numbers)=={r[0] for r in record}, record
                 evidence.update({r[0]:list(r[1:]) for r in record})
                 approved = [row for row in record if row[4]=='可撤销']
                 accept_buttons = [b for b in d.findChildren(QPushButton)
-                                  if b.text().startswith('确认撤销 ')]
+                                  if b.isVisible() and b.text().startswith('确认撤销 ')]
                 assert len(accept_buttons)==bool(approved)
                 QTest.qWait(60)
                 self.shot(d,name)
                 if accept:
-                    assert approved and not accept_buttons[0].isEnabled()
-                    d.findChild(QLineEdit).setText('验收样本更换库存并重新分配')
-                    assert accept_buttons[0].isEnabled()
+                    assert approved and accept_buttons[0].isEnabled()
+                    assert d.findChild(QLineEdit).text()=='按最新库存重新分配'
                     accept_buttons[0].click()
             self.dialog(button(dialog,'撤销未下单生成单').click,'撤销未下单生成单',review)
         self.dialog(page.tools_btn.click,'其他订单操作',tools)
@@ -131,6 +150,8 @@ class WithdrawalExercise(Exercise):
         cancelled, = by_outcome('cancelled')
         native, = by_outcome('platform')
         after_release = eligible | {cancelled}
+        operator_scope = {min(n for n in unknown if self.rows[n]['warehouse']==wh)
+                          for wh in self.data['fresh_stock']}
         selected = set(self.rows)-by_outcome('control')
         report = {}
         def exercise(page):
@@ -173,6 +194,15 @@ class WithdrawalExercise(Exercise):
                        for n,r in report['new_batch']['preview'].items())
             assert all(current[n]==before[n] for n in before if n not in after_release)
             report['after_regenerate'] = current
+            report['operator_attestation'] = self.withdrawal_dialog(page,unknown,'原经办人批量补记未发送',
+                                                                    accept=True,attest=operator_scope)
+            observed = report['operator_attestation']
+            assert {n for n,r in observed.items() if r[3]=='可撤销'}==operator_scope
+            assert all('业务核实' in observed[n][-1] for n in operator_scope)
+            after_operator = self.active_reservations()
+            assert all(after_operator[n]['gid'] is None for n in operator_scope)
+            assert all(after_operator[n]==current[n] for n in current if n not in operator_scope)
+            report['after_operator_withdraw'] = after_operator
         with patch.object(catalog_session_ui,'manager',return_value=SimpleNamespace(session=self.portal)):
             self.enter('聚水潭导入单','jst',exercise)
         report['retained'] = {}
@@ -184,12 +214,14 @@ class WithdrawalExercise(Exercise):
                 old = tasks.read(db,row['online'],workbook=True)
                 assert old['file_sha']==row['file_sha']
                 assert allocations.read_generation(db,row['gid'])[0]['gid']==row['gid']
-                assert bool(old.get('historical'))==(number in after_release)
+                assert bool(old.get('historical'))==(number in after_release | operator_scope)
                 report['retained'][number] = {'stage':old['stage'],'sequence':old['sequence'],'file_sha':old['file_sha']}
-                if number in eligible:
+                if number in eligible | operator_scope:
                     proof = old['proof']['withdrawal']
                     assert old['stage']=='WITHDRAWN' and proof['reserved']==report['before'][number]['reserved']
                     assert proof['lookup']['exact_absence'] and proof['initial_lookup']['exact_absence']
+                    if number in operator_scope:
+                        assert proof['ending']['kind']=='业务核实未发送' and proof['ending']['operator']=='隔离验收经办人'
                     report['retained'][number]['proof'] = proof
         ready = automatic.prepare(self.path,[
             {'head':self.heads[n],'gid':report['after_regenerate'][n]['gid']} for n in sorted(after_release)])
@@ -200,5 +232,5 @@ class WithdrawalExercise(Exercise):
         report['calls'] = self.portal.calls
         report['screenshots'] = self.shots
         assert {a for a,_,_ in self.portal.calls}=={'order.lookup'}
-        assert sum(a=='order.lookup' for a,_,_ in self.portal.calls)==41, self.portal.calls
+        assert sum(a=='order.lookup' for a,_,_ in self.portal.calls)==53, self.portal.calls
         return report

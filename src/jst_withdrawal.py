@@ -10,6 +10,7 @@ import work_repository as wr
 from export_progress import RowProgress
 from jst_order_guards import saved_execution_reason
 from payment_evidence import same_head
+from platform_import_files import author
 from runtime_support import checkpoint, CommitProgress
 from sqlite_write import begin, commit
 from warehouse_execution import validate_visibility
@@ -29,7 +30,7 @@ def _local(db, head):
     if not saved:
         raise automatic.Check('缺少原导入任务，无法核实线上单号、店铺或发送结果')
     order = tasks.read(db, saved['online'], workbook=True)
-    del order['workbook']  # Only keep the verified metadata while querying the platform.
+    del order['workbook']  # Keep the verified metadata while querying the platform.
     payload = order['payload']
     if order['gid'] != gid or payload['generation']['digest'] != digest or not same_head(payload['head'], head):
         raise automatic.Check('原导入任务与当前生成单不一致，请核对原分配')
@@ -83,7 +84,7 @@ def _inspect(browser, row, order, blocker):
     try:
         _, lookup = automatic.lookup_scoped(browser, order, allow_unbound=order['stage'] in UNSENT_STAGES)
     except ValueError as exc:
-        return {**row, 'message': str(exc) + ('；' + missing if missing else '')}
+        return {**row, 'message': str(exc) + ('。' + missing if missing else '')}
     evidence = {'binding': lookup['binding'], 'online': order['online'], 'at': wr.now()}
     if lookup.get('found') is True:
         internal, status = lookup.get('internal'), lookup.get('native_status')
@@ -95,12 +96,17 @@ def _inspect(browser, row, order, blocker):
                 'message': message, 'lookup': evidence}
     row = {**row, 'company': lookup['binding']['company']}
     if lookup.get('found') is not False or lookup.get('exact_absence') is not True:
-        return {**row, 'message': '缺少原线上单号的精确零结果' + ('；' + missing if missing else '')}
+        return {**row, 'message': '缺少原线上单号的精确零结果' + ('。' + missing if missing else '')}
     evidence.update(found=False, exact_absence=True)
     if not ending or blocker:
-        return {**row, 'lookup': evidence, 'message': '精确查询 0 张；' + '；'.join(s for s in (missing, blocker) if s)}
+        proof = order['proof'] or {}
+        attestable = not blocker and order['stage']=='IMPORT_UNKNOWN' and not order['internal'] and not order['platform_status'] and (
+            proof.get('file_sha')==order['file_sha'] and all(proof.get(k) is None for k in
+               ('import_receipt','import_not_sent','manual_handoff','manual_proposal','manual_binding')))
+        return {**row, 'lookup': evidence, 'attestable': attestable,
+                'message': '精确查询 0 张。' + '。'.join(s for s in (missing, blocker) if s)}
     return {**row, 'result': 'ready', 'ending': ending, 'lookup': evidence,
-            'message': ending['kind'] + '；精确查询 0 张'}
+            'message': ending['kind'] + '。精确查询 0 张'}
 
 
 def preview(path, heads, owner, progress=lambda _: None, cancel=None):
@@ -130,8 +136,18 @@ def preview(path, heads, owner, progress=lambda _: None, cancel=None):
             for row, order, _ in pending:
                 if 'message' not in row:
                     _, missing = _ending(order)
-                    row['message'] = str(exc) + ('；' + missing if missing else '')
+                    row['message'] = str(exc) + ('。' + missing if missing else '')
     return checked
+
+
+def confirm_unsent(row, operator, basis):
+    """Attach the original operator's recorded observation to one reviewed order."""
+    if not row.get('attestable') or row['result'] != 'blocked' or not row['lookup'].get('exact_absence'):
+        raise automatic.Check('此仓单需要其他原导入凭据，请继续核对原任务')
+    note = author(operator, basis)
+    ending = {'kind': '业务核实未发送', 'operator': note['operator'], 'basis': note['reason']}
+    return {**row, 'result': 'ready', 'ending': ending,
+            'message': '业务核实最终导入从未发送。精确查询 0 张'}
 
 
 def withdraw(path, approved, reason, owner, progress=lambda _: None, cancel=None):
@@ -147,6 +163,8 @@ def withdraw(path, approved, reason, owner, progress=lambda _: None, cancel=None
     observed = preview(path, [r['head'] for r in approved], owner, progress, cancel)
     for row in observed:
         prior = approvals.get(row['online'])
+        if prior and row.get('attestable') and prior['ending']['kind']=='业务核实未发送':
+            row.update(confirm_unsent(row,prior['ending']['operator'],prior['ending']['basis']))
         if (row['result'] != 'ready' or not prior or row['stamp'] != prior['stamp']
                 or row['ending'] != prior['ending'] or row['lookup']['binding'] != prior['lookup']['binding']):
             raise wr.Conflict(row['head']['number'] + '：核对结果已变化，本次未撤销。' + row['message'])
@@ -163,7 +181,7 @@ def withdraw(path, approved, reason, owner, progress=lambda _: None, cancel=None
             if stamp != row['stamp'] or order['online'] != row['online'] or _release_blocker(db, head):
                 raise wr.Conflict(head['number'] + '：原任务、占用或下游已变化，请重新核对')
             evidence = {**stamp, 'reason': reason, 'ending': row['ending'], 'lookup': row['lookup'],
-                        'initial_lookup': approvals[row['online']]['lookup']}
+                        'initial_lookup': approvals[row['online']]['lookup'], 'confirmed_at': wr.now()}
             tasks.archive_withdrawn(db, order, {**(order['proof'] or {}), 'withdrawal': evidence})
             jst_orders.release_generation(db, head, stamp['gid'], stamp['batch_id'], reason,
                                           online=order['online'], evidence=evidence)

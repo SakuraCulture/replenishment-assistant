@@ -339,6 +339,50 @@ def reconcile_legacy_orders(parent,host,gids):
     return True
 
 
+def _withdraw_unsent_evidence(parent, candidates):
+    """Collect a first-hand observation for the operator's exact checked scope."""
+    d = QDialog(parent); d.setWindowTitle('补记最终导入未发送'); d.resize(825,540)
+    v = QVBoxLayout(d)
+    v.addWidget(label('勾选原作业负责人能确认从未发送最终导入的仓单，并记录核对人及依据。'))
+    options = QListWidget()
+    for row in candidates:
+        item = QListWidgetItem(row['head']['number']+' · '+row['head']['warehouse']+' · '+row['online'])
+        item.setData(Qt.ItemDataRole.UserRole,row)
+        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+        item.setCheckState(Qt.CheckState.Unchecked)
+        options.addItem(item)
+    v.addWidget(options,1)
+    def choose_all():
+        for i in range(options.count()):
+            options.item(i).setCheckState(Qt.CheckState.Checked)
+    v.addWidget(button('勾选本列表全部',choose_all))
+    operator = QLineEdit(); operator.setPlaceholderText('核对人'); operator.setAccessibleName('核对人')
+    basis = QLineEdit(); basis.setPlaceholderText('核对依据，如原作业由本人操作并停在平台预览')
+    basis.setAccessibleName('未发送核对依据')
+    operator.setMaxLength(80); basis.setMaxLength(500)
+    v.addWidget(operator); v.addWidget(basis)
+    statement = QCheckBox('我已核实所勾选仓单从未发送最终导入，也未从网页或其他入口导入。')
+    v.addWidget(statement)
+    actions = QHBoxLayout()
+    cancel = button('取消',d.reject); cancel.setDefault(True); actions.addWidget(cancel)
+    apply = button('加入撤销清单',d.accept,True); actions.addWidget(apply); v.addLayout(actions)
+    def selected():
+        return [options.item(i).data(Qt.ItemDataRole.UserRole) for i in range(options.count())
+                if options.item(i).checkState()==Qt.CheckState.Checked]
+    def controls(*_):
+        apply.setEnabled(statement.isChecked() and bool(selected()) and bool(operator.text().strip())
+                         and len(basis.text().strip())>=2)
+    options.itemChanged.connect(controls); statement.toggled.connect(controls)
+    operator.textChanged.connect(controls); basis.textChanged.connect(controls); controls()
+    try:
+        if d.exec()==QDialog.DialogCode.Accepted:
+            from jst_withdrawal import confirm_unsent
+            return {row['online']:confirm_unsent(row,operator.text().strip(),basis.text().strip()) for row in selected()}
+        return {}
+    finally:
+        d.deleteLater()
+
+
 def cancel_orders(parent,host,heads):
     from catalog_session_ui import manager
     from interaction_ui import show_rows
@@ -349,31 +393,20 @@ def cancel_orders(parent,host,heads):
     path = host.work_repository.path
     owner = manager(host).session
     title = '撤销未下单生成单'
-    decisions = {'ready': '可撤销', 'platform': '需先取消平台原单',
-                 'cancelled': '已取消，转原单重做', 'blocked': '证据不足或待处理'}
+    decisions = {'ready':'可撤销','platform':'需先取消平台原单',
+                 'cancelled':'已取消，转原单重做','blocked':'证据不足或待处理'}
     try:
         checked = run(parent,jst_withdrawal.preview,(path,heads,owner),'逐单核对原聚水潭订单')
-        approved = [r for r in checked if r['result']=='ready']
-        rows = []
-        for r in checked:
-            h = r['head']
-            reserved = r['stamp']['reserved'] if r['result']=='ready' else {}
-            amount = service.allocation.text(sum((Decimal(q) for q in reserved.values()), Decimal(0)))
-            rows.append((h['number'], h['warehouse'] + '\n' + (r['company'] or '企业待核'),
-                         r['shop'] or '—', r['online'] or '—', decisions[r['result']],
-                         f'{len(reserved)}款 / {amount}件' if r['result']=='ready' else '—', r['message']))
         d = QDialog(parent); d.setWindowTitle(title); fit_window(d,1250,700)
         v = QVBoxLayout(d)
-        note = label(f'已核对 {len(checked)} 张仓单，可撤销 {len(approved)} 张。确认后复查可撤销清单，释放对应占用。'
-                     '双击可撤销行查看逐款占用。')
-        note.setWordWrap(True); v.addWidget(note)
-        table, _ = grid(d, ('补货单号','原仓及企业','聚水潭店铺','线上单号','核对结果','将释放占用','依据或阻塞'), rows)
+        note = label(''); v.addWidget(note)
+        table, model = grid(d, ('补货单号','原仓及企业','聚水潭店铺','线上单号','核对结果','将释放占用','依据或阻塞'))
         table.setProperty('wrap_business_rows',True)
         table.reading_controller.apply()
-        for i, width in enumerate((166,143,143,220,115,100,285)):
+        for i, width in enumerate((157,137,137,218,112,96)):
             table.setColumnWidth(i,width)
-        table.horizontalHeader().setStretchLastSection(True)
-        table.verticalHeader().setSectionResizeMode(table.verticalHeader().ResizeMode.ResizeToContents)
+        header = table.horizontalHeader()
+        table.verticalHeader().setSectionResizeMode(header.ResizeMode.ResizeToContents)
         v.addWidget(table,1)
         def quantities(index):
             row = checked[index.row()]
@@ -381,19 +414,45 @@ def cancel_orders(parent,host,heads):
                 show_rows(d,'将释放的商品占用 · '+row['head']['number'],('商品编码','占用数量'),
                           list(row['stamp']['reserved'].items()))
         table.doubleClicked.connect(quantities)
+        reason = QLineEdit('按最新库存重新分配'); reason.setAccessibleName('撤销原因')
+        reason.setPlaceholderText('填写本次撤销原因'); v.addWidget(reason)
         actions = QHBoxLayout()
-        close = button('取消' if approved else '关闭',d.reject); close.setDefault(True); actions.addWidget(close)
-        reason = QLineEdit(); reason.setPlaceholderText('填写本次撤销原因')
-        reason.setAccessibleName('撤销原因')
-        if approved:
-            v.addWidget(reason)
-            apply = button(f'确认撤销 {len(approved)} 张',d.accept,True)
-            apply.setEnabled(False); reason.textChanged.connect(lambda value:apply.setEnabled(bool(value.strip())))
-            actions.addWidget(apply)
-        v.addLayout(actions)
+        close = button('取消',d.reject); close.setDefault(True); actions.addWidget(close)
+        def record_unsent():
+            try:
+                additions = _withdraw_unsent_evidence(d, [r for r in checked if r.get('attestable') and r['result']=='blocked'])
+            except ValueError as exc:
+                warn(d,exc); return
+            if additions:
+                checked[:] = [additions.get(r['online'],r) for r in checked]
+                refresh()
+        attach = button('补记未发送凭据',record_unsent); actions.addWidget(attach)
+        apply = button('确认撤销',d.accept,True); actions.addWidget(apply); v.addLayout(actions)
+        approved = []
+        def refresh():
+            approved[:] = [r for r in checked if r['result']=='ready']
+            rows = []
+            for r in checked:
+                h = r['head']
+                release = '—'
+                if r['result']=='ready':
+                    reserved = r['stamp']['reserved']
+                    amount = service.allocation.text(sum((Decimal(q) for q in reserved.values()),Decimal(0)))
+                    release = f'{len(reserved)}款 / {amount}件'
+                rows.append((h['number'],h['warehouse']+'\n'+(r['company'] or '企业待核'),
+                             r['shop'] or '—',r['online'] or '—',decisions[r['result']],release,r['message']))
+            model.replace(rows)
+            note.setText(f'已核对 {len(checked)} 张仓单，可撤销 {len(approved)} 张。确认后复查可撤销清单，释放对应占用。'
+                         '双击可撤销行查看逐款占用。')
+            reason.setVisible(bool(approved))
+            apply.setVisible(bool(approved)); apply.setText(f'确认撤销 {len(approved)} 张')
+            apply.setEnabled(bool(reason.text().strip()))
+            attach.setVisible(any(r.get('attestable') and r['result']=='blocked' for r in checked))
+        reason.textChanged.connect(lambda value:apply.setEnabled(bool(value.strip())))
+        refresh()
         try:
             accepted = d.exec()==QDialog.DialogCode.Accepted
-            entered = reason.text() if approved else ''
+            entered = reason.text()
         finally:
             d.deleteLater()
         if accepted and approved and not host.closing:
