@@ -10,6 +10,12 @@ import work_repository as wr
 from runtime_support import checkpoint
 
 
+_ALLOCATION_ROUNDS = ('CREATE TABLE IF NOT EXISTS jst_allocation_rounds('
+                      'oid TEXT,warehouse TEXT,revision INTEGER,token TEXT NOT NULL,'
+                      'payment_version INTEGER NOT NULL,receipt_version INTEGER NOT NULL,PRIMARY KEY(oid,warehouse))')
+OPERATIONS_SUPERSEDED = '运营签发已更新，旧分配失效'
+
+
 def digest(value):
     return hashlib.sha256(wr.dumps(value).encode()).hexdigest()
 
@@ -27,7 +33,7 @@ def schema(db):
         'CREATE TABLE IF NOT EXISTS jst_headers(gid TEXT PRIMARY KEY,payload TEXT NOT NULL)',
         'CREATE TABLE IF NOT EXISTS jst_locks(oid TEXT,warehouse TEXT,gid TEXT NOT NULL,locked INTEGER NOT NULL,at TEXT NOT NULL,reason TEXT NOT NULL,PRIMARY KEY(oid,warehouse))',
         'CREATE TABLE IF NOT EXISTS jst_reservations(gid TEXT,sku TEXT,quantity TEXT NOT NULL,PRIMARY KEY(gid,sku))',
-        'CREATE TABLE IF NOT EXISTS jst_allocation_rounds(oid TEXT,warehouse TEXT,revision INTEGER,token TEXT NOT NULL,payment_version INTEGER NOT NULL,receipt_version INTEGER NOT NULL,PRIMARY KEY(oid,warehouse))',
+        _ALLOCATION_ROUNDS,
         'CREATE TABLE IF NOT EXISTS jst_events(id INTEGER PRIMARY KEY,at TEXT,day TEXT,oid TEXT,warehouse TEXT,action TEXT,detail TEXT)',
         'CREATE TABLE IF NOT EXISTS jst_files(sha TEXT PRIMARY KEY,name TEXT,content BLOB)',
         'CREATE TABLE IF NOT EXISTS jst_runs(runid TEXT PRIMARY KEY,created TEXT,payload TEXT,digest TEXT)',
@@ -64,6 +70,20 @@ def allocation_round(db, head):
     return db.execute(
         'SELECT token,payment_version,receipt_version FROM jst_allocation_rounds WHERE oid=? AND warehouse=? AND revision=?',
         (head['oid'],head['warehouse'],head['revision'])).fetchone()
+
+
+def record_allocation_round(db, head, token):
+    """Retain downstream versions while excluding them from the new execution."""
+    from lifecycle_store import exists as has_documents, latest_version
+
+    db.execute(_ALLOCATION_ROUNDS)
+    versions = [latest_version(db,head,stage) for stage in ('payment','receipt')] if has_documents(db) else [None,None]
+    payment, receipt = (row[0] if row else 0 for row in versions)
+    db.execute('''INSERT INTO jst_allocation_rounds VALUES(?,?,?,?,?,?)
+                  ON CONFLICT(oid,warehouse) DO UPDATE SET revision=excluded.revision,token=excluded.token,
+                  payment_version=excluded.payment_version,receipt_version=excluded.receipt_version''',
+               (head['oid'],head['warehouse'],head['revision'],token,payment,receipt))
+    return payment, receipt
 
 
 def list_generation_state(db, batches, cancel=None):

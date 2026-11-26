@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QMimeData, QPoint, QRect, QTimer, Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QTableView
+from PySide6.QtWidgets import QFileDialog, QTableView
 
 import catalog_session_ui
 from catalog_sync_client import ComponentError
@@ -295,6 +295,81 @@ class LayoutExercise(Exercise):
         return {**evidence,'selected':picked,'untouched_control':other,'platform_requests':calls,
                 'original_orders_unchanged':True}
 
+    def operations_update(self,imported,stock_result):
+        import openpyxl
+        import order_identity
+        import order_lifecycle as lifecycle
+        from jst_order_store import locked
+        from lifecycle_batch_ui import BatchImport
+        from lifecycle_home_ui import StageDialog
+
+        unaffected=[k for k in imported if k not in stock_result['selected']
+                    and self.portal.orders[k]['native_status']!='已取消']
+        with closing(wr.read_connection(self.path)) as db:
+            original, control = [read(db,k) for k in unaffected[:2]]
+            head = original['payload']['head']
+            control_head = control['payload']['head']
+            assert original['stage']=='IMPORTED' and active(db,head)==locked(db,head)==original['gid']
+            assert active(db,control_head)==control['gid']
+            document=lifecycle.current(db,head,'operations')
+        row=next(r for r in document['payload']['rows'] if Decimal(r['base_quantity'])>0)
+        new_qty=int(Decimal(row['base_quantity']))+1
+        exported=lifecycle.export(self.path,[head],self.root,'operations')
+        assert len(exported['files'])==1 and not exported['error'],exported
+        source=self.root/'验收运营签发改量.xlsx'
+        with closing(openpyxl.load_workbook(exported['files'][0])) as book:
+            # The shared fixture renames stores after copying one source store's rows.
+            visible=[(sheet,i) for sheet in book if sheet.title!=order_identity.SHEET
+                     for i in range(2,sheet.max_row+1) if sheet.cell(i,5).value is not None]
+            for sheet,i in visible:
+                sheet.cell(i,2).value=head['store']
+            (sheet,i),=[(s,n) for s,n in visible if str(s.cell(n,5).value)==row['sku']]
+            assert Decimal(str(sheet.cell(i,17).value))==Decimal(row['base_quantity'])
+            sheet.cell(i,17).value=new_qty
+            book.save(source)
+
+        first_call=len(self.portal.calls)
+        def operations(dialog):
+            assert dialog.stage=='operations'
+            page=dialog.panel
+            self.wait(lambda:getattr(page,'applied_request',None) is not None,'运营签发')
+            assert len(page.checked)==1
+            def import_file(window):
+                assert window.stage=='operations'
+                with patch.object(QFileDialog,'getOpenFileNames',return_value=([str(source)],'')):
+                    self.click(button(window,'选择文件'))
+                assert window.read_ready and not window.issues,window.issues
+                self.click(window.preview_btn)
+                plan,=window.plan['plans']
+                assert plan['stage']=='operations' and plan['changed']
+                assert next(r['base_quantity'] for r in plan['payload']['rows'] if r['sku']==row['sku'])==str(new_qty)
+                QTest.qWait(60)
+                self.shot(window,'已下单仓单_运营更新核对')
+                window.review.complete.setChecked(True)
+                window.review.extra_ack.setChecked(True)
+                self.click(window.review.save)
+                saved,=window.receipt
+                assert saved['changed'] and saved['version']==document['version']+1
+            self.dialog(lambda:self.click(button(page,'导入运营签发单')),BatchImport,import_file)
+        self.dialog(lambda:self.win.followup.open_stage('operations',[head]),StageDialog,operations)
+
+        with closing(wr.read_connection(self.path)) as db:
+            new=lifecycle.current(db,head,'operations')
+            assert new['version']==document['version']+1
+            assert active(db,head) is None and active(db,control_head)==control['gid']
+            assert read(db,original['online'])==original
+        exported=lifecycle.export(self.path,[head],self.root,'operations')
+        assert len(exported['files'])==1 and not exported['error']
+        with closing(openpyxl.load_workbook(exported['files'][0],read_only=True,data_only=True)) as book:
+            quantities=[values[16] for sheet in book if sheet.title!=order_identity.SHEET
+                        for values in sheet.iter_rows(min_row=2,values_only=True) if str(values[4])==row['sku']]
+        assert quantities==[new_qty]
+        assert not self.portal.calls[first_call:]
+        return {'warehouse':head['warehouse'],'order':head['number'],'old_qty':row['base_quantity'],
+                'exported_qty':new_qty,'old_version':document['version'],'saved_version':new['version'],
+                'old_allocation_invalidated':True,'unselected_unchanged':True,
+                'original_order_unchanged':True,'platform_requests':[]}
+
     def run(self):
         count=self.fixture['count']
         keys=self.fixture['jst_keys']
@@ -366,6 +441,8 @@ class LayoutExercise(Exercise):
                 result['fresh_stock']=self.fresh_stock(page,result['imports'],result['batch_redo'])
         with patch.object(catalog_session_ui,'manager',return_value=SimpleNamespace(session=self.portal)):
             self.enter('聚水潭导入单','jst',results_page)
+            if count==27:
+                result['operations_update']=self.operations_update(result['imports'],result['fresh_stock'])
         with closing(wr.read_connection(self.path)) as db:
             after={k:read(db,k) for k in keys}
             assert {k for k,r in after.items() if r['internal']}==set(result['imports'])

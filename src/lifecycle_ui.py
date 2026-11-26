@@ -141,7 +141,9 @@ class Review(QDialog):
             correction_table.setMaximumHeight(180);v.addWidget(correction_table)
         self.complete=QCheckBox('我已核对完整读取范围；对照范围内空白/缺行按0，不累计旧版本。'+(' 此表确为已付款商品明细，商品金额即实付。' if any(p['stage']=='payment' for p in plan['plans']) else ''));v.addWidget(self.complete)
         self.extra_ack=QCheckBox('清单外商品已逐项核对，确属所选门店和仓单；完全匹配不上时已重新核对订单。');self.extra_ack.setVisible(any(p['payload']['extra'] for p in plan['plans']));self.extra_ack.setChecked(not any(p['payload']['extra'] for p in plan['plans']));v.addWidget(self.extra_ack)
-        v.addWidget(label('数量与推荐不同不阻止环节完成。确认后独立留存新版本和原件，不修改签发、计算或其它环节。','muted'))
+        operations_changed=any(p['stage']=='operations' and p['changed'] and not p['payload']['pending'] for p in plan['plans'])
+        v.addWidget(label('运营签发新版保存后，旧分配和下游依据失效。聚水潭原单和历史凭据仍可核对。' if operations_changed else
+                          '数量与推荐不同不阻止环节完成。确认后独立留存新版本和原件。','muted'))
         row=QHBoxLayout(); cancel=button('取消',self.reject); cancel.setDefault(True); row.addWidget(cancel); self.save=button('确认保存完整单据',self.accept,True); self.save.setEnabled(False); self.save.setAutoDefault(False);self.complete.toggled.connect(self.allow_save);self.extra_ack.toggled.connect(self.allow_save);row.addWidget(self.save);v.addLayout(row)
         from lifecycle_review_layout import arrange
         arrange(self,plan,details,disclosure,filters,row,correction_table)

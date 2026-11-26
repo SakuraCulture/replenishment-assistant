@@ -339,7 +339,7 @@ def list_orders(path):
         rows = []
         rounds = {(o,w,r):g for o,w,r,g in db.execute('''SELECT r.oid,r.warehouse,r.revision,a.gid
             FROM jst_allocation_rounds r LEFT JOIN jst_active a ON a.oid=r.oid AND a.warehouse=r.warehouse''')
-        } if exists(db,'jst_allocation_rounds') else {}
+        } if exists(db,'jst_allocation_rounds') and exists(db,'jst_active') else {}
         for table in ('jst_auto_orders', HISTORY):
             if not exists(db, table):
                 continue
@@ -377,7 +377,7 @@ def list_orders(path):
                     if record['stage'] in RELEASED:
                         record['reason']='旧分配已失效，可核对聚水潭原单。'+record['reason']
                     else:
-                        record.update(stage_label='旧分配已失效',reason='请按本次分配重新制表')
+                        record.update(stage_label='旧分配已失效',reason='请按有效分配重新制表' if rounds[scope] else '请重新分配后制表')
                 rows.append({**record, 'historical':table == HISTORY})
         return rows
 

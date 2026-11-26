@@ -81,7 +81,9 @@ class Operations(unittest.TestCase):
         with closing(purchases.connect(self.path)) as db:before=lc.current(db,self.h,'payment')
         self.f.save('operations',[{'门店确认数量':20}]);self.assertFalse(self.f.view()['health']['payment'])
         with closing(purchases.connect(self.path)) as db:
-            self.assertEqual(lc.current(db,self.h,'payment'),before)
+            self.assertIsNone(lc.current(db,self.h,'payment'))
+            self.assertEqual(lc.current(db,self.h,'payment',before['version']),before)
+            self.assertIsNone(j.active(db,self.h))
             self.assertIsNone(j.allocation_gate(db,self.h,gid,True)[0])
         p=j.prepare(self.path,[self.h],correction=True)
         self.assertEqual(p['payload']['plans'][0]['rows'][0]['demand'],'20')
@@ -134,6 +136,8 @@ class Operations(unittest.TestCase):
         self.assertEqual([p['stage'] for p in plan['plans']],list(io.ALL_STAGES))
         done=lc.commit(self.path,plan);self.assertEqual(len(done),4);self.assertEqual(self.f.view()['status'],'已收齐')
         self.assertTrue(self.f.view()['health']['operations'])
+        replay=batch.prepare(self.path,documents,[self.h])
+        self.assertFalse(any(p['changed'] for p in replay['plans']))
 
     def test_deletion_after_adopt_preview_does_not_restore_old_order(self):
         import archive_orders

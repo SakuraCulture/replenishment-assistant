@@ -33,6 +33,13 @@ def pending(path):
         return db.execute("SELECT task,head,token,plan FROM jst_tasks WHERE status IN ('pending','prepared') ORDER BY created,json_extract(head,'$.day'),json_extract(head,'$.number'),rowid LIMIT 100").fetchall()
 
 
+def supersede_pending(db, head, reason):
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='jst_tasks'").fetchone():
+        db.execute("""UPDATE jst_tasks SET status='cancelled',message=? WHERE status IN ('pending','prepared')
+                      AND json_extract(head,'$.oid')=? AND json_extract(head,'$.warehouse')=?""",
+                   (reason,head['oid'],head['warehouse']))
+
+
 def latest_statuses(db, batches, cancel=None):
     """Read the last task presentation state for each selected warehouse order."""
     tasks = {}

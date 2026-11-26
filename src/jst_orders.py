@@ -21,7 +21,8 @@ import material_stock
 from runtime_support import checkpoint, CommitProgress, Cancelled
 from export_progress import RowProgress
 from jst_order_guards import allocation_gate, guard_payment, guard_resign, saved_execution_reason
-from jst_order_store import active, allocation_round, baseline, decode, digest, event, exists, get, locked, schema, state
+from jst_order_store import (OPERATIONS_SUPERSEDED, active, allocation_round, baseline, decode, digest, event, exists, get, locked,
+                             record_allocation_round, schema, state)
 
 
 def catalogs(path, folder=None, progress=lambda _: None, cancel=None):
@@ -292,20 +293,30 @@ def put_generation(db, p):
 
 def supersede_allocation(db, plan):
     from jst_batches import supersede_members
-    from lifecycle_store import exists as has_documents, latest_version
 
     h = plan['head']
-    floors = []
-    for stage in ('payment','receipt'):
-        previous = latest_version(db,h,stage) if has_documents(db) else None
-        floors.append(previous[0] if previous else 0)
-    db.execute('''INSERT INTO jst_allocation_rounds VALUES(?,?,?,?,?,?)
-                  ON CONFLICT(oid,warehouse) DO UPDATE SET revision=excluded.revision,token=excluded.token,
-                  payment_version=excluded.payment_version,receipt_version=excluded.receipt_version''',
-               (h['oid'],h['warehouse'],h['revision'],plan['gid'],*floors))
+    payment, receipt = record_allocation_round(db,h,plan['gid'])
     supersede_members(db,h,plan['batch_id'])
     event(db,h,'采用本次分配并作废旧执行资料',{
-        'allocation':plan['gid'],'previous_generation':plan['old'],'payment_through':floors[0],'receipt_through':floors[1]})
+        'allocation':plan['gid'],'previous_generation':plan['old'],'payment_through':payment,'receipt_through':receipt})
+
+
+def supersede_operations(db, head, token, version):
+    from jst_batches import generation_batch, supersede_members
+    from jst_task_store import supersede_pending
+
+    payment, receipt = record_allocation_round(db,head,token)
+    gid = active(db,head)
+    retired = supersede_members(db,head,reason=OPERATIONS_SUPERSEDED)
+    supersede_pending(db,head,OPERATIONS_SUPERSEDED)
+    if gid:
+        db.execute('DELETE FROM jst_active WHERE oid=? AND warehouse=? AND gid=?',
+                   (head['oid'],head['warehouse'],gid))
+        if not generation_batch(db,gid):
+            db.execute('UPDATE jst_warehouses SET serial=serial+1 WHERE warehouse=?',(head['warehouse'],))
+    if (gid or retired or payment or receipt) and exists(db):
+        event(db,head,OPERATIONS_SUPERSEDED,{'version':version,'previous_generation':gid,
+                                             'payment_through':payment,'receipt_through':receipt})
 
 
 def commit(path, plan, accept_issues=False, progress=lambda _: None, cancel=None):

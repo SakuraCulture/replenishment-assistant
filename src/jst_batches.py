@@ -283,15 +283,17 @@ def cancel_member(db, head, gid=None):
         db.execute('UPDATE jst_batch_stock SET serial=serial+1 WHERE batch_id=? AND warehouse=?',(bid,wh))
 
 
-def supersede_members(db, head, batch_id):
+def supersede_members(db, head, batch_id=None, *, reason='本仓单已按最新库存重新分配'):
     """Only older results and pending work for this selected warehouse order."""
+    if not exists(db):return 0
     oid, wh = head['oid'], head['warehouse']
-    old_batches = db.execute("SELECT batch_id FROM jst_batch_members WHERE oid=? AND warehouse=? AND batch_id<>? AND status<>'cancelled'",
+    old_batches = db.execute("SELECT batch_id FROM jst_batch_members WHERE oid=? AND warehouse=? AND batch_id IS NOT ? AND status<>'cancelled'",
                              (oid,wh,batch_id)).fetchall()
     for (old_batch,) in old_batches:
-        db.execute("UPDATE jst_batch_members SET status='cancelled',message='本仓单已按最新库存重新分配' WHERE batch_id=? AND oid=? AND warehouse=?",
-                   (old_batch,oid,wh))
+        db.execute("UPDATE jst_batch_members SET status='cancelled',message=? WHERE batch_id=? AND oid=? AND warehouse=?",
+                   (reason,old_batch,oid,wh))
         db.execute('UPDATE jst_batch_stock SET serial=serial+1 WHERE batch_id=? AND warehouse=?',(old_batch,wh))
+    return len(old_batches)
 
 
 def pause(path, batch_id, progress=lambda _:None, cancel=None):
