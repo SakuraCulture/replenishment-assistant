@@ -29,6 +29,7 @@ class ResultsPage(QWidget):
         self.order_kind = order_kind
         self.data=None;self.records=[];self.count=0;self.worker=None;self.reading=False;self.closing=False;self.reviewing=False
         self.batch_id=None;self.close_pending=None;self.last_plan=None;self.remaining=[];self.chosen=set();self.building=False;self.payment_notice=''
+        self.redo_targets=set()
         self.reader=HistoryReader(self.path,host.repository.folder/'jst_result_index.sqlite3',self)
         v=QVBoxLayout(self);v.setContentsMargins(0,0,0,0)
         v.addWidget(label('聚水潭导入单 · 看分配结果，随时导出','section'))
@@ -137,8 +138,9 @@ class ResultsPage(QWidget):
         if self.payment_notice:self.status.setText(self.payment_notice)
         if any(r.get('withdrawn') and service.key(r['head']) in self.chosen for r in self.records):
             self.status.setText('已勾选撤销完成的仓单。点「准备新分配批次」，按仓刷新资料，再预览并确认生成。')
-        if getattr(self,'redo_target',None) in self.chosen:
-            self.status.setText('已返回重做仓单。点「准备新分配批次」按仓刷新资料；改量请先在订单跟踪更正本仓回传。')
+        selected_redo = len(self.redo_targets & self.chosen)
+        if selected_redo:
+            self.status.setText(f'已返回 {selected_redo} 张重做仓单。点「准备新分配批次」按仓刷新资料。改量请先在订单跟踪更正本仓回传。')
         self.progress.hide();self.controls()
         if getattr(self,'auto_payment_scope',None):QTimer.singleShot(0,self.prepare_payment_automatically)
 
@@ -385,7 +387,7 @@ class ResultsPage(QWidget):
                     self.batch_id = None
                     self.chosen = {service.key(r['head']) for r in released}
                     self.last_plan = None
-                    self.redo_target = None
+                    self.redo_targets.clear()
                 d.accept()
             finally:
                 self.reviewing=False;self.controls()
@@ -487,17 +489,19 @@ class ResultsPage(QWidget):
         try:self.focus_redo(notify(self,lambda:open_orders(self,self.host)))
         finally:self.reviewing=False;self.refresh()
 
-    def focus_redo(self,head):
-        if not head:return
+    def focus_redo(self,heads):
+        if not heads:return
         self.batch_id=None
-        self.scope=[head]
+        self.last_plan=None
+        self.remaining=[]
+        self.scope=list(heads)
         self.scope_btn.show()
-        self.redo_target=service.key(head)
-        self.chosen={self.redo_target}
-        day=QDate.fromString(head['day'],'yyyy-MM-dd')
+        self.redo_targets={service.key(head) for head in heads}
+        self.chosen=set(self.redo_targets)
+        days=[head['day'] for head in heads]
         with QSignalBlocker(self.day),QSignalBlocker(self.end),QSignalBlocker(self.search),QSignalBlocker(self.warehouse):
-            self.day.setDate(day)
-            self.end.setDate(day)
+            self.day.setDate(QDate.fromString(min(days),'yyyy-MM-dd'))
+            self.end.setDate(QDate.fromString(max(days),'yyyy-MM-dd'))
             self.search.clear()
             self.warehouse.setCurrentText('全部仓')
 

@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QAbstractScrollArea, QComboBox, QDialog, QFileDia
     QHBoxLayout, QLineEdit, QMenu, QMessageBox, QPushButton, QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout)
 
 from business_ui import grid, run
-from interaction_ui import confirm
+from interaction_ui import confirm, review_rows
 from app_defaults import WAREHOUSES
 import jst_auto_order as service
 from jst_auto_order_store import RELEASED, STAGES, list_orders, save_profiles
@@ -222,6 +222,7 @@ class Orders(QDialog):
         self.busy=False
         self.initial=True
         self.redo_target=None
+        self.batch_redo_targets=[]
         self.setWindowTitle('聚水潭自动下单')
         self.setObjectName('jstAutomaticOrders')
         fit_window(self,1280,650)
@@ -272,6 +273,7 @@ class Orders(QDialog):
         self.buttons={'probe':self.more_action('核对平台账号和店铺',lambda:self.perform('probe'))}
         self.export=self.more_action('保存核对用 XLS',self.save_file)
         self.redo_btn=self.more_action('核对取消并重做',self.redo)
+        self.batch_redo_btn=self.more_action('批量登记重做',self.batch_redo)
         self.manual_btn=self.more_action('人工处理',self.open_manual)
         self.more_menu.addSeparator()
         self.allocation=self.more_action('补取付款资料并核对',self.pull_allocation)
@@ -411,6 +413,8 @@ class Orders(QDialog):
         self.payment_history.setEnabled(free and len(rows)==1 and bool(rows[0]['internal']))
         self.redo_btn.setEnabled(free and len(rows)==1 and 'MANUAL_HANDOFF' not in stages
                                   and not rows[0].get('historical'))
+        self.batch_redo_btn.setEnabled(free and len(rows)>1 and any(
+            not r.get('historical') and r['stage']!='MANUAL_HANDOFF' for r in rows))
         self.manual_btn.setEnabled(free and len(rows)==1 and 'WITHDRAWN' not in stages)
 
     def open_manual(self):
@@ -459,6 +463,52 @@ class Orders(QDialog):
         finally:
             self.busy = False
             if self.redo_target is None:
+                self.reload()
+
+    def batch_redo(self):
+        rows = self.selected()
+        if self.busy or len(rows)<2:
+            return
+        from catalog_session_ui import manager
+        from jst_cancellation import preview_redo_batch, register_redo_batch
+
+        self.busy = True
+        self.controls()
+        self.set_job(f'正在核对所选 {len(rows)} 张仓单…')
+        try:
+            owner = manager(self.host).session
+            reviewed = run(self,preview_redo_batch,(self.path,rows,owner),'逐仓核对聚水潭原单')
+            ready = sum(r['approved'] is not None for r in reviewed)
+            summary = f'核对 {len(reviewed)} 张 · 可登记 {ready} 张 · 待处理 {len(reviewed)-ready} 张'
+            review_table = [(r['warehouse'],r['number'],r['online'],r['internal'] or '—',
+                             '可登记' if r['approved'] is not None else '待处理',r['reason']) for r in reviewed]
+            self.set_job(summary,[row[:3]+row[4:] for row in review_table])
+            confirmed = review_rows(
+                self,'批量登记重做 · 核对结果',('仓','补货单号','原线上单号','原内部单号','结果','处理原因'),
+                review_table,
+                summary+'\n确认后释放可登记仓单的本地分配占用、保留原执行记录，并带回分配页。',
+                f'确认登记 {ready} 张' if ready else '',widths=(76,205,222,100,82,370))
+            if not confirmed or not ready:
+                return
+            results = run(self,register_redo_batch,(self.path,reviewed),'批量登记重做')
+            heads = [r['release']['head'] for r in results if r['release']]
+            pending = len(results)-len(heads)
+            self.set_job(f'已登记 {len(heads)} 张 · 待处理 {pending} 张',[
+                (r['warehouse'],r['number'],r['online'],'已登记' if r['release'] else '待处理',r['reason'])
+                for r in results])
+            if heads:
+                if pending:
+                    self.show_details()
+                self.batch_redo_targets = heads
+                self.accept()
+        except Cancelled:
+            self.set_job('本次原单核对已停止。')
+        except (ValueError, RuntimeError, OSError) as exc:
+            self.set_job(f'批量登记重做未完成 · {len(rows)} 张待处理',[
+                (r['warehouse'],r['number'],r['online'],'待处理',str(exc)) for r in rows])
+        finally:
+            self.busy = False
+            if not self.batch_redo_targets:
                 self.reload()
 
     def show_payment_history(self):
@@ -536,6 +586,6 @@ def open_orders(parent,host,focus=(),failures=()):
     dialog=Orders(parent,host,focus,failures)
     try:
         dialog.exec()
-        return dialog.redo_target
+        return dialog.batch_redo_targets or ([dialog.redo_target] if dialog.redo_target else [])
     finally:
         dialog.deleteLater()

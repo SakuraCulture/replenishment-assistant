@@ -5,12 +5,15 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QMimeData, QPoint, QRect, QTimer, Qt
 from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QTableView
 
 import catalog_session_ui
 from catalog_sync_client import ComponentError
 from jst_auto_order_store import read
 from jst_auto_order_ui import Orders
+from jst_order_store import active
 from jst_order_dialogs import ImportConfirmation, JobDetails
+from jst_results import key as scope_key
 from order_redo_smoke import Exercise, button
 from platform_import_manual_fixture import JstManual
 import work_repository as wr
@@ -165,6 +168,74 @@ class LayoutExercise(Exercise):
         self.dialog(lambda:self.click(window.buttons['submit']),ImportConfirmation,review)
         return seen
 
+    def redo_batch(self,page,imported):
+        def snapshot():
+            with closing(wr.read_connection(self.path)) as db:
+                tasks = {k:read(db,k) for k in imported}
+                stock = {k:active(db,o['payload']['head']) for k,o in tasks.items()}
+            return tasks, stock
+
+        original, assigned = snapshot()
+        ready = {next(k for k in imported if original[k]['payload']['head']['warehouse']==wh)
+                 for wh in ('河北仓','山东仓')}
+        pending, excluded = [k for k in imported if k not in ready][:2]
+        selected = ready | {pending}
+        for k in ready | {excluded}:
+            self.portal.orders[k].update(native_status='已取消',status='review')
+        first_call = len(self.portal.calls)
+
+        def run_orders(w):
+            self.small(w)
+            for index,row in enumerate(w.records):
+                w.table.item(index,0).setCheckState(Qt.CheckState.Checked if row['online'] in selected else Qt.CheckState.Unchecked)
+            assert w.batch_redo_btn in w.more_menu.actions() and w.batch_redo_btn.isEnabled()
+            assert not w.redo_btn.isEnabled()
+
+            def confirm(accept):
+                def review(d):
+                    self.small(d)
+                    model = d.findChild(QTableView).model()
+                    assert {r[2] for r in model.rows}==selected
+                    assert {r[2] for r in model.rows if r[4]=='可登记'}==ready
+                    assert all(r[3]==original[r[2]]['internal'] for r in model.rows)
+                    assert '尚未核实' in next(r[5] for r in model.rows if r[2]==pending)
+                    cancel = button(d,'取消')
+                    go = button(d,'确认登记 2 张')
+                    assert cancel.isDefault()
+                    self.footer(d,(cancel,go))
+                    self.shot(d,'批量登记核对清单' if accept else '批量登记_取消前')
+                    self.click(go if accept else cancel)
+                self.dialog(w.batch_redo_btn.trigger,'批量登记重做 · 核对结果',review)
+
+            confirm(False)
+            tasks, stock = snapshot()
+            assert stock==assigned and not any(tasks[k].get('historical') for k in ready)
+            assert w.isVisible()
+
+            def details(d):
+                assert w.note.text()=='已登记 2 张 · 待处理 1 张'
+                assert {r[2] for r in d.model.rows if r[3]=='已登记'}==ready
+                assert {r[2] for r in d.model.rows if r[3]=='待处理'}=={pending}
+                self.shot(d,'批量登记作业结果')
+                self.click(d.close_btn)
+            self.dialog(lambda:confirm(True),JobDetails,details)
+        self.dialog(lambda:self.click(page.auto_tasks_btn),Orders,run_orders)
+
+        expected = {scope_key(original[k]['payload']['head']) for k in ready}
+        self.wait(lambda:not page.reading and {scope_key(r['head']) for r in page.records}==expected,'返回成功仓单')
+        assert page.chosen==expected and {scope_key(h) for h in page.scope}==expected
+        assert page.prepare_btn.isEnabled() and '已返回 2 张重做仓单' in page.status.text()
+        self.shot(page,'两仓同时返回分配页')
+        tasks, stock = snapshot()
+        assert all(tasks[k]['historical'] and stock[k] is None and tasks[k]['stage']=='CANCELLED' for k in ready)
+        assert all(tasks[k]==original[k] and stock[k]==assigned[k] for k in set(imported)-ready)
+        lookups = self.portal.calls[first_call:]
+        expected_lookups = {('order.lookup',original[k]['payload']['head']['warehouse'],k) for k in selected}
+        assert len(lookups)==2*len(selected) and set(lookups)==expected_lookups,lookups
+        return {'registered':sorted(ready),'pending':[pending],'unselected_cancelled':excluded,
+                'cancel_before_confirm_left_allocations':True,'platform_requests':lookups,
+                'returned_warehouses':sorted(h['warehouse'] for h in page.scope)}
+
     def run(self):
         count=self.fixture['count']
         keys=self.fixture['jst_keys']
@@ -229,9 +300,12 @@ class LayoutExercise(Exercise):
             assert '原单' in w.note.text()
             self.click(w.close_btn)
 
+        def results_page(page):
+            self.dialog(lambda:self.click(page.auto_tasks_btn),Orders,on_orders)
+            if count==27:
+                result['batch_redo']=self.redo_batch(page,result['imports'])
         with patch.object(catalog_session_ui,'manager',return_value=SimpleNamespace(session=self.portal)):
-            self.enter('聚水潭导入单','jst',
-                       lambda page:self.dialog(lambda:self.click(page.auto_tasks_btn),Orders,on_orders))
+            self.enter('聚水潭导入单','jst',results_page)
         with closing(wr.read_connection(self.path)) as db:
             after={k:read(db,k) for k in keys}
             assert {k for k,r in after.items() if r['internal']}==set(result['imports'])
