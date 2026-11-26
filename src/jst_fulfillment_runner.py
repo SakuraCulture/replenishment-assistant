@@ -1,12 +1,15 @@
 """Poll original orders and lock receipt evidence for payments already saved."""
 import sqlite3
 import time
-from PySide6.QtCore import QObject, QTimer, Signal
+from datetime import datetime
+from PySide6.QtCore import QObject, QTimer, Qt, Signal, Slot
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout
 
 from ui_tasks import Worker
 import jst_fulfillment_jobs as jobs
 import jst_fulfillment as service
+import jst_fulfillment_round as rounds
+from scheduled_replenishment import TZ
 
 
 class Runner(QObject):
@@ -23,12 +26,17 @@ class Runner(QObject):
         self.next_read = 0.0
         self.close_requested = False
         self.pending = []
+        self.next_at = 0
+        self.waiting = False
+        self.blocker = None
+        self.catalog_manager = None
+        self.continue_round = False
         self.message = '等待聚水潭原单付款资料'
         self.timer = QTimer(self)
-        self.timer.setInterval(30000)
+        self.timer.setSingleShot(True)
+        self.timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.timer.timeout.connect(self.tick)
-        self.timer.start()
-        QTimer.singleShot(0, self.refresh_pending)
+        self.timer.start(0)
 
     def refresh_pending(self):
         try:
@@ -41,47 +49,83 @@ class Runner(QObject):
         self.changed.emit()
         return True
 
+    @Slot()
+    def wake(self):
+        if self.waiting and not self.stopping and self.worker is None:
+            self.waiting = False
+            self.timer.start(0)
+
+    @Slot()
+    def blocker_finished(self):
+        self.blocker = None
+        self.wake()
+
+    @Slot()
+    def browser_idle(self):
+        if self.blocker is None:
+            self.wake()
+
+    def wait_for(self, blocker):
+        self.waiting = True
+        if self.blocker is not blocker:
+            self.blocker = blocker
+            signal = getattr(blocker, 'finished', None)
+            if signal is None:
+                signal = blocker.destroyed
+            signal.connect(self.blocker_finished, Qt.ConnectionType.SingleShotConnection)
+            if hasattr(blocker, 'isFinished') and blocker.isFinished():
+                self.blocker_finished()
+
     def tick(self):
         h = self.host
-        if not self.worker and not self.stopping and not getattr(h, '_data_location_preparing', False):
-            if not self.refresh_pending():
-                return
-        if (self.worker or self.stopping or getattr(h, 'closing', False)
-                or getattr(h, '_data_location_preparing', False) or getattr(h, 'worker', None)):
+        if self.worker or self.stopping or getattr(h, 'closing', False) or getattr(h, '_data_location_preparing', False):
             return
-        if time.monotonic()<self.next_read:
+        self.waiting = False
+        path = h.work_repository.path
+        try:
+            deadline, entries = rounds.current(path, historical=not self.blocked)
+            self.timer.start(max(1, min(rounds.INTERVAL_MS, deadline - rounds.now_ms())))
+            if deadline != self.next_at:
+                self.next_at = deadline
+                self.refresh_pending()
+            if not entries:
+                return
+        except (OSError, ValueError, sqlite3.Error) as exc:
+            self.timer.start(5 * 60 * 1000)
+            self.status('本地回查计划暂不可读，5 分钟后再检查：' + str(exc))
+            return
+        if getattr(h, 'worker', None):
+            self.wait_for(h.worker)
             return
         from lifecycle_home_ui import StageDialog
         modal = QApplication.activeModalWidget()
-        if modal and (not isinstance(modal, StageDialog) or modal.stage not in ('payment', 'receipt')):
-            return
-        try:
-            path = h.work_repository.path
-            locks = jobs.due_payment_locks(path, limit=5)
-            unpaid = [] if modal else jobs.due_order_payment(path)
-            originals = (locks + unpaid)[:10]
-            legacy = not modal and not self.blocked and jobs.enabled(path)
-            if not originals and not legacy:
+        if modal:
+            if isinstance(modal, StageDialog) and modal.stage in ('payment', 'receipt'):
+                entries = [(key, kind) for key, kind in entries if kind == 'lock']
+            else:
+                entries = []
+            if not entries:
+                self.wait_for(modal)
                 return
-        except (OSError, ValueError, sqlite3.Error) as exc:
-            self.status('本地实配清单暂不可读，下次自动检查时重试：' + str(exc))
+        remaining_backoff = self.next_read - time.monotonic()
+        if remaining_backoff > 0:
+            self.timer.start(min(self.timer.interval(), int(remaining_backoff * 1000) + 1))
             return
         from catalog_session_ui import manager
-        owner = manager(h).session
-        # An idle timer does not start a browser/login/permission handshake.
-        if owner.lease is not None or not owner.ready or not owner.client or not owner.client.running:
+        if self.catalog_manager is None:
+            self.catalog_manager = manager(h)
+            self.catalog_manager.idle.connect(self.browser_idle, Qt.ConnectionType.QueuedConnection)
+        owner = self.catalog_manager.session
+        if owner.lease is not None or owner.scheduled_waiting or not owner.ready or not owner.client or not owner.client.running:
+            self.waiting = True
             self.status('等待已核验聚水潭连接空闲，未发起新登录')
             return
-        try:
-            keys = originals or jobs.due(h.work_repository.path)
-        except (OSError, ValueError, sqlite3.Error) as exc:
-            self.status('本地实配清单暂不可读，下次自动检查时重试：' + str(exc))
+        self.legacy_worker = entries[0][1] == 'historical'
+        if self.legacy_worker and self.blocked:
             return
-        if not keys:
-            return
-        self.legacy_worker = not originals
-        reader = service.run_background if self.legacy_worker else service.retry_order_payment
-        worker = Worker(reader, (h.work_repository.path, keys, owner), self)
+        keys = [key for key, _ in entries]
+        worker = Worker(service.read_background_round, (path, keys, owner, deadline, self.legacy_worker), self)
+        self.continue_round = False
         self.worker = worker
         worker.status.connect(self.status)
         worker.success.connect(self.ready)
@@ -101,6 +145,7 @@ class Runner(QObject):
         self.status('历史出库资料检查已开启' if enabled else '等待聚水潭原单付款资料')
 
     def ready(self, rows):
+        self.continue_round = True
         count = sum(row['state'] == 'READY' for row in rows)
         self.message = f'付款来源检查 {len(rows)} 单，{count} 单待人工确认付款'
         if any(row.get('timed_out') for row in rows):
@@ -108,7 +153,7 @@ class Runner(QObject):
             self.timeout_streak=min(self.timeout_streak+1,5)
             delay=min(60*2**(self.timeout_streak-1), 900)
             self.next_read=time.monotonic()+delay
-            self.message+=f'，查询超时；余单将在 {delay} 秒后重新检查'
+            self.message+=f'，查询超时，本轮如有余单将在 {delay} 秒后继续'
         elif rows:
             self.timeout_streak=0
             self.next_read=0.0
@@ -130,7 +175,7 @@ class Runner(QObject):
     def failed(self, text):
         if self.legacy_worker:
             self.blocked = True
-        self.message = ('历史实配检查已暂停：' if self.legacy_worker else '原单回查暂未完成，稍后自动重试：') + text
+        self.message = ('历史实配检查已暂停：' if self.legacy_worker else '原单回查暂未完成，下一轮再检查：') + text
         self.changed.emit()
 
     def open_review(self):
@@ -156,6 +201,8 @@ class Runner(QObject):
         self.changed.emit()
         if self.close_requested:
             QTimer.singleShot(0, self.host.close)
+        elif not self.stopping and (self.continue_round or not self.timer.isActive()):
+            self.timer.start(0)
 
     def prepare_close(self):
         self.stopping = True
@@ -169,7 +216,7 @@ class Runner(QObject):
 
     def resume_after_cancelled_close(self):
         self.stopping = self.close_requested = False
-        self.timer.start()
+        self.timer.start(0)
 
 
 def install(host, home_layout):
@@ -187,7 +234,11 @@ def install(host, home_layout):
         layout.insertWidget(1, panel)
         def refresh(n=note, b=action):
             count = len(runner.pending)
-            n.setText(f'{count} 单付款资料已读回，待人工确认付款' if count else runner.message)
+            text = f'{count} 单付款资料已读回，待人工确认付款' if count else runner.message
+            if runner.next_at:
+                next_check = datetime.fromtimestamp(runner.next_at / 1000, TZ)
+                text += f' · 下轮原单回查 {next_check:%m-%d %H:%M}（北京时间，每12小时）'
+            n.setText(text)
             b.setText(f'核对回读付款资料（{count}）')
             b.setEnabled(bool(count) and runner.worker is None and not runner.stopping)
         runner.changed.connect(refresh)

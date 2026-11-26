@@ -1,18 +1,20 @@
 """Cooperative application shutdown of the retained JST component, off the GUI thread."""
 from pathlib import Path
-from PySide6.QtCore import QObject, QTimer
+from PySide6.QtCore import QObject, QTimer, Signal
 from aoxiang_ui_common import Call
 from catalog_sync_session import SessionOwner
 from unattended_resources import Resources
 
 
 class Manager(QObject):
+    idle = Signal()
+
     def __init__(self, host):
         super().__init__(host)
         self.host = host
         root = Path(host.repository.folder)
         self.resources = Resources(root)
-        self.session = SessionOwner(root / 'jst_catalog_sync', resources=self.resources)
+        self.session = SessionOwner(root / 'jst_catalog_sync', resources=self.resources, on_idle=self.idle.emit)
         self.worker = None
         self._shutdown_done=False
         host.destroyed.connect(self.shutdown)

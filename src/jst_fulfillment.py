@@ -476,7 +476,8 @@ def run_order_actions(path, keys, owner, action, approved=None, progress=lambda 
     return automatic.run_browser(path, keys, owner, action, approved, progress, cancel, prepare_payment=pull_order_payment)
 
 
-def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, retained_only=False, order_details=False):
+def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, retained_only=False, order_details=False,
+                round_deadline=None):
     from catalog_sync_client import ComponentError
     checkpoint(cancel)
     reader = pull_order_payment if order_details else pull
@@ -492,7 +493,7 @@ def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, reta
                     progress('后台原单回查已让位，剩余原单留待下次空闲时查询')
                 break
             started = time.monotonic()
-            rows = _read_with_lease(reader, path, [online], lease, True, progress, cancel)
+            rows = _read_with_lease(reader, path, [online], lease, True, progress, cancel, round_deadline)
             results.extend(rows)
             if order_details and rows and isinstance(rows[-1],dict) and rows[-1]['state']=='RETRY_PAYMENT_READ':
                 if rows[-1].get('timed_out') or time.monotonic()-started>=45:
@@ -506,13 +507,17 @@ def run_browser(path, keys, owner, progress=lambda _: None, cancel=None, *, reta
     return _read_with_lease(reader, path, keys, lease, False, progress, cancel)
 
 
-def _read_with_lease(reader, path, keys, lease, retained_only, progress, cancel):
+def _read_with_lease(reader, path, keys, lease, retained_only, progress, cancel, round_deadline=None):
     from catalog_sync_client import ComponentError
     try:
         try:
             lease.start()
         except ComponentError as exc:
             raise automatic._client_error(exc) from None
+        if round_deadline is not None:
+            from jst_fulfillment_round import take
+            if not take(path, round_deadline, keys[0], cancel):
+                return []
         return reader(path, keys, Browser(lease, retained_only), progress, cancel)
     finally:
         import time
@@ -531,6 +536,11 @@ def run_order_payment(path, keys, owner, progress=lambda _: None, cancel=None, *
 
 def retry_order_payment(path, keys, owner, progress=lambda _: None, cancel=None):
     return run_order_payment(path, keys, owner, progress, cancel, retained_only=True)
+
+
+def read_background_round(path, keys, owner, deadline, historical, progress=lambda _: None, cancel=None):
+    return run_browser(path, keys, owner, progress, cancel, retained_only=True,
+                       order_details=not historical, round_deadline=deadline)
 
 
 def verify_order_before_commit(path, guards, owner, progress=lambda _: None, cancel=None):

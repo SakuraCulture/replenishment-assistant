@@ -38,7 +38,7 @@ def configure(path, value, progress=lambda _: None, cancel=None):
     return value
 
 
-def due(path, *, now=None, limit=10):
+def due(path, *, now=None, limit=10, online=None):
     cutoff = (now or datetime.fromisoformat(wr.now())) - timedelta(minutes=5)
     with closing(wr.read_connection(path, timeout=.15)) as db:
         db.execute('BEGIN')
@@ -53,8 +53,11 @@ def due(path, *, now=None, limit=10):
             sql += " AND (c.online IS NULL OR (c.state IN ('WAIT_ALLOCATION','WAIT_CONNECTION') AND julianday(c.observed)<=julianday(?)))"
         if orders.exists(db, 'lifecycle_versions'):
             sql += ' ' + _UNPAID
-        sql += " ORDER BY c.observed,o.online" if pending else " ORDER BY o.online"
         args = (cutoff.isoformat(),) if pending else ()
+        if online is not None:
+            sql += ' AND o.online=?'
+            args += (online,)
+        sql += " ORDER BY c.observed,o.online" if pending else " ORDER BY o.online"
         return [row[0] for row in db.execute(sql + ' LIMIT ?', (*args, max(1, min(10, limit))))]
 
 
@@ -71,7 +74,7 @@ def waiting_review(path, *, include_paid=False):
         return [row[0] for row in db.execute(sql + " ORDER BY c.observed,o.online")]
 
 
-def due_order_payment(path, *, now=None, limit=10):
+def due_order_payment(path, *, now=None, limit=10, online=None):
     """Retry reads from verified originals, including orders imported by earlier versions."""
     cutoff = (now or datetime.fromisoformat(wr.now())) - timedelta(minutes=5)
     with closing(wr.read_connection(path, timeout=.15)) as db:
@@ -100,11 +103,14 @@ def due_order_payment(path, *, now=None, limit=10):
             sql += ')))'
         if has_lifecycle:
             sql += ' ' + _UNPAID
+        if online is not None:
+            sql += ' AND o.online=?'
+            args.append(online)
         sql += ' ORDER BY c.observed,o.online' if pending else ' ORDER BY o.online'
         return [row[0] for row in db.execute(sql + ' LIMIT ?', (*args, max(1, min(10, limit))))]
 
 
-def due_payment_locks(path, *, now=None, limit=10):
+def due_payment_locks(path, *, now=None, limit=10, online=None):
     """Recheck paid originals awaiting shipment on an already available connection."""
     cutoff = (now or datetime.fromisoformat(wr.now())) - timedelta(minutes=1)
     with closing(wr.read_connection(path, timeout=.15)) as db:
@@ -126,8 +132,12 @@ def due_payment_locks(path, *, now=None, limit=10):
                 AND COALESCE(json_extract(CAST(r.payload AS TEXT),'$.pending'),0)=0)'''
         if checks:
             sql += ' AND (c.online IS NULL OR julianday(c.observed)<=julianday(?) OR p.saved>=c.observed)'
+        args = (cutoff.isoformat(),) if checks else ()
+        if online is not None:
+            sql += ' AND o.online=?'
+            args += (online,)
         sql += ' ORDER BY c.observed,o.online' if checks else ' ORDER BY p.saved,o.online'
-        candidates = db.execute(sql, (cutoff.isoformat(),) if checks else ()).fetchall()
+        candidates = db.execute(sql, args).fetchall()
         if not candidates:
             return []
         observed = read_shipments(db, (row[1] for row in candidates))

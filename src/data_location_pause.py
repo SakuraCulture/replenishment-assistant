@@ -22,8 +22,11 @@ class AutomaticPause:
         for owner,attr,value in self.flags:setattr(owner,attr,value)
         startup=getattr(self.host,'browser_startup',None)
         if startup and getattr(startup,'retry_until',0)>0:startup.retry_until+=time.monotonic()-self.started
+        fulfillment_timer=getattr(getattr(self.host,'jst_fulfillment_runner',None),'timer',None)
         for timer,active in self.timers:
-            if active:timer.start()
+            if active and timer is fulfillment_timer:
+                timer.start(0)  # Re-read the absolute deadline after maintenance.
+            elif active:timer.start()
             else:timer.stop()
         if getattr(self.host,'_data_location_pause',None) is self:self.host._data_location_pause=None
 
