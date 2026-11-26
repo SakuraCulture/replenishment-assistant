@@ -207,7 +207,7 @@ class GenerationDialog(QDialog):
             v=self.plan['payload'];self.show_order(v['plans'],v['skipped']);self.review.replace(v['plans'])
             self.order_note.setText('上方列表即本次预览执行顺序；跳过单列在末尾，不参与分配。')
             payment_corrections=sum(bool(p.get('previous_payment')) for p in v['plans'])
-            redo_stocks = [wh for wh, b in self.catalogs.items() if b.get('reserve_other_orders')]
+            redo_stocks = sorted({p['head']['warehouse'] for p in v['plans'] if p.get('reserve_other_orders')})
             redo_note = (' 已核对重做仓的其他本地占用（'+'、'.join(redo_stocks)+'）。') if redo_stocks else ''
             self.summary.setText(f"本次预览 {len(v['plans'])} 张仓单；跳过 {len(v['skipped'])} 张（不计入本次汇总）。"+'；'.join(s['head']['number']+'：'+s['reason'] for s in v['skipped'])+(f'\n其中{payment_corrections}单的旧付款依据已因新回传失效：旧付款事实保留；本次仅更新本地分配，生成后需重新核对付款，不自动更改聚水潭或翱象订单。' if payment_corrections else '')+redo_note)
             self.status.setText('预览完成，请核对分配结果后确认生成。' if v['plans'] else '当前范围没有可生成的仓单。')

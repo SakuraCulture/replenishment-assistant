@@ -127,6 +127,7 @@ class WithdrawalExercise(Exercise):
             value = d.plan['payload']
             result['batch_id'] = value['batch_id']
             result['other_reserved'] = value['reserved']
+            assert not any(result['other_reserved'].values()), result['other_reserved']
             result['stock'] = {wh:{'revision':b['catalog']['revision'],'file':b['catalog']['source_path'],
                                   'sha256':b['catalog']['source_sha256']}
                                for wh,b in value['new_batch']['stocks'].items()}

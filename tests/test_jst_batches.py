@@ -53,6 +53,39 @@ class Batches(unittest.TestCase):
             q=self.new([h],80);self.assertEqual(q['payload']['plans'][0]['summary']['quantity'],'80')
         second=b.execute(self.path,q);self.assertFalse(second['errors']);self.assertEqual(self.balance(r['batch_id']),60)
         self.assertEqual(self.balance(second['batch_id']),0);self.assertEqual(j.get(self.path,gid),frozen)
+    def test_withdrawn_order_uses_its_new_batch_snapshot_even_with_old_executions(self):
+        other = self.f.second_store()
+        initial = b.execute(self.path, self.new([self.h, other], stock=120))
+        self.assertFalse(initial['errors'])
+        with closing(sqlite3.connect(self.path)) as db:
+            original_gid = j.active(db, self.h)
+            other_gid = j.active(db, other)
+        j.lock(self.path, [other_gid])
+        with closing(sqlite3.connect(self.path)) as db, db:
+            j.release_generation(db, self.h, original_gid, initial['batch_id'], '合成已核实未发送',
+                                 evidence={'lookup': {'exact_absence': True}})
+
+        preview = self.new(stock=75)
+        row = preview['payload']['plans'][0]['rows'][0]
+        self.assertEqual((row['stock'], row['before'], row['quantity']), ('75', '75', '40'))
+        snapshot = preview['payload']['new_batch']['stocks']['河北仓']
+        self.assertNotIn('reserve_other_orders', snapshot)
+
+        # Simulate a paused batch saved by the previous version.
+        snapshot['reserve_other_orders'] = True
+        preview['digest'] = j.digest(preview['payload'])
+        b.register(self.path, preview)
+        batch_id = preview['payload']['batch_id']
+        resumed = b.preview_existing(self.path, batch_id)
+        row = resumed['payload']['plans'][0]['rows'][0]
+        self.assertEqual((row['stock'], row['before'], row['quantity']), ('75', '75', '40'))
+        result = b.execute(self.path, resumed)
+        self.assertFalse(result['errors'])
+        self.assertEqual(self.balance(batch_id), 35)
+        with closing(sqlite3.connect(self.path)) as db:
+            self.assertEqual(j.active(db, other), other_gid)
+        self.assertEqual(self.balance(initial['batch_id']), 40)
+
     def test_cancel_and_queue_tick_cannot_resurrect(self):
         import jst_tasks
         p=self.new();r=b.execute(self.path,p);gid=r['generated'][0]

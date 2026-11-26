@@ -112,7 +112,7 @@ def seed(root):
             book.active.append([SKUS[wh],'测试',2,1,'启用',latest[wh],'','合成商品'])
             book.save(root/(wh+'-最新库存.xlsx'))
     write(root/'import-failure-fixture.json',dict(synthetic=True,live_platform=False,
-          rows=rows,day=wr.today(),fresh_stock=latest,expected_new={sd:{'unsent':'6'},hb:{'rejected':'13','cancelled':'3'}}))
+          rows=rows,day=wr.today(),fresh_stock=latest,expected_new={sd:{'unsent':'11'},hb:{'rejected':'13','cancelled':'7'}}))
 
 
 def main():

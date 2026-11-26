@@ -120,16 +120,15 @@ def preview_new(path, heads, catalogs=None, manual_order=False, progress=lambda 
         if c['warehouse'] != wh: raise ValueError('选用资料与供货仓不一致')
         stocks[wh] = dict(bid=bid, warehouse=wh, catalog=c, included=[], created=wr.now(), batch_id=batch_id)
         states[wh] = (bid, 0)
-    from material_stock import shared_ledger, included
+    from material_stock import included, is_material, shared_ledger
     from jst_withdrawal import released_warehouses
     with closing(wr.read_connection(path)) as db:
-        redo = released_warehouses(db,heads)
-        shared = shared_ledger(db)
-        for wh, base in stocks.items():
-            if wh in redo:
-                base['reserve_other_orders'] = True
-            if wh in redo or shared:
-                base['included'] = sorted(included(db,wh,base))
+        if shared_ledger(db):
+            material_redo = released_warehouses(db, (head for head in heads if is_material(db, head['oid'])))
+            for wh, base in stocks.items():
+                if wh in material_redo:
+                    base['reserve_other_orders'] = True
+                base['included'] = sorted(included(db, wh, base))
     spec = dict(batch_id=batch_id, created=wr.now(), epoch=0, stocks=stocks, states=states, members=[], new=True)
     if versions:spec['current_versions']=versions
     if stock_receipts is not None:spec['keep_other_batches']=True

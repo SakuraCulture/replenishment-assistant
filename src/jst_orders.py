@@ -215,7 +215,8 @@ def prepare(path, heads, manual_order=False, correction=False, progress=lambda _
                     if not member or member['status']=='cancelled':raise wr.Conflict('订单不在本批有效范围')
                     value['position']=member['position']
             if o['signed_products'] is not None:value['signed_products']=o['signed_products']
-            if b.get('reserve_other_orders'): value['reserve_other_orders'] = True
+            if b.get('reserve_other_orders') and (material or not batch):
+                value['reserve_other_orders'] = True
             if any(overlap.values()):
                 value['material_cross'] = overlap
                 value['material_cross_exclude'] = sorted(x for x in exclude if x)
@@ -248,13 +249,20 @@ def validate_plan(db, p, catalog_revisions=None):
     if increases:=(p.get('manual_correction') or {}).get('material_increase'):
         from allocation_amendments import validate_material_claims
         validate_material_claims(db,h,p['old'],increases)
-    if p.get('reserve_other_orders') or material_stock.shared_ledger(db):
-        base = decode(db.execute('SELECT payload,digest FROM jst_baselines WHERE bid=?',(p['bid'],)).fetchone())
-        seen = material_stock.cross_reservations(db,h['warehouse'],base,{r['sku'] for r in p['rows']},
-            material=material_stock.is_material(db,h['oid']),batch_id=p.get('batch_id'),
-            exclude=p.get('material_cross_exclude') or (p['old'],))
-        if seen != p.get('material_cross', {'reserved':{}, 'uncertain':{}}):
-            raise wr.Conflict('共享仓库存占用已变化，请重新预览：'+h['number'])
+    if p.get('reserve_other_orders') or p.get('material_cross') or material_stock.shared_ledger(db):
+        empty_cross = {'reserved': {}, 'uncertain': {}}
+        planned_cross = p.get('material_cross', empty_cross)
+        material = material_stock.is_material(db, h['oid'])
+        batch_id = p.get('batch_id')
+        if batch_id and not material:
+            if planned_cross != empty_cross:
+                raise wr.Conflict('普通补货已改按本批库存分配，请重新预览：'+h['number'])
+        else:
+            base = decode(db.execute('SELECT payload,digest FROM jst_baselines WHERE bid=?',(p['bid'],)).fetchone())
+            seen = material_stock.cross_reservations(db, h['warehouse'], base, {r['sku'] for r in p['rows']},
+                material=material, batch_id=batch_id, exclude=p.get('material_cross_exclude') or (p['old'],))
+            if seen != planned_cross:
+                raise wr.Conflict('共享仓库存占用已变化，请重新预览：'+h['number'])
     # Modern returns carry all effective rows. Legacy needs the frozen upstream products.
     h = {**h, 'products':p.get('signed_products',p['basis']['products'])}
     if lc.upstream(db,h,'payment') != p['basis']:
